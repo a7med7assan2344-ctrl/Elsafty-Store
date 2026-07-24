@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elsafty Store | متجر الصفوتي</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="nav-logo">
+            <img src="logo.png" alt="Elsafty Store" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
+            <span id="fallback-logo" style="display:none; font-size: 22px; font-weight: bold; color: #febd69;">Elsafty Store</span>
+        </div>
+        <div class="cart-btn" onclick="toggleCart()">🛒 السلة (<span id="cart-count">0</span>)</div>
+    </header>
+
+    <div class="hero-banner">
+        <h2>أهلاً بك في Elsafty Store</h2>
+        <p>تسوق أفضل المنتجات بأفضل الأسعار وبضمان التوصيل السريع</p>
+    </div>
+
+    <nav class="categories">
+        <button onclick="filterProducts('all')">جميع المنتجات</button>
+        <button onclick="filterProducts('electronics')">إلكترونيات</button>
+        <button onclick="filterProducts('clothes')">أزياء وملابس</button>
+    </nav>
+
+    <main class="product-grid" id="product-grid">
+        </main>
+
+    <div id="cart-modal" class="cart-modal hidden">
+        <div class="cart-header">
+            <h2>سلة الطلبات</h2>
+            <button onclick="toggleCart()" class="close-cart">✕</button>
+        </div>
+        <div id="cart-items">
+            </div>
+        <div class="cart-footer">
+            <p>الإجمالي الكلي: <span id="total-price">0</span> جنيه</p>
+            <button class="whatsapp-btn" onclick="sendToWhatsApp()">إرسال الطلب عبر واتساب 📱</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

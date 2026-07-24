@@ -1,0 +1,47 @@
+.checkout{
+
+background:white;
+
+margin:30px;
+
+padding:25px;
+
+direction:rtl;
+
+border-radius:10px;
+
+}
+
+
+
+.checkout input{
+
+display:block;
+
+width:100%;
+
+padding:12px;
+
+margin:10px 0;
+
+}
+
+
+
+.checkout button{
+
+background:#25D366;
+
+color:white;
+
+border:none;
+
+padding:15px;
+
+width:100%;
+
+font-size:18px;
+
+cursor:pointer;
+
+}
