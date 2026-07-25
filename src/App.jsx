@@ -15,7 +15,6 @@ import {
   getProducts
 } from "./services/productService";
 
-
 import {
   BrowserRouter,
   Routes,
@@ -23,214 +22,94 @@ import {
   Navigate
 } from "react-router-dom";
 
-
-
 function App() {
-
-
   const [products, setProducts] = useState([]);
-
   const [admin, setAdmin] = useState(false);
-
   const [loading, setLoading] = useState(true);
 
-
-
   const loadProducts = async () => {
-
     try {
-
       const data = await getProducts();
-
       setProducts(data);
-
-
     } catch (error) {
-
       console.log(error);
-
     }
-
   };
 
-
-
   useEffect(() => {
-
-
     loadProducts();
-
-
 
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
-
-
         if (user) {
-
           setAdmin(true);
-
         } else {
-
           setAdmin(false);
-
         }
-
-
         setLoading(false);
-
-
       }
     );
 
-
     return () => unsubscribe();
-
-
   }, []);
 
-
-
-
   if (loading) {
-
     return (
       <h2>
         جاري التحميل...
       </h2>
     );
-
   }
 
-
-
-
   return (
-
     <BrowserRouter>
-
       <Routes>
-
-
-
         {/* صفحة الزباين */}
-
         <Route
-
           path="/"
-
           element={
             <Home products={products}/>
           }
-
         />
 
-
-
-
         {/* صفحة دخول الأدمن */}
-
         <Route
-
           path="/admin-login"
-
           element={
-
             admin ?
-
             <Navigate to="/admin"/>
-
             :
-
             <AdminLogin
               setAdmin={setAdmin}
             />
-
           }
-
         />
-
-
-
-
 
         {/* لوحة الإدارة */}
-
         <Route
-
           path="/admin"
-
           element={
-
             admin ?
-
-            <>
-
-              <button
-
-                onClick={() => {
-
-                  signOut(auth);
-
-                  setAdmin(false);
-
-                }}
-
-              >
-
-                تسجيل خروج الأدمن
-
-              </button>
-
-
-
-              <Admin
-
-                products={products}
-
-                loadProducts={loadProducts}
-
-              />
-
-
-            </>
-
-
+            <Admin
+              products={products}
+              loadProducts={loadProducts}
+            />
             :
-
             <Navigate to="/admin-login"/>
-
-
           }
-
         />
 
-
-
-
         {/* أي رابط غلط يرجع للمتجر */}
-
         <Route
-
           path="*"
-
           element={
             <Navigate to="/" />
           }
-
         />
-
-
       </Routes>
-
-
     </BrowserRouter>
-
   );
-
-
 }
-
 
 export default App;
