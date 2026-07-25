@@ -1,0 +1,522 @@
+.product-details-page{
+
+    padding:30px;
+
+    direction:rtl;
+
+}
+
+
+
+/* الكارت الرئيسي */
+
+.product-details{
+
+    display:flex;
+
+    gap:50px;
+
+    padding:40px;
+
+    direction:rtl;
+
+    background:#fff;
+
+    margin:30px auto;
+
+    max-width:1200px;
+
+    border-radius:20px;
+
+    box-shadow:
+    0 10px 35px rgba(11,31,58,.15);
+
+    border:1px solid #D4AF37;
+
+}
+
+
+
+
+
+
+
+/* الصورة */
+
+.details-image{
+
+    flex:1;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    background:#F8FAFD;
+
+    border-radius:20px;
+
+    padding:25px;
+
+}
+
+
+
+.details-image img{
+
+    width:100%;
+
+    max-width:450px;
+
+    height:450px;
+
+    object-fit:contain;
+
+    transition:.4s;
+
+}
+
+
+
+.details-image img:hover{
+
+    transform:scale(1.06);
+
+}
+
+
+
+
+
+
+
+/* المعلومات */
+
+.details-info{
+
+    flex:1;
+
+    padding:20px;
+
+}
+
+
+
+.details-info h1{
+
+    font-size:36px;
+
+    color:#071A36;
+
+    margin-bottom:20px;
+
+    font-weight:800;
+
+}
+
+
+
+
+
+.details-rating{
+
+    color:#D4AF37;
+
+    font-size:22px;
+
+    margin-bottom:20px;
+
+}
+
+
+
+.details-rating span{
+
+    color:#555;
+
+    font-size:16px;
+
+    margin-right:10px;
+
+}
+
+
+
+
+
+
+
+.details-description{
+
+    color:#5f6b7a;
+
+    font-size:18px;
+
+    line-height:2;
+
+    margin-bottom:20px;
+
+}
+
+
+
+
+
+
+
+.details-price{
+
+    color:#D4AF37;
+
+    font-size:34px;
+
+    font-weight:bold;
+
+    margin:25px 0;
+
+}
+
+
+
+
+
+
+
+.details-stock{
+
+    color:#0B1F3A;
+
+    font-size:17px;
+
+    margin-bottom:20px;
+
+}
+
+
+
+
+
+
+
+
+
+/* الكمية */
+
+.quantity-box{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:18px;
+
+    margin:20px 0;
+
+}
+
+
+
+.quantity-box span{
+
+    font-size:20px;
+
+    font-weight:bold;
+
+    color:#071A36;
+
+}
+
+
+
+.quantity-box button{
+
+    width:45px;
+
+    height:45px;
+
+    border-radius:10px;
+
+    border:1px solid #D4AF37;
+
+    background:#071A36;
+
+    color:#F4D06F;
+
+    font-size:25px;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+
+.quantity-box button:hover{
+
+    background:#D4AF37;
+
+    color:#071A36;
+
+}
+
+
+
+
+
+.quantity-box strong{
+
+    font-size:25px;
+
+    color:#071A36;
+
+}
+
+
+
+
+
+
+
+
+
+/* أزرار الشراء */
+
+.details-actions{
+
+    display:flex;
+
+    gap:15px;
+
+    margin-top:20px;
+
+}
+
+
+
+
+
+.details-actions button{
+
+    flex:1;
+
+    padding:15px;
+
+    border-radius:12px;
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+
+
+
+
+.add-btn{
+
+    background:#ff9900;
+
+    color:#111;
+
+    border:none;
+
+}
+
+
+
+.add-btn:hover{
+
+    background:#ffb84d;
+
+    transform:translateY(-3px);
+
+}
+
+
+
+
+
+.cart-go-btn{
+
+    background:#0B1F3A;
+
+    color:#F4D06F;
+
+    border:1px solid #D4AF37;
+
+}
+
+
+
+.cart-go-btn:hover{
+
+    background:#D4AF37;
+
+    color:#071A36;
+
+}
+
+
+
+
+
+
+
+/* زر الرجوع */
+
+.back-btn{
+
+    margin-top:20px;
+
+    background:#fff;
+
+    color:#071A36;
+
+    border:1px solid #D4AF37;
+
+    padding:12px 25px;
+
+    border-radius:10px;
+
+    font-size:16px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+
+.back-btn:hover{
+
+    background:#071A36;
+
+    color:#F4D06F;
+
+}
+
+
+
+
+
+
+
+
+
+.no-product{
+
+    text-align:center;
+
+    font-size:25px;
+
+    padding:100px;
+
+    color:#071A36;
+
+}
+
+
+
+
+
+
+
+
+
+@media(max-width:700px){
+
+
+.product-details-page{
+
+    padding:10px;
+
+}
+
+
+
+.product-details{
+
+
+    flex-direction:column;
+
+    padding:20px;
+
+    margin:15px;
+
+    gap:20px;
+
+
+}
+
+
+
+
+
+.details-image img{
+
+    height:300px;
+
+}
+
+
+
+
+
+.details-info{
+
+    padding:5px;
+
+}
+
+
+
+
+
+.details-info h1{
+
+    font-size:25px;
+
+}
+
+
+
+
+
+.details-price{
+
+    font-size:26px;
+
+}
+
+
+
+
+
+.details-actions{
+
+    flex-direction:column;
+
+}
+
+
+
+.details-actions button{
+
+    width:100%;
+
+}
+
+
+
+}

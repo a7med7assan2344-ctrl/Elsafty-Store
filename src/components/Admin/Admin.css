@@ -1,150 +1,380 @@
 .admin-container {
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+  max-width:1000px;
+
+  margin:20px auto;
+
+  padding:20px;
+
+  background:#fff;
+
+  border-radius:15px;
+
+  box-shadow:
+  0 6px 20px rgba(11,31,58,.15);
+
+  border:1px solid #D4AF37;
+
 }
+
+
 
 .admin-container h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #131921;
+
+  text-align:center;
+
+  margin-bottom:20px;
+
+  color:#071A36;
+
+  font-weight:800;
+
 }
+
+
+
+/* فورم إضافة المنتج */
 
 .admin-form {
-  background: #f3f3f3;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
+
+  background:#F8FAFD;
+
+  padding:20px;
+
+  border-radius:12px;
+
+  margin-bottom:30px;
+
+  border:1px solid #D9B44A;
+
 }
+
+
 
 .admin-form h3 {
-  margin-bottom: 15px;
-  color: #232f3e;
+
+  margin-bottom:15px;
+
+  color:#124E8C;
+
 }
+
+
 
 .form-group {
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
+
+  margin-bottom:15px;
+
+  display:flex;
+
+  flex-direction:column;
+
 }
+
+
 
 .form-group label {
-  font-weight: bold;
-  margin-bottom: 5px;
-  font-size: 14px;
+
+  font-weight:bold;
+
+  margin-bottom:5px;
+
+  font-size:14px;
+
+  color:#071A36;
+
 }
 
-.form-group input, .form-group select {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  outline: none;
+
+
+.form-group input,
+.form-group select {
+
+  padding:12px;
+
+  border:1px solid #d5dce5;
+
+  border-radius:8px;
+
+  outline:none;
+
+  transition:.3s;
+
 }
+
+
+
+.form-group input:focus,
+.form-group select:focus {
+
+  border-color:#D4AF37;
+
+  box-shadow:
+  0 0 0 3px rgba(212,175,55,.15);
+
+}
+
+
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 15px;
+
+  display:grid;
+
+  grid-template-columns:1fr 1fr 1fr;
+
+  gap:15px;
+
 }
+
+
+
+/* صورة المنتج */
 
 .img-preview {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  margin-top: 10px;
-  background: white;
-  border: 1px solid #ddd;
-  padding: 5px;
-  border-radius: 4px;
+
+  width:80px;
+
+  height:80px;
+
+  object-fit:contain;
+
+  margin-top:10px;
+
+  background:white;
+
+  border:1px solid #D4AF37;
+
+  padding:5px;
+
+  border-radius:8px;
+
 }
+
+
+
+/* زر الحفظ */
 
 .save-btn {
-  background-color: #ffd814;
-  border: 1px solid #fcd200;
-  padding: 10px 20px;
-  font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 100%;
+
+  background:#0B1F3A;
+
+  color:#F4D06F;
+
+  border:1px solid #D4AF37;
+
+  padding:12px 20px;
+
+  font-weight:bold;
+
+  border-radius:8px;
+
+  cursor:pointer;
+
+  width:100%;
+
+  transition:.3s;
+
 }
+
+
 
 .save-btn:hover {
-  background-color: #f7ca00;
+
+  background:#D4AF37;
+
+  color:#071A36;
+
 }
+
+
+
+/* زر الإلغاء */
 
 .cancel-btn {
-  background-color: #ccc;
-  border: none;
-  padding: 10px;
-  font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 100%;
-  margin-top: 10px;
+
+  background:#d9dfe8;
+
+  color:#071A36;
+
+  border:none;
+
+  padding:10px;
+
+  font-weight:bold;
+
+  border-radius:8px;
+
+  cursor:pointer;
+
+  width:100%;
+
+  margin-top:10px;
+
 }
+
+
+
+.cancel-btn:hover {
+
+  background:#c5ccd6;
+
+}
+
+
+
+/* جدول المنتجات */
 
 .admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
+
+  width:100%;
+
+  border-collapse:collapse;
+
+  margin-top:10px;
+
 }
 
-.admin-table th, .admin-table td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
+
+
+.admin-table th,
+.admin-table td {
+
+  border:1px solid #D9B44A;
+
+  padding:10px;
+
+  text-align:center;
+
 }
+
+
 
 .admin-table th {
-  background-color: #232f3e;
-  color: white;
+
+  background:#0B1F3A;
+
+  color:#F4D06F;
+
 }
+
+
 
 .table-img {
-  width: 50px;
-  height: 50px;
-  object-fit: contain;
+
+  width:50px;
+
+  height:50px;
+
+  object-fit:contain;
+
+  border-radius:6px;
+
 }
+
+
+
+/* تعديل */
 
 .edit-btn {
-  background-color: #ffa41c;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-  margin-left: 5px;
+
+  background:#124E8C;
+
+  border:none;
+
+  padding:7px 12px;
+
+  border-radius:6px;
+
+  color:white;
+
+  cursor:pointer;
+
+  margin-left:5px;
+
 }
+
+
+
+.edit-btn:hover {
+
+  background:#3FA9F5;
+
+}
+
+
+
+/* حذف */
 
 .delete-btn {
-  background-color: #cc0c39;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
+
+  background:#b42318;
+
+  border:none;
+
+  padding:7px 12px;
+
+  border-radius:6px;
+
+  color:white;
+
+  cursor:pointer;
+
 }
+
+
+
+.delete-btn:hover {
+
+  background:#8f1d14;
+
+}
+
+
+
+/* شريط الأدمن */
+
 .admin-top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  margin-bottom:20px;
+
 }
+
+
+
+/* تسجيل الخروج */
 
 .logout-btn {
-  background-color: #e53e3e;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
+
+  background:#071A36;
+
+  color:#F4D06F;
+
+  border:1px solid #D4AF37;
+
+  padding:8px 16px;
+
+  border-radius:8px;
+
+  font-weight:bold;
+
+  cursor:pointer;
+
+  transition:.3s;
+
 }
 
+
+
 .logout-btn:hover {
-  background-color: #c53030;
+
+  background:#D4AF37;
+
+  color:#071A36;
+
 }

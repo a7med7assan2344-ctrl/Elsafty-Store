@@ -22,6 +22,13 @@ src={
 product.image ||
 "https://via.placeholder.com/300"
 }
+
+alt={
+product.title ||
+product.name ||
+"Product"
+}
+
 />
 
 </div>
@@ -29,20 +36,29 @@ product.image ||
 
 
 <h3>
-{product.title}
+{
+product.title ||
+product.name ||
+"منتج بدون اسم"
+}
 </h3>
+
 
 
 <p className="description">
 
-{product.description || "منتج مميز بجودة عالية"}
+{
+product.description ||
+"منتج مميز بجودة عالية"
+}
 
 </p>
 
 
+
 <div className="price">
 
-{product.price} جنيه
+{product.price || 0} جنيه
 
 </div>
 

@@ -6,7 +6,7 @@ body {
 }
 
 header {
-    background-color: #131921;
+    background-color: #071A36;
     color: white;
     padding: 12px 25px;
     display: flex;
@@ -30,7 +30,7 @@ header {
 }
 
 .hero-banner {
-    background: linear-gradient(135deg, #232f3e, #37475a);
+    background: linear-gradient(135deg, #0B2A52, #124E8C);
     color: white;
     text-align: center;
     padding: 30px 20px;

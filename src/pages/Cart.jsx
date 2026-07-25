@@ -4,40 +4,18 @@ import "./Cart.css";
 
 import { CartContext } from "../context/CartContext";
 
-import Navbar from "../components/Navbar";
 
-
-
-function Cart() {
+function Cart(){
 
 
 const navigate = useNavigate();
 
 
-
 const {
-
 cart,
 updateQuantity,
 removeFromCart
-
-} = useContext(CartContext);
-
-
-
-
-
-const cartCount = cart.reduce(
-
-(total,item)=>
-
-total + item.quantity
-
-,0
-
-);
-
-
+}=useContext(CartContext);
 
 
 
@@ -50,9 +28,7 @@ const totalPrice = cart.reduce(
 sum +
 
 Number(item.price || 0)
-
 *
-
 item.quantity
 
 ,0
@@ -66,62 +42,23 @@ item.quantity
 
 
 
-
-if(cart.length === 0){
+if(cart.length===0){
 
 
 return(
 
-<div>
-
-
-<Navbar
-
-setCurrentView={(page)=>{
-
-if(page==="store"){
-
-navigate("/");
-
-}
-
-}}
-
-cartCount={0}
-
-searchTerm=""
-
-setSearchTerm={()=>{}}
-
-admin={false}
-
-/>
-
-
-
-
-
 <div className="cart-empty">
 
 
-
 <h2>
-
-🛒 سلة الصفتي ستور فارغة
-
+🛒 السلة فارغة
 </h2>
 
 
 
-
-
 <p>
-
-ليس لديك أي منتجات في السلة حالياً.
-
+لا يوجد منتجات في السلة حالياً
 </p>
-
-
 
 
 
@@ -140,12 +77,6 @@ onClick={()=>navigate("/")}
 
 
 
-
-
-</div>
-
-
-
 </div>
 
 );
@@ -161,81 +92,80 @@ onClick={()=>navigate("/")}
 
 
 
+const sendOrder = ()=>{
+
+
+let msg =
+"🛒 طلب جديد من الصفتي ستور\n\n";
+
+
+
+cart.forEach((item,index)=>{
+
+
+msg +=
+
+`${index+1}- ${
+item.title || item.name || "منتج"
+}
+
+الكمية:
+${item.quantity}
+
+السعر:
+${Number(item.price || 0) * item.quantity} جنيه
+
+\n`;
+
+
+
+});
+
+
+
+msg +=
+
+`الإجمالي:
+${totalPrice} جنيه`;
+
+
+
+
+
+window.open(
+
+`https://wa.me/201553570220?text=${encodeURIComponent(msg)}`,
+
+"_blank"
+
+);
+
+
+
+};
+
+
+
+
+
+
+
+
+
 return(
-
-
-<div>
-
-
-
-<Navbar
-
-
-setCurrentView={(page)=>{
-
-
-if(page==="store"){
-
-navigate("/");
-
-}
-
-
-if(page==="cart"){
-
-navigate("/cart");
-
-}
-
-
-}}
-
-
-
-cartCount={cartCount}
-
-
-
-searchTerm=""
-
-
-setSearchTerm={()=>{}}
-
-
-
-admin={false}
-
-
-/>
-
-
-
-
-
-
-
 
 
 <div className="cart-container">
 
 
 
-
-
 <h2>
-
 🛒 سلة المشتريات
-
 </h2>
 
 
 
 
-
-
-
-
-<div className="cart-items">
 
 
 
@@ -245,7 +175,6 @@ cart.map(item=>{
 
 
 const id =
-
 item.id || item._id;
 
 
@@ -253,18 +182,13 @@ item.id || item._id;
 return(
 
 
-
-
 <div
-
-key={id}
 
 className="cart-item"
 
+key={id}
+
 >
-
-
-
 
 
 
@@ -278,11 +202,9 @@ item.image ||
 
 }
 
+alt="product"
 
 />
-
-
-
 
 
 
@@ -292,37 +214,23 @@ item.image ||
 
 
 
-
-
-
-<h4>
-
+<h3>
 
 {
-
 item.title ||
-
 item.name ||
-
-"منتج بدون اسم"
-
+"منتج"
 }
 
-
-</h4>
-
+</h3>
 
 
 
 
 
+<p>
 
-
-<p className="cart-item-price">
-
-
-{item.price || 0} ج.م
-
+{item.price} جنيه
 
 </p>
 
@@ -332,12 +240,7 @@ item.name ||
 
 
 
-
-
-<div className="cart-controls">
-
-
-
+<div className="quantity-controls">
 
 
 <button
@@ -354,17 +257,11 @@ onClick={()=>updateQuantity(id,-1)}
 
 
 
-
-
-
 <span>
 
 {item.quantity}
 
 </span>
-
-
-
 
 
 
@@ -385,8 +282,6 @@ onClick={()=>updateQuantity(id,1)}
 
 
 
-
-
 <button
 
 className="remove-btn"
@@ -401,6 +296,7 @@ onClick={()=>removeFromCart(id)}
 
 
 
+</div>
 
 
 
@@ -408,20 +304,7 @@ onClick={()=>removeFromCart(id)}
 
 
 
-
-
-
-
 </div>
-
-
-
-
-
-
-
-</div>
-
 
 
 
@@ -430,42 +313,31 @@ onClick={()=>removeFromCart(id)}
 
 })
 
-
 }
 
 
 
-</div>
+
+<div className="cart-total">
 
 
+<h2>
 
-
-
-
-
-
-
-<div className="cart-summary">
-
-
-
-
-
-<h3>
-
-
-المجموع الكلي:
-
+الإجمالي:
 
 <span>
 
-{totalPrice} ج.م
+{totalPrice}
+
+جنيه
 
 </span>
 
 
+</h2>
 
-</h3>
+
+</div>
 
 
 
@@ -475,8 +347,6 @@ onClick={()=>removeFromCart(id)}
 
 
 <div className="cart-buttons">
-
-
 
 
 
@@ -497,41 +367,24 @@ onClick={()=>navigate("/")}
 
 
 
-
 <button
 
 className="checkout-btn"
 
-onClick={()=>navigate("/checkout")}
+onClick={sendOrder}
 
 >
 
-إتمام الطلب عبر واتساب 📱
+إتمام الطلب واتساب 📱
 
 </button>
 
 
 
-
-
-
 </div>
 
 
 
-
-
-
-</div>
-
-
-
-
-
-
-
-
-</div>
 
 
 

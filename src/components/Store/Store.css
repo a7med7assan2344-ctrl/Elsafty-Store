@@ -1,34 +1,53 @@
 .store-container{
     width:100%;
     min-height:100vh;
-    background:#f5f5f5;
+    background:#F8FAFD;
     padding-bottom:40px;
 }
 
+
+/* البانر الرئيسي */
 .hero-banner{
     width:95%;
     margin:25px auto;
     height:380px;
     border-radius:18px;
-    background:linear-gradient(135deg,#131921,#232f3e,#37475a);
+
+    background:
+    linear-gradient(
+        135deg,
+        #071A36,
+        #124E8C,
+        #3FA9F5
+    );
+
     display:flex;
     align-items:center;
     justify-content:center;
+
     color:#fff;
     overflow:hidden;
     position:relative;
 }
 
+
 .hero-banner::before{
     content:"";
+
     position:absolute;
+
     width:700px;
     height:700px;
-    background:rgba(255,153,0,.08);
+
+    background:rgba(212,175,55,.18);
+
     border-radius:50%;
+
     right:-220px;
     top:-180px;
 }
+
+
 
 .hero-content{
     z-index:2;
@@ -37,128 +56,285 @@
     padding:20px;
 }
 
+
+
 .hero-content h1{
     font-size:52px;
+
     margin-bottom:15px;
-    color:#ff9900;
+
+    color:#F4D06F;
+
     font-weight:bold;
 }
 
+
+
 .hero-content p{
+
     font-size:20px;
-    color:#eee;
+
+    color:#fff;
+
     margin-bottom:30px;
+
     line-height:1.8;
 }
 
+
+
 .hero-content button{
-    background:#ff9900;
-    color:#fff;
+
+    background:#D4AF37;
+
+    color:#071A36;
+
     border:none;
+
     padding:16px 40px;
+
     font-size:18px;
+
     border-radius:10px;
+
     cursor:pointer;
+
+    font-weight:bold;
+
     transition:.3s;
 }
+
+
 
 .hero-content button:hover{
-    background:#ffb84d;
-    transform:translateY(-2px);
+
+    background:#F4D06F;
+
+    transform:translateY(-3px);
+
 }
+
+
+
+/* الأقسام */
 
 .categories{
+
     width:95%;
+
     margin:auto;
+
 }
+
+
 
 .categories h2{
+
     margin:25px 0;
+
     font-size:30px;
-    color:#222;
+
+    color:#071A36;
+
 }
+
+
 
 .categories-bar{
+
     display:flex;
+
     gap:15px;
+
     overflow:auto;
+
     padding-bottom:10px;
+
 }
+
+
 
 .categories-bar::-webkit-scrollbar{
+
     display:none;
+
 }
+
+
 
 .category-btn{
+
     border:none;
+
     background:#fff;
+
     padding:14px 24px;
+
     border-radius:40px;
+
     cursor:pointer;
+
     font-size:16px;
-    box-shadow:0 5px 15px rgba(0,0,0,.08);
+
+    color:#071A36;
+
+    box-shadow:
+    0 5px 15px rgba(11,31,58,.12);
+
     transition:.3s;
+
     white-space:nowrap;
+
 }
+
+
 
 .category-btn:hover{
+
     transform:translateY(-3px);
+
+    border:1px solid #D4AF37;
+
 }
+
+
 
 .category-btn.active{
-    background:#131921;
-    color:#fff;
+
+    background:#0B1F3A;
+
+    color:#F4D06F;
+
+    border:1px solid #D4AF37;
+
 }
+
+
+
+/* المنتجات */
 
 .products-section{
+
     width:95%;
+
     margin:45px auto;
+
 }
 
+
+
 .products-section h2{
+
     margin-bottom:25px;
+
     font-size:32px;
-    color:#222;
+
+    color:#071A36;
+
 }
+
+
+
+/* اللوجو والهيدر */
+
+.store-header {
+
+  position: relative;
+
+  background-image: 
+
+    linear-gradient(
+      rgba(7,26,54,.65),
+      rgba(7,26,54,.65)
+    ),
+
+    url("../assets/logo.png");
+
+
+  background-size:cover;
+
+  background-position:center;
+
+}
+
+
+
+.store-header > * {
+
+  position:relative;
+
+  z-index:1;
+
+}
+
+
+
+/* موبايل */
 
 @media(max-width:992px){
 
 .hero-banner{
+
     height:320px;
+
 }
+
 
 .hero-content h1{
+
     font-size:38px;
+
 }
+
 
 .hero-content p{
+
     font-size:18px;
+
 }
 
 }
+
+
 
 @media(max-width:600px){
 
 .hero-banner{
+
     height:260px;
+
     border-radius:12px;
+
 }
+
 
 .hero-content h1{
+
     font-size:28px;
+
 }
+
 
 .hero-content p{
+
     font-size:15px;
+
 }
 
+
 .hero-content button{
+
     width:100%;
+
 }
+
+
 
 .categories h2,
 .products-section h2{
+
     font-size:24px;
+
 }
 
 }

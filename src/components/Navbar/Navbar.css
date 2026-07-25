@@ -1,171 +1,485 @@
 .navbar{
+
     width:100%;
-    background:#131921;
+
+    background:#071A36;
+
     color:#fff;
+
     display:flex;
+
     flex-direction:column;
+
     position:sticky;
+
     top:0;
+
     z-index:1000;
-    box-shadow:0 2px 8px rgba(0,0,0,.25);
+
+    box-shadow:
+    0 4px 15px rgba(0,0,0,.35);
+
+    direction:rtl;
+
 }
+
+
+
+/* الجزء العلوي */
 
 .navbar-top{
+
     display:flex;
+
     align-items:center;
+
     justify-content:space-between;
+
     gap:20px;
+
     padding:15px 30px;
+
 }
+
+
+
+
+
+/* اللوجو */
 
 .logo{
+
     display:flex;
+
     align-items:center;
+
     gap:12px;
+
     cursor:pointer;
-    user-select:none;
+
 }
+
+
 
 .logo img{
+
     width:60px;
+
     height:60px;
+
     object-fit:contain;
-    border-radius:50%;
+
     background:#fff;
-    padding:4px;
+
+    border-radius:50%;
+
+    padding:5px;
+
+    border:2px solid #D4AF37;
+
 }
+
+
 
 .logo h2{
+
     margin:0;
-    color:#ff9900;
+
+    color:#F4D06F;
+
     font-size:24px;
-    font-weight:700;
+
 }
+
+
 
 .logo span{
+
     color:#ddd;
+
     font-size:13px;
+
 }
+
+
+
+
+
+
+
+/* البحث */
 
 .search-box{
+
     flex:1;
-    display:flex;
+
     max-width:750px;
+
+    display:flex;
+
 }
+
+
 
 .search-box input{
+
     flex:1;
-    height:46px;
+
+    height:45px;
+
     border:none;
+
     outline:none;
+
     padding:0 15px;
+
     font-size:16px;
+
     border-radius:8px 0 0 8px;
+
 }
+
+
 
 .search-box button{
-    width:65px;
+
+    width:60px;
+
     border:none;
+
     background:#ff9900;
-    color:#fff;
+
+    color:#071A36;
+
     font-size:22px;
+
     cursor:pointer;
+
     border-radius:0 8px 8px 0;
-    transition:.3s;
+
 }
+
+
+
+
 
 .search-box button:hover{
-    background:#ffad33;
+
+    background:#D4AF37;
+
 }
+
+
+
+
+
+
+
+/* الأزرار */
 
 .actions{
+
     display:flex;
+
     align-items:center;
-    gap:12px;
+
+    gap:20px;
+
 }
 
-.actions button{
-    background:#232f3e;
-    color:#fff;
-    border:none;
+
+
+
+
+
+
+.admin-btn{
+
+    background:#0B1F3A;
+
+    color:#F4D06F;
+
+    border:1px solid #D4AF37;
+
     padding:12px 18px;
+
     border-radius:8px;
+
     cursor:pointer;
-    font-size:15px;
-    transition:.3s;
+
+    font-weight:bold;
+
 }
 
-.actions button:hover{
-    background:#37475a;
+
+
+
+
+.admin-btn:hover{
+
+    background:#D4AF37;
+
+    color:#071A36;
+
 }
+
+
+
+
+
+
+
+
+
+/* أيقونة السلة مثل أمازون */
+
+.cart-icon{
+
+    position:relative;
+
+    cursor:pointer;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:#fff;
+
+    font-size:32px;
+
+    transition:.3s;
+
+}
+
+
+
+.cart-icon p{
+
+    margin:0;
+
+    margin-top:3px;
+
+    font-size:14px;
+
+    color:#fff;
+
+}
+
+
+
+.cart-icon:hover{
+
+    transform:translateY(-3px);
+
+    color:#D4AF37;
+
+}
+
+
+
+
+
+
+
+/* رقم المنتجات فوق السلة */
+
+.cart-badge{
+
+    position:absolute;
+
+    top:-8px;
+
+    right:-12px;
+
+    background:#ff9900;
+
+    color:#071A36;
+
+    width:25px;
+
+    height:25px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:14px;
+
+    font-weight:bold;
+
+    border:2px solid #071A36;
+
+}
+
+
+
+
+
+
+
+/* الشريط السفلي */
 
 .navbar-bottom{
+
     display:flex;
+
     align-items:center;
-    gap:15px;
-    overflow-x:auto;
-    background:#232f3e;
+
+    gap:20px;
+
+    background:#0B1F3A;
+
     padding:12px 25px;
+
+    overflow-x:auto;
+
+    border-top:1px solid #D4AF37;
+
 }
+
+
 
 .navbar-bottom::-webkit-scrollbar{
+
     display:none;
+
 }
+
+
 
 .navbar-bottom button{
+
     background:none;
+
     border:none;
-    color:#fff;
+
+    color:white;
+
     cursor:pointer;
+
     white-space:nowrap;
+
     font-size:15px;
+
     transition:.3s;
+
 }
 
+
+
 .navbar-bottom button:hover{
-    color:#ff9900;
+
+    color:#D4AF37;
+
 }
+
+
+
+
+
+
+
+
+/* الموبايل */
 
 @media(max-width:992px){
 
+
 .navbar-top{
+
     flex-direction:column;
+
+    padding:15px;
+
 }
+
+
 
 .search-box{
+
     width:100%;
+
 }
+
+
 
 .actions{
+
     width:100%;
+
     justify-content:center;
-    flex-wrap:wrap;
-}
 
 }
+
+
+
+}
+
+
+
 
 @media(max-width:600px){
 
+
+
 .logo{
+
     flex-direction:column;
+
     text-align:center;
+
 }
 
-.logo h2{
-    font-size:20px;
-}
+
 
 .logo img{
+
     width:50px;
+
     height:50px;
+
 }
+
+
+
+.logo h2{
+
+    font-size:20px;
+
+}
+
+
 
 .search-box input{
+
     font-size:14px;
+
 }
 
-.actions button{
-    width:100%;
+
+
+.navbar-bottom{
+
+    gap:15px;
+
 }
+
+
+
+.cart-icon{
+
+    font-size:28px;
+
+}
+
+
 
 }
