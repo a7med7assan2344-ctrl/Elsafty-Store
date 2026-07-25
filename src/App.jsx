@@ -1,101 +1,236 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar/Navbar';
-import Store from './components/Store/Store';
-import Admin from './components/Admin/Admin';
-import Cart from './components/Cart/Cart';
-import Checkout from './components/Checkout/Checkout';
-import initialProducts from './data/products';
-import './App.css';
+import React, { useEffect, useState } from "react";
+
+import Admin from "./components/Admin/Admin.jsx";
+import AdminLogin from "./pages/AdminLogin";
+import Home from "./pages/Home";
+
+import { 
+  onAuthStateChanged, 
+  signOut 
+} from "firebase/auth";
+
+import { auth } from "./firebase";
+
+import {
+  getProducts
+} from "./services/productService";
+
+
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
+
+
 
 function App() {
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('amazon_products');
-    return saved ? JSON.parse(saved) : initialProducts;
-  });
 
-  const [cart, setCart] = useState([]);
-  const [currentView, setCurrentView] = useState('store'); // store, admin, cart, checkout
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const [products, setProducts] = useState([]);
+
+  const [admin, setAdmin] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+
+
+
+  const loadProducts = async () => {
+
+    try {
+
+      const data = await getProducts();
+
+      setProducts(data);
+
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+
 
   useEffect(() => {
-    localStorage.setItem('amazon_products', JSON.stringify(products));
-  }, [products]);
 
-  const addToCart = (product) => {
-    setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.id === product.id);
-      if (existing) {
-        return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      return [...prevCart, { ...product, quantity: 1 }];
-    });
-  };
 
-  const removeFromCart = (id) => {
-    setCart(cart.filter((item) => item.id !== id));
-  };
+    loadProducts();
 
-  const updateQuantity = (id, delta) => {
-    setCart(
-      cart.map((item) => {
-        if (item.id === id) {
-          const newQty = item.quantity + delta;
-          return newQty > 0 ? { ...item, quantity: newQty } : null;
+
+
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+
+
+        if (user) {
+
+          setAdmin(true);
+
+        } else {
+
+          setAdmin(false);
+
         }
-        return item;
-      }).filter(Boolean)
+
+
+        setLoading(false);
+
+
+      }
     );
-  };
+
+
+    return () => unsubscribe();
+
+
+  }, []);
+
+
+
+
+  if (loading) {
+
+    return (
+      <h2>
+        جاري التحميل...
+      </h2>
+    );
+
+  }
+
+
+
 
   return (
-    <div className="app">
-      <Navbar 
-        setCurrentView={setCurrentView} 
-        cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-      />
 
-      <main className="main-content">
-        {currentView === 'store' && (
-          <Store 
-            products={products}
-            searchTerm={searchTerm}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            addToCart={addToCart}
-          />
-        )}
+    <BrowserRouter>
 
-        {currentView === 'admin' && (
-          <Admin 
-            products={products}
-            setProducts={setProducts}
-          />
-        )}
+      <Routes>
 
-        {currentView === 'cart' && (
-          <Cart 
-            cart={cart}
-            updateQuantity={updateQuantity}
-            removeFromCart={removeFromCart}
-            setCurrentView={setCurrentView}
-          />
-        )}
 
-        {currentView === 'checkout' && (
-          <Checkout 
-            cart={cart}
-            setCart={setCart}
-            setCurrentView={setCurrentView}
-          />
-        )}
-      </main>
-    </div>
+
+        {/* صفحة الزباين */}
+
+        <Route
+
+          path="/"
+
+          element={
+            <Home products={products}/>
+          }
+
+        />
+
+
+
+
+        {/* صفحة دخول الأدمن */}
+
+        <Route
+
+          path="/admin-login"
+
+          element={
+
+            admin ?
+
+            <Navigate to="/admin"/>
+
+            :
+
+            <AdminLogin
+              setAdmin={setAdmin}
+            />
+
+          }
+
+        />
+
+
+
+
+
+        {/* لوحة الإدارة */}
+
+        <Route
+
+          path="/admin"
+
+          element={
+
+            admin ?
+
+            <>
+
+              <button
+
+                onClick={() => {
+
+                  signOut(auth);
+
+                  setAdmin(false);
+
+                }}
+
+              >
+
+                تسجيل خروج الأدمن
+
+              </button>
+
+
+
+              <Admin
+
+                products={products}
+
+                loadProducts={loadProducts}
+
+              />
+
+
+            </>
+
+
+            :
+
+            <Navigate to="/admin-login"/>
+
+
+          }
+
+        />
+
+
+
+
+        {/* أي رابط غلط يرجع للمتجر */}
+
+        <Route
+
+          path="*"
+
+          element={
+            <Navigate to="/" />
+          }
+
+        />
+
+
+      </Routes>
+
+
+    </BrowserRouter>
+
   );
+
+
 }
+
 
 export default App;

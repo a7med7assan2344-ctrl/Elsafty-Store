@@ -1,183 +1,263 @@
-import React, { useState } from 'react';
-import './Admin.css';
+import React, { useState } from "react";
+import "./Admin.css";
 
-function Admin({ products, setProducts }) {
-  const [title, setTitle] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('إلكترونيات');
-  const [image, setImage] = useState('');
-  const [rating, setRating] = useState('4.5');
+import {
+  addProduct,
+  editProduct,
+  removeProduct,
+} from "../../services/productService";
+
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase";
+
+function Admin({ products, loadProducts }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("إلكترونيات");
+  const [rating, setRating] = useState(5);
+  const [stock, setStock] = useState(1);
+  const [image, setImage] = useState("");
+
   const [editingId, setEditingId] = useState(null);
 
-  // دالة رفع الصور عبر Cloudinary (Upload Preset الافتراضي أو رابط مباشر)
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result); // بيحولها لـ Base64 لو مفيش كلووديناري، شغال 100% بدون تعقيد
-      };
-      reader.readAsDataURL(file);
-    }
+  const clearForm = () => {
+    setTitle("");
+    setDescription("");
+    setPrice("");
+    setCategory("إلكترونيات");
+    setRating(5);
+    setStock(1);
+    setImage("");
+    setEditingId(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!title || !price || !image) {
-      alert('الرجاء إدخال اسم المنتج والسعر والصورة!');
+      alert("اكمل البيانات");
       return;
     }
 
-    if (editingId) {
-      // تعديل منتج موجود
-      setProducts(products.map(p => p.id === editingId ? {
-        ...p,
-        title,
-        price: Number(price),
-        category,
-        image,
-        rating: Number(rating)
-      } : p));
-      setEditingId(null);
-    } else {
-      // إضافة منتج جديد
-      const newProduct = {
-        id: Date.now(),
-        title,
-        price: Number(price),
-        category,
-        image,
-        rating: Number(rating)
-      };
-      setProducts([newProduct, ...products]);
-    }
+    try {
+      let imageUrl = image;
 
-    // تفريغ الحقول
-    setTitle('');
-    setPrice('');
-    setImage('');
-    setRating('4.5');
+      // رفع الصورة إلى Cloudinary
+      if (image.startsWith("data:")) {
+        const formData = new FormData();
+        const blob = await (await fetch(image)).blob();
+
+        formData.append("file", blob);
+        formData.append("upload_preset", "elsafty_store");
+
+        const upload = await fetch(
+          "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const uploadData = await upload.json();
+
+        if (!upload.ok) {
+          console.log(uploadData);
+          alert("فشل رفع الصورة");
+          return;
+        }
+
+        imageUrl = uploadData.secure_url;
+      }
+
+      const product = {
+        title,
+        description,
+        price: Number(price),
+        image: imageUrl,
+        category,
+        rating: Number(rating),
+        stock: Number(stock),
+      };
+
+      if (editingId) {
+        await editProduct(editingId, product);
+      } else {
+        await addProduct(product);
+      }
+
+      await loadProducts();
+      clearForm();
+
+      alert(editingId ? "تم تعديل المنتج" : "تمت إضافة المنتج");
+    } catch (error) {
+      console.log(error);
+      alert("حدث خطأ أثناء حفظ المنتج");
+    }
   };
 
   const handleEdit = (product) => {
     setEditingId(product.id);
     setTitle(product.title);
+    setDescription(product.description);
     setPrice(product.price);
     setCategory(product.category);
-    setImage(product.image);
     setRating(product.rating);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setStock(product.stock);
+    setImage(product.image);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-      setProducts(products.filter(p => p.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm("حذف المنتج؟")) return;
+
+    try {
+      await removeProduct(id);
+      await loadProducts();
+      alert("تم حذف المنتج");
+    } catch (error) {
+      console.log(error);
+      alert("فشل الحذف");
+    }
+  };
+
+  // دالة تسجيل الخروج
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.log(error);
     }
   };
 
   return (
     <div className="admin-container">
-      <h2>لوحة التحكم الإدارية - إدارة المنتجات</h2>
+      {/* هيدر لوحة التحكم مع زر الخروج */}
+      <div className="admin-top-bar">
+        <h2>لوحة التحكم</h2>
+        <button className="logout-btn" onClick={handleLogout}>
+          تسجيل خروج 🚪
+        </button>
+      </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>
-        <h3>{editingId ? 'تعديل المنتج' : 'إضافة منتج جديد للمتجر'}</h3>
-        
-        <div className="form-group">
-          <label>اسم المنتج:</label>
-          <input 
-            type="text" 
-            placeholder="مثال: سماعة بلوتوث أصلية" 
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)} 
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="اسم المنتج"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>السعر (ج.م):</label>
-            <input 
-              type="number" 
-              placeholder="1500" 
-              value={price} 
-              onChange={(e) => setPrice(e.target.value)} 
-            />
-          </div>
+        <textarea
+          placeholder="وصف المنتج"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
 
-          <div className="form-group">
-            <label>القسم:</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="إلكترونيات">إلكترونيات</option>
-              <option value="أزياء">أزياء</option>
-              <option value="منزل ومطبخ">منزل ومطبخ</option>
-            </select>
-          </div>
+        <input
+          type="number"
+          placeholder="السعر"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+        />
 
-          <div className="form-group">
-            <label>التقييم (من 5):</label>
-            <input 
-              type="number" 
-              step="0.1" 
-              max="5" 
-              min="1" 
-              value={rating} 
-              onChange={(e) => setRating(e.target.value)} 
-            />
-          </div>
-        </div>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <option>إلكترونيات</option>
+          <option>أزياء</option>
+          <option>منزل ومطبخ</option>
+          <option>موبايلات</option>
+          <option>لابتوبات</option>
+          <option>أخرى</option>
+        </select>
 
-        <div className="form-group">
-          <label>صورة المنتج (رفع من الجهاز أو رابط):</label>
-          <input type="file" accept="image/*" onChange={handleImageUpload} />
-          <input 
-            type="text" 
-            placeholder="أو ضع رابط صورة مباشر هنا..." 
-            value={image.startsWith('data:') ? '' : image} 
-            onChange={(e) => setImage(e.target.value)} 
-            style={{ marginTop: '5px' }}
-          />
-          {image && <img src={image} alt="Preview" className="img-preview" />}
-        </div>
+        <input
+          type="number"
+          placeholder="التقييم"
+          value={rating}
+          onChange={(e) => setRating(e.target.value)}
+        />
 
-        <button type="submit" className="save-btn">
-          {editingId ? 'حفظ التعديلات' : 'إضافة المنتج للمتجر فوراً'}
+        <input
+          type="number"
+          placeholder="المخزون"
+          value={stock}
+          onChange={(e) => setStock(e.target.value)}
+        />
+
+        <input type="file" accept="image/*" onChange={handleImageUpload} />
+
+        <input
+          type="text"
+          placeholder="رابط الصورة"
+          value={image.startsWith("data:") ? "" : image}
+          onChange={(e) => setImage(e.target.value)}
+        />
+
+        {image && <img src={image} alt="preview" className="img-preview" />}
+
+        <button type="submit">
+          {editingId ? "حفظ التعديل" : "إضافة المنتج"}
         </button>
-        {editingId && (
-          <button type="button" className="cancel-btn" onClick={() => { setEditingId(null); setTitle(''); setPrice(''); setImage(''); }}>
-            إلغاء التعديل
-          </button>
-        )}
       </form>
 
-      <div className="admin-products-list">
-        <h3>المنتجات الحالية في المتجر ({products.length})</h3>
-        <div className="table-responsive">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>الصورة</th>
-                <th>اسم المنتج</th>
-                <th>السعر</th>
-                <th>القسم</th>
-                <th>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map(p => (
-                <tr key={p.id}>
-                  <td><img src={p.image} alt={p.title} className="table-img" /></td>
-                  <td>{p.title}</td>
-                  <td>{p.price} ج.م</td>
-                  <td>{p.category}</td>
-                  <td>
-                    <button className="edit-btn" onClick={() => handleEdit(p)}>تعديل</button>
-                    <button className="delete-btn" onClick={() => handleDelete(p.id)}>حذف</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <hr />
+
+      <h2>المنتجات</h2>
+
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>الصورة</th>
+            <th>الاسم</th>
+            <th>السعر</th>
+            <th>القسم</th>
+            <th>المخزون</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((p) => (
+            <tr key={p.id}>
+              <td>
+                <img src={p.image} alt={p.title} className="table-img" />
+              </td>
+              <td>{p.title}</td>
+              <td>{p.price} ج.م</td>
+              <td>{p.category}</td>
+              <td>{p.stock}</td>
+              <td>
+                <button className="edit-btn" onClick={() => handleEdit(p)}>
+                  تعديل
+                </button>
+                <button
+                  className="delete-btn"
+                  onClick={() => handleDelete(p.id)}
+                >
+                  حذف
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
