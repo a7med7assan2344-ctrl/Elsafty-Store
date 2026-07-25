@@ -154,12 +154,12 @@ function Home({ products = [] }) {
       <section className="hero-banner">
 
         <h2>
-          أفضل المنتجات بأفضل الأسعار
+         😍 Elsafty Store 
+          الصفتي ستور😍
         </h2>
 
         <p>
-         Welcome to Elsafty Store 
-         نورتوا الصفتي ستور😍
+         الدلتا كلها بتعرض اونلاين في مكان واحد
         </p>
 
       </section>
