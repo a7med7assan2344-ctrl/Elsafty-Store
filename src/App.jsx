@@ -5,8 +5,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Home from "./pages/Home";
 
 import { 
-  onAuthStateChanged, 
-  signOut 
+  onAuthStateChanged 
 } from "firebase/auth";
 
 import { auth } from "./firebase";
@@ -30,9 +29,13 @@ function App() {
   const loadProducts = async () => {
     try {
       const data = await getProducts();
-      setProducts(data);
+      setProducts(data || []);
     } catch (error) {
       console.log(error);
+      setProducts([]);
+    } finally {
+      // بنجبر الـ loading يقف حتى لو حصل خطأ عشان الصفحة تفتح وما تختفيش
+      setLoading(false);
     }
   };
 
@@ -47,7 +50,6 @@ function App() {
         } else {
           setAdmin(false);
         }
-        setLoading(false);
       }
     );
 
@@ -56,9 +58,9 @@ function App() {
 
   if (loading) {
     return (
-      <h2>
-        جاري التحميل...
-      </h2>
+      <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "Cairo, sans-serif" }}>
+        <h2>جاري تحميل المتجر... ⏳</h2>
+      </div>
     );
   }
 
