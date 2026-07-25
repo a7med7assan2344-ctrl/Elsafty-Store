@@ -497,3 +497,686 @@ body {
   color:#718096;
 
 }
+/* ========================================
+   Hero الجديد
+======================================== */
+
+.hero-content{
+    max-width:700px;
+    margin:auto;
+}
+
+.hero-badge{
+    display:inline-block;
+    background:#ECC94B;
+    color:#1A365D;
+    padding:8px 18px;
+    border-radius:50px;
+    font-weight:bold;
+    margin-bottom:20px;
+}
+
+.hero-banner h1{
+    font-size:48px;
+    margin-bottom:15px;
+}
+
+.hero-banner p{
+    font-size:18px;
+    line-height:1.8;
+    max-width:650px;
+    margin:0 auto;
+}
+
+.shop-now-btn{
+    margin-top:30px;
+    background:#ECC94B;
+    color:#1A365D;
+    border:none;
+    padding:14px 35px;
+    font-size:18px;
+    font-weight:bold;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.shop-now-btn:hover{
+    transform:translateY(-3px);
+    background:#D69E2E;
+    color:#fff;
+}
+
+/* ========================================
+   Features
+======================================== */
+
+.features-section{
+    max-width:1200px;
+    margin:40px auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    padding:0 20px;
+}
+
+.feature-card{
+    background:#fff;
+    border-radius:12px;
+    padding:30px 20px;
+    text-align:center;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+    transition:.3s;
+    font-size:32px;
+}
+
+.feature-card:hover{
+    transform:translateY(-8px);
+}
+
+.feature-card h3{
+    margin:15px 0 10px;
+    color:#1A365D;
+    font-size:20px;
+}
+
+.feature-card p{
+    color:#666;
+    font-size:15px;
+}
+
+/* ========================================
+   Categories
+======================================== */
+
+.categories{
+    max-width:1200px;
+    margin:50px auto;
+    padding:0 20px;
+}
+
+.categories h2{
+    text-align:center;
+    color:#1A365D;
+    margin-bottom:25px;
+}
+
+.categories-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:20px;
+}
+
+.category-card{
+    background:linear-gradient(135deg,#1A365D,#2C5282);
+    color:#fff;
+    padding:30px;
+    text-align:center;
+    border-radius:12px;
+    font-size:22px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.category-card:hover{
+    transform:scale(1.05);
+}
+
+/* ========================================
+   Offer
+======================================== */
+
+.offer-banner{
+    max-width:1200px;
+    margin:60px auto;
+    background:linear-gradient(135deg,#ECC94B,#D69E2E);
+    color:#1A365D;
+    padding:40px;
+    border-radius:15px;
+    text-align:center;
+}
+
+.offer-banner h2{
+    margin-bottom:12px;
+    font-size:32px;
+}
+
+/* ========================================
+   المنتجات
+======================================== */
+
+.products-section{
+    max-width:1300px;
+    margin:auto;
+}
+
+.section-title{
+    text-align:center;
+    font-size:34px;
+    color:#1A365D;
+    margin:40px 0 25px;
+}
+
+.product-card{
+    position:relative;
+    overflow:hidden;
+}
+
+.product-badge{
+    position:absolute;
+    top:12px;
+    right:12px;
+    background:#e53e3e;
+    color:#fff;
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.product-card img{
+    transition:.35s;
+}
+
+.product-card:hover img{
+    transform:scale(1.08);
+}
+
+.product-card h3{
+    margin-top:10px;
+    margin-bottom:10px;
+    min-height:48px;
+}
+
+.product-price{
+    margin-bottom:15px;
+}
+
+/* ========================================
+   Footer
+======================================== */
+
+.store-footer{
+    margin-top:70px;
+    background:#1A365D;
+    color:#fff;
+    text-align:center;
+    padding:50px 20px;
+}
+
+.store-footer h3{
+    margin-bottom:15px;
+    font-size:28px;
+}
+
+.store-footer p{
+    margin:10px 0;
+    color:#CBD5E0;
+}
+
+/* ========================================
+   Responsive
+======================================== */
+
+@media (max-width:768px){
+
+.hero-banner{
+    padding:60px 20px;
+}
+
+.hero-banner h1{
+    font-size:34px;
+}
+
+.hero-banner p{
+    font-size:16px;
+}
+
+.shop-now-btn{
+    width:100%;
+}
+
+.section-title{
+    font-size:28px;
+}
+
+.offer-banner{
+    padding:25px;
+}
+
+.offer-banner h2{
+    font-size:24px;
+}
+
+}
+.category-icon{
+    font-size:55px;
+    margin-bottom:15px;
+}
+
+.category-card h3{
+    margin:10px 0;
+    font-size:22px;
+}
+
+.category-card span{
+    color:#ddd;
+    font-size:14px;
+}
+
+.product-info{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:10px;
+}
+
+.rating{
+    color:#F6AD55;
+    font-size:18px;
+    letter-spacing:2px;
+}
+
+.product-actions{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+
+.details-btn{
+    flex:1;
+    background:#1A365D;
+    color:#fff;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.details-btn:hover{
+    background:#2C5282;
+}
+
+.add-to-cart-btn{
+    flex:1;
+}
+/* ===========================
+   Best Sellers
+=========================== */
+
+.best-sellers{
+
+    max-width:1300px;
+
+    margin:60px auto;
+
+}
+
+.best-sellers .section-title{
+
+    color:#d97706;
+
+}
+
+.best-sellers .product-card{
+
+    border:2px solid #ECC94B;
+
+}
+
+.best-sellers .product-badge{
+
+    background:#d97706;
+
+}
+/* ==========================
+   Best Selling
+========================== */
+
+
+.best-selling-section{
+
+    max-width:1300px;
+
+    margin:50px auto;
+
+    padding:0 20px;
+
+}
+
+
+.best-selling-section .product-card{
+
+    position:relative;
+
+}
+
+
+
+.best-selling-section .product-badge{
+
+    background:#e53e3e;
+
+    color:#fff;
+
+}
+
+
+
+.best-selling-section .product-card:hover{
+
+    transform:translateY(-6px);
+
+}
+/* ==========================
+   Best Sellers Slider
+========================== */
+
+.best-selling-section{
+
+    max-width:1300px;
+
+    margin:50px auto;
+
+    padding:0 20px;
+
+}
+
+
+.best-selling-section .swiper{
+
+    padding:20px 5px 40px;
+
+}
+
+
+.best-selling-section .product-card{
+
+    height:100%;
+
+}
+
+
+.best-selling-section .swiper-button-next,
+.best-selling-section .swiper-button-prev{
+
+    color:#D4AF37;
+
+}
+
+
+.best-selling-section .product-badge{
+
+    background:#e53e3e;
+
+    color:#fff;
+
+}
+
+
+.rating{
+
+    color:#f59e0b;
+
+    margin:8px 0;
+
+}
+/* ==========================
+   New Arrivals
+========================== */
+
+
+.new-arrivals-section{
+
+max-width:1300px;
+
+margin:50px auto;
+
+padding:0 20px;
+
+}
+
+
+.new-arrivals-section .swiper{
+
+padding:20px 5px 40px;
+
+}
+
+
+.product-badge.new{
+
+background:#38a169;
+
+color:white;
+
+}
+/* =========================
+   Best Sellers + New Arrivals
+========================= */
+
+.best-selling-section,
+.new-arrivals-section {
+
+    max-width:1300px;
+
+    margin:60px auto;
+
+    padding:0 25px;
+
+}
+
+
+
+.best-selling-section .swiper,
+.new-arrivals-section .swiper{
+
+    padding:20px 5px 40px;
+
+}
+
+
+
+
+.best-selling-section .product-card,
+.new-arrivals-section .product-card{
+
+    height:100%;
+
+}
+
+
+
+
+
+.swiper-button-next,
+.swiper-button-prev{
+
+    color:#D4AF37 !important;
+
+}
+
+
+
+.swiper-pagination-bullet-active{
+
+    background:#D4AF37 !important;
+
+}
+
+
+
+
+
+/* تقييم المنتجات */
+
+.rating{
+
+    color:#F6C343;
+
+    margin:8px 0;
+
+    font-size:18px;
+
+}
+
+
+
+
+
+/* Badge جديد */
+
+.product-badge.new{
+
+    background:#38A169;
+
+}
+
+
+
+
+
+/* أزرار المنتج */
+
+.product-actions{
+
+    display:flex;
+
+    gap:10px;
+
+    margin-top:15px;
+
+}
+
+
+
+.details-btn{
+
+    flex:1;
+
+    background:#071A36;
+
+    color:white;
+
+    border:none;
+
+    padding:10px;
+
+    border-radius:6px;
+
+    cursor:pointer;
+
+}
+
+
+
+.details-btn:hover{
+
+    background:#D4AF37;
+
+    color:#071A36;
+
+}
+
+
+
+
+
+.product-actions .add-to-cart-btn{
+
+    flex:1;
+
+}
+
+
+
+
+
+/* Footer الجديد */
+
+.footer-content{
+
+    max-width:1200px;
+
+    margin:auto;
+
+    display:grid;
+
+    grid-template-columns:
+
+    repeat(auto-fit,minmax(220px,1fr));
+
+    gap:30px;
+
+}
+
+
+
+
+
+.footer-link{
+
+    display:block;
+
+    background:none;
+
+    border:none;
+
+    color:white;
+
+    cursor:pointer;
+
+    margin:10px auto;
+
+}
+
+
+
+.footer-link:hover{
+
+    color:#D4AF37;
+
+}
+
+
+
+
+
+.social-icons{
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:15px;
+
+    font-size:25px;
+
+}
+
+
+
+
+
+@media(max-width:600px){
+
+
+.best-selling-section,
+.new-arrivals-section{
+
+    padding:0 15px;
+
+}
+
+
+
+.product-actions{
+
+    flex-direction:column;
+
+}
+
+
+}
