@@ -64,7 +64,7 @@ function Home({ products = [] }) {
     if (cart.length === 0) return;
 
     let message =
-      "مرحباً، أود طلب المنتجات التالية من متجر السيفتي:\n\n";
+      "أهلا، عايز اطلب الاوردر ده من الصفتي ستور:\n\n";
 
     cart.forEach((item, index) => {
       message += `${index + 1}. ${
@@ -158,7 +158,8 @@ function Home({ products = [] }) {
         </h2>
 
         <p>
-          مرحباً بك في متجر السيفتي (Elsafty Store)
+         Welcome to Elsafty Store 
+         نورتوا الصفتي ستور😍
         </p>
 
       </section>
