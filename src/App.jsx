@@ -34,13 +34,17 @@ function App() {
       console.log(error);
       setProducts([]);
     } finally {
-      // بنجبر الـ loading يقف حتى لو حصل خطأ عشان الصفحة تفتح وما تختفيش
       setLoading(false);
     }
   };
 
   useEffect(() => {
     loadProducts();
+
+    // حماية إضافية: لو الـ loading مطلش لأي سبب، نلغيه بعد ثانية واحدة غصب عنه عشان الصفحة تفتح
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
 
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -53,12 +57,15 @@ function App() {
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
   }, []);
 
   if (loading) {
     return (
-      <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "Cairo, sans-serif" }}>
+      <div style={{ textAlign: "center", marginTop: "100px", fontFamily: "Cairo, sans-serif" }}>
         <h2>جاري تحميل المتجر... ⏳</h2>
       </div>
     );
