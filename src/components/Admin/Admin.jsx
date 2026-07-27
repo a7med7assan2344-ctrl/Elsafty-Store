@@ -1,3 +1,13 @@
+import { useEffect } from "react";
+
+import {
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc
+} from "firebase/firestore";
+
+import { db } from "../../firebase";
 import React, { useState } from "react";
 import "./Admin.css";
 
@@ -20,6 +30,8 @@ function Admin({ products, loadProducts }) {
   const [image, setImage] = useState("");
 
   const [editingId, setEditingId] = useState(null);
+  const [orders, setOrders] = useState([]);
+const [tab, setTab] = useState("products");
 
   const clearForm = () => {
     setTitle("");
@@ -122,7 +134,46 @@ function Admin({ products, loadProducts }) {
       behavior: "smooth",
     });
   };
+  const changeOrderStatus = async (id, status) => {
 
+  await updateDoc(
+
+    doc(db, "orders", id),
+
+    {
+
+      status
+
+    }
+
+  );
+
+};
+useEffect(() => {
+
+  const unsubscribe = onSnapshot(
+    collection(db, "orders"),
+    (snapshot) => {
+
+      setOrders(
+
+        snapshot.docs.map(doc => ({
+
+          id: doc.id,
+
+          ...doc.data()
+
+        }))
+
+      );
+
+    }
+
+  );
+
+  return () => unsubscribe();
+
+}, []);
   const handleDelete = async (id) => {
     if (!window.confirm("حذف المنتج؟")) return;
 
@@ -149,6 +200,7 @@ function Admin({ products, loadProducts }) {
     <div className="admin-container">
       {/* هيدر لوحة التحكم مع زر الخروج */}
       <div className="admin-top-bar">
+        
         <h2>لوحة التحكم</h2>
         <button className="logout-btn" onClick={handleLogout}>
           تسجيل خروج 🚪
@@ -162,8 +214,64 @@ function Admin({ products, loadProducts }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+<div className="admin-top-bar">
 
-        <textarea
+  <h2>
+
+    لوحة التحكم
+
+  </h2>
+
+  <div
+    className="admin-top-actions"
+  >
+
+    <div className="admin-tabs">
+
+      <button
+        className={
+          tab === "products"
+            ? "active"
+            : ""
+        }
+        onClick={() =>
+          setTab("products")
+        }
+      >
+
+        📦 المنتجات
+
+      </button>
+
+      <button
+        className={
+          tab === "orders"
+            ? "active"
+            : ""
+        }
+        onClick={() =>
+          setTab("orders")
+        }
+      >
+
+        🧾 الطلبات ({orders.length})
+
+      </button>
+
+    </div>
+
+    <button
+      className="logout-btn"
+      onClick={handleLogout}
+    >
+
+      تسجيل خروج 🚪
+
+    </button>
+
+  </div>
+
+</div>        <textarea
           placeholder="وصف المنتج"
           value={description}
           onChange={(e) => setDescription(e.target.value)}

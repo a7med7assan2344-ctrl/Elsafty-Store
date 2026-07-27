@@ -1,14 +1,42 @@
-import React, {useContext, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import React, {
+useContext,
+useState
+} from "react";
+
+import {
+useNavigate
+} from "react-router-dom";
+
+
+import {
+addDoc,
+collection,
+serverTimestamp
+} from "firebase/firestore";
+
+
+import {
+db
+} from "../firebase";
+
+
+import {
+AuthContext
+} from "../context/AuthContext";
+
+
+import {
+CartContext
+} from "../context/CartContext";
+
+
 import "./Checkout.css";
-
-import {CartContext} from "../context/CartContext";
-
 
 function Checkout(){
 
 
 const navigate = useNavigate();
+const { user } = useContext(AuthContext);
 
 
 const {
@@ -51,8 +79,7 @@ item.quantity
 
 
 
-const sendOrder = ()=>{
-
+const sendOrder = async ()=>{
 
 if(
 !name ||
@@ -64,8 +91,7 @@ alert("من فضلك اكتب الاسم ورقم الهاتف والعنوان"
 
 return;
 
-}
-
+};
 
 
 
@@ -157,7 +183,32 @@ ${totalPrice} جنيه`;
 
 
 
+if (user) {
 
+  await addDoc(
+collection(db,"orders"),
+{
+
+userId: user ? user.uid : null,
+
+customerName:name,
+
+email:user ? user.email : "",
+
+phone,
+
+address,
+
+products:cart,
+
+total:totalPrice,
+
+status:"جديد",
+
+createdAt:serverTimestamp()
+
+}
+);
 window.open(
 
 `https://wa.me/201553570220?text=${encodeURIComponent(message)}`,
@@ -442,5 +493,7 @@ onClick={()=>navigate("/cart")}
 
 }
 
+
+}
 
 export default Checkout;

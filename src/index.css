@@ -19,7 +19,6 @@
     rgba(11, 31, 58, 0.15) 0 10px 15px -3px,
     rgba(212, 175, 55, 0.15) 0 4px 6px -2px;
 
-
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
@@ -35,37 +34,60 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
 
+/* Reset */
+* {
+  box-sizing: border-box;
+}
+
+
+html,
 body {
   margin: 0;
+  padding: 0;
+
+  width: 100%;
+  max-width: 100%;
+
+  overflow-x: hidden;
+
   background: var(--bg);
   color: var(--text);
+
+  font-family: var(--sans);
 }
 
 
-#root {
-  width: 1126px;
+img {
   max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+
+/* التطبيق */
+#root {
+
+  width: 100%;
+  max-width: 1126px;
+
   margin: 0 auto;
+
+  min-height: 100vh;
 
   text-align: center;
 
   border-inline: 1px solid var(--border);
 
-  min-height: 100svh;
-
   display: flex;
   flex-direction: column;
 
-  box-sizing: border-box;
 }
 
+
+/* العناوين */
 
 h1,
 h2 {
@@ -76,27 +98,28 @@ h2 {
 
 
 h1 {
+
   font-size: 56px;
+
   letter-spacing: -1.68px;
+
   margin: 32px 0;
 
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
 }
 
 
 h2 {
+
   font-size: 24px;
+
   line-height: 118%;
+
   letter-spacing: -0.24px;
+
   margin: 0 0 8px;
 
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
 }
+
 
 
 p {
@@ -104,33 +127,46 @@ p {
 }
 
 
+/* الأكواد */
+
 code,
 .counter {
+
   font-family: var(--mono);
+
   display: inline-flex;
 
   border-radius: 6px;
 
   color: var(--text-h);
+
 }
 
 
 code {
+
   font-size: 15px;
+
   line-height: 135%;
 
   padding: 4px 8px;
 
   background: var(--code-bg);
+
 }
 
 
-/* أزرار عامة */
+
+/* الأزرار */
+
 button {
+
   background: var(--accent);
+
   color: #071A36;
 
   border: none;
+
   border-radius: 8px;
 
   padding: 10px 20px;
@@ -140,29 +176,43 @@ button {
   cursor: pointer;
 
   transition: 0.3s;
+
 }
 
 
 button:hover {
+
   background: #F4D06F;
+
   transform: translateY(-2px);
+
 }
 
 
+
 /* الروابط */
+
 a {
+
   color: #124E8C;
+
   text-decoration: none;
+
 }
 
 
 a:hover {
+
   color: var(--accent);
+
 }
 
 
-/* حدود وعناصر الكروت */
+
+/* الكروت */
+
 .card {
+
   background: white;
 
   border: 1px solid #D9B44A;
@@ -172,29 +222,159 @@ a:hover {
   box-shadow: var(--shadow);
 
   transition: 0.3s;
+
 }
 
 
 .card:hover {
+
   transform: translateY(-5px);
+
   border-color: var(--accent);
+
 }
+
 
 
 /* السعر */
+
 .price {
+
   color: #D4AF37;
+
   font-weight: 800;
+
 }
 
 
-/* العناوين الذهبية */
+/* الألوان */
+
 .gold {
+
   color: #D4AF37;
+
 }
 
 
-/* أزرق الهوية */
 .blue {
+
   color: #124E8C;
+
+}
+
+
+
+/* الموبايل */
+
+@media (max-width: 1024px) {
+
+
+  :root {
+
+    font-size: 16px;
+
+  }
+
+
+  #root {
+
+    border-inline: none;
+
+    width: 100%;
+
+  }
+
+
+  h1 {
+
+    font-size: 36px;
+
+    margin: 20px 0;
+
+  }
+
+
+  h2 {
+
+    font-size: 20px;
+
+  }
+
+
+}
+
+
+
+@media (max-width: 768px) {
+
+
+  body {
+
+    width: 100%;
+
+    overflow-x: hidden;
+
+  }
+
+
+  #root {
+
+    width: 100%;
+
+    padding: 0;
+
+  }
+
+
+  h1 {
+
+    font-size: 28px;
+
+  }
+
+
+  h2 {
+
+    font-size: 18px;
+
+  }
+
+
+  button {
+
+    width: auto;
+
+    max-width: 100%;
+
+  }
+
+
+  .card {
+
+    width: 100%;
+
+  }
+
+
+}
+
+
+
+@media (max-width: 480px) {
+
+
+  h1 {
+
+    font-size: 24px;
+
+  }
+
+
+  body {
+
+    font-size: 14px;
+
+  }
+
+
 }

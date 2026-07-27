@@ -1,15 +1,28 @@
-.navbar{
+/* =========================
+   Navbar
+========================= */
+
+.navbar {
 
     width:100%;
+    max-width:100%;
+
     background:#071A36;
     color:#fff;
+
     display:flex;
     flex-direction:column;
+
     position:sticky;
     top:0;
+
     z-index:1000;
+
     box-shadow:0 4px 15px rgba(0,0,0,.35);
+
     direction:rtl;
+
+    overflow:hidden;
 
 }
 
@@ -22,27 +35,34 @@
 
     width:100%;
     height:38px;
+
     background:linear-gradient(90deg,#ff9900,#D4AF37);
+
     overflow:hidden;
+
     display:flex;
     align-items:center;
+
     color:#071A36;
+
     font-weight:bold;
+
     white-space:nowrap;
 
 }
 
 
-
 .offer-text{
 
     display:inline-block;
+
     padding-right:100%;
+
     animation:offerMove 20s linear infinite;
+
     font-size:15px;
 
 }
-
 
 
 .offer-text span{
@@ -56,22 +76,14 @@
 @keyframes offerMove{
 
     from{
-
         transform:translateX(0);
-
     }
 
-
     to{
-
         transform:translateX(-100%);
-
     }
 
 }
-
-
-
 
 
 
@@ -82,32 +94,40 @@
 
 .navbar-top{
 
+    width:100%;
+
     display:flex;
+
     align-items:center;
+
     justify-content:space-between;
+
     gap:20px;
+
     padding:15px 30px;
 
 }
 
 
 
-
-
-
-/* اللوجو */
+/* =========================
+   اللوجو
+========================= */
 
 
 .logo{
 
     display:flex;
+
     align-items:center;
+
     gap:12px;
+
     cursor:pointer;
+
     transition:.3s;
 
 }
-
 
 
 .logo:hover{
@@ -122,10 +142,15 @@
 
     width:60px;
     height:60px;
+
     object-fit:contain;
+
     background:#fff;
+
     border-radius:50%;
+
     padding:5px;
+
     border:2px solid #D4AF37;
 
 }
@@ -135,7 +160,9 @@
 .logo h2{
 
     margin:0;
+
     color:#F4D06F;
+
     font-size:24px;
 
 }
@@ -145,6 +172,7 @@
 .logo span{
 
     color:#ddd;
+
     font-size:13px;
 
 }
@@ -152,29 +180,38 @@
 
 
 
-
-
-/* البحث */
+/* =========================
+   البحث
+========================= */
 
 
 .search-box{
 
     flex:1;
+
     max-width:750px;
+
     display:flex;
 
 }
 
 
-
 .search-box input{
 
     flex:1;
+
+    min-width:0;
+
     height:45px;
+
     border:none;
+
     outline:none;
+
     padding:0 15px;
+
     font-size:16px;
+
     border-radius:8px 0 0 8px;
 
 }
@@ -184,13 +221,18 @@
 .search-box button{
 
     width:60px;
+
     border:none;
+
     background:#ff9900;
+
     color:#071A36;
+
     font-size:22px;
+
     cursor:pointer;
+
     border-radius:0 8px 8px 0;
-    transition:.3s;
 
 }
 
@@ -204,36 +246,38 @@
 
 
 
-
-
-
-
-
-/* الأكشن */
+/* =========================
+   الأكشن
+========================= */
 
 
 .actions{
 
     display:flex;
+
     align-items:center;
+
+    justify-content:center;
+
     gap:20px;
 
 }
 
 
 
-
-
 .nav-icon{
 
     display:flex;
+
     flex-direction:column;
+
     align-items:center;
+
     cursor:pointer;
+
     transition:.3s;
 
 }
-
 
 
 .nav-icon span{
@@ -243,10 +287,10 @@
 }
 
 
-
 .nav-icon p{
 
     margin:3px 0 0;
+
     font-size:13px;
 
 }
@@ -256,28 +300,33 @@
 .nav-icon:hover{
 
     color:#D4AF37;
+
     transform:translateY(-3px);
 
 }
 
 
 
-
-
-
-/* زر الإدارة */
+/* =========================
+   زر الإدارة
+========================= */
 
 
 .admin-btn{
 
     background:#0B1F3A;
+
     color:#F4D06F;
+
     border:1px solid #D4AF37;
+
     padding:12px 18px;
+
     border-radius:8px;
+
     cursor:pointer;
+
     font-weight:bold;
-    transition:.3s;
 
 }
 
@@ -286,12 +335,10 @@
 .admin-btn:hover{
 
     background:#D4AF37;
+
     color:#071A36;
 
 }
-
-
-
 
 
 
@@ -304,21 +351,16 @@
 .cart-icon{
 
     position:relative;
+
     cursor:pointer;
+
     display:flex;
+
     flex-direction:column;
+
     align-items:center;
-    justify-content:center;
+
     font-size:32px;
-    transition:.3s;
-
-}
-
-
-
-.cart-icon:hover{
-
-    transform:translateY(-3px);
 
 }
 
@@ -335,6 +377,7 @@
 .cart-icon p{
 
     margin:3px 0 0;
+
     font-size:14px;
 
 }
@@ -344,55 +387,76 @@
 .cart-badge{
 
     position:absolute;
+
     top:-8px;
+
     right:-12px;
+
     background:#ff9900;
+
     color:#071A36;
+
     width:25px;
+
     height:25px;
+
     border-radius:50%;
+
     display:flex;
+
     align-items:center;
+
     justify-content:center;
+
     font-size:14px;
+
     font-weight:bold;
+
     border:2px solid #071A36;
 
 }
 
 
 
-
-
-
 /* =========================
-   شريط الأقسام والأسهم
+   الأقسام
 ========================= */
 
 
 .category-wrapper{
 
     width:100%;
+
     display:flex;
+
     align-items:center;
+
     background:#0B1F3A;
+
     border-top:1px solid #D4AF37;
+
     direction:ltr;
 
 }
 
 
 
-
 .navbar-bottom{
 
     flex:1;
+
     display:flex;
+
     align-items:center;
+
     gap:20px;
+
     overflow-x:auto;
+
     scroll-behavior:smooth;
+
     padding:12px 10px;
+
     direction:rtl;
 
 }
@@ -407,18 +471,21 @@
 
 
 
-
-
 .navbar-bottom button{
 
     background:none;
+
     border:none;
+
     color:#fff;
+
     cursor:pointer;
+
     white-space:nowrap;
+
     font-size:15px;
+
     padding:6px 10px;
-    transition:.3s;
 
 }
 
@@ -427,56 +494,48 @@
 .navbar-bottom button:hover{
 
     color:#D4AF37;
-    transform:translateY(-2px);
 
 }
 
 
-
-
-
-
-
-/* الأسهم */
 
 
 .category-arrow{
 
     width:40px;
+
     height:40px;
+
     border-radius:50%;
+
     border:none;
+
     background:#D4AF37;
+
     color:#071A36;
+
     font-size:26px;
+
     font-weight:bold;
+
     cursor:pointer;
+
     display:flex;
+
     justify-content:center;
+
     align-items:center;
+
     margin:0 10px;
+
     flex-shrink:0;
-    transition:.3s;
 
 }
-
-
-
-.category-arrow:hover{
-
-    background:#ff9900;
-    transform:scale(1.1);
-
-}
-
-
-
-
 
 
 
 /* =========================
-   Responsive
+   Tablet
 ========================= */
 
 
@@ -486,31 +545,52 @@
     .navbar-top{
 
         flex-direction:column;
+
         padding:15px;
 
+        gap:15px;
+
     }
+
+
+
+    .logo{
+
+        justify-content:center;
+
+    }
+
 
 
     .search-box{
 
         width:100%;
+
         max-width:none;
 
     }
 
 
+
     .actions{
 
-        justify-content:center;
         width:100%;
 
-    }
+        justify-content:center;
 
+        flex-wrap:wrap;
+
+        gap:15px;
+
+    }
 
 }
 
 
 
+/* =========================
+   Mobile
+========================= */
 
 
 @media(max-width:600px){
@@ -532,9 +612,18 @@
 
 
 
+    .navbar-top{
+
+        padding:10px;
+
+    }
+
+
+
     .logo{
 
         flex-direction:column;
+
         text-align:center;
 
     }
@@ -544,6 +633,7 @@
     .logo img{
 
         width:50px;
+
         height:50px;
 
     }
@@ -558,12 +648,53 @@
 
 
 
-    .category-arrow{
+    .logo span{
 
-        width:32px;
-        height:32px;
-        font-size:20px;
-        margin:0 5px;
+        font-size:12px;
+
+    }
+
+
+
+    .search-box input{
+
+        height:40px;
+
+        font-size:14px;
+
+    }
+
+
+
+    .search-box button{
+
+        width:45px;
+
+        font-size:18px;
+
+    }
+
+
+
+    .nav-icon span{
+
+        font-size:22px;
+
+    }
+
+
+
+    .nav-icon p{
+
+        font-size:12px;
+
+    }
+
+
+
+    .cart-icon{
+
+        font-size:26px;
 
     }
 
@@ -571,7 +702,9 @@
 
     .navbar-bottom{
 
-        gap:15px;
+        gap:10px;
+
+        padding:10px 5px;
 
     }
 
@@ -579,9 +712,24 @@
 
     .navbar-bottom button{
 
-        font-size:14px;
+        font-size:13px;
+
+        padding:5px 8px;
 
     }
 
+
+
+    .category-arrow{
+
+        width:30px;
+
+        height:30px;
+
+        font-size:18px;
+
+        margin:0 3px;
+
+    }
 
 }

@@ -1,3 +1,8 @@
+import Orders from "./pages/Orders";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import MyAccount from "./pages/MyAccount";
 import React, {
   useEffect,
   useState,
@@ -120,21 +125,57 @@ loadProducts();
 const unsubscribe =
 
 onAuthStateChanged(
-
 auth,
+async (user)=>{
 
-(user)=>{
+if(!user){
+
+setAdmin(false);
+
+return;
+
+}
+
+
+const { 
+doc,
+getDoc
+} = await import("firebase/firestore");
+
+
+const { db } = await import("./firebase");
+
+
+const adminRef = doc(
+db,
+"users",
+user.uid
+);
+
+
+const adminSnap = await getDoc(adminRef);
+
+
+
+if(adminSnap.exists()){
 
 
 setAdmin(
-!!user
+adminSnap.data().role === "admin"
 );
+
+
+}else{
+
+
+setAdmin(false);
 
 
 }
 
-);
 
+}
+);
 
 
 
@@ -212,7 +253,35 @@ return(
 
 
 
+{/* تسجيل دخول العميل */}
+<Route
+  path="/login"
+  element={<Login />}
+/>
 
+{/* إنشاء حساب */}
+<Route
+  path="/register"
+  element={<Register />}
+/>
+
+{/* حساب العميل */}
+<Route
+  path="/account"
+  element={
+    <ProtectedRoute>
+      <MyAccount />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/orders"
+  element={
+    <ProtectedRoute>
+      <Orders />
+    </ProtectedRoute>
+  }
+/>
 {/* الصفحة الرئيسية */}
 
 <Route
@@ -298,18 +367,12 @@ element={
 {/* الدفع */}
 
 <Route
-
 path="/checkout"
-
 element={
-
-
+<ProtectedRoute>
 <Checkout/>
-
-
+</ProtectedRoute>
 }
-
-
 />
 
 
