@@ -5,9 +5,7 @@ import "./Products.css";
 
 function Products({ products = [], addToCart }) {
 
-
   const navigate = useNavigate();
-
 
 
   if (products.length === 0) {
@@ -26,57 +24,87 @@ function Products({ products = [], addToCart }) {
 
 
 
-
-
   return (
 
     <div className="products-grid">
 
 
-      {
-
-        products.map(product => {
+      {products.map((product) => {
 
 
-          const productId =
-            product.id || product._id;
+        const productId = product.id;
 
 
 
-          return (
+        return (
+
+          <div
+
+            key={productId}
+
+            className="product-card"
+
+            onClick={() =>
+              navigate(`/product/${productId}`)
+            }
+
+          >
 
 
-            <div
 
-              key={productId}
-
-              className="product-card"
-
-              onClick={() =>
-                navigate(`/product/${productId}`)
-              }
-
-            >
+            <div className="product-img-container">
 
 
+              <img
 
-              <div className="product-img-container">
+                src={
+                  product.image ||
+                  "https://via.placeholder.com/300"
+                }
+
+                alt={
+                  product.title ||
+                  "منتج"
+                }
+
+              />
 
 
-                <img
+            </div>
 
-                  src={
-                    product.image ||
-                    "https://via.placeholder.com/300"
-                  }
 
-                  alt={
-                    product.title ||
-                    product.name ||
-                    "Product"
-                  }
 
-                />
+
+            <div className="product-info">
+
+
+
+              <h3 className="product-title">
+
+                {
+                  product.title ||
+                  "منتج بدون اسم"
+                }
+
+              </h3>
+
+
+
+
+
+              <div className="product-rating">
+
+
+                {"⭐".repeat(
+                  Math.floor(product.rating || 5)
+                )}
+
+
+                <span>
+
+                  ({product.rating || 5})
+
+                </span>
 
 
               </div>
@@ -86,122 +114,72 @@ function Products({ products = [], addToCart }) {
 
 
 
-              <div className="product-info">
+              <div className="product-price">
 
 
+                <span className="amount">
+
+                  {product.price || 0}
+
+                </span>
 
 
+                <span className="currency">
 
-                <h3 className="product-title">
+                  ج.م
 
-
-                  {
-                    product.title ||
-                    product.name ||
-                    "منتج بدون اسم"
-                  }
+                </span>
 
 
-                </h3>
-
-
-
-
-
-
-
-                <div className="product-rating">
-
-
-                  {"⭐".repeat(
-                    Math.floor(product.rating || 5)
-                  )}
-
-
-                  <span>
-
-                    ({product.rating || 5})
-
-                  </span>
-
-
-                </div>
+              </div>
 
 
 
 
 
 
+              <button
+
+                className="add-to-cart-btn"
 
 
-                <div className="product-price">
+                onClick={(e)=>{
+
+                  e.stopPropagation();
 
 
-                  <span className="amount">
-
-                    {product.price || 0}
-
-                  </span>
-
-
-                  <span className="currency">
-
-                    ج.م
-
-                  </span>
-
-
-                </div>
-
-
-
-
-
-
-
-
-
-                <button
-
-                  className="add-to-cart-btn"
-
-
-                  onClick={(e)=>{
-
-                    e.stopPropagation();
+                  if(addToCart){
 
                     addToCart(product);
 
-                  }}
+                    alert("تمت إضافة المنتج للسلة 🛒");
+
+                  }
+
+                }}
 
 
-                >
+              >
 
-                  🛒 أضف إلى السلة
-
-
-                </button>
+                🛒 أضف إلى السلة
 
 
+              </button>
 
-
-
-
-
-              </div>
 
 
 
             </div>
 
 
-          );
+
+          </div>
 
 
-        })
+        );
 
 
-      }
+      })}
 
 
 

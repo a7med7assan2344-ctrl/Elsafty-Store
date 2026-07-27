@@ -733,3 +733,119 @@
     }
 
 }
+.logo img {
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+
+.logo img:active {
+    transform: scale(1.25);
+}
+.logo img{
+
+cursor:pointer;
+
+}
+
+
+.logo-modal{
+
+position:fixed;
+
+inset:0;
+
+background:rgba(0,0,0,.75);
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+z-index:9999;
+
+}
+
+
+.logo-modal img{
+
+width:350px;
+
+height:350px;
+
+object-fit:contain;
+
+background:white;
+
+border-radius:20px;
+
+padding:20px;
+
+animation:zoomLogo .3s ease;
+
+}
+
+
+
+.close-logo{
+
+position:absolute;
+
+top:30px;
+
+right:30px;
+
+width:45px;
+
+height:45px;
+
+border-radius:50%;
+
+background:#D4AF37;
+
+color:#071A36;
+
+font-size:28px;
+
+font-weight:bold;
+
+cursor:pointer;
+
+}
+
+
+
+@keyframes zoomLogo{
+
+from{
+
+transform:scale(.5);
+
+opacity:0;
+
+}
+
+to{
+
+transform:scale(1);
+
+opacity:1;
+
+}
+
+}
+
+
+
+@media(max-width:600px){
+
+.logo-modal img{
+
+width:250px;
+
+height:250px;
+
+}
+
+}

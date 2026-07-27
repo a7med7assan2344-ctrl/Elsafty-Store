@@ -1,85 +1,298 @@
-import React, { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import React, {
+  useState,
+  useContext,
+  useEffect,
+  useRef
+} from "react";
+import {
+  useNavigate
+} from "react-router-dom";
 
 import "../styles/store.css";
-import Navbar from "../components/Navbar/Navbar";
-import { CartContext } from "../context/CartContext";
 
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from "swiper/modules";
+import Navbar from "../components/Navbar/Navbar";
+
+import {
+  CartContext
+} from "../context/CartContext";
+
+
+import {
+  Swiper,
+  SwiperSlide
+} from "swiper/react";
+
+
+import {
+  Navigation
+} from "swiper/modules";
+
 
 import "swiper/css";
 import "swiper/css/navigation";
 
+
 import HeroSlider from "../components/HeroSlider";
 
 
-function Home({ products = [] }) {
-
-
-  const navigate = useNavigate();
-
-
-  const { cart, addToCart } = useContext(CartContext);
-
-
-  const [searchTerm, setSearchTerm] = useState("");
+import {
+  getCategories
+} from "../services/categoryService";
 
 
 
-  const cartCount = cart.reduce(
-    (total,item)=> total + item.quantity,
-    0
-  );
+
+function Home({
+
+  products = [],
+  admin,
+  setCurrentView
+
+}) {
+
+
+const navigate = useNavigate();
+
+const productsRef = useRef(null);
+
+
+const {
+  cart,
+  addToCart
+} = useContext(CartContext);
 
 
 
-  const filteredProducts = products.filter((product)=>{
-
-    const title =
-      product.title ||
-      product.name ||
-      "";
 
 
-    return title
-      .toLowerCase()
-      .includes(
-        searchTerm.toLowerCase()
-      );
+const [searchTerm,setSearchTerm] = useState("");
 
-  });
+const [categories,setCategories] = useState([]);
+
+const [selectedCategory,setSelectedCategory] = useState("all");
 
 
 
-  const bestSellers =
-    products.slice(0,8);
+
+
+const cartCount = cart.reduce(
+
+(total,item)=>
+
+total + item.quantity
+
+,0);
 
 
 
-  const newArrivals =
-    products
-    .slice(-8)
-    .reverse();
 
 
 
-  return (
+
+// جلب الفئات من Firebase
+
+useEffect(()=>{
+
+
+const filterListener=(e)=>{
+
+
+setSelectedCategory(e.detail);
+
+
+
+setTimeout(()=>{
+
+
+productsRef.current?.scrollIntoView({
+
+behavior:"smooth",
+
+block:"start"
+
+});
+
+
+},100);
+
+
+
+};
+
+
+
+window.addEventListener(
+
+"filterCategory",
+
+filterListener
+
+);
+
+
+
+return ()=>{
+
+
+window.removeEventListener(
+
+"filterCategory",
+
+filterListener
+
+);
+
+
+};
+
+
+
+},[]);
+
+
+
+
+
+// استقبال اختيار الفئة من Navbar
+
+useEffect(()=>{
+
+
+const filterListener=(e)=>{
+
+
+setSelectedCategory(e.detail);
+
+
+};
+
+
+
+window.addEventListener(
+
+"filterCategory",
+
+filterListener
+
+);
+
+
+
+return ()=>{
+
+
+window.removeEventListener(
+
+"filterCategory",
+
+filterListener
+
+);
+
+
+};
+
+
+},[]);
+
+
+
+
+
+
+
+
+const filteredProducts = products.filter(
+
+(product)=>{
+
+
+const title =
+
+product.title ||
+
+product.name ||
+
+"";
+
+
+
+const matchSearch =
+
+title
+
+.toLowerCase()
+
+.includes(
+
+searchTerm.toLowerCase()
+
+);
+
+
+
+
+const matchCategory =
+
+selectedCategory==="all"
+
+||
+
+product.category === selectedCategory;
+
+
+
+return (
+
+matchSearch && matchCategory
+
+);
+
+
+}
+
+);
+
+
+
+
+
+
+
+
+const bestSellers =
+
+products.slice(0,8);
+
+
+
+
+
+const newArrivals =
+
+products
+
+.slice(-8)
+
+.reverse();
+
+
+
+
+
+
+return (
+
 
 <div className="store-container">
 
 
+
+
+
 <Navbar
 
-setCurrentView={(page)=>{
-
-if(page==="cart")
-navigate("/cart");
-
-if(page==="store")
-navigate("/");
-
-}}
+setCurrentView={setCurrentView}
 
 cartCount={cartCount}
 
@@ -87,22 +300,25 @@ searchTerm={searchTerm}
 
 setSearchTerm={setSearchTerm}
 
-admin={false}
+admin={admin}
 
 />
 
 
 
-{/* Hero */}
+
+
 
 <HeroSlider />
 
 
 
 
-{/* Features */}
+
+
 
 <section className="features-section">
+
 
 
 <div className="feature-card">
@@ -113,11 +329,15 @@ admin={false}
 شحن سريع
 </h3>
 
+
 <p>
 توصيل لجميع المحافظات
 </p>
 
+
 </div>
+
+
 
 
 
@@ -130,11 +350,16 @@ admin={false}
 دفع آمن
 </h3>
 
+
 <p>
 طرق دفع آمنة
 </p>
 
+
 </div>
+
+
+
 
 
 
@@ -147,11 +372,16 @@ admin={false}
 جودة مضمونة
 </h3>
 
+
 <p>
 منتجات أصلية
 </p>
 
+
 </div>
+
+
+
 
 
 
@@ -164,11 +394,15 @@ admin={false}
 دعم فني
 </h3>
 
+
 <p>
 خدمة عملاء مستمرة
 </p>
 
+
 </div>
+
+
 
 
 </section>
@@ -176,7 +410,6 @@ admin={false}
 
 
 
-{/* Categories */}
 
 <section className="categories">
 
@@ -190,84 +423,80 @@ admin={false}
 <div className="categories-grid">
 
 
-<div className="category-card">
+<div
 
-📱
+className="category-card"
+
+onClick={()=>setSelectedCategory("all")}
+
+>
+
+📦
 
 <h3>
-الموبايلات
+كل المنتجات
 </h3>
 
 <span>
-أحدث الهواتف
+عرض كل المنتجات
 </span>
+
 
 </div>
 
 
 
+{
 
-<div className="category-card">
-
-💻
-
-<h3>
-اللابتوبات
-</h3>
-
-<span>
-أفضل الماركات
-</span>
-
-</div>
+categories.map((cat)=>(
 
 
+<div
+
+key={cat.id}
+
+className="category-card"
+
+onClick={()=>setSelectedCategory(cat.name)}
+
+>
 
 
-<div className="category-card">
+<div>
 
-🎧
-
-<h3>
-الإكسسوارات
-</h3>
-
-<span>
-كل ما تحتاجه
-</span>
+{cat.icon}
 
 </div>
 
 
-
-
-<div className="category-card">
-
-⌚
-
 <h3>
-الساعات الذكية
+
+{cat.name}
+
 </h3>
 
+
 <span>
-أحدث الموديلات
+
+تصفح المنتجات
+
 </span>
 
+
 </div>
+
+
+))
+
+
+}
+
 
 
 </div>
 
 
 </section>
-
-
-
-
-
-{/* Offer */}
-
-
 <section className="offer-banner">
 
 
@@ -287,9 +516,12 @@ admin={false}
 
 
 
-{/* هنا هيبدأ قسم الأكثر مبيعًا */}
+
+{/* الأكثر مبيعًا */}
+
 
 <section className="best-selling-section">
+
 
 
 <h2 className="section-title">
@@ -300,6 +532,8 @@ admin={false}
 
 
 
+
+
 <Swiper
 
 modules={[Navigation]}
@@ -307,6 +541,7 @@ modules={[Navigation]}
 navigation
 
 spaceBetween={20}
+
 
 breakpoints={{
 
@@ -328,10 +563,13 @@ slidesPerView:4
 
 }}
 
+
 >
 
 
 {
+
+
 bestSellers.map((product)=>{
 
 
@@ -342,6 +580,7 @@ product._id;
 
 
 return (
+
 
 <SwiperSlide key={id}>
 
@@ -355,12 +594,12 @@ onClick={()=>navigate(`/product/${id}`)}
 >
 
 
-
 <span className="product-badge">
 
 ⭐ الأكثر طلبًا
 
 </span>
+
 
 
 
@@ -376,13 +615,15 @@ product.image ||
 
 alt={
 product.title ||
-product.name
+product.name ||
+"product"
 }
 
 />
 
 
 </div>
+
 
 
 
@@ -398,11 +639,26 @@ product.name ||
 </h3>
 
 
+
+
+<div className="rating">
+
+{"⭐".repeat(
+Math.floor(product.rating || 5)
+)}
+
+</div>
+
+
+
+
+
 <p className="product-price">
 
 {product.price || 0} جنيه
 
 </p>
+
 
 
 
@@ -412,9 +668,12 @@ className="add-to-cart-btn"
 
 onClick={(e)=>{
 
+
 e.stopPropagation();
 
+
 addToCart(product);
+
 
 }}
 
@@ -423,6 +682,7 @@ addToCart(product);
 🛒 أضف للسلة
 
 </button>
+
 
 
 
@@ -446,7 +706,15 @@ addToCart(product);
 
 
 </section>
-{/* New Arrivals */}
+
+
+
+
+
+
+
+{/* وصل حديثًا */}
+
 
 <section className="new-arrivals-section">
 
@@ -459,6 +727,8 @@ addToCart(product);
 
 
 
+
+
 <Swiper
 
 modules={[Navigation]}
@@ -466,6 +736,7 @@ modules={[Navigation]}
 navigation
 
 spaceBetween={20}
+
 
 breakpoints={{
 
@@ -486,6 +757,7 @@ slidesPerView:4
 }
 
 }}
+
 
 >
 
@@ -516,7 +788,6 @@ onClick={()=>navigate(`/product/${id}`)}
 >
 
 
-
 <span className="product-badge new">
 
 🆕 جديد
@@ -538,7 +809,8 @@ product.image ||
 
 alt={
 product.title ||
-product.name
+product.name ||
+"product"
 }
 
 />
@@ -562,11 +834,13 @@ product.name ||
 
 
 
+
 <div className="rating">
 
 ★★★★★
 
 </div>
+
 
 
 
@@ -585,9 +859,12 @@ className="add-to-cart-btn"
 
 onClick={(e)=>{
 
+
 e.stopPropagation();
 
+
 addToCart(product);
+
 
 }}
 
@@ -599,11 +876,11 @@ addToCart(product);
 
 
 
+
 </div>
 
 
 </SwiperSlide>
-
 
 
 )
@@ -611,12 +888,11 @@ addToCart(product);
 
 })
 
-
 }
 
 
-</Swiper>
 
+</Swiper>
 
 
 </section>
@@ -625,12 +901,16 @@ addToCart(product);
 
 
 
+{/* كل المنتجات */}
 
-{/* All Products */}
 
+<section
 
-<section className="products-section">
+className="products-section"
 
+ref={productsRef}
+
+>
 
 <h2 className="section-title">
 
@@ -642,12 +922,10 @@ addToCart(product);
 
 
 <div className="product-grid">
-
-
-
+  
 {
 
-filteredProducts.length > 0 ? (
+filteredProducts.length > 0 ?
 
 
 filteredProducts.map((product)=>{
@@ -674,11 +952,13 @@ onClick={()=>navigate(`/product/${id}`)}
 
 
 
+
 <span className="product-badge">
 
 جديد
 
 </span>
+
 
 
 
@@ -695,7 +975,8 @@ product.image ||
 
 alt={
 product.title ||
-product.name
+product.name ||
+"product"
 }
 
 />
@@ -725,11 +1006,13 @@ product.name ||
 
 
 
+
 <div className="rating">
 
 ★★★★★
 
 </div>
+
 
 
 
@@ -743,7 +1026,11 @@ product.name ||
 
 
 
+
+
 <div className="product-actions">
+
+
 
 
 
@@ -753,9 +1040,12 @@ className="details-btn"
 
 onClick={(e)=>{
 
+
 e.stopPropagation();
 
+
 navigate(`/product/${id}`);
+
 
 }}
 
@@ -769,15 +1059,19 @@ navigate(`/product/${id}`);
 
 
 
+
 <button
 
 className="add-to-cart-btn"
 
 onClick={(e)=>{
 
+
 e.stopPropagation();
 
+
 addToCart(product);
+
 
 }}
 
@@ -789,15 +1083,21 @@ addToCart(product);
 
 
 
-</div>
-
-
 
 </div>
 
 
 
+
+
 </div>
+
+
+
+
+
+</div>
+
 
 
 )
@@ -806,7 +1106,6 @@ addToCart(product);
 })
 
 
-)
 
 :
 
@@ -818,12 +1117,12 @@ addToCart(product);
 </p>
 
 
-
 }
 
 
 
 </div>
+
 
 
 </section>
@@ -832,7 +1131,8 @@ addToCart(product);
 
 
 
-{/* Footer */}
+
+
 
 <footer className="store-footer">
 
@@ -861,7 +1161,9 @@ Elsafty Store
 </p>
 
 
+
 </div>
+
 
 
 
@@ -878,6 +1180,7 @@ Elsafty Store
 
 
 
+
 <button
 
 className="footer-link"
@@ -889,6 +1192,8 @@ onClick={()=>navigate("/")}
 🏠 الرئيسية
 
 </button>
+
+
 
 
 
@@ -908,23 +1213,13 @@ onClick={()=>navigate("/cart")}
 
 
 
+
+
 <button
 
 className="footer-link"
 
-onClick={()=>{
-
-document
-
-.querySelector(".best-selling-section")
-
-?.scrollIntoView({
-
-behavior:"smooth"
-
-})
-
-}}
+onClick={()=>scrollToSection(".best-selling-section")}
 
 >
 
@@ -935,23 +1230,14 @@ behavior:"smooth"
 
 
 
+
+
+
 <button
 
 className="footer-link"
 
-onClick={()=>{
-
-document
-
-.querySelector(".products-section")
-
-?.scrollIntoView({
-
-behavior:"smooth"
-
-})
-
-}}
+onClick={()=>scrollToSection(".products-section")}
 
 >
 
@@ -960,12 +1246,26 @@ behavior:"smooth"
 </button>
 
 
+
+
 </div>
+
+
+
+
+
+
+
+
 <div className="footer-section">
 
+
 <h3>
+
 خدمة العملاء
+
 </h3>
+
 
 
 <p>
@@ -988,7 +1288,11 @@ behavior:"smooth"
 </p>
 
 
+
 </div>
+
+
+
 
 
 
@@ -998,8 +1302,11 @@ behavior:"smooth"
 
 
 <h3>
+
 تابعنا
+
 </h3>
+
 
 
 
@@ -1035,13 +1342,19 @@ behavior:"smooth"
 
 
 
+
+
 </div>
 
 
 
 
 
+
+
 <hr />
+
+
 
 
 
@@ -1061,7 +1374,10 @@ behavior:"smooth"
 
 
 
+
+
 </footer>
+
 
 
 
@@ -1069,12 +1385,10 @@ behavior:"smooth"
 
 </div>
 
-
-  );
+);
 
 
 }
-
 
 
 export default Home;

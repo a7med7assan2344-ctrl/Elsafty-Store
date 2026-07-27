@@ -1,5 +1,4 @@
 import React, {
-  useContext,
   useEffect,
   useRef,
   useState
@@ -21,8 +20,8 @@ import {
 } from "../../firebase";
 
 import {
-  CartContext
-} from "../../context/CartContext";
+  getCategories
+} from "../../services/categoryService";
 
 
 function Navbar({
@@ -39,15 +38,13 @@ function Navbar({
 const navigate = useNavigate();
 
 
-const {
-  cart
-} = useContext(CartContext);
-
-
-
 const [user,setUser] = useState(null);
 
 const [menuOpen,setMenuOpen] = useState(false);
+
+const [logoZoom,setLogoZoom] = useState(false);
+
+const [categories,setCategories] = useState([]);
 
 
 const menuRef = useRef(null);
@@ -58,17 +55,11 @@ const menuRef = useRef(null);
 
 useEffect(()=>{
 
-
 const unsubscribe = onAuthStateChanged(
-
-auth,
-
-(currentUser)=>{
-
-setUser(currentUser);
-
-}
-
+  auth,
+  (currentUser)=>{
+    setUser(currentUser);
+  }
 );
 
 
@@ -81,20 +72,47 @@ return ()=>unsubscribe();
 
 
 
+useEffect(()=>{
+
+
+const fetchCategories = async()=>{
+
+try{
+
+const data = await getCategories();
+
+setCategories(data);
+
+}
+
+catch(error){
+
+console.log(error);
+
+}
+
+};
+
+
+fetchCategories();
+
+
+},[]);
+
+
+
+
 
 
 useEffect(()=>{
 
 
-const closeMenu = (e)=>{
+const closeMenu=(e)=>{
 
 
 if(
-
 menuRef.current &&
-
 !menuRef.current.contains(e.target)
-
 ){
 
 setMenuOpen(false);
@@ -106,32 +124,22 @@ setMenuOpen(false);
 
 
 document.addEventListener(
-
 "click",
-
 closeMenu
-
 );
-
 
 
 return ()=>{
 
 document.removeEventListener(
-
 "click",
-
 closeMenu
-
 );
 
 };
 
 
-
 },[]);
-
-
 
 
 
@@ -143,12 +151,9 @@ const logout = async()=>{
 
 try{
 
-
 await signOut(auth);
 
-
 setMenuOpen(false);
-
 
 navigate("/");
 
@@ -170,8 +175,7 @@ console.log(error);
 
 
 
-
-const scrollToSection = (className)=>{
+const scrollToSection=(className)=>{
 
 
 document
@@ -192,20 +196,15 @@ behavior:"smooth"
 
 
 
+const moveCategories=(direction)=>{
 
-const moveCategories = (direction)=>{
 
-
-const bar = document.querySelector(
-
+const bar=document.querySelector(
 ".navbar-bottom"
-
 );
 
 
-
 if(bar){
-
 
 bar.scrollBy({
 
@@ -215,13 +214,10 @@ behavior:"smooth"
 
 });
 
-
 }
 
 
-
 };
-
 
 
 
@@ -232,12 +228,9 @@ return (
 
 <>
 
-
 <div className="top-offer-bar">
 
-
 <div className="offer-text">
-
 
 🚚 شحن مجاني للطلبات فوق 500 جنيه
 
@@ -262,12 +255,9 @@ return (
 🎁 عروض حصرية كل يوم
 
 
-
 </div>
 
-
 </div>
-
 
 
 
@@ -294,19 +284,25 @@ src="/logo/logo.png"
 
 alt="Elsafty Store"
 
+onClick={(e)=>{
+
+e.stopPropagation();
+
+setLogoZoom(true);
+
+}}
+
 />
 
 
 
 <div className="logo-text">
 
-
 <h2>
 
 Elsafty Store
 
 </h2>
-
 
 
 <span>
@@ -316,12 +312,11 @@ Everything You Need
 </span>
 
 
-
 </div>
 
 
-
 </div>
+
 
 
 
@@ -337,9 +332,7 @@ placeholder="ابحث عن أي منتج..."
 
 value={searchTerm}
 
-onChange={(e)=>
-setSearchTerm(e.target.value)
-}
+onChange={(e)=>setSearchTerm(e.target.value)}
 
 />
 
@@ -357,34 +350,18 @@ setSearchTerm(e.target.value)
 
 
 
-
-
 <div className="actions">
-
-
-
-
-
-<div className="nav-icon">
-
+  <div className="nav-icon">
 
 <span>
-
 ❤️
-
 </span>
 
-
 <p>
-
 المفضلة
-
 </p>
 
-
 </div>
-
-
 
 
 
@@ -399,8 +376,6 @@ ref={menuRef}
 >
 
 
-
-
 <div
 
 className="nav-icon"
@@ -409,13 +384,9 @@ onClick={()=>setMenuOpen(!menuOpen)}
 
 >
 
-
 <span>
-
 👤
-
 </span>
-
 
 
 <p>
@@ -434,13 +405,10 @@ user.displayName || "حسابي"
 
 }
 
-
 </p>
 
 
-
 </div>
-
 
 
 
@@ -450,20 +418,14 @@ user.displayName || "حسابي"
 
 menuOpen && (
 
-
-
 <div className="account-dropdown">
-
 
 
 {
 
 !user ? (
 
-
-
 <>
-
 
 <button
 
@@ -477,13 +439,9 @@ navigate("/login");
 
 >
 
-
 🔑 تسجيل الدخول
 
-
 </button>
-
-
 
 
 
@@ -491,26 +449,19 @@ navigate("/login");
 
 onClick={()=>{
 
-
 setMenuOpen(false);
 
 navigate("/register");
-
 
 }}
 
 >
 
-
 ➕ إنشاء حساب
-
 
 </button>
 
-
 </>
-
-
 
 
 )
@@ -519,34 +470,20 @@ navigate("/register");
 
 (
 
-
-
 <>
-
-
 
 <div className="user-info">
 
-
 <strong>
 
-{
-
-user.displayName || "المستخدم"
-
-}
+{user.displayName || "المستخدم"}
 
 </strong>
 
 
-
 <small>
 
-{
-
-user.email
-
-}
+{user.email}
 
 </small>
 
@@ -554,38 +491,24 @@ user.email
 </div>
 
 
-
-
-
 <hr />
-
-
-
-
 
 
 <button
 
 onClick={()=>{
-
 
 setMenuOpen(false);
 
 navigate("/account");
 
-
 }}
 
 >
 
-
 👤 حسابي
 
-
 </button>
-
-
-
 
 
 
@@ -594,23 +517,17 @@ navigate("/account");
 
 onClick={()=>{
 
-
 setMenuOpen(false);
 
 navigate("/orders");
-
 
 }}
 
 >
 
-
 📦 طلباتي
 
-
 </button>
-
-
 
 
 
@@ -622,68 +539,50 @@ onClick={logout}
 
 >
 
-
 🚪 تسجيل الخروج
-
 
 </button>
 
 
-
-
 </>
 
-
 )
-
-
 
 }
 
 
-
-
 </div>
-
-
 
 )
 
 }
 
 
-
 </div>
-
 
 
 
 
 
 {
-admin && (
 
+admin && (
 
 <button
 
 className="admin-btn"
 
-onClick={()=>setCurrentView("admin")}
+onClick={()=>navigate("/admin")}
 
 >
 
-
 ⚙️ لوحة الإدارة
 
-
 </button>
-
 
 )
 
 }
-
-
 
 
 
@@ -698,21 +597,15 @@ onClick={()=>setCurrentView("cart")}
 >
 
 
-
-
 {
 
 cartCount > 0 && (
 
-
 <span className="cart-badge">
-
 
 {cartCount}
 
-
 </span>
-
 
 )
 
@@ -720,17 +613,11 @@ cartCount > 0 && (
 
 
 
-
-
 <span className="cart-symbol">
-
 
 🛒
 
-
 </span>
-
-
 
 
 <p>
@@ -740,30 +627,27 @@ cartCount > 0 && (
 </p>
 
 
-
-
 </div>
 
 
 
 
 
-</div>
-
-
-
+</div> 
+{/* نهاية actions */}
 
 
 
 </div>
+{/* نهاية navbar-top */}
+
+
+
 
 
 
 
 <div className="category-wrapper">
-
-
-
 
 
 <button
@@ -774,13 +658,9 @@ onClick={()=>moveCategories(300)}
 
 >
 
-
 ❯
 
-
 </button>
-
-
 
 
 
@@ -790,22 +670,15 @@ onClick={()=>moveCategories(300)}
 
 
 
-
-
 <button
 
-onClick={()=>setCurrentView("store")}
+onClick={()=>navigate("/")}
 
 >
 
-
 🏠 الرئيسية
 
-
 </button>
-
-
-
 
 
 
@@ -816,73 +689,55 @@ onClick={()=>scrollToSection(".categories")}
 
 >
 
-
 📱 الأقسام
 
-
 </button>
 
 
 
 
 
+{
+
+categories.map((cat)=>(
 
 
-<button>
+<button
 
-📱 الموبايلات
+key={cat.id}
 
-</button>
-
-
+onClick={()=>{
 
 
+window.dispatchEvent(
+
+new CustomEvent(
+
+"filterCategory",
+
+{
+
+detail:cat.name
+
+}
+
+)
+
+);
 
 
+}}
 
-<button>
+>
 
-💻 اللابتوبات
-
-</button>
-
-
-
-
-
-
-
-<button>
-
-🎧 الإكسسوارات
-
-</button>
-
-
-
-
-
-
-
-<button>
-
-⌚ الساعات الذكية
+{cat.icon} {cat.name}
 
 </button>
 
 
+))
 
-
-
-
-
-<button>
-
-🛒 السوبر ماركت
-
-</button>
-
-
+}
 
 
 
@@ -894,14 +749,9 @@ onClick={()=>scrollToSection(".offer-banner")}
 
 >
 
-
 🔥 العروض
 
-
 </button>
-
-
-
 
 
 
@@ -912,14 +762,9 @@ onClick={()=>scrollToSection(".best-selling-section")}
 
 >
 
-
 ⭐ الأكثر مبيعًا
 
-
 </button>
-
-
-
 
 
 
@@ -930,20 +775,14 @@ onClick={()=>scrollToSection(".new-arrivals-section")}
 
 >
 
-
 🆕 وصل حديثًا
-
 
 </button>
 
 
 
 
-
-
-
 </div>
-
 
 
 
@@ -958,20 +797,14 @@ onClick={()=>moveCategories(-300)}
 
 >
 
-
 ❮
-
 
 </button>
 
 
 
 
-
-
 </div>
-
-
 
 
 
@@ -982,15 +815,60 @@ onClick={()=>moveCategories(-300)}
 
 
 
-</>
 
+{
+
+logoZoom && (
+
+
+<div
+
+className="logo-modal"
+
+onClick={()=>setLogoZoom(false)}
+
+>
+
+
+<button
+
+className="close-logo"
+
+onClick={()=>setLogoZoom(false)}
+
+>
+
+✕
+
+</button>
+
+
+
+<img
+
+src="/logo/logo.png"
+
+alt="Elsafty Store"
+
+/>
+
+
+
+</div>
+
+
+)
+
+}
+
+
+
+</>
 
 );
 
 
-
 }
-
 
 
 export default Navbar;

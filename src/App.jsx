@@ -3,6 +3,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MyAccount from "./pages/MyAccount";
+
 import React, {
   useEffect,
   useState,
@@ -51,10 +52,27 @@ import {
 
 
 
-
-
-
 function App(){
+
+  return (
+
+    <BrowserRouter>
+
+      <AppContent />
+
+    </BrowserRouter>
+
+  );
+
+}
+
+
+
+
+
+
+function AppContent(){
+
 
 
 const [products,setProducts]=useState([]);
@@ -64,6 +82,10 @@ const [admin,setAdmin]=useState(false);
 const [loading,setLoading]=useState(true);
 
 
+
+
+
+const navigate = useNavigate();
 
 
 
@@ -111,10 +133,6 @@ setLoading(false);
 
 
 
-
-
-
-
 useEffect(()=>{
 
 
@@ -122,38 +140,70 @@ loadProducts();
 
 
 
-const unsubscribe =
+const unsubscribe = onAuthStateChanged(
 
-onAuthStateChanged(
 auth,
-async (user)=>{
+
+async(user)=>{
+
 
 if(!user){
+
 
 setAdmin(false);
 
 return;
 
+
 }
 
 
-const { 
+
+
+
+const {
+
 doc,
+
 getDoc
-} = await import("firebase/firestore");
 
-
-const { db } = await import("./firebase");
-
-
-const adminRef = doc(
-db,
-"users",
-user.uid
+} = await import(
+"firebase/firestore"
 );
 
 
+
+
+const {
+
+db
+
+} = await import(
+"./firebase"
+);
+
+
+
+
+
+const adminRef = doc(
+
+db,
+
+"users",
+
+user.uid
+
+);
+
+
+
+
+
 const adminSnap = await getDoc(adminRef);
+
+
+
 
 
 
@@ -161,8 +211,11 @@ if(adminSnap.exists()){
 
 
 setAdmin(
+
 adminSnap.data().role === "admin"
+
 );
+
 
 
 }else{
@@ -174,8 +227,13 @@ setAdmin(false);
 }
 
 
+
 }
+
+
 );
+
+
 
 
 
@@ -188,12 +246,8 @@ unsubscribe();
 };
 
 
+
 },[]);
-
-
-
-
-
 
 
 
@@ -202,7 +256,7 @@ unsubscribe();
 if(loading){
 
 
-return(
+return (
 
 <div
 
@@ -228,60 +282,87 @@ fontFamily:"Cairo"
 
 </div>
 
-
 );
 
 
 }
-
-
-
-
-
-
-
-
-
-return(
-
-
-<BrowserRouter>
-
+return (
 
 <Routes>
 
 
 
-
 {/* تسجيل دخول العميل */}
+
 <Route
-  path="/login"
-  element={<Login />}
+
+path="/login"
+
+element={<Login />}
+
 />
+
+
+
 
 {/* إنشاء حساب */}
+
 <Route
-  path="/register"
-  element={<Register />}
+
+path="/register"
+
+element={<Register />}
+
 />
 
+
+
+
 {/* حساب العميل */}
+
 <Route
-  path="/account"
-  element={
-    <ProtectedRoute>
-      <MyAccount />
-    </ProtectedRoute>
-  }
+
+path="/account"
+
+element={
+
+<ProtectedRoute>
+
+<MyAccount />
+
+</ProtectedRoute>
+
+}
+
 />
+
+
+
+
+
+{/* طلباتي */}
+
 <Route
-  path="/orders"
-  element={
-    <ProtectedRoute>
-      <Orders />
-    </ProtectedRoute>
-  }
+
+path="/orders"
+
+element={
+
+<ProtectedRoute>
+
+<Orders />
+
+</ProtectedRoute>
+
+}
+
 />
+
+
+
+
+
+
 {/* الصفحة الرئيسية */}
 
 <Route
@@ -295,14 +376,28 @@ element={
 
 products={products}
 
+admin={admin}
+
+
+setCurrentView={(view)=>{
+
+
+if(view==="admin"){
+
+navigate("/admin");
+
+}
+
+
+}}
+
+
 />
 
 
 }
 
-
 />
-
 
 
 
@@ -329,7 +424,6 @@ products={products}
 
 }
 
-
 />
 
 
@@ -354,7 +448,6 @@ element={
 
 }
 
-
 />
 
 
@@ -367,12 +460,21 @@ element={
 {/* الدفع */}
 
 <Route
+
 path="/checkout"
+
 element={
+
+
 <ProtectedRoute>
+
 <Checkout/>
+
 </ProtectedRoute>
+
+
 }
+
 />
 
 
@@ -408,6 +510,7 @@ setAdmin={setAdmin}
 />
 
 
+
 }
 
 
@@ -430,7 +533,6 @@ path="/admin"
 element={
 
 
-
 admin ?
 
 
@@ -441,12 +543,12 @@ products={products}
 
 loadProducts={loadProducts}
 
+
 />
 
 
 
 :
-
 
 
 <Navigate to="/admin-login"/>
@@ -466,7 +568,7 @@ loadProducts={loadProducts}
 
 
 
-{/* أي رابط خطأ */}
+{/* أي رابط غير موجود */}
 
 <Route
 
@@ -487,31 +589,12 @@ element={
 
 
 
-
 </Routes>
-
-
-</BrowserRouter>
 
 
 );
 
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 function ProductDetailsWrapper({products}){
 
 
@@ -521,24 +604,11 @@ const {id}=useParams();
 
 
 
-
-
 const product = products.find(
-
-
-item =>
-
-
-String(item.id) === String(id)
-
-||
-
+(item)=>
+String(item.id) === String(id) ||
 String(item._id) === String(id)
-
-
-
 );
-
 
 
 
@@ -568,10 +638,6 @@ product={product}
 
 
 
-
-
-
-
 function CartWrapper(){
 
 
@@ -587,6 +653,7 @@ removeFromCart
 
 
 }=useContext(CartContext);
+
 
 
 
@@ -608,7 +675,9 @@ return(
 cart={cart}
 
 
+
 updateQuantity={updateQuantity}
+
 
 
 removeFromCart={removeFromCart}
@@ -616,7 +685,9 @@ removeFromCart={removeFromCart}
 
 
 
+
 setCurrentView={(page)=>{
+
 
 
 switch(page){
@@ -625,21 +696,30 @@ switch(page){
 
 case "store":
 
+
 navigate("/");
 
+
 break;
+
+
 
 
 
 case "checkout":
 
+
 navigate("/checkout");
+
 
 break;
 
 
 
+
+
 default:
+
 
 break;
 
@@ -652,20 +732,13 @@ break;
 }}
 
 
+
 />
 
 
 );
 
 
+
 }
-
-
-
-
-
-
-
-
-
 export default App;
