@@ -3,7 +3,7 @@ import React, {
   useRef,
   useState
 } from "react";
-
+import offerText from "../../config/offerConfig";
 import {
   useNavigate
 } from "react-router-dom";
@@ -271,33 +271,23 @@ return (
 
 <div className="offer-text">
 
-🚚 شحن مجاني للطلبات فوق 500 جنيه
+{
 
-<span>|</span>
+offerText.map((text,index)=>(
 
-🔥 خصومات حتى 50%
+<span key={index}>
 
-<span>|</span>
+{text}
 
-💳 دفع آمن 100%
+</span>
 
-<span>|</span>
+))
 
-📞 دعم فني طوال الأسبوع
-
-<span>|</span>
-
-⭐ منتجات أصلية بضمان الجودة
-
-<span>|</span>
-
-🎁 عروض حصرية كل يوم
-
+}
 
 </div>
 
 </div>
-
 
 
 
