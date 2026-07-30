@@ -873,35 +873,223 @@ overflow:hidden;
 }
 
 
-.search-suggestions div{
+/* Search suggestions mobile fix */
 
-padding:12px;
-cursor:pointer;
+.search-suggestions {
+
+background: #ffffff;
+
+color: #222;
+
+border: 1px solid #ddd;
+
+box-shadow: 0 5px 15px rgba(0,0,0,.15);
 
 }
 
 
-.search-suggestions div:hover{
+.suggestion-item {
+
+color: #222;
+
+background: #fff;
+
+padding: 12px;
+
+font-size: 15px;
+
+border-bottom: 1px solid #eee;
+
+cursor: pointer;
+
+}
+
+
+
+.suggestion-item:hover {
+
+background: #f5f5f5;
+
+}
+
+
+
+.search-no-result {
+
+background: #fff;
+
+color: #333;
+
+padding: 12px;
+
+border: 1px solid #ddd;
+
+}
+
+
+
+
+
+@media (max-width:768px){
+
+
+.search-suggestions {
+
+position: absolute;
+
+top: 100%;
+
+left: 0;
+
+right: 0;
+
+z-index: 9999;
+
+max-height: 250px;
+
+overflow-y: auto;
+
+}
+
+
+
+.suggestion-item {
+
+font-size: 14px;
+
+color: #111 !important;
+
+background: #fff !important;
+
+}
+
+
+
+}
+/* =========================
+   Search Suggestions Fix
+========================= */
+
+
+.search-input-wrapper{
+
+position:relative;
+
+width:100%;
+
+}
+
+
+
+.search-suggestions{
+
+position:absolute;
+
+top:100%;
+
+right:0;
+
+left:0;
+
+background:#fff;
+
+color:#071A36;
+
+border-radius:10px;
+
+border:1px solid #ddd;
+
+box-shadow:0 8px 20px rgba(0,0,0,.25);
+
+z-index:99999;
+
+overflow:hidden;
+
+}
+
+
+
+.suggestion-item{
+
+display:block;
+
+width:100%;
+
+padding:12px 15px;
+
+background:#fff;
+
+color:#071A36 !important;
+
+font-size:15px;
+
+font-weight:600;
+
+border-bottom:1px solid #eee;
+
+cursor:pointer;
+
+text-align:right;
+
+}
+
+
+
+.suggestion-item:hover{
 
 background:#f5f5f5;
 
-}
-.search-suggestions div{
-
-display:flex;
-align-items:center;
-gap:10px;
-padding:10px;
-cursor:pointer;
+color:#D4AF37 !important;
 
 }
 
 
-.search-suggestions img{
 
-width:45px;
-height:45px;
-object-fit:cover;
+.search-no-result{
+
+background:#fff;
+
+color:#071A36;
+
+padding:12px;
+
 border-radius:8px;
+
+font-weight:bold;
+
+}
+
+
+
+
+@media(max-width:700px){
+
+
+.search-suggestions{
+
+top:42px;
+
+width:100%;
+
+max-height:250px;
+
+overflow-y:auto;
+
+}
+
+
+
+.suggestion-item{
+
+font-size:14px;
+
+padding:10px;
+
+color:#071A36 !important;
+
+background:#fff !important;
+
+}
+
 
 }
