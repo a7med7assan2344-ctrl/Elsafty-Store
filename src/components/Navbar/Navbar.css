@@ -63,10 +63,9 @@ align-items:center;
 
 width:max-content;
 
-animation:offerMove 40s linear infinite;
+animation:offerMove 30s linear infinite;
 
 }
-
 
 
 .offer-track span{
@@ -82,13 +81,11 @@ font-size:15px;
 
 @keyframes offerMove{
 
-
 from{
 
 transform:translateX(-50%);
 
 }
-
 
 to{
 
@@ -96,9 +93,7 @@ transform:translateX(0);
 
 }
 
-
 }
-
 /* =========================
    الجزء العلوي
 ========================= */
@@ -469,8 +464,9 @@ transform:translateX(0);
 
     padding:12px 10px;
 
-    direction:rtl;
-
+.offer-track{
+direction:ltr;
+}
 }
 
 
