@@ -533,15 +533,22 @@ className="suggestion-item"
 
 onClick={()=>{
 
-setSearchTerm(
-item.title || item.name || item.productName
-);
+const productName =
+item.title ||
+item.name ||
+item.productName ||
+"";
+
+
+setSearchTerm("");
 
 setSuggestions([]);
 
-navigate(`/search?q=${item.title || item.name || item.productName}`);
-}}
 
+navigate(`/product/${item.id || item._id}`);
+
+
+}}
 >
 
 {item.title || item.name || item.productName}
@@ -561,7 +568,8 @@ navigate(`/search?q=${item.title || item.name || item.productName}`);
 
 {
 searchTerm.trim() &&
-suggestions.length === 0 && (
+suggestions.length === 0 &&
+document.activeElement === searchRef.current && (
 
 <div className="search-no-result">
 
@@ -570,9 +578,7 @@ suggestions.length === 0 && (
 </div>
 
 )
-
 }
-
 </div>  {/* قفل search-input-wrapper */}
 
 
