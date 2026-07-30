@@ -10,6 +10,8 @@ function StoreLayout({
 
 children,
 
+products,
+
 admin,
 
 cartCount,
@@ -28,7 +30,10 @@ return (
 <div className="store-container">
 
 
+
 <Navbar
+
+products={products}
 
 setCurrentView={setCurrentView}
 
@@ -44,7 +49,11 @@ admin={admin}
 
 
 
+
+
 <HeroSlider />
+
+
 
 
 
@@ -54,16 +63,22 @@ admin={admin}
 
 
 
+
+
 <footer className="store-footer">
+
 
 <div className="footer-content">
 
 
+
 <div className="footer-section">
+
 
 <h3>
 Elsafty Store
 </h3>
+
 
 <p>
 
@@ -71,15 +86,24 @@ Elsafty Store
 
 </p>
 
+
 </div>
+
+
+
+
 
 
 
 <div className="footer-section">
 
+
 <h3>
 روابط سريعة
 </h3>
+
+
+
 
 
 <button
@@ -95,6 +119,11 @@ onClick={()=>setCurrentView("store")}
 </button>
 
 
+
+
+
+
+
 <button
 
 className="footer-link"
@@ -108,28 +137,102 @@ onClick={()=>setCurrentView("cart")}
 </button>
 
 
+
+
+
+<button
+
+className="footer-link"
+
+onClick={()=>setCurrentView("account")}
+
+>
+
+👤 الحساب
+
+</button>
+
+
+
+
+
 </div>
 
 
 
+
+
+<div className="footer-section">
+
+
+<h3>
+
+خدمة العملاء
+
+</h3>
+
+
+<p>
+🚚 شحن لجميع المحافظات
+</p>
+
+
+<p>
+🔒 دفع آمن
+</p>
+
+
+<p>
+⭐ ضمان الجودة
+</p>
+
+
+
 </div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
 
 
 <hr/>
 
 
+
+
+
+
+
 <p className="copyright">
+
 
 © {new Date().getFullYear()} Elsafty Store
 
+
 </p>
+
+
+
+
 
 
 </footer>
 
 
 
+
+
+
 </div>
+
 
 );
 

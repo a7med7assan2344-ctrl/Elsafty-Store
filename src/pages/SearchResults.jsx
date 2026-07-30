@@ -24,9 +24,13 @@ import "../styles/store.css";
 function SearchResults({
 
 products,
+
 admin,
+
 searchTerm,
+
 setSearchTerm,
+
 setCurrentView
 
 }) {
@@ -48,6 +52,7 @@ params.get("q") || "";
 
 
 
+
 const {
 
 cart,
@@ -55,6 +60,7 @@ cart,
 addToCart
 
 } = useContext(CartContext);
+
 
 
 
@@ -69,6 +75,8 @@ total + item.quantity,
 0
 
 );
+
+
 
 
 
@@ -96,6 +104,7 @@ const description =
 product.description ||
 
 "";
+
 
 
 
@@ -136,10 +145,15 @@ query.toLowerCase()
 
 
 
+
 return (
 
 
+
 <StoreLayout
+
+
+products={products}
 
 
 admin={admin}
@@ -157,7 +171,10 @@ setSearchTerm={setSearchTerm}
 setCurrentView={setCurrentView}
 
 
+
 >
+
+
 
 
 
@@ -176,6 +193,7 @@ className="details-btn"
 onClick={()=>navigate("/")}
 
 
+
 >
 
 
@@ -183,6 +201,7 @@ onClick={()=>navigate("/")}
 
 
 </button>
+
 
 
 
@@ -201,7 +220,9 @@ onClick={()=>navigate("/")}
 {query}
 
 
+
 </h2>
+
 
 
 
@@ -220,6 +241,7 @@ onClick={()=>navigate("/")}
 {results.length}
 
 
+
 </p>
 
 
@@ -229,7 +251,10 @@ onClick={()=>navigate("/")}
 
 
 
+
 <div className="product-grid">
+
+
 
 
 
@@ -256,6 +281,7 @@ product._id;
 return (
 
 
+
 <div
 
 
@@ -268,6 +294,7 @@ key={id}
 onClick={()=>navigate(`/product/${id}`)}
 
 
+
 >
 
 
@@ -276,7 +303,11 @@ onClick={()=>navigate(`/product/${id}`)}
 
 
 
+
+
 <div className="product-img-container">
+
+
 
 
 
@@ -303,11 +334,15 @@ product.name ||
 }
 
 
+
 />
 
 
 
+
+
 </div>
+
 
 
 
@@ -330,7 +365,9 @@ product.name ||
 }
 
 
+
 </h3>
+
 
 
 
@@ -354,6 +391,7 @@ product.name ||
 
 
 
+
 <p className="product-price">
 
 
@@ -362,7 +400,9 @@ product.name ||
 جنيه
 
 
+
 </p>
+
 
 
 
@@ -390,6 +430,7 @@ addToCart(product);
 }}
 
 
+
 >
 
 
@@ -405,7 +446,9 @@ addToCart(product);
 
 
 
+
 </div>
+
 
 
 );
@@ -429,12 +472,15 @@ addToCart(product);
 </h3>
 
 
+
 }
 
 
 
 
+
 </div>
+
 
 
 
@@ -448,11 +494,13 @@ addToCart(product);
 
 
 
+
 </StoreLayout>
 
 
 
 );
+
 
 
 }
