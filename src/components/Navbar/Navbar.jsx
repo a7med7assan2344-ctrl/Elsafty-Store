@@ -30,11 +30,21 @@ function Navbar({
   cartCount,
   searchTerm,
   setSearchTerm,
-  admin
+  admin,
+  products
 
 }) {
+  const handleSearch = () => {
 
+if(searchTerm.trim()){
 
+navigate(`/search?q=${searchTerm}`);
+
+setSuggestions([]);
+
+}
+
+};
 const navigate = useNavigate();
 
 
@@ -45,10 +55,10 @@ const [menuOpen,setMenuOpen] = useState(false);
 const [logoZoom,setLogoZoom] = useState(false);
 
 const [categories,setCategories] = useState([]);
-
+const [suggestions,setSuggestions] = useState([]);
 
 const menuRef = useRef(null);
-
+const searchRef = useRef(null);
 
 
 
@@ -61,9 +71,41 @@ const unsubscribe = onAuthStateChanged(
     setUser(currentUser);
   }
 );
-
-
 return ()=>unsubscribe();
+
+
+},[]);
+
+useEffect(()=>{
+
+  const closeSearch = (e)=>{
+
+    if(
+      searchRef.current &&
+      !searchRef.current.contains(e.target)
+    ){
+
+      setSuggestions([]);
+
+    }
+
+  };
+
+
+  document.addEventListener(
+    "click",
+    closeSearch
+  );
+
+
+  return ()=>{
+
+    document.removeEventListener(
+      "click",
+      closeSearch
+    );
+
+  };
 
 
 },[]);
@@ -74,31 +116,28 @@ return ()=>unsubscribe();
 
 useEffect(()=>{
 
+  const fetchCategories = async()=>{
 
-const fetchCategories = async()=>{
+    try{
 
-try{
+      const data = await getCategories();
 
-const data = await getCategories();
+      setCategories(data);
 
-setCategories(data);
+    }
+    catch(error){
 
-}
+      console.log(error);
 
-catch(error){
+    }
 
-console.log(error);
-
-}
-
-};
+  };
 
 
-fetchCategories();
+  fetchCategories();
 
 
 },[]);
-
 
 
 
@@ -320,10 +359,15 @@ Everything You Need
 
 
 
-<div className="search-box">
-
+<div 
+className="search-box"
+ref={searchRef}
+>
+<div className="search-input-wrapper">
 
 <input
+
+ref={searchRef}
 
 type="text"
 
@@ -331,21 +375,229 @@ placeholder="ابحث عن أي منتج..."
 
 value={searchTerm}
 
-onChange={(e)=>setSearchTerm(e.target.value)}
+onChange={(e)=>{
 
-/>
+const value = e.target.value;
+
+setSearchTerm(value);
 
 
-<button>
+if(value.trim()){
+
+const searchValue = value.toLowerCase();
+
+
+const results = products
+
+.filter((item)=>{
+
+
+const name =
+item.title ||
+item.name ||
+item.productName ||
+"";
+
+
+return name
+.toLowerCase()
+.includes(searchValue);
+
+
+})
+
+
+.sort((a,b)=>{
+
+
+const nameA =
+(
+a.title ||
+a.name ||
+a.productName ||
+""
+)
+.toLowerCase();
+
+
+const nameB =
+(
+b.title ||
+b.name ||
+b.productName ||
+""
+)
+.toLowerCase();
+
+
+
+return (
+nameA.indexOf(searchValue)
+-
+nameB.indexOf(searchValue)
+);
+
+
+})
+
+
+.filter(
+
+(item,index,self)=>
+
+index === self.findIndex(
+
+(x)=>
+
+(
+x.title ||
+x.name ||
+x.productName
+)
+
+===
+
+(
+item.title ||
+item.name ||
+item.productName
+)
+
+)
+
+)
+
+
+.slice(0,5);
+
+
+
+setSuggestions(results);
+
+
+
+}else{
+
+
+setSuggestions([]);
+
+
+}
+
+
+}}
+
+
+
+onKeyDown={(e)=>{
+
+
+if(e.key === "Enter"){
+
+
+if(searchTerm.trim()){
+
+
+navigate(
+
+`/search?q=${searchTerm}`
+
+);
+
+
+setSuggestions([]);
+
+
+}
+
+
+}
+
+
+}}
+
+
+/>{
+suggestions.length > 0 && (
+
+<div className="search-suggestions">
+
+{
+suggestions.map((item)=>(
+
+<div
+
+key={item.id || item._id}
+
+className="suggestion-item"
+
+onClick={()=>{
+
+setSearchTerm(
+item.title || item.name || item.productName
+);
+
+setSuggestions([]);
+
+navigate(`/search?q=${item.title || item.name || item.productName}`);
+}}
+
+>
+
+{item.title || item.name || item.productName}
+
+</div>
+
+))
+
+}
+
+</div>
+
+)
+
+}
+
+
+{
+searchTerm.trim() &&
+suggestions.length === 0 && (
+
+<div className="search-no-result">
+
+لا توجد منتجات
+
+</div>
+
+)
+
+}
+
+</div>  {/* قفل search-input-wrapper */}
+
+
+<button
+
+onClick={()=>{
+
+if(searchTerm.trim()){
+
+navigate(
+`/search?q=${searchTerm}`
+);
+
+setSuggestions([]);
+
+}
+
+}}
+
+>
 
 🔍
 
 </button>
-
-
 </div>
-
-
 
 
 

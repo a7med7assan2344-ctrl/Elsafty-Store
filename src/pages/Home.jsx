@@ -43,11 +43,11 @@ import {
 
 
 function Home({
-
-  products = [],
+  products,
   admin,
+  searchTerm,
+  setSearchTerm,
   setCurrentView
-
 }) {
 
 
@@ -65,12 +65,32 @@ const {
 
 
 
-const [searchTerm,setSearchTerm] = useState("");
 
 const [categories,setCategories] = useState([]);
 
 const [selectedCategory,setSelectedCategory] = useState("all");
+useEffect(()=>{
 
+const loadCategories = async()=>{
+
+try{
+
+const data = await getCategories();
+
+setCategories(data || []);
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+};
+
+loadCategories();
+
+},[]);
 
 
 
@@ -197,61 +217,72 @@ filterListener
 
 
 
+const scrollToSection = (className)=>{
+
+document
+.querySelector(className)
+?.scrollIntoView({
+
+behavior:"smooth"
+
+});
+
+};
 
 
 
+const filteredProducts = products.filter((product)=>{
+
+const searchText = String(searchTerm || "")
+.toLowerCase()
+.trim();
 
 
-const filteredProducts = products.filter(
-
-(product)=>{
-
-
-const title =
-
+const title = String(
 product.title ||
-
 product.name ||
+product.productName ||
+""
+).toLowerCase();
 
-"";
+
+const description = String(
+product.description ||
+""
+).toLowerCase();
+
+
+const category = String(
+product.category ||
+""
+).toLowerCase();
 
 
 
 const matchSearch =
 
-title
+searchText === "" ||
 
-.toLowerCase()
+title.includes(searchText) ||
 
-.includes(
+description.includes(searchText) ||
 
-searchTerm.toLowerCase()
-
-);
-
+category.includes(searchText);
 
 
 
 const matchCategory =
 
-selectedCategory==="all"
-
-||
+selectedCategory === "all" ||
 
 product.category === selectedCategory;
 
 
 
-return (
-
-matchSearch && matchCategory
-
-);
+return matchSearch && matchCategory;
 
 
-}
-
-);
+});
 
 
 
@@ -301,6 +332,7 @@ searchTerm={searchTerm}
 setSearchTerm={setSearchTerm}
 
 admin={admin}
+products={products}
 
 />
 

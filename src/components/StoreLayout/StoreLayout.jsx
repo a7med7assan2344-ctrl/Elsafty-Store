@@ -1,0 +1,140 @@
+import React from "react";
+
+import Navbar from "../Navbar/Navbar";
+import HeroSlider from "../HeroSlider";
+
+import "../../styles/store.css";
+
+
+function StoreLayout({
+
+children,
+
+admin,
+
+cartCount,
+
+searchTerm,
+
+setSearchTerm,
+
+setCurrentView
+
+}){
+
+
+return (
+
+<div className="store-container">
+
+
+<Navbar
+
+setCurrentView={setCurrentView}
+
+cartCount={cartCount}
+
+searchTerm={searchTerm}
+
+setSearchTerm={setSearchTerm}
+
+admin={admin}
+
+/>
+
+
+
+<HeroSlider />
+
+
+
+{children}
+
+
+
+
+
+<footer className="store-footer">
+
+<div className="footer-content">
+
+
+<div className="footer-section">
+
+<h3>
+Elsafty Store
+</h3>
+
+<p>
+
+متجر إلكتروني يوفر أفضل المنتجات بأفضل الأسعار
+
+</p>
+
+</div>
+
+
+
+<div className="footer-section">
+
+<h3>
+روابط سريعة
+</h3>
+
+
+<button
+
+className="footer-link"
+
+onClick={()=>setCurrentView("store")}
+
+>
+
+🏠 الرئيسية
+
+</button>
+
+
+<button
+
+className="footer-link"
+
+onClick={()=>setCurrentView("cart")}
+
+>
+
+🛒 السلة
+
+</button>
+
+
+</div>
+
+
+
+</div>
+
+
+<hr/>
+
+
+<p className="copyright">
+
+© {new Date().getFullYear()} Elsafty Store
+
+</p>
+
+
+</footer>
+
+
+
+</div>
+
+);
+
+
+}
+
+
+export default StoreLayout;

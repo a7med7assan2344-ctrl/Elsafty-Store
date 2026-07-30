@@ -344,3 +344,7 @@ body{
 .store-container{
     min-width:1400px;
 }
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}

@@ -533,13 +533,10 @@
 }
 
 
-
 /* =========================
-   Tablet
+   Mobile
 ========================= */
-
-
-
+@media (max-width: 1024px){
 
     .navbar-top{
 
@@ -552,13 +549,11 @@
     }
 
 
-
     .logo{
 
         justify-content:center;
 
     }
-
 
 
     .search-box{
@@ -568,7 +563,6 @@
         max-width:none;
 
     }
-
 
 
     .actions{
@@ -586,20 +580,18 @@
 }
 
 
-
 /* =========================
    Mobile
 ========================= */
 
 
-
+@media (max-width:700px){
 
     .top-offer-bar{
 
         height:34px;
 
     }
-
 
 
     .offer-text{
@@ -609,15 +601,20 @@
     }
 
 
-
     .navbar-top{
 
         padding:10px;
 
     }
 
+body{
+    overflow-x:hidden;
+}
 
-
+.navbar{
+    width:100%;
+    min-width:0;
+}
     .logo{
 
         flex-direction:column;
@@ -626,6 +623,7 @@
 
     }
 
+}
 
 
     .logo img{
@@ -730,7 +728,6 @@
 
     }
 
-}
 .logo img {
     transition: transform 0.3s ease;
     cursor: pointer;
@@ -836,6 +833,7 @@ opacity:1;
 
 
 
+@media(max-width:600px){
 
 .logo-modal img{
 
@@ -844,28 +842,66 @@ width:250px;
 height:250px;
 
 }
-
-}
-body{
-    overflow-x:auto;
-}
-
-.navbar{
-    min-width:1400px;
+.search-input-wrapper{
+position:relative;
+width:100%;
 }
 
-.navbar-top{
-    flex-wrap:nowrap !important;
+
+.clear-search{
+position:absolute;
+left:10px;
+top:50%;
+transform:translateY(-50%);
+border:none;
+background:none;
+cursor:pointer;
+font-size:16px;
+}
+.search-suggestions{
+
+position:absolute;
+top:100%;
+right:0;
+left:0;
+background:white;
+border-radius:10px;
+box-shadow:0 5px 20px rgba(0,0,0,.15);
+z-index:999;
+overflow:hidden;
+
 }
 
-.actions{
-    flex-wrap:nowrap !important;
+
+.search-suggestions div{
+
+padding:12px;
+cursor:pointer;
+
 }
 
-.search-box{
-    min-width:500px;
+
+.search-suggestions div:hover{
+
+background:#f5f5f5;
+
+}
+.search-suggestions div{
+
+display:flex;
+align-items:center;
+gap:10px;
+padding:10px;
+cursor:pointer;
+
 }
 
-.category-wrapper{
-    min-width:1400px;
+
+.search-suggestions img{
+
+width:45px;
+height:45px;
+object-fit:cover;
+border-radius:8px;
+
 }

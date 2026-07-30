@@ -1180,3 +1180,75 @@ color:white;
 
 
 }
+/* Mobile 3 products layout */
+@media (max-width: 600px){
+
+.product-grid{
+
+grid-template-columns:repeat(3, 1fr);
+gap:8px;
+
+}
+
+
+.product-card{
+
+padding:8px;
+border-radius:10px;
+
+}
+
+
+.product-img-container{
+
+height:110px;
+
+}
+
+
+.product-img-container img{
+
+width:100%;
+height:100%;
+object-fit:contain;
+
+}
+
+
+.product-card h3{
+
+font-size:12px;
+
+display:-webkit-box;
+-webkit-line-clamp:2;
+-webkit-box-orient:vertical;
+overflow:hidden;
+
+}
+
+
+.product-price{
+
+font-size:13px;
+font-weight:bold;
+
+}
+
+
+.product-actions{
+
+flex-direction:column;
+gap:5px;
+
+}
+
+
+.add-to-cart-btn,
+.details-btn{
+
+font-size:11px;
+padding:6px 4px;
+
+}
+
+}

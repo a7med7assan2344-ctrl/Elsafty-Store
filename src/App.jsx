@@ -10,7 +10,6 @@ import React, {
   useContext
 } from "react";
 
-
 import Admin from "./components/Admin/Admin.jsx";
 import AdminLogin from "./pages/AdminLogin";
 
@@ -19,6 +18,7 @@ import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 
+import SearchResults from "./pages/SearchResults";
 
 import {
   onAuthStateChanged
@@ -80,7 +80,7 @@ const [products,setProducts]=useState([]);
 const [admin,setAdmin]=useState(false);
 
 const [loading,setLoading]=useState(true);
-
+const [searchTerm, setSearchTerm] = useState("");
 
 
 
@@ -362,55 +362,117 @@ element={
 
 
 
-
 {/* الصفحة الرئيسية */}
 
 <Route
+  path="/"
+  element={
+    <Home
+      products={products}
+      admin={admin}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
+      setCurrentView={(view) => {
+        switch (view) {
 
-path="/"
+          case "admin":
+            navigate("/admin");
+            break;
+
+          case "cart":
+            navigate("/cart");
+            break;
+
+          case "store":
+            navigate("/");
+            break;
+
+          default:
+            break;
+        }
+      }}
+    />
+  }
+/>
+<Route
+
+path="/search"
 
 element={
 
-
-<Home
+<SearchResults
 
 products={products}
 
 admin={admin}
 
+searchTerm={searchTerm}
 
-setCurrentView={(view) => {
-  switch (view) {
-    case "admin":
-      navigate("/admin");
-      break;
+setSearchTerm={setSearchTerm}
 
-    case "cart":
-      navigate("/cart");
-      break;
+setCurrentView={(view)=>{
 
-    case "store":
-      navigate("/");
-      break;
+switch(view){
 
-    default:
-      break;
-  }
-}}
 
-/>
+case "admin":
+
+navigate("/admin");
+
+break;
+
+
+
+case "cart":
+
+navigate("/cart");
+
+break;
+
+
+
+case "store":
+
+navigate("/");
+
+break;
+
+
+
+default:
+
+window.dispatchEvent(
+new CustomEvent(
+"filterCategory",
+{
+detail:view
+}
+)
+);
+
+navigate("/");
+
+break;
 
 
 }
 
+}}
 />
 
+}
 
+/>
+{/* تفاصيل المنتج */}
 
-
-
-
-
+<Route
+  path="/product/:id"
+  element={
+    <ProductDetailsWrapper
+      products={products}
+    />
+  }
+/>
 
 {/* تفاصيل المنتج */}
 
@@ -425,11 +487,8 @@ element={
 
 products={products}
 
-/>
-
-
-}
-
+    />
+  }
 />
 
 
