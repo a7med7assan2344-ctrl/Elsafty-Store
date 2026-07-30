@@ -273,8 +273,7 @@ return (
 
 className="logo"
 
-onClick={()=>setCurrentView("store")}
-
+onClick={() => navigate("/")}
 >
 
 
@@ -589,14 +588,9 @@ onClick={()=>navigate("/admin")}
 
 
 <div
-
-className="cart-icon"
-
-onClick={()=>setCurrentView("cart")}
-
+  className="cart-icon"
+  onClick={() => navigate("/cart")}
 >
-
-
 {
 
 cartCount > 0 && (

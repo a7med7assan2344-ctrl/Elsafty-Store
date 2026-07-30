@@ -124,7 +124,10 @@ admin={false}
 
 
 
-
+<button 
+onClick={() => navigate("/checkout")}>
+  إتمام الطلب
+</button>
 
 <button
 

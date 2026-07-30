@@ -379,18 +379,24 @@ products={products}
 admin={admin}
 
 
-setCurrentView={(view)=>{
+setCurrentView={(view) => {
+  switch (view) {
+    case "admin":
+      navigate("/admin");
+      break;
 
+    case "cart":
+      navigate("/cart");
+      break;
 
-if(view==="admin"){
+    case "store":
+      navigate("/");
+      break;
 
-navigate("/admin");
-
-}
-
-
+    default:
+      break;
+  }
 }}
-
 
 />
 
@@ -460,23 +466,9 @@ element={
 {/* الدفع */}
 
 <Route
-
-path="/checkout"
-
-element={
-
-
-<ProtectedRoute>
-
-<Checkout/>
-
-</ProtectedRoute>
-
-
-}
-
+  path="/checkout"
+  element={<Checkout />}
 />
-
 
 
 

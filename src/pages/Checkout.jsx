@@ -79,76 +79,37 @@ item.quantity
 
 
 
-const sendOrder = async ()=>{
+const sendOrder = async () => {
 
-if(
-!name ||
-!phone ||
-!address
-){
+  if (!name || !phone || !address) {
+    alert("من فضلك اكتب الاسم ورقم الهاتف والعنوان");
+    return;
+  }
 
-alert("من فضلك اكتب الاسم ورقم الهاتف والعنوان");
+  if (cart.length === 0) {
+    alert("السلة فارغة");
+    navigate("/");
+    return;
+  }
 
-return;
-
-};
-
-
-
-
-if(cart.length===0){
-
-alert("السلة فارغة");
-
-navigate("/");
-
-return;
-
-}
-
-
-
-
-
-
-
-
-let message =
-
-`🛒 طلب جديد من الصفتي ستور
-
+  let message = `🛒 طلب جديد من الصفتي ستور
 
 👤 الاسم:
 ${name}
 
-
 📱 الهاتف:
 ${phone}
 
-
 📍 العنوان:
 ${address}
-
-
 
 المنتجات:
 
 `;
 
-
-
-
-
-
-
-
-cart.forEach((item,index)=>{
-
-
-message +=
-
-`
-${index+1}- ${item.title || item.name || "منتج"}
+  cart.forEach((item, index) => {
+    message += `
+${index + 1}- ${item.title || item.name || "منتج"}
 
 الكمية:
 ${item.quantity}
@@ -157,343 +118,132 @@ ${item.quantity}
 ${Number(item.price || 0) * item.quantity} جنيه
 
 `;
+  });
 
-
-
-});
-
-
-
-
-
-
-
-
-message +=
-
-`
+  message += `
 
 💰 الإجمالي:
 ${totalPrice} جنيه`;
 
+  try {
 
+    await addDoc(collection(db, "orders"), {
+      userId: user?.uid || null,
+      customerName: name,
+      email: user?.email || "",
+      phone,
+      address,
+      products: cart,
+      total: totalPrice,
+      status: "Pending",
+      createdAt: serverTimestamp()
+    });
 
+    window.open(
+      `https://wa.me/201553570220?text=${encodeURIComponent(message)}`,
+      "_blank"
+    );
 
+    setCart([]);
 
+    alert("تم إرسال الطلب بنجاح ✅");
 
+    navigate("/");
 
-
-if (user) {
-
-  await addDoc(
-collection(db,"orders"),
-{
-
-userId: user ? user.uid : null,
-
-customerName:name,
-
-email:user ? user.email : "",
-
-phone,
-
-address,
-
-products:cart,
-
-total:totalPrice,
-
-status:"جديد",
-
-createdAt:serverTimestamp()
-
-}
-);
-window.open(
-
-`https://wa.me/201553570220?text=${encodeURIComponent(message)}`,
-
-"_blank"
-
-);
-
-
-
-
-
-setCart([]);
-
-
-navigate("/");
-
-
+  } catch (error) {
+    console.error(error);
+    alert("حدث خطأ أثناء حفظ الطلب");
+  }
 };
 
+if (cart.length === 0) {
+  return (
+    <div className="checkout-empty">
 
+      <h2>لا يوجد منتجات لإتمام الطلب 🛒</h2>
 
+      <button
+        className="back-btn"
+        onClick={() => navigate("/")}
+      >
+        ⬅ العودة للمتجر
+      </button>
 
+    </div>
+  );
+}
 
+return (
 
+  <div className="checkout-page">
 
+    <h2>إتمام الطلب 🛒</h2>
 
+    <div className="checkout-form">
 
-if(cart.length===0){
+      <input
+        placeholder="الاسم بالكامل"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
 
+      <input
+        placeholder="رقم الهاتف"
+        type="tel"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+      />
 
-return(
+      <textarea
+        placeholder="العنوان بالتفصيل"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+      />
 
-<div className="checkout-empty">
+      <div className="checkout-summary">
 
+        <h3>ملخص الطلب</h3>
 
-<h2>
-لا يوجد منتجات لإتمام الطلب 🛒
-</h2>
+        {cart.map((item) => (
+          <div
+            className="checkout-item"
+            key={item.id || item._id}
+          >
+            <span>{item.title || item.name}</span>
 
+            <span>
+              {item.quantity} × {item.price} جنيه
+            </span>
+          </div>
+        ))}
 
+        <h3>
+          الإجمالي:
+          <span>{totalPrice} جنيه</span>
+        </h3>
 
-<button
+      </div>
 
-className="back-btn"
+      <button
+        className="checkout-btn"
+        onClick={sendOrder}
+      >
+        📦 تأكيد الطلب
+      </button>
 
-onClick={()=>navigate("/")}
+      <button
+        className="back-btn"
+        onClick={() => navigate("/cart")}
+      >
+        ⬅ الرجوع للسلة
+      </button>
 
->
+    </div>
 
-⬅ العودة للمتجر
-
-</button>
-
-
-
-</div>
-
+  </div>
 
 );
 
-
-}
-
-
-
-
-
-
-
-
-
-return(
-
-
-<div className="checkout-page">
-
-
-
-<h2>
-إتمام الطلب 🛒
-</h2>
-
-
-
-
-
-
-
-<div className="checkout-form">
-
-
-
-
-
-<input
-
-placeholder="الاسم بالكامل"
-
-value={name}
-
-onChange={(e)=>
-setName(e.target.value)
-}
-
-/>
-
-
-
-
-
-
-
-<input
-
-placeholder="رقم الهاتف"
-
-type="tel"
-
-value={phone}
-
-onChange={(e)=>
-setPhone(e.target.value)
-}
-
-/>
-
-
-
-
-
-
-
-<textarea
-
-placeholder="العنوان بالتفصيل"
-
-value={address}
-
-onChange={(e)=>
-setAddress(e.target.value)
-}
-
-/>
-
-
-
-
-
-
-
-
-
-
-<div className="checkout-summary">
-
-
-<h3>
-ملخص الطلب
-</h3>
-
-
-
-
-{
-
-cart.map(item=>(
-
-
-<div
-
-className="checkout-item"
-
-key={item.id || item._id}
-
->
-
-
-<span>
-
-{item.title || item.name}
-
-</span>
-
-
-
-<span>
-
-{item.quantity} × {item.price} جنيه
-
-</span>
-
-
-
-</div>
-
-
-
-))
-
-}
-
-
-
-
-
-
-
-<h3>
-
-الإجمالي:
-
-<span>
-
-{totalPrice}
-
-جنيه
-
-</span>
-
-
-</h3>
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<button
-
-className="checkout-btn"
-
-onClick={sendOrder}
-
->
-
-📱 تأكيد الطلب عبر واتساب
-
-</button>
-
-
-
-
-
-
-
-<button
-
-className="back-btn"
-
-onClick={()=>navigate("/cart")}
-
->
-
-⬅ الرجوع للسلة
-
-</button>
-
-
-
-
-
-
-
-</div>
-
-
-
-</div>
-
-
-);
-
-
-}
-
-
-}
+}     
 
 export default Checkout;

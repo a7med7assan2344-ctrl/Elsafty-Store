@@ -539,7 +539,6 @@
 ========================= */
 
 
-@media(max-width:992px){
 
 
     .navbar-top{
@@ -593,7 +592,6 @@
 ========================= */
 
 
-@media(max-width:600px){
 
 
     .top-offer-bar{
@@ -838,7 +836,6 @@ opacity:1;
 
 
 
-@media(max-width:600px){
 
 .logo-modal img{
 
@@ -848,4 +845,27 @@ height:250px;
 
 }
 
+}
+body{
+    overflow-x:auto;
+}
+
+.navbar{
+    min-width:1400px;
+}
+
+.navbar-top{
+    flex-wrap:nowrap !important;
+}
+
+.actions{
+    flex-wrap:nowrap !important;
+}
+
+.search-box{
+    min-width:500px;
+}
+
+.category-wrapper{
+    min-width:1400px;
 }

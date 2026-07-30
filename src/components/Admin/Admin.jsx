@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import Dashboard from "./Dashboard";
+
 import {
   collection,
   onSnapshot,
+  query,
+  orderBy,
   doc,
   updateDoc
 } from "firebase/firestore";
@@ -29,7 +33,18 @@ import { auth } from "../../firebase";
 
 function Admin({ products, loadProducts }) {
 const navigate = useNavigate();
+const [orders, setOrders] = useState([]);
 
+const firstLoad = useRef(true);
+useEffect(() => {
+  if ("Notification" in window) {
+    Notification.requestPermission();
+  }
+}, []);
+
+const audio = useRef(
+  new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+);
 const [title, setTitle] = useState("");
 const [description, setDescription] = useState("");
 const [price, setPrice] = useState("");
@@ -40,7 +55,6 @@ const [image, setImage] = useState("");
 
 const [editingId, setEditingId] = useState(null);
 
-const [orders, setOrders] = useState([]);
 
 const [tab, setTab] = useState("products");
 
@@ -310,40 +324,57 @@ status
 
 
 
-useEffect(()=>{
+useEffect(() => {
 
+  const q = query(
+    collection(db, "orders"),
+    orderBy("createdAt", "desc")
+  );
 
-const unsubscribe = onSnapshot(
+  const unsubscribe = onSnapshot(q, (snapshot) => {
 
-collection(db,"orders"),
+    const list = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
 
-(snapshot)=>{
+    if (!firstLoad.current && list.length > orders.length) {
 
+      audio.current.play();
 
-setOrders(
+      if (Notification.permission === "granted") {
+        new Notification("🛒 طلب جديد", {
+          body: `${list[0].customerName} - ${list[0].total} جنيه`
+        });
+      }
 
-snapshot.docs.map(doc=>({
+    }
 
-id:doc.id,
+    firstLoad.current = false;
 
-...doc.data()
+    setOrders(list);
+if (!firstLoad.current && list.length > orders.length) {
 
-}))
+  audio.current.play();
 
-);
+  if (Notification.permission === "granted") {
 
+    new Notification("🛒 طلب جديد", {
+      body: `${list[0].customerName} - ${list[0].total} جنيه`
+    });
+
+  }
 
 }
 
-);
+firstLoad.current = false;
 
+setOrders(list);
+  });
 
+  return () => unsubscribe();
 
-return ()=>unsubscribe();
-
-
-},[]);
-
+}, [orders.length]);
 
 
 
@@ -407,11 +438,44 @@ return (
 
 
 <div className="admin-container">
+  {orders.length > 0 && (
+  <div
+    style={{
+      background: "#16a34a",
+      color: "#fff",
+      padding: "12px 20px",
+      borderRadius: "10px",
+      marginBottom: "15px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      fontWeight: "bold"
+    }}
+  >
+    <span>🔔 يوجد طلب جديد</span>
+
+    <button
+      onClick={() => setTab("orders")}
+      style={{
+        background: "#fff",
+        color: "#16a34a",
+        border: "none",
+        padding: "8px 15px",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontWeight: "bold"
+      }}
+    >
+      عرض الطلبات
+    </button>
+  </div>
+)}
 <div className="admin-stats">
 
 
 <div className="stat-card">
 
+<Dashboard />
 <h3>
 📦 المنتجات
 </h3>
@@ -807,7 +871,9 @@ tab==="products" &&
 <th>
 الصورة
 </th>
-
+<th>
+  واتساب
+</th>
 <th>
 الاسم
 </th>
@@ -998,8 +1064,34 @@ tab==="orders" &&
 <th>
 الحالة
 </th>
+<td>
+  <button
+    className="whatsapp-btn"
+    onClick={() => {
+      const phone = order.phone.startsWith("0")
+        ? `2${order.phone}`
+        : order.phone;
 
+      window.open(`https://wa.me/${phone}`, "_blank");
+    }}
+  >
+    💬 واتساب
+  </button>
+</td>
+<td>
+  <button
+    className="whatsapp-btn"
+    onClick={() => {
+      const phone = order.phone.startsWith("0")
+        ? `2${order.phone}`
+        : order.phone;
 
+      window.open(`https://wa.me/${phone}`, "_blank");
+    }}
+  >
+    💬 واتساب
+  </button>
+</td>
 </tr>
 
 </thead>
@@ -1019,11 +1111,8 @@ orders.map(order=>(
 
 
 <td>
-
-{order.name}
-
+{order.customerName}
 </td>
-
 
 <td>
 
@@ -1045,13 +1134,12 @@ orders.map(order=>(
 <td>
 
 {
-
-order.items?.map((item,index)=>(
+order.products?.map((item,index)=>(
 
 
 <div key={index}>
 
-{item.title} × {item.quantity}
+{item.title || item.name} × {item.quantity}
 
 </div>
 
@@ -1331,10 +1419,13 @@ editingCategoryId
 <th>
 الأيقونة
 </th>
-
+<th>
+  واتساب
+</th>
 <th>
 الاسم
 </th>
+
 
 <th>
 الحالة

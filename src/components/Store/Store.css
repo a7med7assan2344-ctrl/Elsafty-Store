@@ -271,7 +271,7 @@
 
 /* موبايل */
 
-@media(max-width:992px){
+
 
 .hero-banner{
 
@@ -297,7 +297,6 @@
 
 
 
-@media(max-width:600px){
 
 .hero-banner{
 
@@ -337,4 +336,11 @@
 
 }
 
+
+body{
+    overflow-x:auto;
+}
+
+.store-container{
+    min-width:1400px;
 }
