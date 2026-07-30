@@ -63,7 +63,7 @@ align-items:center;
 
 width:max-content;
 
-animation:offerMove 35s linear infinite;
+animation:offerMove 30s linear infinite;
 
 }
 
@@ -85,20 +85,19 @@ font-size:15px;
 
 from{
 
-transform:translateX(0);
+transform:translateX(-50%);
 
 }
 
 
 to{
 
-transform:translateX(-50%);
+transform:translateX(0);
 
 }
 
 
 }
-
 
 /* =========================
    الجزء العلوي

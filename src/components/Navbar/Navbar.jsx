@@ -273,8 +273,12 @@ return (
 
 {
 
-[...offerText, ...offerText].map((text,index)=>(
-
+[
+ ...offerText,
+ ...offerText,
+ ...offerText,
+ ...offerText
+].map((text,index)=>(
 <span key={index}>
 
 {text}
