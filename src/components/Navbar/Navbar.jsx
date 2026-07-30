@@ -269,11 +269,11 @@ return (
 
 <div className="top-offer-bar">
 
-<div className="offer-text">
+<div className="offer-track">
 
 {
 
-offerText.map((text,index)=>(
+[...offerText, ...offerText].map((text,index)=>(
 
 <span key={index}>
 
@@ -288,7 +288,6 @@ offerText.map((text,index)=>(
 </div>
 
 </div>
-
 
 
 <header className="navbar">
