@@ -1,29 +1,30 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import React from "react";
+import ReactDOM from "react-dom/client";
 
-import App from './App';
+import App from "./App";
 
-import {CartProvider} from './context/CartContext';
+import { CartProvider } from "./context/CartContext";
+import { WishlistProvider } from "./context/WishlistContext";
 
-import './index.css';
-
+import "./index.css";
 
 
 ReactDOM.createRoot(
-document.getElementById('root')
-
+  document.getElementById("root")
 ).render(
 
+  <React.StrictMode>
 
-<React.StrictMode>
+    <CartProvider>
 
-<CartProvider>
+      <WishlistProvider>
 
-<App/>
+        <App />
 
-</CartProvider>
+      </WishlistProvider>
 
-</React.StrictMode>
+    </CartProvider>
 
+  </React.StrictMode>
 
 );

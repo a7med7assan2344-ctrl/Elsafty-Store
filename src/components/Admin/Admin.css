@@ -378,16 +378,6 @@
   color:#071A36;
 
 }
-.store-btn {
-  background: #2196f3;
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 15px;
-  margin-left: 10px;
-}
 
 .store-btn:hover {
   background: #1976d2;
@@ -458,17 +448,6 @@ color:#2196f3;
 }
 
 
-.logout-btn {
-  background: #dc2626;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 15px;
-  font-family: Cairo, sans-serif;
-  transition: 0.3s;
-}
 
 
 .logout-btn:hover {
@@ -599,11 +578,50 @@ color:#2196f3;
 @media (max-width:768px){
 
   .admin-container{
-    min-width:1200px;
+    width:100%;
+    min-width:0;
+    padding:15px;
   }
 
-  body{
-    overflow-x:auto;
-  }
+}
+/* ==========================
+   Product Options
+========================== */
 
+.product-options{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:12px;
+  margin:15px 0;
+  padding:16px;
+  background:#f8fafc;
+  border:1px solid #dbe4ef;
+  border-radius:12px;
+}
+
+.product-options label{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  font-weight:700;
+  color:#071A36;
+  transition:.25s;
+}
+
+.product-options label:hover{
+  color:#2563eb;
+}
+
+.product-options input[type="checkbox"]{
+  width:20px;
+  height:20px;
+  accent-color:#2563eb;
+  cursor:pointer;
+}
+
+@media (max-width:768px){
+  .product-options{
+    grid-template-columns:1fr;
+  }
 }

@@ -1,0 +1,311 @@
+.store-container {
+  direction: rtl;
+  background: #f8fafd;
+  min-height: 100vh;
+}
+
+
+/* =====================
+   الأقسام
+===================== */
+
+.categories {
+  padding: 40px 20px;
+}
+
+.categories h2,
+.section-title {
+  text-align: center;
+  color: #071a36;
+  font-size: 30px;
+  font-weight: 800;
+  margin-bottom: 30px;
+}
+
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+  gap: 20px;
+}
+
+
+.category-card {
+
+  background:white;
+  border:1px solid #d4af37;
+  border-radius:15px;
+  padding:25px 15px;
+  text-align:center;
+  cursor:pointer;
+  transition:.3s;
+
+}
+
+
+.category-card:hover {
+
+  transform:translateY(-5px);
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+
+}
+
+
+.category-card div {
+
+  font-size:35px;
+  margin-bottom:10px;
+
+}
+
+
+.category-card h3 {
+
+  color:#071a36;
+
+}
+
+
+.category-card span {
+
+  color:#666;
+  font-size:14px;
+
+}
+
+
+
+/* =====================
+   المميزات
+===================== */
+
+
+.features-section {
+
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+padding:30px 20px;
+
+}
+
+
+.feature-card {
+
+background:#fff;
+border-radius:15px;
+padding:25px;
+text-align:center;
+border:1px solid #d4af37;
+box-shadow:0 5px 15px rgba(0,0,0,.08);
+
+font-size:30px;
+
+}
+
+
+.feature-card h3 {
+
+font-size:20px;
+color:#071a36;
+
+}
+
+
+.feature-card p {
+
+font-size:14px;
+color:#666;
+
+}
+
+
+
+/* =====================
+   بانر العروض
+===================== */
+
+
+.offer-banner {
+
+margin:30px 20px;
+padding:35px;
+border-radius:20px;
+text-align:center;
+
+background:#071a36;
+color:white;
+
+border:2px solid #d4af37;
+
+}
+
+
+.offer-banner h2 {
+
+color:#f4d06f;
+font-size:30px;
+
+}
+
+
+
+
+
+/* =====================
+ المنتجات
+===================== */
+
+
+.product-grid {
+
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+padding:20px;
+
+}
+
+
+.product-grid .product-card {
+
+background:white;
+border-radius:15px;
+border:1px solid #ddd;
+overflow:hidden;
+cursor:pointer;
+transition:.3s;
+
+}
+
+
+.product-grid .product-card:hover {
+
+transform:translateY(-5px);
+
+box-shadow:
+0 8px 20px rgba(0,0,0,.15);
+
+}
+
+
+.product-grid img {
+
+width:100%;
+height:220px;
+object-fit:contain;
+
+}
+
+
+
+
+/* =====================
+ الفلاتر
+===================== */
+
+
+.filters-bar {
+
+display:flex;
+gap:15px;
+padding:20px;
+flex-wrap:wrap;
+justify-content:center;
+
+}
+
+
+.filters-bar select,
+.filters-bar input {
+
+padding:12px;
+border-radius:10px;
+border:1px solid #d4af37;
+font-family:Cairo;
+
+}
+
+
+.filters-bar label {
+
+background:white;
+padding:10px 15px;
+border-radius:10px;
+
+}
+
+
+
+/* =====================
+ الموبايل
+===================== */
+
+
+@media(max-width:900px){
+
+
+.features-section {
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+
+.product-grid {
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+
+}
+
+
+
+@media(max-width:600px){
+
+
+.categories {
+
+padding:20px 10px;
+
+}
+
+
+.categories-grid {
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+
+.features-section {
+
+grid-template-columns:1fr;
+
+}
+
+
+.product-grid {
+
+grid-template-columns:1fr;
+
+}
+
+
+.offer-banner h2 {
+
+font-size:22px;
+
+}
+
+
+.section-title {
+
+font-size:24px;
+
+}
+
+
+}

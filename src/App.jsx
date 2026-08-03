@@ -3,7 +3,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MyAccount from "./pages/MyAccount";
-
+import Wishlist from "./pages/Wishlist";
 import React, {
   useEffect,
   useState,
@@ -463,16 +463,7 @@ break;
 }
 
 />
-{/* تفاصيل المنتج */}
 
-<Route
-  path="/product/:id"
-  element={
-    <ProductDetailsWrapper
-      products={products}
-    />
-  }
-/>
 
 {/* تفاصيل المنتج */}
 
@@ -515,7 +506,10 @@ element={
 
 />
 
-
+<Route
+  path="/wishlist"
+  element={<Wishlist />}
+/>
 
 
 

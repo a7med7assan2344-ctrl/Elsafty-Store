@@ -48,11 +48,20 @@ const audio = useRef(
 const [title, setTitle] = useState("");
 const [description, setDescription] = useState("");
 const [price, setPrice] = useState("");
+const [oldPrice, setOldPrice] = useState("");
+
+const [offer, setOffer] = useState(false);
+
+const [bestSeller, setBestSeller] = useState(false);
+
+const [newArrival, setNewArrival] = useState(false);
+
+const [recommended, setRecommended] = useState(false);
 const [category, setCategory] = useState("");
 const [rating, setRating] = useState(5);
 const [stock, setStock] = useState(1);
+const [images, setImages] = useState([]);
 const [image, setImage] = useState("");
-
 const [editingId, setEditingId] = useState(null);
 
 
@@ -77,6 +86,15 @@ const clearForm = ()=>{
 setTitle("");
 setDescription("");
 setPrice("");
+setOldPrice("");
+
+setOffer(false);
+
+setBestSeller(false);
+
+setNewArrival(false);
+
+setRecommended(false);
 setCategory("إلكترونيات");
 setRating(5);
 setStock(1);
@@ -87,27 +105,37 @@ setEditingId(null);
 
 
 
-const handleImageUpload = (e)=>{
+const handleImageUpload = (e) => {
 
-const file = e.target.files[0];
+  const files = Array.from(e.target.files);
 
-if(!file) return;
+  if (!files.length) return;
 
+  const loadedImages = [];
 
-const reader = new FileReader();
+  files.forEach((file) => {
 
+    const reader = new FileReader();
 
-reader.onloadend=()=>{
+    reader.onloadend = () => {
 
-setImage(reader.result);
+      loadedImages.push(reader.result);
+
+      if (loadedImages.length === files.length) {
+
+        setImages(loadedImages);
+
+        setImage(loadedImages[0]);
+
+      }
+
+    };
+
+    reader.readAsDataURL(file);
+
+  });
 
 };
-
-
-reader.readAsDataURL(file);
-
-};
-
 
 
 const handleSubmit = async(e)=>{
@@ -126,12 +154,49 @@ return;
 try{
 
 
-let imageUrl=image;
+let uploadedImages = [];
 
+for (const img of (images.length ? images : [image])) {
 
+  let imageUrl = img;
 
-if(image.startsWith("data:")){
+  if (imageUrl.startsWith("data:")) {
 
+    const formData = new FormData();
+
+    const blob = await (await fetch(imageUrl)).blob();
+
+    formData.append("file", blob);
+
+    formData.append(
+      "upload_preset",
+      "elsafty_store"
+    );
+
+    const upload = await fetch(
+      "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
+      {
+        method: "POST",
+        body: formData
+      }
+    );
+
+    const uploadData = await upload.json();
+
+    if (!upload.ok) {
+
+      alert("فشل رفع الصورة");
+      return;
+
+    }
+
+    imageUrl = uploadData.secure_url;
+
+  }
+
+  uploadedImages.push(imageUrl);
+
+}
 
 const formData=new FormData();
 
@@ -184,25 +249,35 @@ imageUrl=uploadData.secure_url;
 
 
 
-const product={
+const product = {
 
-title,
+  title,
 
-description,
+  description,
 
-price:Number(price),
+  price: Number(price),
 
-image:imageUrl,
+  oldPrice: Number(oldPrice || 0),
 
-category,
+image: uploadedImages[0],
+images: uploadedImages,
+  images: imageUrl ? [imageUrl] : [],
 
-rating:Number(rating),
+  category,
 
-stock:Number(stock)
+  rating: Number(rating),
+
+  stock: Number(stock),
+
+  offer,
+
+  bestSeller,
+
+  newArrival,
+
+  recommended
 
 };
-
-
 
 if(editingId){
 
@@ -243,6 +318,15 @@ setTitle(product.title);
 setDescription(product.description);
 
 setPrice(product.price);
+setOldPrice(product.oldPrice || "");
+
+setOffer(product.offer || false);
+
+setBestSeller(product.bestSeller || false);
+
+setNewArrival(product.newArrival || false);
+
+setRecommended(product.recommended || false);
 
 setCategory(product.category);
 
@@ -700,7 +784,12 @@ onChange={(e)=>setPrice(e.target.value)}
 
 />
 
-
+<input
+  type="number"
+  placeholder="السعر قبل الخصم"
+  value={oldPrice}
+  onChange={(e) => setOldPrice(e.target.value)}
+/>
 
 
 
@@ -740,7 +829,45 @@ value={cat.name}
 
 </select>
 
+<div className="product-options">
 
+  <label>
+    <input
+      type="checkbox"
+      checked={offer}
+      onChange={(e) => setOffer(e.target.checked)}
+    />
+    🔥 عرض اليوم
+  </label>
+
+  <label>
+    <input
+      type="checkbox"
+      checked={bestSeller}
+      onChange={(e) => setBestSeller(e.target.checked)}
+    />
+    ⭐ الأكثر مبيعًا
+  </label>
+
+  <label>
+    <input
+      type="checkbox"
+      checked={newArrival}
+      onChange={(e) => setNewArrival(e.target.checked)}
+    />
+    🆕 وصل حديثًا
+  </label>
+
+  <label>
+    <input
+      type="checkbox"
+      checked={recommended}
+      onChange={(e) => setRecommended(e.target.checked)}
+    />
+    ❤️ قد يعجبك
+  </label>
+
+</div>
 
 
 <input
@@ -775,15 +902,11 @@ onChange={(e)=>setStock(e.target.value)}
 
 
 <input
-
-type="file"
-
-accept="image/*"
-
-onChange={handleImageUpload}
-
+  type="file"
+  accept="image/*"
+  multiple
+  onChange={handleImageUpload}
 />
-
 
 
 
@@ -865,40 +988,28 @@ tab==="products" &&
 
 
 <thead>
-
 <tr>
 
-<th>
-الصورة
-</th>
-<th>
-  واتساب
-</th>
-<th>
-الاسم
-</th>
+<th>الصورة</th>
+<th>الاسم</th>
+<th>السعر</th>
+<th>القسم</th>
+<th>🔥 عرض</th>
+<th>⭐ الأكثر</th>
+<th>🆕 جديد</th>
+<th>❤️ مميز</th>
+<th>المخزون</th>
+<th>الإجراءات</th>
+<th>🔥 عرض</th>
+<th>⭐ الأكثر</th>
+<th>🆕 جديد</th>
+<th>❤️ مميز</th>
 
-<th>
-السعر
-</th>
-
-<th>
-القسم
-</th>
-
-<th>
-المخزون
-</th>
-
-<th>
-الإجراءات
-</th>
-
+<th>المخزون</th>
+<th>الإجراءات</th>
 
 </tr>
-
 </thead>
-
 
 
 <tbody>
@@ -949,8 +1060,20 @@ className="table-img"
 
 </td>
 
+<td>{p.offer ? "✅" : "❌"}</td>
 
+<td>{p.bestSeller ? "✅" : "❌"}</td>
 
+<td>{p.newArrival ? "✅" : "❌"}</td>
+
+<td>{p.recommended ? "✅" : "❌"}</td>
+<td>{p.offer ? "✅" : "❌"}</td>
+
+<td>{p.bestSeller ? "✅" : "❌"}</td>
+
+<td>{p.newArrival ? "✅" : "❌"}</td>
+
+<td>{p.recommended ? "✅" : "❌"}</td>
 <td>
 
 {p.stock}
@@ -1064,38 +1187,27 @@ tab==="orders" &&
 <th>
 الحالة
 </th>
-<td>
-  <button
-    className="whatsapp-btn"
-    onClick={() => {
-      const phone = order.phone.startsWith("0")
-        ? `2${order.phone}`
-        : order.phone;
 
-      window.open(`https://wa.me/${phone}`, "_blank");
-    }}
-  >
-    💬 واتساب
-  </button>
-</td>
-<td>
-  <button
-    className="whatsapp-btn"
-    onClick={() => {
-      const phone = order.phone.startsWith("0")
-        ? `2${order.phone}`
-        : order.phone;
-
-      window.open(`https://wa.me/${phone}`, "_blank");
-    }}
-  >
-    💬 واتساب
-  </button>
-</td>
 </tr>
 
 </thead>
+<thead>
+<tr>
 
+<th>العميل</th>
+
+<th>الهاتف</th>
+
+<th>العنوان</th>
+
+<th>المنتجات</th>
+
+<th>الحالة</th>
+
+<th>واتساب</th>
+
+</tr>
+</thead>
 
 
 
@@ -1216,7 +1328,20 @@ e.target.value
 
 </td>
 
+<td>
+  <button
+    className="whatsapp-btn"
+    onClick={() => {
+      const phone = order.phone.startsWith("0")
+        ? `2${order.phone}`
+        : order.phone;
 
+      window.open(`https://wa.me/${phone}`, "_blank");
+    }}
+  >
+    💬 واتساب
+  </button>
+</td>
 
 </tr>
 

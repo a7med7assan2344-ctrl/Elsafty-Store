@@ -1,3 +1,4 @@
+import ProductsSlider from "../components/ProductsSlider";
 import React, {
   useState,
   useContext,
@@ -7,7 +8,7 @@ import React, {
 import {
   useNavigate
 } from "react-router-dom";
-
+import "./Home.css";
 import "../styles/store.css";
 
 import Navbar from "../components/Navbar/Navbar";
@@ -61,7 +62,11 @@ const {
   addToCart
 } = useContext(CartContext);
 
-
+const [selectedCategory, setSelectedCategory] = useState("الكل");
+const [sortBy, setSortBy] = useState("default");
+const [showOffersOnly, setShowOffersOnly] = useState(false);
+const [minPrice, setMinPrice] = useState("");
+const [maxPrice, setMaxPrice] = useState("");
 
 
 
@@ -231,9 +236,85 @@ behavior:"smooth"
 
 
 
-const filteredProducts = products.filter((product)=>{
+const filteredProducts = (products || [])
+  .filter((p) => {
 
-const searchText = String(searchTerm || "")
+    // فلتر القسم
+    if (
+      selectedCategory !== "الكل" &&
+      p.category !== selectedCategory
+    ) {
+      return false;
+    }
+
+
+    // العروض فقط
+    if (
+      showOffersOnly &&
+      !p.offer
+    ) {
+      return false;
+    }
+
+
+    // السعر من
+    if (
+      minPrice &&
+      Number(p.price || 0) < Number(minPrice)
+    ) {
+      return false;
+    }
+
+
+    // السعر إلى
+    if (
+      maxPrice &&
+      Number(p.price || 0) > Number(maxPrice)
+    ) {
+      return false;
+    }
+
+
+    return true;
+
+  })
+  .sort((a, b) => {
+
+    switch (sortBy) {
+
+
+      // الأقل سعرًا
+      case "low":
+        return Number(a.price || 0) - Number(b.price || 0);
+
+
+      // الأعلى سعرًا
+      case "high":
+        return Number(b.price || 0) - Number(a.price || 0);
+
+
+      // الأعلى تقييمًا
+      case "rating":
+        return Number(b.rating || 0) - Number(a.rating || 0);
+
+
+      // المنتجات الجديدة
+      case "new":
+        return Number(!!b.newArrival) - Number(!!a.newArrival);
+
+
+      // الأكثر مبيعًا
+      case "best":
+        return Number(!!b.bestSeller) - Number(!!a.bestSeller);
+
+
+      default:
+        return 0;
+
+    }
+
+  });
+  const searchText = String(searchTerm || "")
 .toLowerCase()
 .trim();
 
@@ -289,26 +370,13 @@ return matchSearch && matchCategory;
 
 
 
+const offers = (products || []).filter((p) => p.offer);
 
+const bestSellers = (products || []).filter((p) => p.bestSeller);
 
-const bestSellers =
+const newArrivals = (products || []).filter((p) => p.newArrival);
 
-products.slice(0,8);
-
-
-
-
-
-const newArrivals =
-
-products
-
-.slice(-8)
-
-.reverse();
-
-
-
+const recommended = (products || []).filter((p) => p.recommended);
 
 
 
@@ -544,420 +612,132 @@ onClick={()=>setSelectedCategory(cat.name)}
 
 </section>
 
+<section className="offers-section">
 
-
-
-
-
-{/* الأكثر مبيعًا */}
-
-
-<section className="best-selling-section">
-
-
-
-<h2 className="section-title">
-
-⭐ الأكثر مبيعًا
-
-</h2>
-
-
-
-
-
-<Swiper
-
-modules={[Navigation]}
-
-navigation
-
-spaceBetween={20}
-
-
-breakpoints={{
-
-320:{
-slidesPerView:1
-},
-
-600:{
-slidesPerView:2
-},
-
-900:{
-slidesPerView:3
-},
-
-1200:{
-slidesPerView:4
-}
-
-}}
-
-
->
-
-
-{
-
-
-bestSellers.map((product)=>{
-
-
-const id =
-product.id ||
-product._id;
-
-
-
-return (
-
-
-<SwiperSlide key={id}>
-
-
-<div
-
-className="product-card"
-
-onClick={()=>navigate(`/product/${id}`)}
-
->
-
-
-<span className="product-badge">
-
-⭐ الأكثر طلبًا
-
-</span>
-
-
-
-
-<div className="product-img-container">
-
-
-<img
-
-src={
-product.image ||
-"/default-product.png"
-}
-
-alt={
-product.title ||
-product.name ||
-"product"
-}
-
+<ProductsSlider
+  title="🔥 عروض اليوم"
+  badge="🔥 خصم"
+  badgeClass="offer"
+  products={offers}
+  addToCart={addToCart}
 />
 
+<ProductsSlider
+  title="⭐ الأكثر مبيعًا"
+  badge="⭐ الأكثر طلبًا"
+  badgeClass="best"
+  products={bestSellers}
+  addToCart={addToCart}
+/>
 
-</div>
+<ProductsSlider
+  title="🆕 وصل حديثًا"
+  badge="🆕 جديد"
+  badgeClass="new"
+  products={newArrivals}
+  addToCart={addToCart}
+/>
 
-
-
-
-<h3>
-
-{
-product.title ||
-product.name ||
-"منتج"
-
-}
-
-</h3>
-
-
-
-
-<div className="rating">
-
-{"⭐".repeat(
-Math.floor(product.rating || 5)
-)}
-
-</div>
-
-
-
-
-
-<p className="product-price">
-
-{product.price || 0} جنيه
-
-</p>
-
-
-
-
-<button
-
-className="add-to-cart-btn"
-
-onClick={(e)=>{
-
-
-e.stopPropagation();
-
-
-addToCart(product);
-
-
-}}
-
->
-
-🛒 أضف للسلة
-
-</button>
-
-
-
-
-</div>
-
-
-</SwiperSlide>
-
-
-)
-
-
-})
-
-}
-
-
-
-</Swiper>
-
-
+<ProductsSlider
+  title="❤️ قد يعجبك"
+  badge="❤️ مميز"
+  badgeClass="recommended"
+  products={recommended}
+  addToCart={addToCart}
+/>
 
 </section>
 
 
-
-
-
-
-
-{/* وصل حديثًا */}
-
-
-<section className="new-arrivals-section">
+<section className="products-section">
 
 
 <h2 className="section-title">
-
-🆕 وصل حديثًا
-
-</h2>
-
-
-
-
-
-<Swiper
-
-modules={[Navigation]}
-
-navigation
-
-spaceBetween={20}
-
-
-breakpoints={{
-
-320:{
-slidesPerView:1
-},
-
-600:{
-slidesPerView:2
-},
-
-900:{
-slidesPerView:3
-},
-
-1200:{
-slidesPerView:4
-}
-
-}}
-
-
->
-
-
-{
-
-newArrivals.map((product)=>{
-
-
-const id =
-product.id ||
-product._id;
-
-
-
-return (
-
-
-<SwiperSlide key={id}>
-
-
-<div
-
-className="product-card"
-
-onClick={()=>navigate(`/product/${id}`)}
-
->
-
-
-<span className="product-badge new">
-
-🆕 جديد
-
-</span>
-
-
-
-
-<div className="product-img-container">
-
-
-<img
-
-src={
-product.image ||
-"/default-product.png"
-}
-
-alt={
-product.title ||
-product.name ||
-"product"
-}
-
-/>
-
-
-</div>
-
-
-
-
-<h3>
-
-{
-product.title ||
-product.name ||
-"منتج"
-
-}
-
-</h3>
-
-
-
-
-<div className="rating">
-
-★★★★★
-
-</div>
-
-
-
-
-<p className="product-price">
-
-{product.price || 0} جنيه
-
-</p>
-
-
-
-
-<button
-
-className="add-to-cart-btn"
-
-onClick={(e)=>{
-
-
-e.stopPropagation();
-
-
-addToCart(product);
-
-
-}}
-
->
-
-🛒 أضف للسلة
-
-</button>
-
-
-
-
-</div>
-
-
-</SwiperSlide>
-
-
-)
-
-
-})
-
-}
-
-
-
-</Swiper>
-
-
-</section>
-
-
-
-
-
-{/* كل المنتجات */}
-
-
-<section
-
-className="products-section"
-
-ref={productsRef}
-
->
-
-<h2 className="section-title">
-
 📦 جميع المنتجات
-
 </h2>
+
+
+
+<div className="filters-bar">
+
+
+<select
+  value={sortBy}
+  onChange={(e)=>setSortBy(e.target.value)}
+>
+
+<option value="default">
+ترتيب افتراضي
+</option>
+
+<option value="low">
+💰 الأقل سعرًا
+</option>
+
+<option value="high">
+💰 الأعلى سعرًا
+</option>
+
+<option value="rating">
+⭐ الأعلى تقييمًا
+</option>
+
+<option value="new">
+🆕 الأحدث
+</option>
+
+<option value="best">
+🔥 الأكثر مبيعًا
+</option>
+
+</select>
+
+
+
+<input
+type="number"
+placeholder="من سعر"
+value={minPrice}
+onChange={(e)=>setMinPrice(e.target.value)}
+/>
+
+
+
+<input
+type="number"
+placeholder="إلى سعر"
+value={maxPrice}
+onChange={(e)=>setMaxPrice(e.target.value)}
+/>
+
+
+
+<label>
+
+<input
+type="checkbox"
+checked={showOffersOnly}
+onChange={(e)=>setShowOffersOnly(e.target.checked)}
+/>
+
+🔥 العروض فقط
+
+</label>
+
+
+
+</div>
+
 
 
 
 
 <div className="product-grid">
-  
+
+
 {
 
-filteredProducts.length > 0 ?
+filteredProducts.length > 0 ? (
 
 
 filteredProducts.map((product)=>{
@@ -983,183 +763,73 @@ onClick={()=>navigate(`/product/${id}`)}
 >
 
 
-
-
-<span className="product-badge">
-
-جديد
-
-</span>
-
-
-
-
-
-<div className="product-img-container">
-
-
 <img
 
 src={
 product.image ||
-"/default-product.png"
+"https://via.placeholder.com/300"
 }
 
-alt={
-product.title ||
-product.name ||
-"product"
-}
+alt={product.title}
 
 />
 
 
-</div>
-
-
-
-
-
-<div className="product-info">
-
-
-
 <h3>
-
-{
-product.title ||
-product.name ||
-"منتج"
-
-}
-
+{product.title}
 </h3>
 
 
-
-
-
-<div className="rating">
-
-★★★★★
-
-</div>
-
-
-
-
-
-<p className="product-price">
-
-{product.price || 0} جنيه
-
+<p>
+{product.price} ج.م
 </p>
 
 
-
-
-
-
-<div className="product-actions">
-
-
-
-
-
 <button
-
-className="details-btn"
 
 onClick={(e)=>{
 
-
 e.stopPropagation();
-
-
-navigate(`/product/${id}`);
-
-
-}}
-
->
-
-التفاصيل
-
-</button>
-
-
-
-
-
-
-<button
-
-className="add-to-cart-btn"
-
-onClick={(e)=>{
-
-
-e.stopPropagation();
-
 
 addToCart(product);
 
-
 }}
 
 >
 
-🛒 أضف إلى السلة
+🛒 أضف للسلة
 
 </button>
 
 
 
-
 </div>
 
 
-
-
-
-</div>
-
-
-
-
-
-</div>
-
-
-
-)
+);
 
 
 })
 
 
+) : (
 
-:
+
+<h3>
+لا توجد منتجات
+</h3>
 
 
-<p className="no-products">
-
-لا توجد منتجات مطابقة
-
-</p>
+)
 
 
 }
 
 
-
 </div>
 
 
-
 </section>
-
-
 
 
 

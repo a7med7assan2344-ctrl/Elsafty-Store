@@ -1,13 +1,15 @@
 import React, {
   useEffect,
   useRef,
-  useState
+  useState,
+  useContext
 } from "react";
 import offerText from "../../config/offerConfig";
 import {
   useNavigate
 } from "react-router-dom";
-
+import { useContext } from "react";
+import { WishlistContext } from "../../context/WishlistContext";
 import {
   onAuthStateChanged,
   signOut
@@ -46,7 +48,7 @@ setSuggestions([]);
 
 };
 const navigate = useNavigate();
-
+const { wishlist } = useContext(WishlistContext);
 
 const [user,setUser] = useState(null);
 
@@ -600,19 +602,22 @@ setSuggestions([]);
 
 
 
-<div className="actions">
-  <div className="nav-icon">
+<div
+  className="nav-icon wishlist-icon"
+  onClick={() => navigate("/wishlist")}
+>
 
-<span>
-❤️
-</span>
+  {wishlist.length > 0 && (
+    <span className="wishlist-badge">
+      {wishlist.length}
+    </span>
+  )}
 
-<p>
-المفضلة
-</p>
+  <span>❤️</span>
+
+  <p>المفضلة</p>
 
 </div>
-
 
 
 

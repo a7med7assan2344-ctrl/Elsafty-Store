@@ -12,7 +12,15 @@ import "./ProductDetails.css";
 import {
   CartContext
 } from "../context/CartContext";
+import {
+  addReview,
+  getReviews,
+  getRating
+} from "../services/reviewService";
 
+import {
+  useEffect
+} from "react";
 
 
 function ProductDetails({ product }) {
@@ -30,7 +38,22 @@ cart
 
 
 const [quantity,setQuantity] = useState(1);
+const productImages =
+  product?.images?.length
+    ? product.images
+    : [product?.image];
 
+const [selectedImage, setSelectedImage] = useState("");
+const [zoom, setZoom] = useState(false);
+const [reviews, setReviews] = useState([]);
+
+const [average, setAverage] = useState(0);
+
+const [reviewCount, setReviewCount] = useState(0);
+
+const [userRating, setUserRating] = useState(5);
+
+const [comment, setComment] = useState("");
 
 
 
@@ -84,7 +107,27 @@ onClick={()=>navigate("/")}
 
 }
 
+useEffect(() => {
 
+  if (!product) return;
+
+  const loadReviews = async () => {
+
+    const list = await getReviews(product.id);
+
+    const rating = await getRating(product.id);
+
+    setReviews(list);
+
+    setAverage(rating.average);
+
+    setReviewCount(rating.count);
+
+  };
+
+  loadReviews();
+
+}, [product]);
 
 
 
@@ -162,25 +205,42 @@ return (
 
 <div className="details-image">
 
-
 <img
-
-src={
-
-product.image ||
-
-"https://via.placeholder.com/400"
-
-}
-
-
-alt={product.title || "Product"}
-
+  src={
+    selectedImage ||
+    "https://via.placeholder.com/400"
+  }
+  alt={product.title}
+  className={`main-image ${zoom ? "zoomed" : ""}`}
+  onMouseEnter={() => setZoom(true)}
+  onMouseLeave={() => setZoom(false)}
+  onClick={() => setZoom(!zoom)}
 />
+  {productImages.length > 1 && (
 
+    <div className="image-gallery">
+
+      {productImages.map((img, index) => (
+
+        <img
+          key={index}
+          src={img}
+          alt=""
+          className={
+            selectedImage === img
+              ? "gallery-thumb active"
+              : "gallery-thumb"
+          }
+          onClick={() => setSelectedImage(img)}
+        />
+
+      ))}
+
+    </div>
+
+  )}
 
 </div>
-
 
 
 
@@ -366,6 +426,92 @@ onClick={handleAddToCart}
 🛒 أضف للسلة
 
 </button>
+<div className="reviews-section">
+
+  <h2>⭐ تقييمات العملاء</h2>
+
+  <p className="rating-summary">
+    ⭐ {average} من 5 ({reviewCount} تقييم)
+  </p>
+
+  <div className="rating-input">
+
+    {[1,2,3,4,5].map((star) => (
+      <span
+        key={star}
+        className={userRating >= star ? "star active" : "star"}
+        onClick={() => setUserRating(star)}
+      >
+        ★
+      </span>
+    ))}
+
+  </div>
+
+  <textarea
+    placeholder="اكتب رأيك عن المنتج..."
+    value={comment}
+    onChange={(e) => setComment(e.target.value)}
+  />
+
+  <button
+    className="send-review-btn"
+    onClick={async () => {
+
+      try {
+
+        await addReview(
+          product.id,
+          userRating,
+          comment
+        );
+
+        const list = await getReviews(product.id);
+        const rating = await getRating(product.id);
+
+        setReviews(list);
+        setAverage(rating.average);
+        setReviewCount(rating.count);
+        setComment("");
+        setUserRating(5);
+
+        alert("تم إرسال التقييم بنجاح ⭐");
+
+      } catch (err) {
+
+        alert(err.message);
+
+      }
+
+    }}
+  >
+    إرسال التقييم
+  </button>
+
+  <div className="reviews-list">
+
+    {reviews.map((review) => (
+
+      <div
+        className="review-card"
+        key={review.id}
+      >
+
+        <h4>{review.customerName}</h4>
+
+        <p>
+          {"★".repeat(review.rating)}
+        </p>
+
+        <p>{review.comment}</p>
+
+      </div>
+
+    ))}
+
+  </div>
+
+</div>
 
 
 
