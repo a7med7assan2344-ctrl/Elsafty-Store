@@ -11,8 +11,10 @@ import {
   useNavigate
 } from "react-router-dom";
 
+
 import "./Home.css";
 import "../styles/store.css";
+
 
 import Navbar from "../components/Navbar/Navbar";
 
@@ -44,6 +46,7 @@ function Home({
 const navigate = useNavigate();
 
 
+
 const productsRef = useRef(null);
 
 
@@ -56,17 +59,46 @@ const {
 
 
 
-const [categories,setCategories] = useState([]);
+const [
+categories,
+setCategories
+] = useState([]);
 
-const [selectedCategory,setSelectedCategory] = useState("الكل");
 
-const [sortBy,setSortBy] = useState("default");
 
-const [showOffersOnly,setShowOffersOnly] = useState(false);
+const [
+selectedCategory,
+setSelectedCategory
+] = useState("الكل");
 
-const [minPrice,setMinPrice] = useState("");
 
-const [maxPrice,setMaxPrice] = useState("");
+
+const [
+sortBy,
+setSortBy
+] = useState("default");
+
+
+
+const [
+showOffersOnly,
+setShowOffersOnly
+] = useState(false);
+
+
+
+const [
+minPrice,
+setMinPrice
+] = useState("");
+
+
+
+const [
+maxPrice,
+setMaxPrice
+] = useState("");
+
 
 
 
@@ -76,9 +108,9 @@ const cartCount = cart.reduce(
 
 (total,item)=>
 
-total + item.quantity
+total + item.quantity,
 
-,0
+0
 
 );
 
@@ -88,23 +120,44 @@ total + item.quantity
 
 
 
+// =======================
+// تحميل الأقسام
+// =======================
+
+
 useEffect(()=>{
 
 
 const loadCategories = async()=>{
 
+
 try{
+
 
 const data = await getCategories();
 
-setCategories(data || []);
+
+// يظهر فقط الأقسام المفعلة
+
+setCategories(
+
+(data || []).filter(
+
+(cat)=>cat.active === true
+
+)
+
+);
+
 
 
 }
 
 catch(error){
 
+
 console.log(error);
+
 
 }
 
@@ -112,7 +165,9 @@ console.log(error);
 };
 
 
+
 loadCategories();
+
 
 
 },[]);
@@ -121,6 +176,13 @@ loadCategories();
 
 
 
+
+
+
+
+// =======================
+// استقبال اختيار القسم من Navbar
+// =======================
 
 
 useEffect(()=>{
@@ -142,7 +204,6 @@ behavior:"smooth",
 
 block:"start"
 
-
 });
 
 
@@ -154,6 +215,7 @@ block:"start"
 
 
 
+
 window.addEventListener(
 
 "filterCategory",
@@ -161,6 +223,7 @@ window.addEventListener(
 filterListener
 
 );
+
 
 
 
@@ -179,7 +242,9 @@ filterListener
 };
 
 
+
 },[]);
+
 
 
 
@@ -208,6 +273,12 @@ behavior:"smooth"
 
 
 
+
+// =======================
+// فلترة المنتجات
+// =======================
+
+
 const filteredProducts = (products || [])
 
 .filter((product)=>{
@@ -219,8 +290,6 @@ const title = String(
 product.title ||
 
 product.name ||
-
-product.productName ||
 
 ""
 
@@ -261,13 +330,20 @@ searchTerm || ""
 
 
 
+
 const matchSearch =
 
-searchText === "" ||
+searchText === ""
 
-title.includes(searchText) ||
+||
 
-description.includes(searchText) ||
+title.includes(searchText)
+
+||
+
+description.includes(searchText)
+
+||
 
 category.includes(searchText);
 
@@ -278,7 +354,9 @@ category.includes(searchText);
 
 const matchCategory =
 
-selectedCategory === "الكل" ||
+selectedCategory === "الكل"
+
+||
 
 product.category === selectedCategory;
 
@@ -287,11 +365,15 @@ product.category === selectedCategory;
 
 
 
-if(!matchSearch || !matchCategory){
+if(
+
+!matchSearch ||
+
+!matchCategory
+
+)
 
 return false;
-
-}
 
 
 
@@ -303,11 +385,10 @@ showOffersOnly &&
 
 !product.offer
 
-){
+)
 
 return false;
 
-}
 
 
 
@@ -317,13 +398,17 @@ if(
 
 minPrice &&
 
-Number(product.price || 0) < Number(minPrice)
+Number(product.price)
 
-){
+<
+
+Number(minPrice)
+
+)
 
 return false;
 
-}
+
 
 
 
@@ -332,13 +417,16 @@ if(
 
 maxPrice &&
 
-Number(product.price || 0) > Number(maxPrice)
+Number(product.price)
 
-){
+>
+
+Number(maxPrice)
+
+)
 
 return false;
 
-}
 
 
 
@@ -358,31 +446,31 @@ switch(sortBy){
 
 case "low":
 
-return Number(a.price || 0) - Number(b.price || 0);
+return Number(a.price)-Number(b.price);
 
 
 
 case "high":
 
-return Number(b.price || 0) - Number(a.price || 0);
+return Number(b.price)-Number(a.price);
 
 
 
 case "rating":
 
-return Number(b.rating || 0) - Number(a.rating || 0);
+return Number(b.rating)-Number(a.rating);
 
 
 
 case "new":
 
-return Number(!!b.newArrival) - Number(!!a.newArrival);
+return Number(!!b.newArrival)-Number(!!a.newArrival);
 
 
 
 case "best":
 
-return Number(!!b.bestSeller) - Number(!!a.bestSeller);
+return Number(!!b.bestSeller)-Number(!!a.bestSeller);
 
 
 
@@ -394,11 +482,13 @@ return 0;
 }
 
 
+
 });
 
 
-
-
+// =======================
+// أقسام المنتجات الخاصة
+// =======================
 
 
 const offers = (products || []).filter(
@@ -430,9 +520,18 @@ const recommended = (products || []).filter(
 (p)=>p.recommended
 
 );
+
+
+
+
+
+
 return (
 
 <div className="store-container">
+
+
+
 
 
 <Navbar
@@ -453,7 +552,16 @@ products={products}
 
 
 
+
+
+
+
 <HeroSlider />
+
+
+
+
+
 
 
 
@@ -462,19 +570,31 @@ products={products}
 <section className="features-section">
 
 
+
 <div className="feature-card">
 
 🚚
 
 <h3>
+
 شحن سريع
+
 </h3>
 
+
 <p>
+
 توصيل لجميع المحافظات
+
 </p>
 
+
 </div>
+
+
+
+
+
 
 
 
@@ -483,14 +603,25 @@ products={products}
 🔒
 
 <h3>
+
 دفع آمن
+
 </h3>
 
+
 <p>
+
 طرق دفع آمنة
+
 </p>
 
+
 </div>
+
+
+
+
+
 
 
 
@@ -499,14 +630,25 @@ products={products}
 ⭐
 
 <h3>
+
 جودة مضمونة
+
 </h3>
 
+
 <p>
+
 منتجات أصلية
+
 </p>
 
+
 </div>
+
+
+
+
+
 
 
 
@@ -515,17 +657,33 @@ products={products}
 💬
 
 <h3>
+
 دعم فني
+
 </h3>
 
+
 <p>
+
 خدمة عملاء مستمرة
+
 </p>
+
 
 </div>
 
 
+
+
+
 </section>
+
+
+
+
+
+
+
 
 
 
@@ -535,35 +693,70 @@ products={products}
 <section className="categories">
 
 
+
 <h2>
+
 الأقسام
+
 </h2>
+
+
+
 
 
 
 <div className="categories-grid">
 
 
+
+
+
+
+
 <div
+
 
 className="category-card"
 
+
 onClick={()=>setSelectedCategory("الكل")}
+
 
 >
 
+
+
+<div className="category-icon">
+
 📦
 
+</div>
+
+
+
 <h3>
+
 كل المنتجات
+
 </h3>
 
+
+
 <span>
+
 عرض كل المنتجات
+
 </span>
 
 
+
 </div>
+
+
+
+
+
+
 
 
 
@@ -571,56 +764,141 @@ onClick={()=>setSelectedCategory("الكل")}
 
 {
 
-categories
-.filter(cat => cat.active === true)
-.map((cat)=>(
+
+categories.map((cat)=>(
+
 
 
 <div
 
+
 key={cat.id}
+
 
 className="category-card"
 
+
 onClick={()=>setSelectedCategory(cat.name)}
+
 
 >
 
-<div>
 
-{cat.icon}
+
+
+
+{
+
+
+cat.image ? (
+
+
+
+<img
+
+
+src={cat.image}
+
+
+alt={cat.name}
+
+
+className="category-cover"
+
+
+/>
+
+
+
+)
+
+:
+
+(
+
+
+
+<div className="category-icon">
+
+
+{cat.icon || "📦"}
+
 
 </div>
 
 
-<h3>
 
-{cat.name}
+)
 
-</h3>
-
-
-<span>
-
-تصفح المنتجات
-
-</span>
-
-
-</div>
-
-
-))
 
 
 }
 
 
 
+
+
+
+
+<h3>
+
+
+{cat.name}
+
+
+</h3>
+
+
+
+
+
+
+
+<span>
+
+
+تصفح المنتجات
+
+
+</span>
+
+
+
+
+
+
+
 </div>
 
 
+
+))
+
+
+
+}
+
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
 </section>
+
+
+
+
+
+
+
 
 
 
@@ -630,14 +908,22 @@ onClick={()=>setSelectedCategory(cat.name)}
 <section className="offer-banner">
 
 
+
 <h2>
+
 🔥 خصومات تصل إلى 50%
+
 </h2>
 
 
+
+
 <p>
+
 لفترة محدودة على منتجات مختارة
+
 </p>
+
 
 
 </section>
@@ -647,7 +933,14 @@ onClick={()=>setSelectedCategory(cat.name)}
 
 
 
+
+
+
+
 <section className="offers-section">
+
+
+
 
 
 <ProductsSlider
@@ -663,6 +956,12 @@ products={offers}
 addToCart={addToCart}
 
 />
+
+
+
+
+
+
 
 
 
@@ -682,6 +981,13 @@ addToCart={addToCart}
 
 
 
+
+
+
+
+
+
+
 <ProductsSlider
 
 title="🆕 وصل حديثًا"
@@ -695,6 +1001,12 @@ products={newArrivals}
 addToCart={addToCart}
 
 />
+
+
+
+
+
+
 
 
 
@@ -714,12 +1026,14 @@ addToCart={addToCart}
 
 
 
+
+
+
+
 </section>
-
-
-
-
-
+// =======================
+// PRODUCTS SECTION
+// =======================
 
 
 <section
@@ -753,13 +1067,11 @@ onChange={(e)=>setSortBy(e.target.value)}
 
 >
 
-
 <option value="default">
 
 ترتيب افتراضي
 
 </option>
-
 
 
 <option value="low">
@@ -769,13 +1081,11 @@ onChange={(e)=>setSortBy(e.target.value)}
 </option>
 
 
-
 <option value="high">
 
 💰 الأعلى سعرًا
 
 </option>
-
 
 
 <option value="rating">
@@ -785,13 +1095,11 @@ onChange={(e)=>setSortBy(e.target.value)}
 </option>
 
 
-
 <option value="new">
 
 🆕 الأحدث
 
 </option>
-
 
 
 <option value="best">
@@ -801,8 +1109,8 @@ onChange={(e)=>setSortBy(e.target.value)}
 </option>
 
 
-
 </select>
+
 
 
 
@@ -824,6 +1132,7 @@ onChange={(e)=>setMinPrice(e.target.value)}
 
 
 
+
 <input
 
 type="number"
@@ -840,6 +1149,7 @@ onChange={(e)=>setMaxPrice(e.target.value)}
 
 
 
+
 <label>
 
 
@@ -849,11 +1159,7 @@ type="checkbox"
 
 checked={showOffersOnly}
 
-onChange={(e)=>
-
-setShowOffersOnly(e.target.checked)
-
-}
+onChange={(e)=>setShowOffersOnly(e.target.checked)}
 
 />
 
@@ -865,6 +1171,7 @@ setShowOffersOnly(e.target.checked)
 
 
 
+
 </div>
 
 
@@ -872,7 +1179,11 @@ setShowOffersOnly(e.target.checked)
 
 
 
+
+
+
 <div className="product-grid">
+
 
 
 {
@@ -889,6 +1200,8 @@ const id = product.id || product._id;
 
 return (
 
+
+
 <div
 
 className="product-card"
@@ -898,6 +1211,8 @@ key={id}
 onClick={()=>navigate(`/product/${id}`)}
 
 >
+
+
 
 
 <img
@@ -915,11 +1230,16 @@ alt={product.title || "product"}
 />
 
 
+
+
+
 <h3>
 
 {product.title || product.name}
 
 </h3>
+
+
 
 
 
@@ -931,13 +1251,19 @@ alt={product.title || "product"}
 
 
 
+
+
+
 <button
 
 onClick={(e)=>{
 
+
 e.stopPropagation();
 
+
 addToCart(product);
+
 
 }}
 
@@ -948,7 +1274,13 @@ addToCart(product);
 </button>
 
 
+
+
+
+
+
 </div>
+
 
 
 );
@@ -959,7 +1291,10 @@ addToCart(product);
 
 )
 
-:(
+:
+
+(
+
 
 
 <h3>
@@ -969,16 +1304,38 @@ addToCart(product);
 </h3>
 
 
+
 )
+
 
 
 }
 
 
+
 </div>
 
 
+
+
+
+
+
 </section>
+
+
+
+
+
+
+
+
+
+// =======================
+// FOOTER START
+// =======================
+
+
 <footer className="store-footer">
 
 
@@ -990,8 +1347,11 @@ addToCart(product);
 
 
 <h3>
+
 Elsafty Store
+
 </h3>
+
 
 
 <p>
@@ -1002,7 +1362,10 @@ Elsafty Store
 </p>
 
 
+
 </div>
+
+
 
 
 
@@ -1012,8 +1375,13 @@ Elsafty Store
 
 
 <h3>
+
 روابط سريعة
+
 </h3>
+
+
+
 
 
 
@@ -1028,6 +1396,9 @@ onClick={()=>navigate("/")}
 🏠 الرئيسية
 
 </button>
+
+
+
 
 
 
@@ -1048,6 +1419,8 @@ onClick={()=>navigate("/cart")}
 
 
 
+
+
 <button
 
 className="footer-link"
@@ -1059,6 +1432,9 @@ onClick={()=>scrollToSection(".products-section")}
 📦 جميع المنتجات
 
 </button>
+
+
+
 
 
 
@@ -1077,41 +1453,54 @@ onClick={()=>scrollToSection(".offer-banner")}
 
 
 
+
+
+
 </div>
-
-
-
-
-
-
-
 <div className="footer-section">
 
 
 <h3>
+
 خدمة العملاء
+
 </h3>
 
 
 
+
 <p>
+
 📞 دعم طوال الأسبوع
+
 </p>
 
 
+
 <p>
+
 🚚 شحن لجميع المحافظات
+
 </p>
 
 
+
+
 <p>
+
 🔒 دفع آمن
+
 </p>
+
+
 
 
 <p>
+
 ⭐ ضمان جودة المنتجات
+
 </p>
+
 
 
 
@@ -1123,43 +1512,67 @@ onClick={()=>scrollToSection(".offer-banner")}
 
 
 
+
 <div className="footer-section">
 
 
 <h3>
+
 تابعنا
+
 </h3>
+
+
 
 
 
 <div className="social-icons">
 
 
+
 <span>
+
 📘
+
 </span>
 
 
+
+
 <span>
+
 📷
+
 </span>
 
 
+
+
 <span>
+
 🎵
+
 </span>
+
+
 
 
 <span>
+
 ▶️
+
 </span>
 
 
+
+
 </div>
 
 
 
+
 </div>
+
 
 
 
@@ -1179,6 +1592,7 @@ onClick={()=>scrollToSection(".offer-banner")}
 
 
 
+
 <p className="copyright">
 
 
@@ -1187,7 +1601,11 @@ onClick={()=>scrollToSection(".offer-banner")}
 - جميع الحقوق محفوظة.
 
 
+
 </p>
+
+
+
 
 
 
@@ -1198,10 +1616,13 @@ onClick={()=>scrollToSection(".offer-banner")}
 
 
 
+
+
 </div>
 
 
 );
+
 
 
 }

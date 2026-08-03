@@ -643,3 +643,407 @@ padding:8px 15px;
 border-radius:8px;
 cursor:pointer;
 }
+/* ===============================
+   ADMIN FINAL MOBILE FIX
+================================*/
+
+
+.admin-container{
+    width:100%;
+    box-sizing:border-box;
+}
+
+
+/* منع خروج العناصر */
+
+.admin-container *{
+    box-sizing:border-box;
+}
+
+
+
+/* شريط علوي */
+
+.admin-top-bar{
+
+    flex-wrap:wrap;
+    gap:15px;
+
+}
+
+
+.admin-top-bar h2{
+
+    flex:1;
+    min-width:200px;
+
+}
+
+
+
+/* الأزرار */
+
+.admin-actions{
+
+    flex-wrap:wrap;
+
+}
+
+
+.admin-actions button{
+
+    white-space:nowrap;
+
+}
+
+
+
+
+/* الفورم */
+
+.admin-form input,
+.admin-form textarea,
+.admin-form select{
+
+    width:100%;
+    max-width:100%;
+
+}
+
+
+.admin-form textarea{
+
+    min-height:120px;
+
+}
+
+
+
+
+/* جدول */
+
+.table-container{
+
+    width:100%;
+    overflow-x:auto;
+}
+
+
+.admin-table{
+
+    min-width:850px;
+
+}
+
+
+
+/* صورة الأقسام */
+
+.category-img{
+
+    width:60px;
+    height:60px;
+    object-fit:cover;
+    border-radius:10px;
+
+}
+
+
+
+/* ===============================
+ MOBILE
+================================*/
+
+
+@media(max-width:768px){
+
+
+.admin-container{
+
+    margin:10px auto;
+    padding:12px;
+    border-radius:12px;
+
+}
+
+
+
+.admin-container h2{
+
+    font-size:20px;
+
+}
+
+
+
+
+.admin-stats{
+
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+
+}
+
+
+
+.stat-card{
+
+    min-width:0;
+    padding:15px;
+
+}
+
+
+
+.stat-card h3{
+
+    font-size:14px;
+
+}
+
+
+
+.stat-card p{
+
+    font-size:24px;
+
+}
+
+
+
+
+
+.admin-top-bar{
+
+    flex-direction:column;
+    align-items:stretch;
+    text-align:center;
+
+}
+
+
+
+.admin-actions{
+
+    width:100%;
+
+}
+
+
+
+.admin-actions button{
+
+    flex:1;
+    width:100%;
+
+}
+
+
+
+
+.admin-tabs{
+
+    width:100%;
+    overflow-x:auto;
+
+}
+
+
+
+.admin-tabs button{
+
+    min-width:130px;
+
+}
+
+
+
+
+.form-row{
+
+    grid-template-columns:1fr;
+
+}
+
+
+
+.product-options{
+
+    grid-template-columns:1fr;
+
+}
+
+
+
+
+.admin-table{
+
+    font-size:13px;
+
+}
+
+
+
+
+
+.edit-btn,
+.delete-btn,
+.whatsapp-btn{
+
+    width:100%;
+    margin:4px 0;
+
+}
+
+
+
+
+
+.order-card{
+
+    padding:15px;
+
+}
+
+
+
+
+}
+
+
+
+/* شاشات صغيرة جدا */
+
+@media(max-width:420px){
+
+
+
+.admin-stats{
+
+    grid-template-columns:1fr;
+
+}
+
+
+
+.store-btn,
+.logout-btn{
+
+    font-size:13px;
+    padding:10px;
+
+}
+
+
+
+.admin-form{
+
+    padding:12px;
+
+}
+
+
+
+}
+.table-scroll{
+  width:100%;
+  overflow-x:auto;
+}
+
+
+.table-scroll table{
+  min-width:850px;
+}
+
+
+.price-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+}
+
+
+.new-order-alert{
+  background:#16a34a;
+  color:white;
+  padding:15px;
+  border-radius:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+
+.new-order-alert button{
+  background:white;
+  color:#16a34a;
+  border:none;
+  padding:8px 15px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+
+@media(max-width:768px){
+
+.admin-container{
+  width:100%;
+  margin:0;
+  padding:12px;
+  border-radius:0;
+}
+
+
+.admin-top-bar{
+  flex-direction:column;
+}
+
+
+.admin-actions{
+  width:100%;
+}
+
+
+.admin-actions button{
+  flex:1;
+}
+
+
+.price-row{
+  grid-template-columns:1fr;
+}
+
+
+.admin-stats{
+  grid-template-columns:repeat(2,1fr);
+}
+
+
+.stat-card{
+  min-width:0;
+  padding:12px;
+}
+
+
+.new-order-alert{
+  flex-direction:column;
+  gap:10px;
+}
+
+
+.new-order-alert button{
+  width:100%;
+}
+
+
+.admin-table th,
+.admin-table td{
+  padding:8px;
+  font-size:13px;
+}
+
+
+}

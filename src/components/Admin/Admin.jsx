@@ -20,8 +20,13 @@ import {
 } from "firebase/firestore";
 
 import {
-  db
+  db,
+  auth
 } from "../../firebase";
+
+import {
+  signOut
+} from "firebase/auth";
 
 import "./Admin.css";
 
@@ -38,14 +43,6 @@ import {
   removeCategory
 } from "../../services/categoryService";
 
-import {
-  signOut
-} from "firebase/auth";
-
-import {
-  auth
-} from "../../firebase";
-
 
 
 function Admin({
@@ -57,34 +54,17 @@ function Admin({
 const navigate = useNavigate();
 
 
+// =====================
+// STATES
+// =====================
+
+const [tab,setTab] = useState("products");
 
 const [orders,setOrders] = useState([]);
 
+const [categories,setCategories] = useState([]);
+
 const firstLoad = useRef(true);
-
-
-
-useEffect(()=>{
-
-if("Notification" in window){
-
-Notification.requestPermission();
-
-}
-
-},[]);
-
-
-
-
-
-const audio = useRef(
-
-new Audio(
-"https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-)
-
-);
 
 
 
@@ -102,6 +82,13 @@ const [price,setPrice] = useState("");
 
 const [oldPrice,setOldPrice] = useState("");
 
+const [category,setCategory] = useState("");
+
+const [rating,setRating] = useState(5);
+
+const [stock,setStock] = useState(1);
+
+
 const [offer,setOffer] = useState(false);
 
 const [bestSeller,setBestSeller] = useState(false);
@@ -111,27 +98,12 @@ const [newArrival,setNewArrival] = useState(false);
 const [recommended,setRecommended] = useState(false);
 
 
-const [category,setCategory] = useState("");
-
-const [rating,setRating] = useState(5);
-
-const [stock,setStock] = useState(1);
-
+const [image,setImage] = useState("");
 
 const [images,setImages] = useState([]);
 
-const [image,setImage] = useState("");
-
 const [editingId,setEditingId] = useState(null);
 
-
-
-// =====================
-// TABS
-// =====================
-
-
-const [tab,setTab] = useState("products");
 
 
 
@@ -140,32 +112,87 @@ const [tab,setTab] = useState("products");
 // =====================
 
 
-const [categories,setCategories] = useState([]);
+const [
+categoryName,
+setCategoryName
+]=useState("");
 
 
-const [categoryName,setCategoryName] = useState("");
+const [
+categoryIcon,
+setCategoryIcon
+]=useState("");
 
-const [categoryIcon,setCategoryIcon] = useState("");
-const [categoryImage,setCategoryImage] = useState("");
-const [editingCategoryId,setEditingCategoryId] = useState(null);
+
+const [
+categoryImage,
+setCategoryImage
+]=useState("");
+
+
+const [
+editingCategoryId,
+setEditingCategoryId
+]=useState(null);
+
 
 
 
 
 // =====================
-// SALES
+// AUDIO
+// =====================
+
+
+const audio = useRef(
+
+new Audio(
+"https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+)
+
+);
+
+
+
+
+
+// =====================
+// NOTIFICATION
+// =====================
+
+
+useEffect(()=>{
+
+
+if(
+"Notification" in window
+){
+
+Notification.requestPermission();
+
+}
+
+
+},[]);
+
+
+
+
+
+
+// =====================
+// TOTAL SALES
 // =====================
 
 
 const totalSales = orders.reduce(
 
-(total,order)=>
+(sum,order)=>
 
-total + Number(order.total || 0),
+sum + Number(order.total || 0)
 
-0
+,0);
 
-);
 
 
 
@@ -187,6 +214,13 @@ setPrice("");
 
 setOldPrice("");
 
+setCategory("");
+
+setRating(5);
+
+setStock(1);
+
+
 setOffer(false);
 
 setBestSeller(false);
@@ -195,15 +229,10 @@ setNewArrival(false);
 
 setRecommended(false);
 
-setCategory("");
-
-setRating(5);
-
-setStock(1);
-
-setImages([]);
 
 setImage("");
+
+setImages([]);
 
 setEditingId(null);
 
@@ -214,33 +243,15 @@ setEditingId(null);
 
 
 
+
+
 // =====================
 // IMAGE UPLOAD
 // =====================
 
 
-const handleImageUpload = (e)=>{
-const handleCategoryImageUpload = (e)=>{
+const handleImageUpload=(e)=>{
 
-const file = e.target.files[0];
-
-if(!file) return;
-
-
-const reader = new FileReader();
-
-
-reader.onloadend=()=>{
-
-setCategoryImage(reader.result);
-
-};
-
-
-reader.readAsDataURL(file);
-
-
-};
 
 const files = Array.from(
 e.target.files
@@ -261,6 +272,7 @@ return new Promise(resolve=>{
 const reader = new FileReader();
 
 
+
 reader.onloadend=()=>{
 
 resolve(reader.result);
@@ -268,7 +280,9 @@ resolve(reader.result);
 };
 
 
+
 reader.readAsDataURL(file);
+
 
 
 });
@@ -297,73 +311,72 @@ setImage(result[0]);
 
 
 
+
 // =====================
-// CATEGORY STATUS TOGGLE
+// CATEGORY IMAGE UPLOAD
 // =====================
 
 
-const toggleCategoryStatus = async(cat)=>{
+const handleCategoryImageUpload=(e)=>{
 
 
-try{
+const file=e.target.files[0];
 
 
-await editCategory(
+if(!file)
+return;
 
-cat.id,
 
-{
 
-active: !cat.active
+const reader=new FileReader();
 
-}
 
+
+reader.onloadend=()=>{
+
+
+setCategoryImage(
+reader.result
 );
 
 
-
-const updated = await getAllCategories();
-
-
-setCategories(updated);
+};
 
 
 
-}
-
-catch(error){
-
-
-console.log(error);
-
-
-alert("حدث خطأ");
-
-
-}
+reader.readAsDataURL(file);
 
 
 };
+
+
+
+
+
+
 // =====================
 // SAVE PRODUCT
 // =====================
 
 
-const handleSubmit = async(e)=>{
+const handleSubmit=async(e)=>{
 
 
 e.preventDefault();
 
 
 
-if(!title || !price || !image){
+if(
+!title ||
+!price ||
+!image
+){
 
-
-alert("اكمل البيانات");
-
+alert(
+"اكمل بيانات المنتج"
+);
 
 return;
-
 
 }
 
@@ -372,30 +385,38 @@ return;
 try{
 
 
-let uploadedImages = [];
+let uploadedImages=[];
 
 
 
 for(
 const img of (
-images.length ? images : [image]
+images.length
+?
+images
+:
+[image]
 )
 
 ){
 
 
-let imageUrl = img;
+
+let imageUrl=img;
 
 
 
-if(imageUrl.startsWith("data:")){
+if(
+imageUrl.startsWith("data:")
+){
 
 
-const formData = new FormData();
+
+const formData=new FormData();
 
 
 
-const blob = await (
+const blob=await(
 
 await fetch(imageUrl)
 
@@ -418,7 +439,7 @@ formData.append(
 
 
 
-const upload = await fetch(
+const upload=await fetch(
 
 "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
 
@@ -434,24 +455,22 @@ body:formData
 
 
 
-const data = await upload.json();
+
+const data=await upload.json();
 
 
 
 if(!upload.ok){
 
-
-alert("فشل رفع الصورة");
-
-
-return;
-
+throw new Error(
+"Cloudinary Error"
+);
 
 }
 
 
 
-imageUrl = data.secure_url;
+imageUrl=data.secure_url;
 
 
 
@@ -467,12 +486,10 @@ uploadedImages.push(imageUrl);
 
 
 
-
-const product = {
+const product={
 
 
 title,
-
 
 description,
 
@@ -483,7 +500,7 @@ price:Number(price),
 oldPrice:Number(oldPrice || 0),
 
 
-image:uploadedImages[0] || "",
+image:uploadedImages[0],
 
 
 images:uploadedImages,
@@ -516,9 +533,7 @@ recommended
 
 
 
-
 if(editingId){
-
 
 
 await editProduct(
@@ -537,8 +552,8 @@ product
 await addProduct(product);
 
 
-}
 
+}
 
 
 
@@ -551,7 +566,9 @@ clearForm();
 
 
 
-alert("تم حفظ المنتج");
+alert(
+"تم حفظ المنتج"
+);
 
 
 
@@ -563,32 +580,24 @@ catch(error){
 console.log(error);
 
 
-alert("حدث خطأ أثناء الحفظ");
+alert(
+"حدث خطأ أثناء الحفظ"
+);
 
 
 }
 
 
-
 };
-
-
-
-
-
-
-
-
 // =====================
 // EDIT PRODUCT
 // =====================
 
 
-const handleEdit = (product)=>{
+const handleEdit=(product)=>{
 
 
 setEditingId(product.id);
-
 
 
 setTitle(
@@ -596,11 +605,9 @@ product.title || ""
 );
 
 
-
 setDescription(
 product.description || ""
 );
-
 
 
 setPrice(
@@ -608,11 +615,27 @@ product.price || ""
 );
 
 
-
 setOldPrice(
 product.oldPrice || ""
 );
 
+
+
+setCategory(
+product.category || ""
+);
+
+
+
+setRating(
+product.rating || 5
+);
+
+
+
+setStock(
+product.stock || 1
+);
 
 
 
@@ -640,32 +663,15 @@ product.recommended || false
 
 
 
-
-setCategory(
-product.category || ""
-);
-
-
-
-
-setRating(
-product.rating || 5
-);
-
-
-
-
-setStock(
-product.stock || 1
-);
-
-
-
-
 setImage(
 product.image || ""
 );
 
+
+
+setImages(
+product.images || []
+);
 
 
 
@@ -685,14 +691,12 @@ behavior:"smooth"
 
 
 
-
-
 // =====================
 // DELETE PRODUCT
 // =====================
 
 
-const handleDelete = async(id)=>{
+const handleDelete=async(id)=>{
 
 
 if(
@@ -703,19 +707,19 @@ return;
 
 
 
-
 try{
 
 
 await removeProduct(id);
 
 
-
 await loadProducts();
 
 
 
-alert("تم حذف المنتج");
+alert(
+"تم حذف المنتج"
+);
 
 
 
@@ -727,8 +731,9 @@ catch(error){
 console.log(error);
 
 
-
-alert("فشل الحذف");
+alert(
+"فشل الحذف"
+);
 
 
 }
@@ -741,12 +746,137 @@ alert("فشل الحذف");
 
 
 
+
+
 // =====================
-// ORDER STATUS
+// LOAD ORDERS
 // =====================
 
 
-const changeOrderStatus = async(id,status)=>{
+useEffect(()=>{
+
+
+const q=query(
+
+collection(db,"orders"),
+
+orderBy(
+"createdAt",
+"desc"
+)
+
+);
+
+
+
+
+
+const unsubscribe=onSnapshot(
+
+q,
+
+(snapshot)=>{
+
+
+const list=snapshot.docs.map(item=>(
+
+
+{
+
+id:item.id,
+
+...item.data()
+
+}
+
+
+));
+
+
+
+
+if(
+
+!firstLoad.current &&
+
+list.length > orders.length
+
+){
+
+
+
+audio.current.play();
+
+
+
+if(
+Notification.permission==="granted"
+){
+
+
+
+new Notification(
+
+"🛒 طلب جديد",
+
+{
+
+body:
+
+`${list[0]?.customerName || ""} - ${list[0]?.total || 0} جنيه`
+
+}
+
+);
+
+
+
+}
+
+
+}
+
+
+
+
+
+firstLoad.current=false;
+
+
+
+setOrders(list);
+
+
+
+}
+
+
+);
+
+
+
+return ()=>unsubscribe();
+
+
+
+},[]);
+
+
+
+
+
+
+
+
+// =====================
+// CHANGE ORDER STATUS
+// =====================
+
+
+const changeOrderStatus=async(
+id,
+status
+)=>{
 
 
 try{
@@ -788,132 +918,29 @@ console.log(error);
 
 
 
-// =====================
-// LOAD ORDERS
-// =====================
 
 
-useEffect(()=>{
 
-
-const q = query(
-
-collection(db,"orders"),
-
-orderBy(
-"createdAt",
-"desc"
-)
-
-);
-
-
-
-
-const unsubscribe = onSnapshot(
-
-q,
-
-(snapshot)=>{
-
-
-const list = snapshot.docs.map(doc=>(
-
-
-{
-
-id:doc.id,
-
-...doc.data()
-
-}
-
-
-));
-
-
-
-
-
-if(
-
-!firstLoad.current &&
-
-list.length > orders.length
-
-){
-
-
-audio.current.play();
-
-
-
-if(
-Notification.permission === "granted"
-){
-
-
-new Notification(
-
-"🛒 طلب جديد",
-
-{
-
-body:
-
-`${list[0].customerName} - ${list[0].total} جنيه`
-
-}
-
-);
-
-
-}
-
-
-
-}
-
-
-
-
-
-firstLoad.current=false;
-
-
-
-setOrders(list);
-
-
-
-}
-
-
-);
-
-
-
-return ()=>unsubscribe();
-
-
-
-},[orders.length]);
 
 // =====================
 // LOAD CATEGORIES
 // =====================
 
 
-const loadCategories = async()=>{
+const loadCategories=async()=>{
 
 
 try{
 
 
-const data = await getAllCategories();
+const data=
+await getAllCategories();
 
 
-setCategories(data || []);
+
+setCategories(
+data || []
+);
 
 
 
@@ -935,13 +962,280 @@ console.log(error);
 
 
 
+
 useEffect(()=>{
 
 
 loadCategories();
 
 
+
 },[]);
+
+
+
+
+
+
+
+
+
+// =====================
+// SAVE CATEGORY
+// =====================
+
+
+const saveCategory=async()=>{
+
+
+if(!categoryName)
+return;
+
+
+
+try{
+
+
+const data={
+
+
+name:categoryName,
+
+
+icon:categoryIcon,
+
+
+image:categoryImage,
+
+
+active:
+
+editingCategoryId
+
+?
+
+categories.find(
+c=>c.id===editingCategoryId
+)?.active
+
+:
+
+true
+
+
+};
+
+
+
+
+
+if(editingCategoryId){
+
+
+await editCategory(
+
+editingCategoryId,
+
+data
+
+);
+
+
+
+}
+
+else{
+
+
+await addCategory(data);
+
+
+
+}
+
+
+
+
+
+await loadCategories();
+
+
+
+
+
+setCategoryName("");
+
+setCategoryIcon("");
+
+setCategoryImage("");
+
+setEditingCategoryId(null);
+
+
+
+}
+
+catch(error){
+
+
+console.log(error);
+
+
+alert(
+"حدث خطأ أثناء حفظ القسم"
+);
+
+
+
+}
+
+
+
+};
+
+
+
+
+
+
+
+
+
+
+// =====================
+// EDIT CATEGORY
+// =====================
+
+
+const handleEditCategory=(cat)=>{
+
+
+setEditingCategoryId(
+cat.id
+);
+
+
+
+setCategoryName(
+cat.name || ""
+);
+
+
+
+setCategoryIcon(
+cat.icon || ""
+);
+
+
+
+setCategoryImage(
+cat.image || ""
+);
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// =====================
+// DELETE CATEGORY
+// =====================
+
+
+const handleDeleteCategory=async(id)=>{
+
+
+if(
+!window.confirm("حذف الفئة؟")
+)
+
+return;
+
+
+
+try{
+
+
+await removeCategory(id);
+
+
+await loadCategories();
+
+
+
+}
+
+catch(error){
+
+
+console.log(error);
+
+
+
+}
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// =====================
+// TOGGLE CATEGORY STATUS
+// =====================
+
+
+const toggleCategoryStatus=async(cat)=>{
+
+
+try{
+
+
+await editCategory(
+
+cat.id,
+
+{
+
+active:!cat.active
+
+}
+
+);
+
+
+
+await loadCategories();
+
+
+
+}
+
+catch(error){
+
+
+console.log(error);
+
+
+}
+
+
+
+};
+
 
 
 
@@ -955,7 +1249,7 @@ loadCategories();
 // =====================
 
 
-const handleLogout = async()=>{
+const handleLogout=async()=>{
 
 
 try{
@@ -987,86 +1281,30 @@ console.log(error);
 
 
 
-
-
-
 // =====================
-// RETURN START
+// RETURN
 // =====================
 
 
 return (
 
-
 <div className="admin-container">
 
 
 
-
-
 {
-
 orders.length > 0 && (
 
-
-<div
-
-style={{
-
-background:"#16a34a",
-
-color:"#fff",
-
-padding:"12px 20px",
-
-borderRadius:"10px",
-
-marginBottom:"15px",
-
-display:"flex",
-
-justifyContent:"space-between",
-
-alignItems:"center",
-
-fontWeight:"bold"
-
-}}
-
->
-
+<div className="new-order-alert">
 
 <span>
-
-🔔 يوجد طلب جديد
-
+🔔 يوجد {orders.length} طلب
 </span>
-
-
-
 
 
 <button
 
 onClick={()=>setTab("orders")}
-
-style={{
-
-background:"#fff",
-
-color:"#16a34a",
-
-border:"none",
-
-padding:"8px 15px",
-
-borderRadius:"8px",
-
-cursor:"pointer",
-
-fontWeight:"bold"
-
-}}
 
 >
 
@@ -1075,10 +1313,7 @@ fontWeight:"bold"
 </button>
 
 
-
-
 </div>
-
 
 )
 
@@ -1089,34 +1324,21 @@ fontWeight:"bold"
 
 
 
-
-
-
 <div className="admin-stats">
 
 
 
-
-
 <div className="stat-card">
-
 
 <Dashboard />
 
-
 <h3>
-
 📦 المنتجات
-
 </h3>
 
-
 <p>
-
 {products.length}
-
 </p>
-
 
 </div>
 
@@ -1124,26 +1346,15 @@ fontWeight:"bold"
 
 
 
-
-
-
-
 <div className="stat-card">
 
-
 <h3>
-
 🧾 الطلبات
-
 </h3>
 
-
 <p>
-
 {orders.length}
-
 </p>
-
 
 </div>
 
@@ -1152,30 +1363,17 @@ fontWeight:"bold"
 
 
 
-
-
-
-
 <div className="stat-card">
 
-
 <h3>
-
 🗂️ الفئات
-
 </h3>
 
-
 <p>
-
 {categories.length}
-
 </p>
 
-
 </div>
-
-
 
 
 
@@ -1185,55 +1383,35 @@ fontWeight:"bold"
 
 <div className="stat-card">
 
-
 <h3>
-
 💰 المبيعات
-
 </h3>
 
-
 <p>
-
 {totalSales} ج.م
-
 </p>
 
-
 </div>
 
 
 
-
-
 </div>
-
-
-
-
-
-
-
+{/* =====================
+HEADER
+===================== */}
 
 
 <div className="admin-top-bar">
 
 
-
 <h2>
-
 لوحة التحكم
-
 </h2>
 
 
 
 
-
-
-
 <div className="admin-actions">
-
 
 
 <button
@@ -1247,9 +1425,6 @@ onClick={()=>navigate("/")}
 🛒 العودة للمتجر
 
 </button>
-
-
-
 
 
 
@@ -1272,29 +1447,30 @@ onClick={handleLogout}
 
 
 
+</div>
 
 
 
+
+
+
+
+{/* =====================
+TABS
+===================== */}
 
 
 <div className="admin-tabs">
 
 
-
 <button
 
 className={
-
 tab==="products"
-
 ?
-
 "active"
-
 :
-
 ""
-
 }
 
 onClick={()=>setTab("products")}
@@ -1309,21 +1485,14 @@ onClick={()=>setTab("products")}
 
 
 
-
 <button
 
 className={
-
 tab==="orders"
-
 ?
-
 "active"
-
 :
-
 ""
-
 }
 
 onClick={()=>setTab("orders")}
@@ -1338,51 +1507,44 @@ onClick={()=>setTab("orders")}
 
 
 
-
-
 <button
 
 className={
-
 tab==="categories"
-
 ?
-
 "active"
-
 :
-
 ""
-
 }
 
 onClick={()=>setTab("categories")}
 
 >
 
-🗂️ الفئات
+🗂️ الأقسام
 
 </button>
 
 
 
-
-
 </div>
 
 
 
 
 
-</div>
 
-// =====================
-// PRODUCTS FORM
-// =====================
+
+
+
+
+{/* =====================
+PRODUCT FORM
+===================== */}
 
 
 {
-tab === "products" && (
+tab==="products" && (
 
 
 <form
@@ -1403,9 +1565,13 @@ placeholder="اسم المنتج"
 
 value={title}
 
-onChange={(e)=>setTitle(e.target.value)}
+onChange={
+e=>setTitle(e.target.value)
+}
 
 />
+
+
 
 
 
@@ -1417,13 +1583,20 @@ placeholder="وصف المنتج"
 
 value={description}
 
-onChange={(e)=>setDescription(e.target.value)}
+onChange={
+e=>setDescription(e.target.value)
+}
 
 />
 
 
 
 
+
+
+
+
+<div className="price-row">
 
 
 <input
@@ -1434,7 +1607,9 @@ placeholder="السعر"
 
 value={price}
 
-onChange={(e)=>setPrice(e.target.value)}
+onChange={
+e=>setPrice(e.target.value)
+}
 
 />
 
@@ -1451,9 +1626,17 @@ placeholder="السعر قبل الخصم"
 
 value={oldPrice}
 
-onChange={(e)=>setOldPrice(e.target.value)}
+onChange={
+e=>setOldPrice(e.target.value)
+}
 
 />
+
+
+
+</div>
+
+
 
 
 
@@ -1465,16 +1648,19 @@ onChange={(e)=>setOldPrice(e.target.value)}
 
 value={category}
 
-onChange={(e)=>setCategory(e.target.value)}
+onChange={
+e=>setCategory(e.target.value)
+}
 
 >
 
 
 <option value="">
 
-اختر الفئة
+اختر القسم
 
 </option>
+
 
 
 
@@ -1484,7 +1670,7 @@ categories
 
 .filter(cat=>cat.active)
 
-.map((cat)=>(
+.map(cat=>(
 
 
 <option
@@ -1501,6 +1687,7 @@ value={cat.name}
 
 
 ))
+
 
 }
 
@@ -1519,7 +1706,6 @@ value={cat.name}
 <div className="product-options">
 
 
-
 <label>
 
 <input
@@ -1528,14 +1714,15 @@ type="checkbox"
 
 checked={offer}
 
-onChange={(e)=>setOffer(e.target.checked)}
+onChange={
+e=>setOffer(e.target.checked)
+}
 
 />
 
-🔥 عرض اليوم
+🔥 عرض
 
 </label>
-
 
 
 
@@ -1549,14 +1736,15 @@ type="checkbox"
 
 checked={bestSeller}
 
-onChange={(e)=>setBestSeller(e.target.checked)}
+onChange={
+e=>setBestSeller(e.target.checked)
+}
 
 />
 
-⭐ الأكثر مبيعًا
+⭐ الأكثر مبيعاً
 
 </label>
-
 
 
 
@@ -1571,11 +1759,13 @@ type="checkbox"
 
 checked={newArrival}
 
-onChange={(e)=>setNewArrival(e.target.checked)}
+onChange={
+e=>setNewArrival(e.target.checked)
+}
 
 />
 
-🆕 وصل حديثًا
+🆕 جديد
 
 </label>
 
@@ -1593,14 +1783,15 @@ type="checkbox"
 
 checked={recommended}
 
-onChange={(e)=>setRecommended(e.target.checked)}
+onChange={
+e=>setRecommended(e.target.checked)
+}
 
 />
 
-❤️ قد يعجبك
+❤️ مميز
 
 </label>
-
 
 
 
@@ -1612,6 +1803,11 @@ onChange={(e)=>setRecommended(e.target.checked)}
 
 
 
+
+
+<div className="price-row">
+
+
 <input
 
 type="number"
@@ -1620,12 +1816,11 @@ placeholder="التقييم"
 
 value={rating}
 
-onChange={(e)=>setRating(e.target.value)}
+onChange={
+e=>setRating(e.target.value)
+}
 
 />
-
-
-
 
 
 
@@ -1639,9 +1834,17 @@ placeholder="المخزون"
 
 value={stock}
 
-onChange={(e)=>setStock(e.target.value)}
+onChange={
+e=>setStock(e.target.value)
+}
 
 />
+
+
+
+</div>
+
+
 
 
 
@@ -1659,37 +1862,6 @@ accept="image/*"
 multiple
 
 onChange={handleImageUpload}
-
-/>
-
-
-
-
-
-
-
-
-<input
-
-type="text"
-
-placeholder="رابط الصورة"
-
-value={
-
-image.startsWith("data:")
-
-?
-
-""
-
-:
-
-image
-
-}
-
-onChange={(e)=>setImage(e.target.value)}
 
 />
 
@@ -1724,7 +1896,15 @@ alt="preview"
 
 
 
-<button type="submit">
+
+
+<button
+
+type="submit"
+
+className="save-btn"
+
+>
 
 
 {
@@ -1733,17 +1913,18 @@ editingId
 
 ?
 
-"حفظ التعديل"
+"💾 حفظ التعديل"
 
 :
 
-"إضافة المنتج"
+"➕ إضافة المنتج"
 
 }
 
 
 
 </button>
+
 
 
 
@@ -1765,23 +1946,25 @@ editingId
 
 
 
-// =====================
-// PRODUCTS TABLE
-// =====================
+
+
+
+{/* =====================
+CATEGORY FORM
+===================== */}
 
 
 {
 
-tab === "products" && (
+tab==="categories" && (
 
 
-<>
+<div className="category-box">
+
 
 
 <h2>
-
-قائمة المنتجات
-
+🗂️ إدارة الأقسام
 </h2>
 
 
@@ -1790,87 +1973,182 @@ tab === "products" && (
 
 
 
+<input
+
+placeholder="اسم القسم"
+
+value={categoryName}
+
+onChange={
+e=>setCategoryName(e.target.value)
+}
+
+/>
+
+
+
+
+
+
+
+
+<input
+
+placeholder="أيقونة القسم"
+
+value={categoryIcon}
+
+onChange={
+e=>setCategoryIcon(e.target.value)
+}
+
+/>
+
+
+
+
+
+
+
+<input
+
+type="file"
+
+accept="image/*"
+
+onChange={handleCategoryImageUpload}
+
+/>
+
+
+
+
+
+
+
+
+{
+
+categoryImage &&
+
+
+<img
+
+src={categoryImage}
+
+className="category-img-preview"
+
+alt="category"
+
+/>
+
+
+
+}
+
+
+
+
+
+
+
+<button
+
+onClick={saveCategory}
+
+className="save-btn"
+
+>
+
+
+{
+
+editingCategoryId
+
+?
+
+"💾 حفظ التعديل"
+
+:
+
+"➕ إضافة قسم"
+
+}
+
+
+
+</button>
+
+
+
+
+
+
+
+</div>
+
+
+)
+
+}
+
+
+// =====================
+// PRODUCTS TABLE
+// =====================
+
+
+{
+tab==="products" && (
+
+
+<div className="table-container">
+
+
+<h2>
+📦 قائمة المنتجات
+</h2>
+
+
+
+<div className="table-scroll">
+
 <table className="admin-table">
 
 
 <thead>
 
-
 <tr>
 
-
 <th>
-
 الصورة
-
 </th>
 
-
 <th>
-
 الاسم
-
 </th>
 
-
 <th>
-
 السعر
-
 </th>
 
-
 <th>
-
 القسم
-
 </th>
 
-
 <th>
-
-🔥 عرض
-
+الحالة
 </th>
 
-
 <th>
-
-⭐ الأكثر
-
-</th>
-
-
-<th>
-
-🆕 جديد
-
-</th>
-
-
-<th>
-
-❤️ مميز
-
-</th>
-
-
-<th>
-
 المخزون
-
 </th>
-
 
 <th>
-
 الإجراءات
-
 </th>
-
 
 </tr>
-
 
 </thead>
 
@@ -1883,32 +2161,36 @@ tab === "products" && (
 
 {
 
-products.map((p)=>(
+products.map(product=>(
 
 
-<tr key={p.id}>
-
+<tr key={product.id}>
 
 
 <td>
-
 
 <img
 
 src={
-
-p.image ||
-
-"https://via.placeholder.com/100"
-
+product.image ||
+"https://via.placeholder.com/80"
 }
-
-alt={p.title}
 
 className="table-img"
 
+alt={product.title}
+
 />
 
+</td>
+
+
+
+
+
+<td>
+
+{product.title}
 
 </td>
 
@@ -1918,11 +2200,9 @@ className="table-img"
 
 <td>
 
-{p.title}
+{product.price} ج.م
 
 </td>
-
-
 
 
 
@@ -1930,11 +2210,9 @@ className="table-img"
 
 <td>
 
-{p.price} ج.م
+{product.category}
 
 </td>
-
-
 
 
 
@@ -1942,12 +2220,23 @@ className="table-img"
 
 <td>
 
-{p.category}
+
+{
+
+product.offer
+
+?
+
+"🔥 عرض"
+
+:
+
+"عادي"
+
+}
+
 
 </td>
-
-
-
 
 
 
@@ -1955,61 +2244,9 @@ className="table-img"
 
 <td>
 
-{p.offer ? "✅" : "❌"}
+{product.stock}
 
 </td>
-
-
-
-
-
-
-
-<td>
-
-{p.bestSeller ? "✅" : "❌"}
-
-</td>
-
-
-
-
-
-
-
-<td>
-
-{p.newArrival ? "✅" : "❌"}
-
-</td>
-
-
-
-
-
-
-
-<td>
-
-{p.recommended ? "✅" : "❌"}
-
-</td>
-
-
-
-
-
-
-
-
-<td>
-
-{p.stock}
-
-</td>
-
-
-
 
 
 
@@ -2022,11 +2259,11 @@ className="table-img"
 
 className="edit-btn"
 
-onClick={()=>handleEdit(p)}
+onClick={()=>handleEdit(product)}
 
 >
 
-تعديل
+✏️ تعديل
 
 </button>
 
@@ -2039,17 +2276,18 @@ onClick={()=>handleEdit(p)}
 
 className="delete-btn"
 
-onClick={()=>handleDelete(p.id)}
+onClick={()=>handleDelete(product.id)}
 
 >
 
-حذف
+🗑 حذف
 
 </button>
 
 
 
 </td>
+
 
 
 
@@ -2068,19 +2306,26 @@ onClick={()=>handleDelete(p.id)}
 </tbody>
 
 
-
-
-
 </table>
 
 
+</div>
 
-</>
+
+</div>
 
 
 )
 
 }
+
+
+
+
+
+
+
+
 
 // =====================
 // ORDERS TABLE
@@ -2088,27 +2333,24 @@ onClick={()=>handleDelete(p.id)}
 
 
 {
-tab === "orders" && (
+
+tab==="orders" && (
 
 
-<div className="orders-admin">
-
+<div className="table-container">
 
 
 <h2>
-
 🧾 الطلبات
-
 </h2>
 
 
 
 
 
-
+<div className="table-scroll">
 
 <table className="admin-table">
-
 
 
 <thead>
@@ -2118,56 +2360,33 @@ tab === "orders" && (
 
 
 <th>
-
 العميل
-
 </th>
 
 
-
 <th>
-
 الهاتف
-
 </th>
 
 
-
-
 <th>
-
 العنوان
-
 </th>
 
 
-
-
 <th>
-
 المنتجات
-
 </th>
 
 
-
-
 <th>
-
 الحالة
-
 </th>
-
-
 
 
 <th>
-
 واتساب
-
 </th>
-
-
 
 
 </tr>
@@ -2180,11 +2399,7 @@ tab === "orders" && (
 
 
 
-
-
-
 <tbody>
-
 
 
 {
@@ -2193,8 +2408,6 @@ orders.map(order=>(
 
 
 <tr key={order.id}>
-
-
 
 
 <td>
@@ -2207,13 +2420,11 @@ orders.map(order=>(
 
 
 
-
 <td>
 
 {order.phone}
 
 </td>
-
 
 
 
@@ -2232,17 +2443,17 @@ orders.map(order=>(
 
 
 
-
 <td>
 
 
 {
 
-order.products?.map((item,index)=>(
+order.products?.map(
+
+(item,index)=>(
 
 
 <div key={index}>
-
 
 {item.title || item.name}
 
@@ -2251,12 +2462,13 @@ order.products?.map((item,index)=>(
 {item.quantity}
 
 
-
 </div>
 
 
+)
 
-))
+
+)
 
 
 }
@@ -2272,17 +2484,19 @@ order.products?.map((item,index)=>(
 
 
 
-<td>
 
+<td>
 
 
 <select
 
+value={
+order.status || "pending"
+}
 
-value={order.status || "pending"}
+onChange={
 
-
-onChange={(e)=>
+e=>
 
 changeOrderStatus(
 
@@ -2293,7 +2507,6 @@ e.target.value
 )
 
 }
-
 
 
 >
@@ -2307,13 +2520,11 @@ e.target.value
 
 
 
-
 <option value="shipping">
 
 جاري الشحن
 
 </option>
-
 
 
 
@@ -2335,10 +2546,7 @@ e.target.value
 </option>
 
 
-
 </select>
-
-
 
 
 
@@ -2351,34 +2559,24 @@ e.target.value
 
 
 
-
-
 <td>
-
 
 
 <button
 
-
 className="whatsapp-btn"
-
 
 onClick={()=>{
 
 
-const phone =
-
-order.phone.startsWith("0")
-
-?
-
-`2${order.phone}`
-
-:
-
-order.phone;
+let phone=order.phone;
 
 
+if(phone?.startsWith("0")){
+
+phone="2"+phone;
+
+}
 
 
 
@@ -2395,7 +2593,6 @@ window.open(
 }}
 
 
-
 >
 
 
@@ -2405,11 +2602,7 @@ window.open(
 </button>
 
 
-
 </td>
-
-
-
 
 
 
@@ -2425,23 +2618,16 @@ window.open(
 
 
 
-
-
 </tbody>
-
-
-
-
 
 
 </table>
 
 
-
+</div>
 
 
 </div>
-
 
 
 )
@@ -2453,235 +2639,7 @@ window.open(
 
 
 
-// =====================
-// CATEGORIES START
-// =====================
 
-
-{
-tab === "categories" && (
-
-
-<div className="categories-admin">
-
-
-
-
-
-<h2>
-
-🗂️ إدارة الفئات
-
-</h2>
-
-
-
-
-
-
-
-
-
-<div className="category-form">
-
-
-
-
-
-
-<input
-
-type="text"
-
-placeholder="اسم الفئة"
-
-value={categoryName}
-
-onChange={(e)=>
-
-setCategoryName(e.target.value)
-
-}
-
-/>
-
-
-
-
-
-
-
-
-<input
-
-type="text"
-
-placeholder="أيقونة الفئة 📱"
-
-value={categoryIcon}
-
-onChange={(e)=>
-
-setCategoryIcon(e.target.value)
-
-}
-
-/>
-<input
-
-type="file"
-
-accept="image/*"
-
-onChange={handleCategoryImageUpload}
-
-/>
-
-
-{
-categoryImage && (
-
-<img
-
-src={categoryImage}
-
-className="category-img-preview"
-
-alt="category"
-
-/>
-
-)
-
-}
-
-
-
-
-
-
-
-<button
-
-
-onClick={async()=>{
-
-
-
-if(!categoryName)
-
-return;
-
-
-
-
-
-const data = {
-
-name: categoryName,
-
-icon: categoryIcon,
-
-image: categoryImage,
-
-active:
-editingCategoryId
-?
-categories.find(c=>c.id===editingCategoryId)?.active
-:
-true
-};
-
-
-
-
-
-
-if(editingCategoryId){
-
-
-
-await editCategory(
-
-editingCategoryId,
-
-data
-
-);
-
-
-
-}else{
-
-
-
-await addCategory(data);
-
-
-
-}
-
-
-
-
-
-
-
-const updated = await getAllCategories();
-
-
-
-setCategories(updated);
-
-
-
-
-
-
-
-setCategoryName("");
-
-setCategoryIcon("");
-setCategoryImage("");
-setEditingCategoryId(null);
-
-
-
-
-}}
-
-
-
->
-
-
-
-
-
-{
-
-editingCategoryId
-
-?
-
-"حفظ التعديل"
-
-:
-
-"إضافة فئة"
-
-}
-
-
-
-</button>
-
-
-
-
-
-
-</div>
 
 
 
@@ -2690,6 +2648,26 @@ editingCategoryId
 // CATEGORIES TABLE
 // =====================
 
+
+{
+
+tab==="categories" && (
+
+
+<div className="table-container">
+
+
+<h2>
+
+🗂️ الأقسام
+
+</h2>
+
+
+
+
+
+<div className="table-scroll">
 
 <table className="admin-table">
 
@@ -2701,35 +2679,23 @@ editingCategoryId
 
 
 <th>
-
-الأيقونة
-
+الصورة
 </th>
 
 
-
 <th>
-
 الاسم
-
 </th>
 
 
-
 <th>
-
 الحالة
-
 </th>
-
 
 
 <th>
-
 الإجراءات
-
 </th>
-
 
 
 </tr>
@@ -2743,38 +2709,48 @@ editingCategoryId
 
 
 
-
 <tbody>
 
 
 {
 
-categories.map((cat)=>(
-
+categories.map(cat=>(
 
 
 <tr key={cat.id}>
 
 
-
-
 <td>
 
-{cat.image ? (
+
+{
+
+cat.image
+
+?
 
 <img
+
 src={cat.image}
+
 className="category-img"
+
 alt={cat.name}
+
 />
 
-) : (
+
+:
 
 cat.icon
 
-)}
+
+}
+
+
 
 </td>
+
 
 
 
@@ -2793,13 +2769,10 @@ cat.icon
 
 
 
-
 <td>
 
 
-
 <button
-
 
 className={
 
@@ -2816,63 +2789,9 @@ cat.active
 }
 
 
-
-onClick={async()=>{
-
-
-
-try{
-
-
-
-await editCategory(
-
-cat.id,
-
-{
-
-active: !cat.active
-
-}
-
-);
-
-
-
-
-
-const updated = await getAllCategories();
-
-
-
-setCategories(updated);
-
-
-
-
-
-}catch(error){
-
-
-
-console.log(error);
-
-
-
-alert("حدث خطأ أثناء تغيير الحالة");
-
-
-
-}
-
-
-
-}}
-
-
+onClick={()=>toggleCategoryStatus(cat)}
 
 >
-
 
 
 {
@@ -2885,14 +2804,12 @@ cat.active
 
 :
 
-"غير مفعلة ❌"
+"موقوفة ❌"
 
 }
 
 
-
 </button>
-
 
 
 </td>
@@ -2908,47 +2825,17 @@ cat.active
 <td>
 
 
-
-
-
-
 <button
-
 
 className="edit-btn"
 
-
-
-onClick={()=>{
-
-
-
-setEditingCategoryId(cat.id);
-
-
-setCategoryName(cat.name);
-
-
-setCategoryIcon(cat.icon);
-
-
-setCategoryImage(cat.image || "");
-
-
-}}
-
-
+onClick={()=>handleEditCategory(cat)}
 
 >
 
-
-تعديل
-
+✏️ تعديل
 
 </button>
-
-
-
 
 
 
@@ -2958,57 +2845,15 @@ setCategoryImage(cat.image || "");
 
 <button
 
-
 className="delete-btn"
 
-
-
-onClick={async()=>{
-
-
-
-if(window.confirm("حذف الفئة؟")){
-
-
-
-
-
-await removeCategory(cat.id);
-
-
-
-
-
-const updated = await getAllCategories();
-
-
-
-setCategories(updated);
-
-
-
-
-}
-
-
-
-}}
-
-
+onClick={()=>handleDeleteCategory(cat.id)}
 
 >
 
-
-
-حذف
-
+🗑 حذف
 
 </button>
-
-
-
-
-
 
 
 
@@ -3019,13 +2864,7 @@ setCategories(updated);
 
 
 
-
-
-
 </tr>
-
-
-
 
 
 ))
@@ -3035,21 +2874,14 @@ setCategories(updated);
 
 
 
-
-
 </tbody>
-
-
-
 
 
 
 </table>
 
 
-
-
-
+</div>
 
 
 </div>
@@ -3063,12 +2895,12 @@ setCategories(updated);
 
 
 
+
+
+
 </div>
 
-
 );
-
-
 
 }
 
