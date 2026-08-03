@@ -1330,8 +1330,6 @@ onClick={()=>setTab("orders")}
 
 <div className="stat-card">
 
-<Dashboard />
-
 <h3>
 📦 المنتجات
 </h3>
@@ -1341,7 +1339,6 @@ onClick={()=>setTab("orders")}
 </p>
 
 </div>
-
 
 
 

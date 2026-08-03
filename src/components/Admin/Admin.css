@@ -382,15 +382,12 @@
 .store-btn:hover {
   background: #1976d2;
 }
-.admin-stats {
-
-display:flex;
-gap:20px;
-margin:20px 0;
-flex-wrap:wrap;
-
+.admin-stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:20px;
+  margin:20px 0;
 }
-
 
 
 .stat-card {
@@ -1017,11 +1014,20 @@ cursor:pointer;
 }
 
 
+@media(max-width:768px){
+
 .admin-stats{
-  grid-template-columns:repeat(2,1fr);
+  grid-template-columns:1fr;
 }
 
-
+}
+.stat-card{
+  min-height:130px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
 .stat-card{
   min-width:0;
   padding:12px;
