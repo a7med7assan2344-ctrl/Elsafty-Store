@@ -1029,13 +1029,11 @@ addToCart={addToCart}
 
 
 
-
 </section>
-// =======================
-// PRODUCTS SECTION
-// =======================
 
-
+{/* =======================
+    PRODUCTS SECTION
+======================= */}
 <section
 
 className="products-section"
@@ -1329,13 +1327,9 @@ addToCart(product);
 
 
 
-
-
-// =======================
-// FOOTER START
-// =======================
-
-
+{/* =======================
+    FOOTER START
+======================= */}
 <footer className="store-footer">
 
 
