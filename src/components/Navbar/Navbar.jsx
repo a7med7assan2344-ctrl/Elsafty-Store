@@ -4,18 +4,21 @@ import React, {
   useState,
   useContext
 } from "react";
+
 import offerText from "../../config/offerConfig";
+
 import {
   useNavigate
 } from "react-router-dom";
-import { useContext } from "react";
-import { WishlistContext } from "../../context/WishlistContext";
+
+import {
+  WishlistContext
+} from "../../context/WishlistContext";
+
 import {
   onAuthStateChanged,
   signOut
 } from "firebase/auth";
-
-import "./Navbar.css";
 
 import {
   auth
@@ -25,6 +28,9 @@ import {
   getCategories
 } from "../../services/categoryService";
 
+import "./Navbar.css";
+
+
 
 function Navbar({
 
@@ -33,22 +39,21 @@ function Navbar({
   searchTerm,
   setSearchTerm,
   admin,
-  products
+  products = [],
+  setSelectedCategory
 
 }) {
-  const handleSearch = () => {
 
-if(searchTerm.trim()){
 
-navigate(`/search?q=${searchTerm}`);
-
-setSuggestions([]);
-
-}
-
-};
 const navigate = useNavigate();
-const { wishlist } = useContext(WishlistContext);
+
+
+
+const {
+  wishlist
+} = useContext(WishlistContext);
+
+
 
 const [user,setUser] = useState(null);
 
@@ -57,60 +62,43 @@ const [menuOpen,setMenuOpen] = useState(false);
 const [logoZoom,setLogoZoom] = useState(false);
 
 const [categories,setCategories] = useState([]);
+
 const [suggestions,setSuggestions] = useState([]);
 
+
+
+
 const menuRef = useRef(null);
+
 const searchRef = useRef(null);
 
 
 
 
+
 useEffect(()=>{
 
+
 const unsubscribe = onAuthStateChanged(
-  auth,
-  (currentUser)=>{
-    setUser(currentUser);
-  }
+
+auth,
+
+(currentUser)=>{
+
+setUser(currentUser);
+
+}
+
 );
+
+
+
 return ()=>unsubscribe();
 
 
-},[]);
-
-useEffect(()=>{
-
-  const closeSearch = (e)=>{
-
-    if(
-      searchRef.current &&
-      !searchRef.current.contains(e.target)
-    ){
-
-      setSuggestions([]);
-
-    }
-
-  };
-
-
-  document.addEventListener(
-    "click",
-    closeSearch
-  );
-
-
-  return ()=>{
-
-    document.removeEventListener(
-      "click",
-      closeSearch
-    );
-
-  };
-
 
 },[]);
+
 
 
 
@@ -118,28 +106,92 @@ useEffect(()=>{
 
 useEffect(()=>{
 
-  const fetchCategories = async()=>{
 
-    try{
-
-      const data = await getCategories();
-
-      setCategories(data);
-
-    }
-    catch(error){
-
-      console.log(error);
-
-    }
-
-  };
+const fetchCategories = async()=>{
 
 
-  fetchCategories();
+try{
+
+
+const data = await getCategories();
+
+
+setCategories(data || []);
+
+
+
+}catch(error){
+
+
+console.log(error);
+
+
+}
+
+
+};
+
+
+
+fetchCategories();
+
 
 
 },[]);
+
+
+
+
+
+
+
+useEffect(()=>{
+
+
+const closeSearch=(e)=>{
+
+
+if(
+
+searchRef.current &&
+
+!searchRef.current.contains(e.target)
+
+){
+
+
+setSuggestions([]);
+
+
+}
+
+
+};
+
+
+
+document.addEventListener(
+"click",
+closeSearch
+);
+
+
+
+return ()=>{
+
+
+document.removeEventListener(
+"click",
+closeSearch
+);
+
+
+
+};
+
+
+},[]);
+
 
 
 
@@ -152,16 +204,22 @@ const closeMenu=(e)=>{
 
 
 if(
+
 menuRef.current &&
+
 !menuRef.current.contains(e.target)
+
 ){
 
+
 setMenuOpen(false);
+
 
 }
 
 
 };
+
 
 
 document.addEventListener(
@@ -170,12 +228,16 @@ closeMenu
 );
 
 
+
 return ()=>{
+
 
 document.removeEventListener(
 "click",
 closeMenu
 );
+
+
 
 };
 
@@ -192,24 +254,27 @@ const logout = async()=>{
 
 try{
 
+
 await signOut(auth);
 
+
 setMenuOpen(false);
+
 
 navigate("/");
 
 
-}
+}catch(error){
 
-catch(error){
 
 console.log(error);
 
+
 }
 
 
-};
 
+};
 
 
 
@@ -240,12 +305,14 @@ behavior:"smooth"
 const moveCategories=(direction)=>{
 
 
-const bar=document.querySelector(
+const bar = document.querySelector(
 ".navbar-bottom"
 );
 
 
+
 if(bar){
+
 
 bar.scrollBy({
 
@@ -254,6 +321,7 @@ left:direction,
 behavior:"smooth"
 
 });
+
 
 }
 
@@ -264,36 +332,33 @@ behavior:"smooth"
 
 
 
-
 return (
 
 <>
-
 <div className="top-offer-bar">
 
-<div className="offer-track">
+  <div className="offer-track">
 
-{
+    {
+      [
+        ...offerText,
+        ...offerText,
+        ...offerText,
+        ...offerText
+      ].map((text,index)=>(
 
-[
- ...offerText,
- ...offerText,
- ...offerText,
- ...offerText
-].map((text,index)=>(
-<span key={index}>
+        <span key={index}>
+          {text}
+        </span>
 
-{text}
+      ))
+    }
 
-</span>
-
-))
-
-}
-
-</div>
+  </div>
 
 </div>
+
+
 
 
 <header className="navbar">
@@ -303,11 +368,11 @@ return (
 
 
 
+
+
 <div
-
 className="logo"
-
-onClick={() => navigate("/")}
+onClick={()=>navigate("/")}
 >
 
 
@@ -329,19 +394,17 @@ setLogoZoom(true);
 
 
 
+
+
 <div className="logo-text">
 
 <h2>
-
 Elsafty Store
-
 </h2>
 
 
 <span>
-
 Everything You Need
-
 </span>
 
 
@@ -354,15 +417,25 @@ Everything You Need
 
 
 
-<div 
+
+
+
+<div
+
 className="search-box"
+
 ref={searchRef}
+
 >
+
+
 <div className="search-input-wrapper">
 
-<input
 
-ref={searchRef}
+
+
+
+<input
 
 type="text"
 
@@ -370,16 +443,22 @@ placeholder="ابحث عن أي منتج..."
 
 value={searchTerm}
 
+
 onChange={(e)=>{
 
-const value = e.target.value;
+
+const value=e.target.value;
+
 
 setSearchTerm(value);
 
 
+
 if(value.trim()){
 
-const searchValue = value.toLowerCase();
+
+const searchValue=value.toLowerCase();
+
 
 
 const results = products
@@ -388,80 +467,26 @@ const results = products
 
 
 const name =
+
 item.title ||
+
 item.name ||
+
 item.productName ||
+
 "";
 
 
+
 return name
+
 .toLowerCase()
+
 .includes(searchValue);
 
 
-})
-
-
-.sort((a,b)=>{
-
-
-const nameA =
-(
-a.title ||
-a.name ||
-a.productName ||
-""
-)
-.toLowerCase();
-
-
-const nameB =
-(
-b.title ||
-b.name ||
-b.productName ||
-""
-)
-.toLowerCase();
-
-
-
-return (
-nameA.indexOf(searchValue)
--
-nameB.indexOf(searchValue)
-);
-
 
 })
-
-
-.filter(
-
-(item,index,self)=>
-
-index === self.findIndex(
-
-(x)=>
-
-(
-x.title ||
-x.name ||
-x.productName
-)
-
-===
-
-(
-item.title ||
-item.name ||
-item.productName
-)
-
-)
-
-)
-
 
 .slice(0,5);
 
@@ -480,6 +505,7 @@ setSuggestions([]);
 }
 
 
+
 }}
 
 
@@ -487,7 +513,7 @@ setSuggestions([]);
 onKeyDown={(e)=>{
 
 
-if(e.key === "Enter"){
+if(e.key==="Enter"){
 
 
 if(searchTerm.trim()){
@@ -512,84 +538,35 @@ setSuggestions([]);
 }}
 
 
-/>{
-suggestions.length > 0 && (
-
-<div className="search-suggestions">
-
-{
-suggestions.map((item)=>(
-
-<div
-
-key={item.id || item._id}
-
-className="suggestion-item"
-
-onClick={()=>{
-
-const productName =
-item.title ||
-item.name ||
-item.productName ||
-"";
+/>
 
 
-setSearchTerm("");
-
-setSuggestions([]);
 
 
-navigate(`/product/${item.id || item._id}`);
 
-
-}}
->
-
-{item.title || item.name || item.productName}
-
-</div>
-
-))
-
-}
-
-</div>
-
-)
-
-}
-
-
-{
-searchTerm.trim() &&
-suggestions.length === 0 &&
-document.activeElement === searchRef.current && (
-
-<div className="search-no-result">
-
-لا توجد منتجات
-
-</div>
-
-)
-}
-</div>  {/* قفل search-input-wrapper */}
 
 
 <button
 
 onClick={()=>{
 
+
 if(searchTerm.trim()){
 
+
 navigate(
+
 `/search?q=${searchTerm}`
+
 );
+
 
 setSuggestions([]);
 
+
 }
+
+
 
 }}
 
@@ -598,26 +575,169 @@ setSuggestions([]);
 🔍
 
 </button>
+
+
+
+
+
+
+
+{
+
+
+suggestions.length > 0 && (
+
+
+<div className="search-suggestions">
+
+
+{
+
+suggestions.map((item)=>(
+
+
+<div
+
+key={item.id}
+
+className="suggestion-item"
+
+
+onClick={()=>{
+
+
+setSearchTerm("");
+
+setSuggestions([]);
+
+
+navigate(
+
+`/product/${item.id}`
+
+);
+
+
+}}
+
+
+>
+
+
+{item.title}
+
+
 </div>
+
+
+))
+
+
+}
+
+
+
+</div>
+
+
+)
+
+
+
+}
+
+
+
+
+
+
+
+{
+
+
+searchTerm.trim() &&
+
+suggestions.length===0 &&
+
+(
+
+
+<div className="search-no-result">
+
+
+لا توجد منتجات
+
+
+</div>
+
+
+)
+
+
+}
+
+
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
 
 
 
 <div
-  className="nav-icon wishlist-icon"
-  onClick={() => navigate("/wishlist")}
+
+className="nav-icon wishlist-icon"
+
+onClick={()=>navigate("/wishlist")}
+
 >
 
-  {wishlist.length > 0 && (
-    <span className="wishlist-badge">
-      {wishlist.length}
-    </span>
-  )}
 
-  <span>❤️</span>
 
-  <p>المفضلة</p>
+{
+
+wishlist.length > 0 && (
+
+
+<span className="wishlist-badge">
+
+{wishlist.length}
+
+</span>
+
+
+)
+
+}
+
+
+
+
+
+<span>
+❤️
+</span>
+
+
+
+<p>
+المفضلة
+</p>
+
 
 </div>
+
+
+
 
 
 
@@ -631,6 +751,9 @@ ref={menuRef}
 >
 
 
+
+
+
 <div
 
 className="nav-icon"
@@ -639,9 +762,11 @@ onClick={()=>setMenuOpen(!menuOpen)}
 
 >
 
+
 <span>
 👤
 </span>
+
 
 
 <p>
@@ -664,11 +789,6 @@ user.displayName || "حسابي"
 
 
 </div>
-
-
-
-
-
 {
 
 menuOpen && (
@@ -716,8 +836,8 @@ navigate("/register");
 
 </button>
 
-</>
 
+</>
 
 )
 
@@ -746,7 +866,9 @@ navigate("/register");
 </div>
 
 
+
 <hr />
+
 
 
 <button
@@ -787,7 +909,6 @@ navigate("/orders");
 
 
 
-
 <button
 
 onClick={logout}
@@ -819,6 +940,9 @@ onClick={logout}
 
 
 
+
+
+
 {
 
 admin && (
@@ -843,10 +967,18 @@ onClick={()=>navigate("/admin")}
 
 
 
+
+
+
 <div
-  className="cart-icon"
-  onClick={() => navigate("/cart")}
+
+className="cart-icon"
+
+onClick={()=>navigate("/cart")}
+
 >
+
+
 {
 
 cartCount > 0 && (
@@ -883,13 +1015,7 @@ cartCount > 0 && (
 
 
 
-</div> 
-{/* نهاية actions */}
-
-
-
 </div>
-{/* نهاية navbar-top */}
 
 
 
@@ -898,6 +1024,7 @@ cartCount > 0 && (
 
 
 <div className="category-wrapper">
+
 
 
 <button
@@ -920,6 +1047,8 @@ onClick={()=>moveCategories(300)}
 
 
 
+
+
 <button
 
 onClick={()=>navigate("/")}
@@ -929,6 +1058,8 @@ onClick={()=>navigate("/")}
 🏠 الرئيسية
 
 </button>
+
+
 
 
 
@@ -947,47 +1078,59 @@ onClick={()=>scrollToSection(".categories")}
 
 
 
+
+
 {
 
-categories.map((cat)=>(
+categories
+
+.filter(cat => cat.active === true)
+
+.map((cat)=>(
 
 
-<button
+<div
 
 key={cat.id}
 
+className="category-card"
+
 onClick={()=>{
 
+if(setSelectedCategory){
 
-window.dispatchEvent(
-
-new CustomEvent(
-
-"filterCategory",
-
-{
-
-detail:cat.name
+setSelectedCategory(cat.name);
 
 }
-
-)
-
-);
-
 
 }}
 
 >
 
-{cat.icon} {cat.name}
 
-</button>
+{
+cat.image && (
+
+<img
+src={cat.image}
+alt={cat.name}
+/>
+
+)
+}
+
+<span>
+{cat.name}
+</span>
+
+</div>
 
 
 ))
 
 }
+
+
 
 
 
@@ -1006,6 +1149,8 @@ onClick={()=>scrollToSection(".offer-banner")}
 
 
 
+
+
 <button
 
 onClick={()=>scrollToSection(".best-selling-section")}
@@ -1015,6 +1160,8 @@ onClick={()=>scrollToSection(".best-selling-section")}
 ⭐ الأكثر مبيعًا
 
 </button>
+
+
 
 
 
@@ -1032,8 +1179,8 @@ onClick={()=>scrollToSection(".new-arrivals-section")}
 
 
 
-</div>
 
+</div>
 
 
 
@@ -1058,7 +1205,12 @@ onClick={()=>moveCategories(-300)}
 
 
 
+
+
+
+
 </header>
+
 
 
 
@@ -1069,7 +1221,6 @@ onClick={()=>moveCategories(-300)}
 {
 
 logoZoom && (
-
 
 <div
 
@@ -1106,7 +1257,6 @@ alt="Elsafty Store"
 
 </div>
 
-
 )
 
 }
@@ -1119,6 +1269,7 @@ alt="Elsafty Store"
 
 
 }
+
 
 
 export default Navbar;

@@ -1,5 +1,13 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, {
+  useEffect,
+  useState,
+  useRef
+} from "react";
+
+import {
+  useNavigate
+} from "react-router-dom";
+
 import Dashboard from "./Dashboard";
 
 import {
@@ -11,13 +19,16 @@ import {
   updateDoc
 } from "firebase/firestore";
 
-import { db } from "../../firebase";
+import {
+  db
+} from "../../firebase";
+
 import "./Admin.css";
 
 import {
   addProduct,
   editProduct,
-  removeProduct,
+  removeProduct
 } from "../../services/productService";
 
 import {
@@ -27,65 +38,153 @@ import {
   removeCategory
 } from "../../services/categoryService";
 
-import { signOut } from "firebase/auth";
-import { auth } from "../../firebase";
+import {
+  signOut
+} from "firebase/auth";
+
+import {
+  auth
+} from "../../firebase";
 
 
-function Admin({ products, loadProducts }) {
+
+function Admin({
+  products,
+  loadProducts
+}) {
+
+
 const navigate = useNavigate();
-const [orders, setOrders] = useState([]);
+
+
+
+const [orders,setOrders] = useState([]);
 
 const firstLoad = useRef(true);
-useEffect(() => {
-  if ("Notification" in window) {
-    Notification.requestPermission();
-  }
-}, []);
+
+
+
+useEffect(()=>{
+
+if("Notification" in window){
+
+Notification.requestPermission();
+
+}
+
+},[]);
+
+
+
+
 
 const audio = useRef(
-  new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+
+new Audio(
+"https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+)
+
 );
-const [title, setTitle] = useState("");
-const [description, setDescription] = useState("");
-const [price, setPrice] = useState("");
-const [oldPrice, setOldPrice] = useState("");
-
-const [offer, setOffer] = useState(false);
-
-const [bestSeller, setBestSeller] = useState(false);
-
-const [newArrival, setNewArrival] = useState(false);
-
-const [recommended, setRecommended] = useState(false);
-const [category, setCategory] = useState("");
-const [rating, setRating] = useState(5);
-const [stock, setStock] = useState(1);
-const [images, setImages] = useState([]);
-const [image, setImage] = useState("");
-const [editingId, setEditingId] = useState(null);
 
 
-const [tab, setTab] = useState("products");
 
 
-const [categories, setCategories] = useState([]);
+// =====================
+// PRODUCT STATES
+// =====================
 
-const [categoryName, setCategoryName] = useState("");
 
-const [categoryIcon, setCategoryIcon] = useState("");
+const [title,setTitle] = useState("");
 
-const [editingCategoryId, setEditingCategoryId] = useState(null);
-const totalSales = orders.reduce((total, order) => {
-  return total + Number(order.total || 0);
-}, 0);
+const [description,setDescription] = useState("");
 
+const [price,setPrice] = useState("");
+
+const [oldPrice,setOldPrice] = useState("");
+
+const [offer,setOffer] = useState(false);
+
+const [bestSeller,setBestSeller] = useState(false);
+
+const [newArrival,setNewArrival] = useState(false);
+
+const [recommended,setRecommended] = useState(false);
+
+
+const [category,setCategory] = useState("");
+
+const [rating,setRating] = useState(5);
+
+const [stock,setStock] = useState(1);
+
+
+const [images,setImages] = useState([]);
+
+const [image,setImage] = useState("");
+
+const [editingId,setEditingId] = useState(null);
+
+
+
+// =====================
+// TABS
+// =====================
+
+
+const [tab,setTab] = useState("products");
+
+
+
+// =====================
+// CATEGORY STATES
+// =====================
+
+
+const [categories,setCategories] = useState([]);
+
+
+const [categoryName,setCategoryName] = useState("");
+
+const [categoryIcon,setCategoryIcon] = useState("");
+const [categoryImage,setCategoryImage] = useState("");
+const [editingCategoryId,setEditingCategoryId] = useState(null);
+
+
+
+
+// =====================
+// SALES
+// =====================
+
+
+const totalSales = orders.reduce(
+
+(total,order)=>
+
+total + Number(order.total || 0),
+
+0
+
+);
+
+
+
+
+
+// =====================
+// CLEAR PRODUCT FORM
+// =====================
 
 
 const clearForm = ()=>{
 
+
 setTitle("");
+
 setDescription("");
+
 setPrice("");
+
 setOldPrice("");
 
 setOffer(false);
@@ -95,60 +194,179 @@ setBestSeller(false);
 setNewArrival(false);
 
 setRecommended(false);
-setCategory("إلكترونيات");
+
+setCategory("");
+
 setRating(5);
+
 setStock(1);
+
+setImages([]);
+
 setImage("");
+
 setEditingId(null);
 
+
+};
+
+
+
+
+
+// =====================
+// IMAGE UPLOAD
+// =====================
+
+
+const handleImageUpload = (e)=>{
+const handleCategoryImageUpload = (e)=>{
+
+const file = e.target.files[0];
+
+if(!file) return;
+
+
+const reader = new FileReader();
+
+
+reader.onloadend=()=>{
+
+setCategoryImage(reader.result);
+
+};
+
+
+reader.readAsDataURL(file);
+
+
+};
+
+const files = Array.from(
+e.target.files
+);
+
+
+if(!files.length)
+return;
+
+
+
+const readers = files.map(file=>{
+
+
+return new Promise(resolve=>{
+
+
+const reader = new FileReader();
+
+
+reader.onloadend=()=>{
+
+resolve(reader.result);
+
+};
+
+
+reader.readAsDataURL(file);
+
+
+});
+
+
+});
+
+
+
+Promise.all(readers)
+
+.then(result=>{
+
+
+setImages(result);
+
+setImage(result[0]);
+
+
+});
+
+
 };
 
 
 
-const handleImageUpload = (e) => {
 
-  const files = Array.from(e.target.files);
 
-  if (!files.length) return;
+// =====================
+// CATEGORY STATUS TOGGLE
+// =====================
 
-  const loadedImages = [];
 
-  files.forEach((file) => {
+const toggleCategoryStatus = async(cat)=>{
 
-    const reader = new FileReader();
 
-    reader.onloadend = () => {
+try{
 
-      loadedImages.push(reader.result);
 
-      if (loadedImages.length === files.length) {
+await editCategory(
 
-        setImages(loadedImages);
+cat.id,
 
-        setImage(loadedImages[0]);
+{
 
-      }
+active: !cat.active
 
-    };
+}
 
-    reader.readAsDataURL(file);
+);
 
-  });
+
+
+const updated = await getAllCategories();
+
+
+setCategories(updated);
+
+
+
+}
+
+catch(error){
+
+
+console.log(error);
+
+
+alert("حدث خطأ");
+
+
+}
+
 
 };
+// =====================
+// SAVE PRODUCT
+// =====================
 
 
 const handleSubmit = async(e)=>{
 
+
 e.preventDefault();
+
 
 
 if(!title || !price || !image){
 
+
 alert("اكمل البيانات");
+
+
 return;
 
+
 }
+
 
 
 try{
@@ -156,55 +374,41 @@ try{
 
 let uploadedImages = [];
 
-for (const img of (images.length ? images : [image])) {
-
-  let imageUrl = img;
-
-  if (imageUrl.startsWith("data:")) {
-
-    const formData = new FormData();
-
-    const blob = await (await fetch(imageUrl)).blob();
-
-    formData.append("file", blob);
-
-    formData.append(
-      "upload_preset",
-      "elsafty_store"
-    );
-
-    const upload = await fetch(
-      "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
-      {
-        method: "POST",
-        body: formData
-      }
-    );
-
-    const uploadData = await upload.json();
-
-    if (!upload.ok) {
-
-      alert("فشل رفع الصورة");
-      return;
-
-    }
-
-    imageUrl = uploadData.secure_url;
-
-  }
-
-  uploadedImages.push(imageUrl);
-
-}
-
-const formData=new FormData();
 
 
-const blob=await(await fetch(image)).blob();
+for(
+const img of (
+images.length ? images : [image]
+)
+
+){
 
 
-formData.append("file",blob);
+let imageUrl = img;
+
+
+
+if(imageUrl.startsWith("data:")){
+
+
+const formData = new FormData();
+
+
+
+const blob = await (
+
+await fetch(imageUrl)
+
+).blob();
+
+
+
+formData.append(
+"file",
+blob
+);
+
+
 
 formData.append(
 "upload_preset",
@@ -213,7 +417,8 @@ formData.append(
 
 
 
-const upload=await fetch(
+
+const upload = await fetch(
 
 "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
 
@@ -229,112 +434,238 @@ body:formData
 
 
 
-const uploadData=await upload.json();
+const data = await upload.json();
 
 
 
 if(!upload.ok){
 
+
 alert("فشل رفع الصورة");
+
+
 return;
 
+
+}
+
+
+
+imageUrl = data.secure_url;
+
+
+
 }
 
 
 
-imageUrl=uploadData.secure_url;
+uploadedImages.push(imageUrl);
+
 
 
 }
+
 
 
 
 const product = {
 
-  title,
 
-  description,
+title,
 
-  price: Number(price),
 
-  oldPrice: Number(oldPrice || 0),
+description,
 
-image: uploadedImages[0],
-images: uploadedImages,
-  images: imageUrl ? [imageUrl] : [],
 
-  category,
+price:Number(price),
 
-  rating: Number(rating),
 
-  stock: Number(stock),
+oldPrice:Number(oldPrice || 0),
 
-  offer,
 
-  bestSeller,
+image:uploadedImages[0] || "",
 
-  newArrival,
 
-  recommended
+images:uploadedImages,
+
+
+category,
+
+
+rating:Number(rating),
+
+
+stock:Number(stock),
+
+
+offer,
+
+
+bestSeller,
+
+
+newArrival,
+
+
+recommended
+
 
 };
 
+
+
+
+
+
 if(editingId){
 
-await editProduct(editingId,product);
+
+
+await editProduct(
+
+editingId,
+
+product
+
+);
+
+
 
 }else{
 
+
 await addProduct(product);
 
+
 }
+
+
 
 
 
 await loadProducts();
 
+
+
 clearForm();
+
 
 
 alert("تم حفظ المنتج");
 
 
-}catch(error){
+
+}
+
+catch(error){
+
 
 console.log(error);
 
-alert("حدث خطأ");
+
+alert("حدث خطأ أثناء الحفظ");
+
 
 }
 
 
+
 };
+
+
+
+
+
+
+
+
+// =====================
+// EDIT PRODUCT
+// =====================
+
+
 const handleEdit = (product)=>{
+
 
 setEditingId(product.id);
 
-setTitle(product.title);
 
-setDescription(product.description);
 
-setPrice(product.price);
-setOldPrice(product.oldPrice || "");
+setTitle(
+product.title || ""
+);
 
-setOffer(product.offer || false);
 
-setBestSeller(product.bestSeller || false);
 
-setNewArrival(product.newArrival || false);
+setDescription(
+product.description || ""
+);
 
-setRecommended(product.recommended || false);
 
-setCategory(product.category);
 
-setRating(product.rating);
+setPrice(
+product.price || ""
+);
 
-setStock(product.stock);
 
-setImage(product.image);
+
+setOldPrice(
+product.oldPrice || ""
+);
+
+
+
+
+setOffer(
+product.offer || false
+);
+
+
+
+setBestSeller(
+product.bestSeller || false
+);
+
+
+
+setNewArrival(
+product.newArrival || false
+);
+
+
+
+setRecommended(
+product.recommended || false
+);
+
+
+
+
+setCategory(
+product.category || ""
+);
+
+
+
+
+setRating(
+product.rating || 5
+);
+
+
+
+
+setStock(
+product.stock || 1
+);
+
+
+
+
+setImage(
+product.image || ""
+);
+
 
 
 
@@ -351,10 +682,25 @@ behavior:"smooth"
 
 
 
+
+
+
+
+
+// =====================
+// DELETE PRODUCT
+// =====================
+
+
 const handleDelete = async(id)=>{
 
 
-if(!window.confirm("حذف المنتج؟")) return;
+if(
+!window.confirm("حذف المنتج؟")
+)
+
+return;
+
 
 
 
@@ -364,20 +710,29 @@ try{
 await removeProduct(id);
 
 
+
 await loadProducts();
+
 
 
 alert("تم حذف المنتج");
 
 
 
-}catch(error){
+}
+
+catch(error){
+
 
 console.log(error);
 
+
+
 alert("فشل الحذف");
 
+
 }
+
 
 
 };
@@ -386,12 +741,24 @@ alert("فشل الحذف");
 
 
 
+// =====================
+// ORDER STATUS
+// =====================
+
+
 const changeOrderStatus = async(id,status)=>{
+
+
+try{
 
 
 await updateDoc(
 
-doc(db,"orders",id),
+doc(
+db,
+"orders",
+id
+),
 
 {
 
@@ -402,79 +769,168 @@ status
 );
 
 
+
+}
+
+catch(error){
+
+
+console.log(error);
+
+
+}
+
+
+
 };
 
 
 
 
 
-useEffect(() => {
+// =====================
+// LOAD ORDERS
+// =====================
 
-  const q = query(
-    collection(db, "orders"),
-    orderBy("createdAt", "desc")
-  );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
+useEffect(()=>{
 
-    const list = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
 
-    if (!firstLoad.current && list.length > orders.length) {
+const q = query(
 
-      audio.current.play();
+collection(db,"orders"),
 
-      if (Notification.permission === "granted") {
-        new Notification("🛒 طلب جديد", {
-          body: `${list[0].customerName} - ${list[0].total} جنيه`
-        });
-      }
+orderBy(
+"createdAt",
+"desc"
+)
 
-    }
+);
 
-    firstLoad.current = false;
 
-    setOrders(list);
-if (!firstLoad.current && list.length > orders.length) {
 
-  audio.current.play();
 
-  if (Notification.permission === "granted") {
+const unsubscribe = onSnapshot(
 
-    new Notification("🛒 طلب جديد", {
-      body: `${list[0].customerName} - ${list[0].total} جنيه`
-    });
+q,
 
-  }
+(snapshot)=>{
+
+
+const list = snapshot.docs.map(doc=>(
+
+
+{
+
+id:doc.id,
+
+...doc.data()
 
 }
 
-firstLoad.current = false;
+
+));
+
+
+
+
+
+if(
+
+!firstLoad.current &&
+
+list.length > orders.length
+
+){
+
+
+audio.current.play();
+
+
+
+if(
+Notification.permission === "granted"
+){
+
+
+new Notification(
+
+"🛒 طلب جديد",
+
+{
+
+body:
+
+`${list[0].customerName} - ${list[0].total} جنيه`
+
+}
+
+);
+
+
+}
+
+
+
+}
+
+
+
+
+
+firstLoad.current=false;
+
+
 
 setOrders(list);
-  });
-
-  return () => unsubscribe();
-
-}, [orders.length]);
 
 
 
+}
 
+
+);
+
+
+
+return ()=>unsubscribe();
+
+
+
+},[orders.length]);
+
+// =====================
+// LOAD CATEGORIES
+// =====================
 
 
 const loadCategories = async()=>{
 
 
+try{
+
+
 const data = await getAllCategories();
 
 
-setCategories(data);
+setCategories(data || []);
+
+
+
+}
+
+catch(error){
+
+
+console.log(error);
+
+
+}
+
 
 
 };
+
 
 
 
@@ -492,6 +948,13 @@ loadCategories();
 
 
 
+
+
+// =====================
+// LOGOUT
+// =====================
+
+
 const handleLogout = async()=>{
 
 
@@ -502,13 +965,20 @@ await signOut(auth);
 
 
 
-}catch(error){
+navigate("/");
+
+
+
+}
+
+catch(error){
 
 
 console.log(error);
 
 
 }
+
 
 
 };
@@ -518,116 +988,252 @@ console.log(error);
 
 
 
+
+
+// =====================
+// RETURN START
+// =====================
+
+
 return (
 
 
 <div className="admin-container">
-  {orders.length > 0 && (
-  <div
-    style={{
-      background: "#16a34a",
-      color: "#fff",
-      padding: "12px 20px",
-      borderRadius: "10px",
-      marginBottom: "15px",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      fontWeight: "bold"
-    }}
-  >
-    <span>🔔 يوجد طلب جديد</span>
 
-    <button
-      onClick={() => setTab("orders")}
-      style={{
-        background: "#fff",
-        color: "#16a34a",
-        border: "none",
-        padding: "8px 15px",
-        borderRadius: "8px",
-        cursor: "pointer",
-        fontWeight: "bold"
-      }}
-    >
-      عرض الطلبات
-    </button>
-  </div>
-)}
+
+
+
+
+{
+
+orders.length > 0 && (
+
+
+<div
+
+style={{
+
+background:"#16a34a",
+
+color:"#fff",
+
+padding:"12px 20px",
+
+borderRadius:"10px",
+
+marginBottom:"15px",
+
+display:"flex",
+
+justifyContent:"space-between",
+
+alignItems:"center",
+
+fontWeight:"bold"
+
+}}
+
+>
+
+
+<span>
+
+🔔 يوجد طلب جديد
+
+</span>
+
+
+
+
+
+<button
+
+onClick={()=>setTab("orders")}
+
+style={{
+
+background:"#fff",
+
+color:"#16a34a",
+
+border:"none",
+
+padding:"8px 15px",
+
+borderRadius:"8px",
+
+cursor:"pointer",
+
+fontWeight:"bold"
+
+}}
+
+>
+
+عرض الطلبات
+
+</button>
+
+
+
+
+</div>
+
+
+)
+
+}
+
+
+
+
+
+
+
+
+
 <div className="admin-stats">
 
 
+
+
+
 <div className="stat-card">
+
 
 <Dashboard />
+
+
 <h3>
+
 📦 المنتجات
+
 </h3>
 
+
 <p>
+
 {products.length}
+
 </p>
+
 
 </div>
 
 
 
+
+
+
+
+
+
 <div className="stat-card">
 
+
 <h3>
+
 🧾 الطلبات
+
 </h3>
 
+
 <p>
+
 {orders.length}
+
 </p>
+
 
 </div>
 
 
 
 
+
+
+
+
+
+
 <div className="stat-card">
 
+
 <h3>
+
 🗂️ الفئات
+
 </h3>
 
+
 <p>
+
 {categories.length}
+
 </p>
 
+
 </div>
+
+
+
+
+
 
 
 
 
 <div className="stat-card">
 
+
 <h3>
+
 💰 المبيعات
+
 </h3>
 
+
 <p>
+
 {totalSales} ج.م
+
 </p>
 
+
+</div>
+
+
+
+
+
 </div>
 
 
 
-</div>
+
+
+
+
 
 
 <div className="admin-top-bar">
 
 
+
 <h2>
+
 لوحة التحكم
+
 </h2>
 
 
+
+
+
+
+
 <div className="admin-actions">
+
 
 
 <button
@@ -644,6 +1250,10 @@ onClick={()=>navigate("/")}
 
 
 
+
+
+
+
 <button
 
 className="logout-btn"
@@ -657,7 +1267,12 @@ onClick={handleLogout}
 </button>
 
 
+
 </div>
+
+
+
+
 
 
 
@@ -668,7 +1283,19 @@ onClick={handleLogout}
 
 <button
 
-className={tab==="products"?"active":""}
+className={
+
+tab==="products"
+
+?
+
+"active"
+
+:
+
+""
+
+}
 
 onClick={()=>setTab("products")}
 
@@ -681,9 +1308,23 @@ onClick={()=>setTab("products")}
 
 
 
+
+
 <button
 
-className={tab==="orders"?"active":""}
+className={
+
+tab==="orders"
+
+?
+
+"active"
+
+:
+
+""
+
+}
 
 onClick={()=>setTab("orders")}
 
@@ -696,9 +1337,24 @@ onClick={()=>setTab("orders")}
 
 
 
+
+
+
 <button
 
-className={tab==="categories"?"active":""}
+className={
+
+tab==="categories"
+
+?
+
+"active"
+
+:
+
+""
+
+}
 
 onClick={()=>setTab("categories")}
 
@@ -712,6 +1368,7 @@ onClick={()=>setTab("categories")}
 
 
 
+</div>
 
 
 
@@ -719,19 +1376,13 @@ onClick={()=>setTab("categories")}
 
 </div>
 
-
-
-</div>
-
-
-
-
+// =====================
+// PRODUCTS FORM
+// =====================
 
 
 {
-tab==="products" &&
-
-(
+tab === "products" && (
 
 
 <form
@@ -741,6 +1392,7 @@ className="admin-form"
 onSubmit={handleSubmit}
 
 >
+
 
 
 <input
@@ -754,6 +1406,7 @@ value={title}
 onChange={(e)=>setTitle(e.target.value)}
 
 />
+
 
 
 
@@ -772,6 +1425,7 @@ onChange={(e)=>setDescription(e.target.value)}
 
 
 
+
 <input
 
 type="number"
@@ -784,12 +1438,26 @@ onChange={(e)=>setPrice(e.target.value)}
 
 />
 
+
+
+
+
+
 <input
-  type="number"
-  placeholder="السعر قبل الخصم"
-  value={oldPrice}
-  onChange={(e) => setOldPrice(e.target.value)}
+
+type="number"
+
+placeholder="السعر قبل الخصم"
+
+value={oldPrice}
+
+onChange={(e)=>setOldPrice(e.target.value)}
+
 />
+
+
+
+
 
 
 
@@ -801,14 +1469,23 @@ onChange={(e)=>setCategory(e.target.value)}
 
 >
 
+
 <option value="">
+
 اختر الفئة
+
 </option>
+
 
 
 {
 
-categories.map((cat)=>(
+categories
+
+.filter(cat=>cat.active)
+
+.map((cat)=>(
+
 
 <option
 
@@ -822,52 +1499,117 @@ value={cat.name}
 
 </option>
 
+
 ))
 
 }
 
 
+
 </select>
+
+
+
+
+
+
+
+
 
 <div className="product-options">
 
-  <label>
-    <input
-      type="checkbox"
-      checked={offer}
-      onChange={(e) => setOffer(e.target.checked)}
-    />
-    🔥 عرض اليوم
-  </label>
 
-  <label>
-    <input
-      type="checkbox"
-      checked={bestSeller}
-      onChange={(e) => setBestSeller(e.target.checked)}
-    />
-    ⭐ الأكثر مبيعًا
-  </label>
 
-  <label>
-    <input
-      type="checkbox"
-      checked={newArrival}
-      onChange={(e) => setNewArrival(e.target.checked)}
-    />
-    🆕 وصل حديثًا
-  </label>
+<label>
 
-  <label>
-    <input
-      type="checkbox"
-      checked={recommended}
-      onChange={(e) => setRecommended(e.target.checked)}
-    />
-    ❤️ قد يعجبك
-  </label>
+<input
+
+type="checkbox"
+
+checked={offer}
+
+onChange={(e)=>setOffer(e.target.checked)}
+
+/>
+
+🔥 عرض اليوم
+
+</label>
+
+
+
+
+
+
+<label>
+
+<input
+
+type="checkbox"
+
+checked={bestSeller}
+
+onChange={(e)=>setBestSeller(e.target.checked)}
+
+/>
+
+⭐ الأكثر مبيعًا
+
+</label>
+
+
+
+
+
+
+
+<label>
+
+<input
+
+type="checkbox"
+
+checked={newArrival}
+
+onChange={(e)=>setNewArrival(e.target.checked)}
+
+/>
+
+🆕 وصل حديثًا
+
+</label>
+
+
+
+
+
+
+
+<label>
+
+<input
+
+type="checkbox"
+
+checked={recommended}
+
+onChange={(e)=>setRecommended(e.target.checked)}
+
+/>
+
+❤️ قد يعجبك
+
+</label>
+
+
+
 
 </div>
+
+
+
+
+
 
 
 <input
@@ -881,6 +1623,10 @@ value={rating}
 onChange={(e)=>setRating(e.target.value)}
 
 />
+
+
+
+
 
 
 
@@ -901,12 +1647,25 @@ onChange={(e)=>setStock(e.target.value)}
 
 
 
+
+
+
 <input
-  type="file"
-  accept="image/*"
-  multiple
-  onChange={handleImageUpload}
+
+type="file"
+
+accept="image/*"
+
+multiple
+
+onChange={handleImageUpload}
+
 />
+
+
+
+
+
 
 
 
@@ -916,7 +1675,19 @@ type="text"
 
 placeholder="رابط الصورة"
 
-value={image.startsWith("data:")?"":image}
+value={
+
+image.startsWith("data:")
+
+?
+
+""
+
+:
+
+image
+
+}
 
 onChange={(e)=>setImage(e.target.value)}
 
@@ -926,7 +1697,11 @@ onChange={(e)=>setImage(e.target.value)}
 
 
 
+
+
+
 {
+
 image &&
 
 <img
@@ -939,13 +1714,18 @@ alt="preview"
 
 />
 
+
 }
 
 
 
 
 
+
+
+
 <button type="submit">
+
 
 {
 
@@ -962,7 +1742,11 @@ editingId
 }
 
 
+
 </button>
+
+
+
 
 
 
@@ -972,61 +1756,152 @@ editingId
 )
 
 }
-{
-tab==="products" &&
 
-(
+
+
+
+
+
+
+
+
+// =====================
+// PRODUCTS TABLE
+// =====================
+
+
+{
+
+tab === "products" && (
+
 
 <>
 
+
 <h2>
+
 قائمة المنتجات
+
 </h2>
+
+
+
+
+
 
 
 <table className="admin-table">
 
 
 <thead>
+
+
 <tr>
 
-<th>الصورة</th>
-<th>الاسم</th>
-<th>السعر</th>
-<th>القسم</th>
-<th>🔥 عرض</th>
-<th>⭐ الأكثر</th>
-<th>🆕 جديد</th>
-<th>❤️ مميز</th>
-<th>المخزون</th>
-<th>الإجراءات</th>
-<th>🔥 عرض</th>
-<th>⭐ الأكثر</th>
-<th>🆕 جديد</th>
-<th>❤️ مميز</th>
 
-<th>المخزون</th>
-<th>الإجراءات</th>
+<th>
+
+الصورة
+
+</th>
+
+
+<th>
+
+الاسم
+
+</th>
+
+
+<th>
+
+السعر
+
+</th>
+
+
+<th>
+
+القسم
+
+</th>
+
+
+<th>
+
+🔥 عرض
+
+</th>
+
+
+<th>
+
+⭐ الأكثر
+
+</th>
+
+
+<th>
+
+🆕 جديد
+
+</th>
+
+
+<th>
+
+❤️ مميز
+
+</th>
+
+
+<th>
+
+المخزون
+
+</th>
+
+
+<th>
+
+الإجراءات
+
+</th>
+
 
 </tr>
+
+
 </thead>
+
+
+
 
 
 <tbody>
 
 
 {
+
 products.map((p)=>(
 
 
 <tr key={p.id}>
 
 
+
 <td>
+
 
 <img
 
-src={p.image}
+src={
+
+p.image ||
+
+"https://via.placeholder.com/100"
+
+}
 
 alt={p.title}
 
@@ -1034,7 +1909,10 @@ className="table-img"
 
 />
 
+
 </td>
+
+
 
 
 
@@ -1046,11 +1924,19 @@ className="table-img"
 
 
 
+
+
+
+
 <td>
 
 {p.price} ج.م
 
 </td>
+
+
+
+
 
 
 
@@ -1060,25 +1946,71 @@ className="table-img"
 
 </td>
 
-<td>{p.offer ? "✅" : "❌"}</td>
 
-<td>{p.bestSeller ? "✅" : "❌"}</td>
 
-<td>{p.newArrival ? "✅" : "❌"}</td>
 
-<td>{p.recommended ? "✅" : "❌"}</td>
-<td>{p.offer ? "✅" : "❌"}</td>
 
-<td>{p.bestSeller ? "✅" : "❌"}</td>
 
-<td>{p.newArrival ? "✅" : "❌"}</td>
 
-<td>{p.recommended ? "✅" : "❌"}</td>
+
+<td>
+
+{p.offer ? "✅" : "❌"}
+
+</td>
+
+
+
+
+
+
+
+<td>
+
+{p.bestSeller ? "✅" : "❌"}
+
+</td>
+
+
+
+
+
+
+
+<td>
+
+{p.newArrival ? "✅" : "❌"}
+
+</td>
+
+
+
+
+
+
+
+<td>
+
+{p.recommended ? "✅" : "❌"}
+
+</td>
+
+
+
+
+
+
+
+
 <td>
 
 {p.stock}
 
 </td>
+
+
+
+
 
 
 
@@ -1101,6 +2033,8 @@ onClick={()=>handleEdit(p)}
 
 
 
+
+
 <button
 
 className="delete-btn"
@@ -1114,7 +2048,10 @@ onClick={()=>handleDelete(p.id)}
 </button>
 
 
+
 </td>
+
+
 
 
 
@@ -1132,86 +2069,122 @@ onClick={()=>handleDelete(p.id)}
 
 
 
+
+
 </table>
 
 
 
 </>
 
+
 )
 
 }
 
-
-
-
+// =====================
+// ORDERS TABLE
+// =====================
 
 
 {
-tab==="orders" &&
+tab === "orders" && (
 
-(
 
 <div className="orders-admin">
 
 
+
 <h2>
-الطلبات
+
+🧾 الطلبات
+
 </h2>
+
+
+
+
 
 
 
 <table className="admin-table">
 
 
+
 <thead>
+
 
 <tr>
 
+
 <th>
+
 العميل
+
 </th>
 
+
+
 <th>
+
 الهاتف
+
 </th>
 
+
+
+
 <th>
+
 العنوان
+
 </th>
 
+
+
+
 <th>
+
 المنتجات
+
 </th>
+
+
+
 
 <th>
+
 الحالة
+
 </th>
 
-</tr>
 
-</thead>
-<thead>
-<tr>
 
-<th>العميل</th>
 
-<th>الهاتف</th>
+<th>
 
-<th>العنوان</th>
+واتساب
 
-<th>المنتجات</th>
+</th>
 
-<th>الحالة</th>
 
-<th>واتساب</th>
+
 
 </tr>
+
+
 </thead>
+
+
+
+
+
+
 
 
 
 <tbody>
+
 
 
 {
@@ -1222,15 +2195,28 @@ orders.map(order=>(
 <tr key={order.id}>
 
 
+
+
 <td>
+
 {order.customerName}
+
 </td>
+
+
+
+
+
 
 <td>
 
 {order.phone}
 
 </td>
+
+
+
+
 
 
 
@@ -1243,20 +2229,35 @@ orders.map(order=>(
 
 
 
+
+
+
+
 <td>
 
+
 {
+
 order.products?.map((item,index)=>(
 
 
 <div key={index}>
 
-{item.title || item.name} × {item.quantity}
+
+{item.title || item.name}
+
+×
+
+{item.quantity}
+
+
 
 </div>
 
 
+
 ))
+
 
 }
 
@@ -1267,7 +2268,12 @@ order.products?.map((item,index)=>(
 
 
 
+
+
+
+
 <td>
+
 
 
 <select
@@ -1289,6 +2295,7 @@ e.target.value
 }
 
 
+
 >
 
 
@@ -1299,6 +2306,8 @@ e.target.value
 </option>
 
 
+
+
 <option value="shipping">
 
 جاري الشحن
@@ -1307,11 +2316,15 @@ e.target.value
 
 
 
+
+
 <option value="done">
 
 تم التسليم
 
 </option>
+
+
 
 
 
@@ -1326,22 +2339,81 @@ e.target.value
 </select>
 
 
+
+
+
 </td>
+
+
+
+
+
+
+
+
+
 
 <td>
-  <button
-    className="whatsapp-btn"
-    onClick={() => {
-      const phone = order.phone.startsWith("0")
-        ? `2${order.phone}`
-        : order.phone;
 
-      window.open(`https://wa.me/${phone}`, "_blank");
-    }}
-  >
-    💬 واتساب
-  </button>
+
+
+<button
+
+
+className="whatsapp-btn"
+
+
+onClick={()=>{
+
+
+const phone =
+
+order.phone.startsWith("0")
+
+?
+
+`2${order.phone}`
+
+:
+
+order.phone;
+
+
+
+
+
+window.open(
+
+`https://wa.me/${phone}`,
+
+"_blank"
+
+);
+
+
+
+}}
+
+
+
+>
+
+
+💬 واتساب
+
+
+</button>
+
+
+
 </td>
+
+
+
+
+
+
+
 
 </tr>
 
@@ -1353,7 +2425,12 @@ e.target.value
 
 
 
+
+
 </tbody>
+
+
+
 
 
 
@@ -1361,7 +2438,10 @@ e.target.value
 
 
 
+
+
 </div>
+
 
 
 )
@@ -1372,12 +2452,19 @@ e.target.value
 
 
 
-{
-tab==="categories" &&
 
-(
+// =====================
+// CATEGORIES START
+// =====================
+
+
+{
+tab === "categories" && (
+
 
 <div className="categories-admin">
+
+
 
 
 
@@ -1391,7 +2478,14 @@ tab==="categories" &&
 
 
 
+
+
+
+
 <div className="category-form">
+
+
+
 
 
 
@@ -1415,6 +2509,9 @@ setCategoryName(e.target.value)
 
 
 
+
+
+
 <input
 
 type="text"
@@ -1430,6 +2527,34 @@ setCategoryIcon(e.target.value)
 }
 
 />
+<input
+
+type="file"
+
+accept="image/*"
+
+onChange={handleCategoryImageUpload}
+
+/>
+
+
+{
+categoryImage && (
+
+<img
+
+src={categoryImage}
+
+className="category-img-preview"
+
+alt="category"
+
+/>
+
+)
+
+}
+
 
 
 
@@ -1438,31 +2563,42 @@ setCategoryIcon(e.target.value)
 
 <button
 
+
 onClick={async()=>{
 
 
-if(!categoryName)return;
+
+if(!categoryName)
+
+return;
 
 
 
-const data={
 
 
-name:categoryName,
+const data = {
 
+name: categoryName,
 
-icon:categoryIcon,
+icon: categoryIcon,
 
+image: categoryImage,
 
-active:true
-
-
-
+active:
+editingCategoryId
+?
+categories.find(c=>c.id===editingCategoryId)?.active
+:
+true
 };
 
 
 
+
+
+
 if(editingCategoryId){
+
 
 
 await editCategory(
@@ -1478,7 +2614,9 @@ data
 }else{
 
 
+
 await addCategory(data);
+
 
 
 }
@@ -1487,9 +2625,9 @@ await addCategory(data);
 
 
 
-const updated=
 
-await getAllCategories();
+
+const updated = await getAllCategories();
 
 
 
@@ -1497,11 +2635,16 @@ setCategories(updated);
 
 
 
+
+
+
+
 setCategoryName("");
 
 setCategoryIcon("");
-
+setCategoryImage("");
 setEditingCategoryId(null);
+
 
 
 
@@ -1510,6 +2653,8 @@ setEditingCategoryId(null);
 
 
 >
+
+
 
 
 
@@ -1533,38 +2678,68 @@ editingCategoryId
 
 
 
+
+
+
 </div>
+
+
+
+
+// =====================
+// CATEGORIES TABLE
+// =====================
+
+
 <table className="admin-table">
 
 
 <thead>
 
+
 <tr>
 
+
 <th>
+
 الأيقونة
+
 </th>
+
+
+
 <th>
-  واتساب
-</th>
-<th>
+
 الاسم
+
 </th>
 
 
+
 <th>
+
 الحالة
+
 </th>
 
+
+
 <th>
+
 الإجراءات
+
 </th>
+
 
 
 </tr>
 
 
 </thead>
+
+
+
+
 
 
 
@@ -1577,14 +2752,32 @@ editingCategoryId
 categories.map((cat)=>(
 
 
+
 <tr key={cat.id}>
+
+
 
 
 <td>
 
-{cat.icon}
+{cat.image ? (
+
+<img
+src={cat.image}
+className="category-img"
+alt={cat.name}
+/>
+
+) : (
+
+cat.icon
+
+)}
 
 </td>
+
+
+
 
 
 
@@ -1597,24 +2790,6 @@ categories.map((cat)=>(
 
 
 
-<td>
-
-{
-
-cat.active
-
-?
-
-"مفعلة"
-
-:
-
-"مخفية"
-
-}
-
-
-</td>
 
 
 
@@ -1625,9 +2800,127 @@ cat.active
 
 <button
 
+
+className={
+
+cat.active
+
+?
+
+"active-btn"
+
+:
+
+"inactive-btn"
+
+}
+
+
+
+onClick={async()=>{
+
+
+
+try{
+
+
+
+await editCategory(
+
+cat.id,
+
+{
+
+active: !cat.active
+
+}
+
+);
+
+
+
+
+
+const updated = await getAllCategories();
+
+
+
+setCategories(updated);
+
+
+
+
+
+}catch(error){
+
+
+
+console.log(error);
+
+
+
+alert("حدث خطأ أثناء تغيير الحالة");
+
+
+
+}
+
+
+
+}}
+
+
+
+>
+
+
+
+{
+
+cat.active
+
+?
+
+"مفعلة ✅"
+
+:
+
+"غير مفعلة ❌"
+
+}
+
+
+
+</button>
+
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<td>
+
+
+
+
+
+
+<button
+
+
 className="edit-btn"
 
+
+
 onClick={()=>{
+
 
 
 setEditingCategoryId(cat.id);
@@ -1639,8 +2932,11 @@ setCategoryName(cat.name);
 setCategoryIcon(cat.icon);
 
 
+setCategoryImage(cat.image || "");
+
 
 }}
+
 
 
 >
@@ -1648,7 +2944,13 @@ setCategoryIcon(cat.icon);
 
 تعديل
 
+
 </button>
+
+
+
+
+
 
 
 
@@ -1656,28 +2958,38 @@ setCategoryIcon(cat.icon);
 
 <button
 
+
 className="delete-btn"
+
+
 
 onClick={async()=>{
 
 
+
 if(window.confirm("حذف الفئة؟")){
+
+
+
 
 
 await removeCategory(cat.id);
 
 
 
-const updated=
 
-await getAllCategories();
+
+const updated = await getAllCategories();
 
 
 
 setCategories(updated);
 
 
+
+
 }
+
 
 
 }}
@@ -1687,9 +2999,16 @@ setCategories(updated);
 >
 
 
+
 حذف
 
+
 </button>
+
+
+
+
+
 
 
 
@@ -1697,7 +3016,16 @@ setCategories(updated);
 
 
 
+
+
+
+
+
+
 </tr>
+
+
+
 
 
 ))
@@ -1707,11 +3035,20 @@ setCategories(updated);
 
 
 
+
+
 </tbody>
 
 
 
+
+
+
 </table>
+
+
+
+
 
 
 
@@ -1724,10 +3061,13 @@ setCategories(updated);
 
 
 
+
+
 </div>
 
 
 );
+
 
 
 }
