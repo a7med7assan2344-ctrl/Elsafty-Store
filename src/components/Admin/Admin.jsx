@@ -1,4 +1,3 @@
-JavaScript
 import React, {
   useEffect,
   useState,
