@@ -1799,3 +1799,47 @@ button {
   }
 
 }
+/* ========================================
+   FIX PRODUCTS SLIDER - HORIZONTAL
+======================================== */
+
+.products-slider-section .swiper {
+  width: 100%;
+  overflow: hidden;
+}
+
+.products-slider-section .swiper-wrapper {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch;
+}
+
+.products-slider-section .swiper-slide {
+  flex-shrink: 0 !important;
+  height: auto;
+}
+
+/* Desktop */
+@media (min-width: 901px) {
+  .products-slider-section .swiper-slide {
+    width: auto;
+  }
+}
+
+/* Mobile - منتجين جنب بعض */
+@media (max-width: 600px) {
+  .products-slider-section .swiper-slide {
+    width: calc(50% - 5px) !important;
+  }
+
+  .products-slider-section .product-card {
+    width: 100%;
+  }
+}
+
+/* موبايل صغير */
+@media (max-width: 380px) {
+  .products-slider-section .swiper-slide {
+    width: calc(50% - 4px) !important;
+  }
+}
