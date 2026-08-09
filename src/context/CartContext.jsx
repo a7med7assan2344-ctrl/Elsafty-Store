@@ -1,307 +1,452 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect
+} from "react";
 
 
-export const CartContext = createContext();
+export const CartContext =
+  createContext();
 
 
+export function CartProvider({
+  children
+}) {
 
-export function CartProvider({children}) {
+  const [cart, setCart] =
+    useState([]);
 
 
-const [cart,setCart] = useState([]);
+  // =====================
+  // تحميل السلة من LocalStorage
+  // =====================
 
+  useEffect(() => {
 
+    try {
 
+      const savedCart =
+        JSON.parse(
+          localStorage.getItem("cart")
+        ) || [];
 
-// تحميل السلة
 
-useEffect(()=>{
+      setCart(
+        Array.isArray(savedCart)
+          ? savedCart
+          : []
+      );
 
+    } catch (error) {
 
-const savedCart =
+      console.error(
+        "خطأ في تحميل السلة:",
+        error
+      );
 
-JSON.parse(
-localStorage.getItem("cart")
-)
+      setCart([]);
 
-|| [];
+    }
 
+  }, []);
 
-setCart(savedCart);
 
+  // =====================
+  // حفظ السلة
+  // =====================
 
-},[]);
+  useEffect(() => {
 
+    try {
 
+      localStorage.setItem(
+        "cart",
+        JSON.stringify(cart)
+      );
 
+    } catch (error) {
 
+      console.error(
+        "خطأ في حفظ السلة:",
+        error
+      );
 
+    }
 
+  }, [cart]);
 
-// حفظ السلة
 
-useEffect(()=>{
+  // =====================
+  // إضافة للسلة
+  // =====================
 
+  function addToCart(product) {
 
-localStorage.setItem(
+    if (!product) {
+      return;
+    }
 
-"cart",
 
-JSON.stringify(cart)
+    // =====================
+    // PRODUCT ID
+    // =====================
 
-);
+    const productId =
+      product.id ||
+      product._id;
 
 
-},[cart]);
+    if (!productId) {
 
+      console.error(
+        "المنتج لا يحتوي على ID"
+      );
 
+      return;
 
+    }
 
 
+    // =====================
+    // CART ID
+    // =====================
 
+    // لو فيه Variant:
+    // المنتج + Variant ID
+    //
+    // مثال:
+    // product123-red
+    // product123-blue
 
+    const cartId =
+      product.cartId ||
+      (
+        product.selectedVariant?.id
+          ? `${productId}-${product.selectedVariant.id}`
+          : String(productId)
+      );
 
 
-// إضافة للسلة
+    // =====================
+    // REQUESTED QUANTITY
+    // =====================
 
-function addToCart(product){
+    const requestedQuantity =
+      Math.max(
+        1,
+        Number(
+          product.quantity || 1
+        )
+      );
 
 
-const productId =
+    // =====================
+    // STOCK
+    // =====================
 
-product.id || product._id;
+    const stock =
+      Number(
+        product.stock || 0
+      );
 
 
+    // =====================
+    // UPDATE CART
+    // =====================
 
+    setCart(prev => {
 
-setCart(prev=>{
+      const existingIndex =
+        prev.findIndex(
+          item => {
 
+            const itemCartId =
+              item.cartId ||
+              item.id ||
+              item._id;
 
+            return (
+              String(itemCartId) ===
+              String(cartId)
+            );
 
-const exist = prev.find(
+          }
+        );
 
-item =>
 
-(item.id || item._id) === productId
+      // =====================
+      // المنتج موجود
+      // =====================
 
-);
+      if (
+        existingIndex !== -1
+      ) {
 
+        return prev.map(
+          (item, index) => {
 
+            if (
+              index !==
+              existingIndex
+            ) {
 
+              return item;
 
+            }
 
-if(exist){
 
+            const oldQuantity =
+              Number(
+                item.quantity || 0
+              );
 
-return prev.map(item=>{
 
+            let newQuantity =
+              oldQuantity +
+              requestedQuantity;
 
-const itemId =
 
-item.id || item._id;
+            // منع تجاوز المخزون
 
+            if (stock > 0) {
 
+              newQuantity =
+                Math.min(
+                  newQuantity,
+                  stock
+                );
 
-if(itemId === productId){
+            }
 
 
-return {
+            return {
 
+              ...item,
 
-...item,
+              quantity:
+                newQuantity,
 
+              price:
+                product.price ??
+                item.price,
 
-quantity:
+              oldPrice:
+                product.oldPrice ??
+                item.oldPrice,
 
-item.quantity + 1
+              stock:
+                product.stock ??
+                item.stock,
 
+              selectedVariant:
+                product.selectedVariant ??
+                item.selectedVariant,
 
-};
+              cartId
 
+            };
+
+          }
+        );
+
+      }
+
+
+      // =====================
+      // منتج جديد
+      // =====================
+
+      const newItem = {
+
+        ...product,
+
+        id:
+          product.id ||
+          product._id,
+
+        quantity:
+          stock > 0
+            ? Math.min(
+                requestedQuantity,
+                stock
+              )
+            : requestedQuantity,
+
+        cartId,
+
+        selectedVariant:
+          product.selectedVariant ||
+          null
+
+      };
+
+
+      return [
+        ...prev,
+        newItem
+      ];
+
+    });
+
+  }
+
+
+  // =====================
+  // حذف منتج من السلة
+  // =====================
+
+  function removeFromCart(id) {
+
+    setCart(prev =>
+
+      prev.filter(item => {
+
+        const itemCartId =
+          item.cartId ||
+          item.id ||
+          item._id;
+
+
+        return (
+          String(itemCartId) !==
+          String(id)
+        );
+
+      })
+
+    );
+
+  }
+
+
+  // =====================
+  // زيادة / نقص الكمية
+  // =====================
+
+  function updateQuantity(
+    id,
+    change
+  ) {
+
+    setCart(prev =>
+
+      prev.map(item => {
+
+        const itemCartId =
+          item.cartId ||
+          item.id ||
+          item._id;
+
+
+        if (
+          String(itemCartId) !==
+          String(id)
+        ) {
+
+          return item;
+
+        }
+
+
+        const currentQuantity =
+          Number(
+            item.quantity || 1
+          );
+
+
+        const stock =
+          Number(
+            item.stock || 0
+          );
+
+
+        let newQuantity =
+          currentQuantity +
+          Number(
+            change || 0
+          );
+
+
+        // أقل كمية = 1
+
+        newQuantity =
+          Math.max(
+            1,
+            newQuantity
+          );
+
+
+        // منع تجاوز المخزون
+
+        if (stock > 0) {
+
+          newQuantity =
+            Math.min(
+              newQuantity,
+              stock
+            );
+
+        }
+
+
+        return {
+
+          ...item,
+
+          quantity:
+            newQuantity
+
+        };
+
+      })
+
+    );
+
+  }
+
+
+  // =====================
+  // تفريغ السلة
+  // =====================
+
+  function clearCart() {
+
+    setCart([]);
+
+  }
+
+
+  // =====================
+  // Context
+  // =====================
+
+  return (
+
+    <CartContext.Provider
+      value={{
+
+        cart,
+
+        setCart,
+
+        addToCart,
+
+        removeFromCart,
+
+        updateQuantity,
+
+        clearCart
+
+      }}
+    >
+
+      {children}
+
+    </CartContext.Provider>
+
+  );
 
 }
 
 
-
-return item;
-
-
-
-});
-
-
-}
-
-
-
-
-
-
-
-return [
-
-
-...prev,
-
-
-{
-
-
-...product,
-
-
-quantity:1
-
-
-}
-
-
-];
-
-
-
-});
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// حذف من السلة
-
-function removeFromCart(id){
-
-
-setCart(prev=>
-
-
-prev.filter(item=>
-
-
-(item.id || item._id) !== id
-
-
-)
-
-
-);
-
-
-}
-
-
-
-
-
-
-
-
-
-// زيادة ونقصان الكمية
-
-function updateQuantity(id,change){
-
-
-
-setCart(prev=>
-
-
-prev.map(item=>{
-
-
-const itemId =
-
-item.id || item._id;
-
-
-
-if(itemId === id){
-
-
-return {
-
-
-...item,
-
-
-quantity:
-
-Math.max(
-
-1,
-
-item.quantity + change
-
-)
-
-
-};
-
-
-}
-
-
-
-return item;
-
-
-
-})
-
-
-);
-
-
-
-}
-
-
-
-
-
-
-
-return(
-
-
-<CartContext.Provider
-
-
-value={{
-
-
-cart,
-
-setCart,
-
-addToCart,
-
-removeFromCart,
-
-updateQuantity
-
-
-}}
-
-
->
-
-
-{children}
-
-
-</CartContext.Provider>
-
-
-);
-
-
-
-}
+export default CartContext;

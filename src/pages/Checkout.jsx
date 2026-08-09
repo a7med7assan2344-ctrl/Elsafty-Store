@@ -1,249 +1,628 @@
 import React, {
-useContext,
-useState
+  useContext,
+  useState
 } from "react";
 
 import {
-useNavigate
+  useNavigate
 } from "react-router-dom";
 
-
 import {
-addDoc,
-collection,
-serverTimestamp
+  addDoc,
+  collection,
+  serverTimestamp
 } from "firebase/firestore";
 
-
 import {
-db
+  db
 } from "../firebase";
 
-
 import {
-AuthContext
+  AuthContext
 } from "../context/AuthContext";
 
-
 import {
-CartContext
+  CartContext
 } from "../context/CartContext";
-
 
 import "./Checkout.css";
 
-function Checkout(){
+
+function Checkout() {
+
+  const navigate = useNavigate();
+
+  const { user } =
+    useContext(AuthContext);
+
+  const {
+    cart,
+    setCart
+  } = useContext(CartContext);
 
 
-const navigate = useNavigate();
-const { user } = useContext(AuthContext);
+  // =====================
+  // CUSTOMER DATA
+  // =====================
+
+  const [name, setName] =
+    useState("");
+
+  const [phone, setPhone] =
+    useState("");
+
+  const [address, setAddress] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
 
-const {
-cart,
-setCart
-}=useContext(CartContext);
+  // =====================
+  // TOTAL PRICE
+  // =====================
 
-
-
-
-const [name,setName]=useState("");
-
-const [phone,setPhone]=useState("");
-
-const [address,setAddress]=useState("");
-
-
-
-
-
-
-const totalPrice = cart.reduce(
-
-(sum,item)=>
-
-sum +
-
-Number(item.price || 0)
-*
-item.quantity
-
-,0
-
-);
-
-
-
-
-
-
-
-
-const sendOrder = async () => {
-
-  if (!name || !phone || !address) {
-    alert("من فضلك اكتب الاسم ورقم الهاتف والعنوان");
-    return;
-  }
-
-  if (cart.length === 0) {
-    alert("السلة فارغة");
-    navigate("/");
-    return;
-  }
-
-  let message = `🛒 طلب جديد من الصفتي ستور
-
-👤 الاسم:
-${name}
-
-📱 الهاتف:
-${phone}
-
-📍 العنوان:
-${address}
-
-المنتجات:
-
-`;
-
-  cart.forEach((item, index) => {
-    message += `
-${index + 1}- ${item.title || item.name || "منتج"}
-
-الكمية:
-${item.quantity}
-
-السعر:
-${Number(item.price || 0) * item.quantity} جنيه
-
-`;
-  });
-
-  message += `
-
-💰 الإجمالي:
-${totalPrice} جنيه`;
-
-  try {
-
-    await addDoc(collection(db, "orders"), {
-      userId: user?.uid || null,
-      customerName: name,
-      email: user?.email || "",
-      phone,
-      address,
-      products: cart,
-      total: totalPrice,
-      status: "Pending",
-      createdAt: serverTimestamp()
-    });
-
-    window.open(
-      `https://wa.me/201553570220?text=${encodeURIComponent(message)}`,
-      "_blank"
+  const totalPrice =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.price || 0) *
+        Number(item.quantity || 0),
+      0
     );
 
-    setCart([]);
 
-    alert("تم إرسال الطلب بنجاح ✅");
+  // =====================
+  // SEND ORDER
+  // =====================
 
-    navigate("/");
+  const sendOrder = async () => {
 
-  } catch (error) {
-    console.error(error);
-    alert("حدث خطأ أثناء حفظ الطلب");
-  }
-};
+    // =====================
+    // VALIDATION
+    // =====================
 
-if (cart.length === 0) {
-  return (
-    <div className="checkout-empty">
+    if (
+      !name.trim() ||
+      !phone.trim() ||
+      !address.trim()
+    ) {
 
-      <h2>لا يوجد منتجات لإتمام الطلب 🛒</h2>
+      alert(
+        "من فضلك اكتب الاسم ورقم الهاتف والعنوان"
+      );
 
-      <button
-        className="back-btn"
-        onClick={() => navigate("/")}
-      >
-        ⬅ العودة للمتجر
-      </button>
+      return;
+    }
 
-    </div>
-  );
-}
 
-return (
+    if (cart.length === 0) {
 
-  <div className="checkout-page">
+      alert(
+        "السلة فارغة"
+      );
 
-    <h2>إتمام الطلب 🛒</h2>
+      navigate("/");
 
-    <div className="checkout-form">
+      return;
+    }
 
-      <input
-        placeholder="الاسم بالكامل"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
 
-      <input
-        placeholder="رقم الهاتف"
-        type="tel"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-      />
+    if (loading) {
+      return;
+    }
 
-      <textarea
-        placeholder="العنوان بالتفصيل"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-      />
 
-      <div className="checkout-summary">
+    setLoading(true);
 
-        <h3>ملخص الطلب</h3>
 
-        {cart.map((item) => (
-          <div
-            className="checkout-item"
-            key={item.id || item._id}
+    // =====================
+    // WHATSAPP MESSAGE
+    // =====================
+
+    let message =
+      "🛒 طلب جديد من الصفتي ستور\n\n";
+
+
+    message +=
+      `👤 الاسم:\n${name.trim()}\n\n`;
+
+
+    message +=
+      `📱 الهاتف:\n${phone.trim()}\n\n`;
+
+
+    message +=
+      `📍 العنوان:\n${address.trim()}\n\n`;
+
+
+    message +=
+      "📦 المنتجات:\n\n";
+
+
+    cart.forEach(
+      (item, index) => {
+
+        const itemName =
+          item.title ||
+          item.name ||
+          "منتج";
+
+
+        const variantName =
+          item.selectedVariant?.name ||
+          "";
+
+
+        const price =
+          Number(item.price || 0);
+
+
+        const quantity =
+          Number(item.quantity || 0);
+
+
+        const itemTotal =
+          price * quantity;
+
+
+        message +=
+          `${index + 1}- ${itemName}\n`;
+
+
+        if (variantName) {
+
+          message +=
+            `🔀 النوع: ${variantName}\n`;
+
+        }
+
+
+        message +=
+          `🔢 الكمية: ${quantity}\n`;
+
+
+        message +=
+          `💵 سعر الوحدة: ${price} جنيه\n`;
+
+
+        message +=
+          `💰 إجمالي المنتج: ${itemTotal} جنيه\n\n`;
+
+      }
+    );
+
+
+    message +=
+      `💰 الإجمالي النهائي:\n${totalPrice} جنيه`;
+
+
+    // =====================
+    // FIRESTORE PRODUCTS
+    // =====================
+
+    const orderProducts =
+      cart.map(
+        (item) => {
+
+          const productId =
+            item.id ||
+            item._id ||
+            null;
+
+
+          const cartId =
+            item.cartId ||
+            productId;
+
+
+          return {
+
+            id:
+              productId,
+
+            cartId:
+              cartId,
+
+            title:
+              item.title ||
+              item.name ||
+              "منتج",
+
+            image:
+              item.image ||
+              item.images?.[0] ||
+              "",
+
+            price:
+              Number(item.price || 0),
+
+            oldPrice:
+              Number(item.oldPrice || 0),
+
+            quantity:
+              Number(item.quantity || 0),
+
+            stock:
+              Number(item.stock || 0),
+
+            selectedVariant:
+              item.selectedVariant
+                ? {
+                    ...item.selectedVariant
+                  }
+                : null,
+
+            variantName:
+              item.selectedVariant?.name ||
+              ""
+
+          };
+
+        }
+      );
+
+
+    // =====================
+    // SAVE ORDER
+    // =====================
+
+    try {
+
+      await addDoc(
+        collection(
+          db,
+          "orders"
+        ),
+        {
+
+          // =====================
+          // CUSTOMER
+          // =====================
+
+          userId:
+            user?.uid || null,
+
+          customerName:
+            name.trim(),
+
+          email:
+            user?.email || "",
+
+          phone:
+            phone.trim(),
+
+          address:
+            address.trim(),
+
+
+          // =====================
+          // PRODUCTS
+          // =====================
+
+          products:
+            orderProducts,
+
+
+          // =====================
+          // TOTAL
+          // =====================
+
+          total:
+            totalPrice,
+
+
+          // =====================
+          // STATUS
+          // =====================
+
+          status:
+            "Pending",
+
+
+          // =====================
+          // DATE
+          // =====================
+
+          createdAt:
+            serverTimestamp()
+
+        }
+      );
+
+
+      // =====================
+      // WHATSAPP
+      // =====================
+
+      const whatsappUrl =
+        `https://wa.me/201553570220?text=${encodeURIComponent(
+          message
+        )}`;
+
+
+      window.open(
+        whatsappUrl,
+        "_blank"
+      );
+
+
+      // =====================
+      // CLEAR CART
+      // =====================
+
+      setCart([]);
+
+
+      alert(
+        "تم إرسال الطلب بنجاح ✅"
+      );
+
+
+      navigate("/");
+
+
+    } catch (error) {
+
+      console.error(
+        "Order Error:",
+        error
+      );
+
+
+      alert(
+        "حدث خطأ أثناء حفظ الطلب"
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+
+  // =====================
+  // EMPTY CART
+  // =====================
+
+  if (cart.length === 0) {
+
+    return (
+
+      <div className="checkout-page">
+
+        <div className="checkout-empty">
+
+          <h2>
+            لا يوجد منتجات لإتمام الطلب 🛒
+          </h2>
+
+
+          <button
+            type="button"
+            className="back-btn"
+            onClick={() =>
+              navigate("/")
+            }
           >
-            <span>{item.title || item.name}</span>
+            ⬅ العودة للمتجر
+          </button>
 
-            <span>
-              {item.quantity} × {item.price} جنيه
-            </span>
-          </div>
-        ))}
-
-        <h3>
-          الإجمالي:
-          <span>{totalPrice} جنيه</span>
-        </h3>
+        </div>
 
       </div>
 
-      <button
-        className="checkout-btn"
-        onClick={sendOrder}
-      >
-        📦 تأكيد الطلب
-      </button>
+    );
 
-      <button
-        className="back-btn"
-        onClick={() => navigate("/cart")}
-      >
-        ⬅ الرجوع للسلة
-      </button>
+  }
+
+
+  // =====================
+  // RETURN
+  // =====================
+
+  return (
+
+    <div className="checkout-page">
+
+      <h2>
+        إتمام الطلب 🛒
+      </h2>
+
+
+      <div className="checkout-form">
+
+        {/* =====================
+            CUSTOMER NAME
+        ===================== */}
+
+        <input
+          type="text"
+          placeholder="الاسم بالكامل"
+          value={name}
+          onChange={(e) =>
+            setName(e.target.value)
+          }
+        />
+
+
+        {/* =====================
+            PHONE
+        ===================== */}
+
+        <input
+          type="tel"
+          placeholder="رقم الهاتف"
+          value={phone}
+          onChange={(e) =>
+            setPhone(e.target.value)
+          }
+        />
+
+
+        {/* =====================
+            ADDRESS
+        ===================== */}
+
+        <textarea
+          placeholder="العنوان بالتفصيل"
+          value={address}
+          onChange={(e) =>
+            setAddress(e.target.value)
+          }
+        />
+
+
+        {/* =====================
+            ORDER SUMMARY
+        ===================== */}
+
+        <div className="checkout-summary">
+
+          <h3>
+            ملخص الطلب
+          </h3>
+
+
+          {cart.map(
+            (item, index) => {
+
+              const itemId =
+                item.cartId ||
+                item.id ||
+                item._id ||
+                index;
+
+
+              const price =
+                Number(
+                  item.price || 0
+                );
+
+
+              const quantity =
+                Number(
+                  item.quantity || 0
+                );
+
+
+              const itemTotal =
+                price * quantity;
+
+
+              const variantName =
+                item.selectedVariant?.name;
+
+
+              return (
+
+                <div
+                  className="checkout-item"
+                  key={itemId}
+                >
+
+                  <div className="checkout-item-info">
+
+                    <strong>
+                      {
+                        item.title ||
+                        item.name ||
+                        "منتج"
+                      }
+                    </strong>
+
+
+                    {variantName && (
+
+                      <small>
+                        🔀 النوع:{" "}
+                        {variantName}
+                      </small>
+
+                    )}
+
+                  </div>
+
+
+                  <span>
+                    {quantity} × {price} جنيه
+                    {" = "}
+                    {itemTotal} جنيه
+                  </span>
+
+                </div>
+
+              );
+
+            }
+          )}
+
+
+          {/* =====================
+              TOTAL
+          ===================== */}
+
+          <div className="checkout-total">
+
+            <strong>
+              الإجمالي:
+            </strong>
+
+            <strong>
+              {totalPrice} جنيه
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        {/* =====================
+            CONFIRM ORDER
+        ===================== */}
+
+        <button
+          type="button"
+          className="checkout-btn"
+          onClick={sendOrder}
+          disabled={loading}
+        >
+
+          {
+            loading
+              ? "جاري إرسال الطلب..."
+              : "📦 تأكيد الطلب"
+          }
+
+        </button>
+
+
+        {/* =====================
+            BACK TO CART
+        ===================== */}
+
+        <button
+          type="button"
+          className="back-btn"
+          onClick={() =>
+            navigate("/cart")
+          }
+          disabled={loading}
+        >
+
+          ⬅ الرجوع للسلة
+
+        </button>
+
+      </div>
 
     </div>
 
-  </div>
+  );
 
-);
+}
 
-}     
 
 export default Checkout;
