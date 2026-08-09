@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 
@@ -15,88 +16,216 @@ function ProductsSlider({
 }) {
   const navigate = useNavigate();
 
-  if (!products.length) return null;
+  // لو مفيش منتجات، متعرضش القسم
+  if (!products || products.length === 0) {
+    return null;
+  }
 
   return (
     <section className="products-slider-section">
 
-      <h2 className="section-title">
-        {title}
-      </h2>
+      {/* =====================
+          HEADER
+      ===================== */}
+      <div className="products-slider-header">
 
+        <h2 className="section-title">
+          {title}
+        </h2>
+
+        <button
+          type="button"
+          className="view-all-btn"
+          onClick={() => {
+            document
+              .querySelector(".products-section")
+              ?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+          }}
+        >
+          عرض الكل
+        </button>
+
+      </div>
+
+
+      {/* =====================
+          PRODUCTS SLIDER
+      ===================== */}
       <Swiper
         modules={[Navigation]}
         navigation
-        spaceBetween={20}
+        spaceBetween={10}
+        slidesPerView={2}
         breakpoints={{
-          320: { slidesPerView: 1 },
-          600: { slidesPerView: 2 },
-          900: { slidesPerView: 3 },
-          1200: { slidesPerView: 4 },
+          320: {
+            slidesPerView: 2,
+            spaceBetween: 8,
+          },
+
+          480: {
+            slidesPerView: 2,
+            spaceBetween: 10,
+          },
+
+          600: {
+            slidesPerView: 3,
+            spaceBetween: 12,
+          },
+
+          900: {
+            slidesPerView: 4,
+            spaceBetween: 15,
+          },
+
+          1200: {
+            slidesPerView: 5,
+            spaceBetween: 18,
+          },
         }}
       >
+
         {products.map((product) => {
-          const id = product.id || product._id;
+
+          const id =
+            product.id ||
+            product._id;
+
+          const productTitle =
+            product.title ||
+            product.name ||
+            "منتج";
+
+          const image =
+            product.image ||
+            product.images?.[0] ||
+            "/default-product.png";
+
+          const rating = Math.min(
+            5,
+            Math.max(
+              0,
+              Math.floor(
+                Number(product.rating || 5)
+              )
+            )
+          );
 
           return (
             <SwiperSlide key={id}>
+
               <div
                 className="product-card"
-                onClick={() => navigate(`/product/${id}`)}
+                onClick={() =>
+                  navigate(`/product/${id}`)
+                }
               >
-                <span className={`product-badge ${badgeClass}`}>
-                  {badge}
-                </span>
 
+                {/* =====================
+                    BADGE
+                ===================== */}
+                {badge && (
+                  <span
+                    className={`product-badge ${badgeClass}`}
+                  >
+                    {badge}
+                  </span>
+                )}
+
+
+                {/* =====================
+                    IMAGE
+                ===================== */}
                 <div className="product-img-container">
+
                   <img
-                    src={product.image || "/default-product.png"}
-                    alt={product.title || product.name || "product"}
+                    src={image}
+                    alt={productTitle}
                     loading="lazy"
                   />
+
                 </div>
 
-                <h3>
-                  {product.title || product.name || "منتج"}
-                </h3>
 
-                <div className="rating">
-                  {"⭐".repeat(Math.floor(product.rating || 5))}
+                {/* =====================
+                    CONTENT
+                ===================== */}
+                <div className="product-card-content">
+
+                  {/* اسم المنتج */}
+                  <h3>
+                    {productTitle}
+                  </h3>
+
+
+                  {/* =====================
+                      RATING
+                  ===================== */}
+                  <div className="rating">
+
+                    {"⭐".repeat(rating)}
+
+                  </div>
+
+
+                  {/* =====================
+                      PRICE
+                  ===================== */}
+                  <p className="product-price">
+
+                    {product.oldPrice ? (
+                      <>
+                        <del>
+                          {product.oldPrice} جنيه
+                        </del>
+
+                        <strong>
+                          {product.price || 0} جنيه
+                        </strong>
+                      </>
+                    ) : (
+                      <strong>
+                        {product.price || 0} جنيه
+                      </strong>
+                    )}
+
+                  </p>
+
+
+                  {/* =====================
+                      ADD TO CART
+                  ===================== */}
+                  <button
+                    type="button"
+                    className="add-to-cart-btn"
+                    onClick={(e) => {
+
+                      e.stopPropagation();
+
+                      if (addToCart) {
+                        addToCart({
+                          ...product,
+                          quantity: 1,
+                        });
+                      }
+
+                    }}
+                  >
+                    🛒 أضف للسلة
+                  </button>
+
                 </div>
 
-                <p className="product-price">
-                  {product.oldPrice ? (
-                    <>
-                      <del
-                        style={{
-                          color: "#888",
-                          marginLeft: "8px",
-                        }}
-                      >
-                        {product.oldPrice} جنيه
-                      </del>
-
-                      <strong>{product.price} جنيه</strong>
-                    </>
-                  ) : (
-                    <strong>{product.price || 0} جنيه</strong>
-                  )}
-                </p>
-
-                <button
-                  className="add-to-cart-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addToCart(product);
-                  }}
-                >
-                  🛒 أضف للسلة
-                </button>
               </div>
+
             </SwiperSlide>
           );
         })}
+
       </Swiper>
+
     </section>
   );
 }

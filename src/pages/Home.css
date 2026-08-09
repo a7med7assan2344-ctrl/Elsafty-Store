@@ -1,311 +1,765 @@
+/* =====================================================
+   ELSAFTY STORE - JUMIA STYLE MOBILE / DESKTOP
+   ===================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
 .store-container {
   direction: rtl;
-  background: #f8fafd;
   min-height: 100vh;
+  background: #f5f6f8;
+  color: #071a36;
+  font-family: Cairo, Tahoma, Arial, sans-serif;
 }
 
 
-/* =====================
-   الأقسام
-===================== */
+/* =====================================================
+   FEATURES
+   ===================================================== */
+
+.features-section {
+  width: 100%;
+  max-width: 1400px;
+  margin: 12px auto;
+  padding: 0 12px;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.feature-card {
+  background: #fff;
+  border-radius: 6px;
+  padding: 16px 10px;
+  text-align: center;
+
+  border: 1px solid #eee;
+
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+  font-size: 26px;
+}
+
+.feature-card h3 {
+  margin: 7px 0 3px;
+
+  font-size: 15px;
+  font-weight: 800;
+
+  color: #071a36;
+}
+
+.feature-card p {
+  margin: 0;
+
+  font-size: 12px;
+  color: #777;
+}
+
+
+/* =====================================================
+   CATEGORIES
+   ===================================================== */
 
 .categories {
-  padding: 40px 20px;
+  width: 100%;
+  max-width: 1400px;
+
+  margin: 12px auto;
+  padding: 0 12px;
 }
 
 .categories h2,
 .section-title {
-  text-align: center;
-  color: #071a36;
-  font-size: 30px;
+  margin: 0 0 12px;
+
+  font-size: 22px;
   font-weight: 800;
-  margin-bottom: 30px;
+
+  color: #071a36;
 }
 
 
+/* horizontal categories like Jumia */
+
 .categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
-  gap: 20px;
+  display: flex;
+
+  gap: 10px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 4px 2px 10px;
+
+  scrollbar-width: none;
+
+  scroll-snap-type: x proximity;
+}
+
+.categories-grid::-webkit-scrollbar {
+  display: none;
 }
 
 
 .category-card {
+  flex: 0 0 125px;
 
-  background:white;
-  border:1px solid #d4af37;
-  border-radius:15px;
-  padding:25px 15px;
-  text-align:center;
-  cursor:pointer;
-  transition:.3s;
+  min-height: 125px;
 
+  background: #fff;
+
+  border: 1px solid #eee;
+
+  border-radius: 6px;
+
+  padding: 10px;
+
+  text-align: center;
+
+  cursor: pointer;
+
+  scroll-snap-align: start;
+
+  transition: 0.2s;
+
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05);
 }
-
 
 .category-card:hover {
+  transform: translateY(-2px);
 
-  transform:translateY(-5px);
-  box-shadow:0 8px 20px rgba(0,0,0,.12);
+  border-color: #d4af37;
 
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
 
 .category-card div {
-
-  font-size:35px;
-  margin-bottom:10px;
-
+  font-size: 32px;
+  margin-bottom: 5px;
 }
-
 
 .category-card h3 {
+  margin: 5px 0;
 
-  color:#071a36;
+  font-size: 14px;
 
+  color: #071a36;
 }
-
 
 .category-card span {
+  display: block;
 
-  color:#666;
-  font-size:14px;
+  font-size: 11px;
 
+  color: #777;
+}
+
+.category-cover {
+  width: 65px;
+  height: 65px;
+
+  object-fit: contain;
+
+  display: block;
+
+  margin: 0 auto 7px;
+
+  border-radius: 5px;
 }
 
 
-
-/* =====================
-   المميزات
-===================== */
-
-
-.features-section {
-
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:20px;
-padding:30px 20px;
-
-}
-
-
-.feature-card {
-
-background:#fff;
-border-radius:15px;
-padding:25px;
-text-align:center;
-border:1px solid #d4af37;
-box-shadow:0 5px 15px rgba(0,0,0,.08);
-
-font-size:30px;
-
-}
-
-
-.feature-card h3 {
-
-font-size:20px;
-color:#071a36;
-
-}
-
-
-.feature-card p {
-
-font-size:14px;
-color:#666;
-
-}
-
-
-
-/* =====================
-   بانر العروض
-===================== */
-
+/* =====================================================
+   OFFER BANNER
+   ===================================================== */
 
 .offer-banner {
+  width: calc(100% - 24px);
+  max-width: 1376px;
 
-margin:30px 20px;
-padding:35px;
-border-radius:20px;
-text-align:center;
+  margin: 12px auto;
 
-background:#071a36;
-color:white;
+  padding: 28px 15px;
 
-border:2px solid #d4af37;
+  border-radius: 7px;
 
+  text-align: center;
+
+  background:
+    linear-gradient(
+      135deg,
+      #071a36,
+      #12315d
+    );
+
+  color: #fff;
+
+  border: 1px solid #d4af37;
+
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.1);
 }
-
 
 .offer-banner h2 {
+  margin: 0 0 6px;
 
-color:#f4d06f;
-font-size:30px;
+  font-size: 24px;
 
+  color: #f4d06f;
+}
+
+.offer-banner p {
+  margin: 0;
+
+  font-size: 14px;
 }
 
 
+/* =====================================================
+   PRODUCTS SECTIONS
+   ===================================================== */
+
+.products-section {
+  width: 100%;
+  max-width: 1400px;
+
+  margin: 14px auto;
+  padding: 0 12px;
+}
 
 
-
-/* =====================
- المنتجات
-===================== */
-
+/* =====================================================
+   PRODUCT GRID
+   ===================================================== */
 
 .product-grid {
+  display: grid;
 
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:20px;
-padding:20px;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
 
+  gap: 10px;
+
+  padding: 0;
 }
 
 
-.product-grid .product-card {
+/* =====================================================
+   PRODUCT CARD
+   ===================================================== */
 
-background:white;
-border-radius:15px;
-border:1px solid #ddd;
-overflow:hidden;
-cursor:pointer;
-transition:.3s;
+.product-grid .product-card,
+.product-card {
+  position: relative;
 
+  min-width: 0;
+
+  background: #fff;
+
+  border-radius: 6px;
+
+  overflow: hidden;
+
+  border: 1px solid #eee;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.06);
+}
+
+.product-grid .product-card:hover,
+.product-card:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 5px 15px rgba(0, 0, 0, 0.12);
 }
 
 
-.product-grid .product-card:hover {
+/* product image */
 
-transform:translateY(-5px);
+.product-grid .product-card img,
+.product-card img {
+  width: 100%;
 
-box-shadow:
-0 8px 20px rgba(0,0,0,.15);
+  height: 210px;
 
+  display: block;
+
+  object-fit: contain;
+
+  background: #fff;
+
+  padding: 8px;
 }
 
 
-.product-grid img {
+/* product title */
 
-width:100%;
-height:220px;
-object-fit:contain;
+.product-card h3,
+.product-card .product-title {
+  margin: 8px 10px 4px;
 
+  font-size: 14px;
+
+  line-height: 1.5;
+
+  color: #222;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
 }
 
 
+/* price */
+
+.product-card .price,
+.product-card strong {
+  color: #071a36;
+
+  font-size: 17px;
+
+  font-weight: 800;
+}
 
 
-/* =====================
- الفلاتر
-===================== */
+/* add cart button */
 
+.product-card button {
+  width: calc(100% - 16px);
+
+  margin: 8px;
+
+  min-height: 38px;
+
+  border: 0;
+
+  border-radius: 5px;
+
+  background: #d4af37;
+
+  color: #071a36;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.product-card button:hover {
+  background: #c39d25;
+}
+
+
+/* =====================================================
+   FILTERS
+   ===================================================== */
 
 .filters-bar {
+  display: flex;
 
-display:flex;
-gap:15px;
-padding:20px;
-flex-wrap:wrap;
-justify-content:center;
+  align-items: center;
 
+  gap: 8px;
+
+  margin-bottom: 12px;
+
+  padding: 10px;
+
+  background: #fff;
+
+  border-radius: 6px;
+
+  border: 1px solid #eee;
+
+  flex-wrap: wrap;
 }
-
 
 .filters-bar select,
 .filters-bar input {
+  min-height: 40px;
 
-padding:12px;
-border-radius:10px;
-border:1px solid #d4af37;
-font-family:Cairo;
+  padding: 8px 10px;
 
+  border-radius: 5px;
+
+  border: 1px solid #ddd;
+
+  background: #fff;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  outline: none;
 }
 
+.filters-bar select:focus,
+.filters-bar input:focus {
+  border-color: #d4af37;
+}
 
 .filters-bar label {
+  display: flex;
 
-background:white;
-padding:10px 15px;
-border-radius:10px;
+  align-items: center;
+
+  gap: 6px;
+
+  min-height: 40px;
+
+  padding: 7px 10px;
+
+  background: #fafafa;
+
+  border-radius: 5px;
+
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   PRODUCTS SLIDER
+   ===================================================== */
+
+.products-slider {
+  width: 100%;
+
+  margin: 14px auto;
+
+  padding: 0 12px;
+
+  max-width: 1400px;
+}
+
+.products-slider-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 10px;
+}
+
+.products-slider-header h2 {
+  margin: 0;
+
+  font-size: 20px;
+
+  font-weight: 800;
+
+  color: #071a36;
+}
+
+.products-slider-header button {
+  border: 0;
+
+  background: transparent;
+
+  color: #d4af37;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   MOBILE - JUMIA LIKE
+   ===================================================== */
+
+@media (max-width: 600px) {
+
+  .store-container {
+    background: #f5f6f8;
+  }
+
+
+  /* features */
+
+  .features-section {
+    grid-template-columns:
+      repeat(2, 1fr);
+
+    gap: 7px;
+
+    padding: 0 8px;
+
+    margin: 8px auto;
+  }
+
+  .feature-card {
+    min-height: 92px;
+
+    padding: 10px 5px;
+
+    font-size: 22px;
+
+    border-radius: 5px;
+  }
+
+  .feature-card h3 {
+    font-size: 12px;
+  }
+
+  .feature-card p {
+    font-size: 10px;
+  }
+
+
+  /* categories */
+
+  .categories {
+    padding: 0 8px;
+
+    margin: 10px auto;
+  }
+
+  .categories h2,
+  .section-title {
+    font-size: 18px;
+
+    margin-bottom: 8px;
+  }
+
+  .categories-grid {
+    gap: 7px;
+
+    padding-bottom: 7px;
+  }
+
+  .category-card {
+    flex: 0 0 88px;
+
+    min-height: 105px;
+
+    padding: 7px 4px;
+
+    border-radius: 5px;
+  }
+
+  .category-card div {
+    font-size: 25px;
+
+    margin-bottom: 3px;
+  }
+
+  .category-cover {
+    width: 52px;
+    height: 52px;
+
+    margin-bottom: 4px;
+  }
+
+  .category-card h3 {
+    font-size: 11px;
+
+    margin: 3px 0;
+  }
+
+  .category-card span {
+    font-size: 9px;
+  }
+
+
+  /* banner */
+
+  .offer-banner {
+    width: calc(100% - 16px);
+
+    margin: 8px;
+
+    padding: 20px 10px;
+
+    border-radius: 6px;
+  }
+
+  .offer-banner h2 {
+    font-size: 19px;
+  }
+
+  .offer-banner p {
+    font-size: 11px;
+  }
+
+
+  /* product sections */
+
+  .products-section {
+    padding: 0 8px;
+
+    margin: 10px auto;
+  }
+
+
+  /* IMPORTANT:
+     2 products per row on mobile
+  */
+
+  .product-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 7px;
+  }
+
+
+  .product-grid .product-card,
+  .product-card {
+    border-radius: 5px;
+  }
+
+
+  .product-grid .product-card img,
+  .product-card img {
+    height: 145px;
+
+    padding: 6px;
+  }
+
+
+  .product-card h3,
+  .product-card .product-title {
+    margin: 6px 7px 3px;
+
+    font-size: 11px;
+
+    line-height: 1.45;
+
+    min-height: 32px;
+  }
+
+
+  .product-card .price,
+  .product-card strong {
+    font-size: 14px;
+  }
+
+
+  .product-card button {
+    width: calc(100% - 10px);
+
+    margin: 5px;
+
+    min-height: 34px;
+
+    font-size: 11px;
+
+    border-radius: 4px;
+  }
+
+
+  /* filters */
+
+  .filters-bar {
+    padding: 7px;
+
+    gap: 5px;
+
+    margin-bottom: 8px;
+  }
+
+  .filters-bar select,
+  .filters-bar input {
+    flex: 1 1 45%;
+
+    min-height: 36px;
+
+    padding: 6px;
+
+    font-size: 11px;
+  }
+
+  .filters-bar label {
+    width: 100%;
+
+    min-height: 35px;
+
+    font-size: 11px;
+  }
+
+
+  /* slider */
+
+  .products-slider {
+    padding: 0 8px;
+
+    margin: 10px auto;
+  }
+
+  .products-slider-header h2 {
+    font-size: 17px;
+  }
+
+  .products-slider-header button {
+    font-size: 11px;
+  }
+}
+
+
+/* =====================================================
+   TABLET
+   ===================================================== */
+
+@media (min-width: 601px) and (max-width: 900px) {
+
+  .features-section {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .product-grid {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+
+  .product-card img {
+    height: 180px;
+  }
 
 }
 
 
+/* =====================================================
+   DESKTOP
+   ===================================================== */
 
-/* =====================
- الموبايل
-===================== */
+@media (min-width: 1200px) {
 
+  .product-grid {
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+  }
 
-@media(max-width:900px){
-
-
-.features-section {
-
-grid-template-columns:repeat(2,1fr);
-
-}
-
-
-.product-grid {
-
-grid-template-columns:repeat(2,1fr);
-
-}
-
-
-}
-
-
-
-@media(max-width:600px){
-
-
-.categories {
-
-padding:20px 10px;
-
-}
-
-
-.categories-grid {
-
-grid-template-columns:repeat(2,1fr);
-
-}
-
-
-.features-section {
-
-grid-template-columns:1fr;
-
-}
-
-
-.product-grid {
-
-grid-template-columns:1fr;
-
-}
-
-
-.offer-banner h2 {
-
-font-size:22px;
-
-}
-
-
-.section-title {
-
-font-size:24px;
-
-}
-
+  .product-card img {
+    height: 230px;
+  }
 
 }

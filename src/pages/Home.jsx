@@ -1,5 +1,3 @@
-import ProductsSlider from "../components/ProductsSlider";
-
 import React, {
   useState,
   useContext,
@@ -7,1619 +5,1058 @@ import React, {
   useRef
 } from "react";
 
-import {
-  useNavigate
-} from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
 
 import "./Home.css";
 import "../styles/store.css";
 
-
 import Navbar from "../components/Navbar/Navbar";
-
-import {
-  CartContext
-} from "../context/CartContext";
-
-
-import {
-  getCategories
-} from "../services/categoryService";
-
-
 import HeroSlider from "../components/HeroSlider";
+import ProductsSlider from "../components/ProductsSlider";
 
+import { CartContext } from "../context/CartContext";
 
+import { getCategories } from "../services/categoryService";
 
 function Home({
-
   products,
   admin,
   searchTerm,
   setSearchTerm,
   setCurrentView
-
 }) {
+  const navigate = useNavigate();
 
+  const productsRef = useRef(null);
 
-const navigate = useNavigate();
+  const {
+    cart,
+    addToCart
+  } = useContext(CartContext);
 
+  // =======================
+  // STATES
+  // =======================
 
+  const [categories, setCategories] = useState([]);
 
-const productsRef = useRef(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState("الكل");
 
+  const [sortBy, setSortBy] =
+    useState("default");
 
+  const [showOffersOnly, setShowOffersOnly] =
+    useState(false);
 
-const {
-  cart,
-  addToCart
-} = useContext(CartContext);
+  const [minPrice, setMinPrice] =
+    useState("");
 
+  const [maxPrice, setMaxPrice] =
+    useState("");
 
+  // =======================
+  // CART COUNT
+  // =======================
 
+  const cartCount = cart.reduce(
+    (total, item) =>
+      total + Number(item.quantity || 0),
+    0
+  );
 
-const [
-categories,
-setCategories
-] = useState([]);
+  // =======================
+  // LOAD CATEGORIES
+  // =======================
 
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await getCategories();
 
+        setCategories(
+          (data || []).filter(
+            (cat) => cat.active === true
+          )
+        );
+      } catch (error) {
+        console.error(
+          "خطأ في تحميل الأقسام:",
+          error
+        );
+      }
+    };
 
-const [
-selectedCategory,
-setSelectedCategory
-] = useState("الكل");
+    loadCategories();
+  }, []);
 
+  // =======================
+  // NAVBAR CATEGORY EVENT
+  // =======================
 
+  useEffect(() => {
+    const filterListener = (event) => {
+      setSelectedCategory(
+        event.detail || "الكل"
+      );
 
-const [
-sortBy,
-setSortBy
-] = useState("default");
+      setTimeout(() => {
+        productsRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 100);
+    };
 
+    window.addEventListener(
+      "filterCategory",
+      filterListener
+    );
 
+    return () => {
+      window.removeEventListener(
+        "filterCategory",
+        filterListener
+      );
+    };
+  }, []);
 
-const [
-showOffersOnly,
-setShowOffersOnly
-] = useState(false);
+  // =======================
+  // SCROLL TO SECTION
+  // =======================
 
+  const scrollToSection = (selector) => {
+    document
+      .querySelector(selector)
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+  };
 
+  // =======================
+  // CATEGORY CLICK
+  // =======================
 
-const [
-minPrice,
-setMinPrice
-] = useState("");
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
 
+    setTimeout(() => {
+      productsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 100);
+  };
 
+  // =======================
+  // FILTER PRODUCTS
+  // =======================
 
-const [
-maxPrice,
-setMaxPrice
-] = useState("");
+  const filteredProducts = (products || [])
+    .filter((product) => {
+      const title = String(
+        product.title ||
+          product.name ||
+          ""
+      ).toLowerCase();
 
+      const description = String(
+        product.description || ""
+      ).toLowerCase();
 
+      const category = String(
+        product.category || ""
+      ).toLowerCase();
 
+      const searchText = String(
+        searchTerm || ""
+      )
+        .toLowerCase()
+        .trim();
 
+      const matchSearch =
+        searchText === "" ||
+        title.includes(searchText) ||
+        description.includes(searchText) ||
+        category.includes(searchText);
 
+      const matchCategory =
+        selectedCategory === "الكل" ||
+        product.category === selectedCategory;
 
-const cartCount = cart.reduce(
+      if (
+        !matchSearch ||
+        !matchCategory
+      ) {
+        return false;
+      }
 
-(total,item)=>
+      if (
+        showOffersOnly &&
+        !product.offer
+      ) {
+        return false;
+      }
 
-total + item.quantity,
+      if (
+        minPrice !== "" &&
+        Number(product.price || 0) <
+          Number(minPrice)
+      ) {
+        return false;
+      }
 
-0
+      if (
+        maxPrice !== "" &&
+        Number(product.price || 0) >
+          Number(maxPrice)
+      ) {
+        return false;
+      }
 
-);
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "low":
+          return (
+            Number(a.price || 0) -
+            Number(b.price || 0)
+          );
 
+        case "high":
+          return (
+            Number(b.price || 0) -
+            Number(a.price || 0)
+          );
 
+        case "rating":
+          return (
+            Number(b.rating || 0) -
+            Number(a.rating || 0)
+          );
 
+        case "new":
+          return (
+            Number(!!b.newArrival) -
+            Number(!!a.newArrival)
+          );
 
+        case "best":
+          return (
+            Number(!!b.bestSeller) -
+            Number(!!a.bestSeller)
+          );
 
+        default:
+          return 0;
+      }
+    });
 
+  // =======================
+  // SPECIAL PRODUCTS
+  // =======================
 
-// =======================
-// تحميل الأقسام
-// =======================
+  const offers = (products || []).filter(
+    (product) => product.offer === true
+  );
 
+  const bestSellers = (products || []).filter(
+    (product) =>
+      product.bestSeller === true
+  );
 
-useEffect(()=>{
+  const newArrivals = (products || []).filter(
+    (product) =>
+      product.newArrival === true
+  );
 
+  const recommended = (products || []).filter(
+    (product) =>
+      product.recommended === true
+  );
 
-const loadCategories = async()=>{
+  // =======================
+  // RETURN
+  // =======================
 
+  return (
+    <div className="home-page">
 
-try{
+      {/* =======================
+          NAVBAR
+      ======================= */}
 
+      <Navbar
+        setCurrentView={setCurrentView}
+        cartCount={cartCount}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        admin={admin}
+        products={products}
+      />
 
-const data = await getCategories();
+      {/* =======================
+          FEATURES
+      ======================= */}
 
+      <section className="features-section">
 
-// يظهر فقط الأقسام المفعلة
+        <div className="feature-card">
+          <div className="feature-icon">
+            🚚
+          </div>
 
-setCategories(
+          <div>
+            <strong>
+              شحن سريع
+            </strong>
 
-(data || []).filter(
+            <span>
+              توصيل لجميع المحافظات
+            </span>
+          </div>
+        </div>
 
-(cat)=>cat.active === true
+        <div className="feature-card">
+          <div className="feature-icon">
+            🔒
+          </div>
 
-)
+          <div>
+            <strong>
+              دفع آمن
+            </strong>
 
-);
+            <span>
+              طرق دفع آمنة
+            </span>
+          </div>
+        </div>
 
+        <div className="feature-card">
+          <div className="feature-icon">
+            ⭐
+          </div>
 
+          <div>
+            <strong>
+              جودة مضمونة
+            </strong>
 
+            <span>
+              منتجات أصلية
+            </span>
+          </div>
+        </div>
+
+        <div className="feature-card">
+          <div className="feature-icon">
+            💬
+          </div>
+
+          <div>
+            <strong>
+              دعم فني
+            </strong>
+
+            <span>
+              خدمة عملاء مستمرة
+            </span>
+          </div>
+        </div>
+
+      </section>
+
+      {/* =======================
+          HERO
+      ======================= */}
+
+      <section className="hero-section">
+        <HeroSlider />
+      </section>
+
+      {/* =======================
+          CATEGORIES
+      ======================= */}
+
+      <section className="categories-section">
+
+        <div className="section-header">
+
+          <h2>
+            الأقسام
+          </h2>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleCategoryClick("الكل")
+            }
+          >
+            عرض الكل
+          </button>
+
+        </div>
+
+        <div className="categories-grid">
+
+          {/* ALL PRODUCTS */}
+
+          <button
+            type="button"
+            className={
+              `category-card ${
+                selectedCategory === "الكل"
+                  ? "active"
+                  : ""
+              }`
+            }
+            onClick={() =>
+              handleCategoryClick("الكل")
+            }
+          >
+
+            <div className="category-image-wrap">
+
+              <span className="category-icon">
+                📦
+              </span>
+
+            </div>
+
+            <strong>
+              كل المنتجات
+            </strong>
+
+            <small>
+              عرض كل المنتجات
+            </small>
+
+          </button>
+
+          {/* CATEGORIES */}
+
+          {categories.map((category) => (
+
+            <button
+              type="button"
+              key={category.id}
+              className={
+                `category-card ${
+                  selectedCategory ===
+                  category.name
+                    ? "active"
+                    : ""
+                }`
+              }
+              onClick={() =>
+                handleCategoryClick(
+                  category.name
+                )
+              }
+            >
+
+              <div className="category-image-wrap">
+
+                {category.image ? (
+
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="category-cover"
+                    loading="lazy"
+                  />
+
+                ) : (
+
+                  <span className="category-icon">
+                    {category.icon || "📦"}
+                  </span>
+
+                )}
+
+              </div>
+
+              <strong>
+                {category.name}
+              </strong>
+
+              <small>
+                تصفح المنتجات
+              </small>
+
+            </button>
+
+          ))}
+
+        </div>
+
+      </section>
+
+      {/* =======================
+          OFFER BANNER
+      ======================= */}
+
+      <section className="offer-banner">
+
+        <div className="offer-banner-content">
+
+          <span className="offer-banner-icon">
+            🔥
+          </span>
+
+          <div>
+
+            <h2>
+              خصومات تصل إلى 50%
+            </h2>
+
+            <p>
+              لفترة محدودة على منتجات مختارة
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              scrollToSection(
+                ".products-section"
+              )
+            }
+          >
+            تسوق الآن
+          </button>
+
+        </div>
+
+      </section>
+
+      {/* =======================
+          OFFERS
+      ======================= */}
+
+      {offers.length > 0 && (
+
+        <ProductsSlider
+          title="🔥 عروض اليوم"
+          badge="🔥 خصم"
+          badgeClass="offer"
+          products={offers}
+          addToCart={addToCart}
+        />
+
+      )}
+
+      {/* =======================
+          BEST SELLERS
+      ======================= */}
+
+      {bestSellers.length > 0 && (
+
+        <ProductsSlider
+          title="⭐ الأكثر مبيعًا"
+          badge="⭐ الأكثر طلبًا"
+          badgeClass="best"
+          products={bestSellers}
+          addToCart={addToCart}
+        />
+
+      )}
+
+      {/* =======================
+          NEW ARRIVALS
+      ======================= */}
+
+      {newArrivals.length > 0 && (
+
+        <ProductsSlider
+          title="🆕 وصل حديثًا"
+          badge="🆕 جديد"
+          badgeClass="new"
+          products={newArrivals}
+          addToCart={addToCart}
+        />
+
+      )}
+
+      {/* =======================
+          RECOMMENDED
+      ======================= */}
+
+      {recommended.length > 0 && (
+
+        <ProductsSlider
+          title="❤️ قد يعجبك"
+          badge="❤️ مميز"
+          badgeClass="recommended"
+          products={recommended}
+          addToCart={addToCart}
+        />
+
+      )}
+
+      {/* =======================
+          ALL PRODUCTS
+      ======================= */}
+
+      <section
+        className="products-section"
+        ref={productsRef}
+      >
+
+        <div className="section-header">
+
+          <div>
+
+            <h2>
+              📦 جميع المنتجات
+            </h2>
+
+            {selectedCategory !== "الكل" && (
+
+              <p className="selected-category">
+                القسم:
+                {" "}
+                <strong>
+                  {selectedCategory}
+                </strong>
+              </p>
+
+            )}
+
+          </div>
+
+          <span className="products-count">
+            {filteredProducts.length} منتج
+          </span>
+
+        </div>
+
+        {/* =======================
+            FILTERS
+        ======================= */}
+
+        <div className="products-filters">
+
+          <select
+            value={sortBy}
+            onChange={(event) =>
+              setSortBy(
+                event.target.value
+              )
+            }
+          >
+
+            <option value="default">
+              ترتيب افتراضي
+            </option>
+
+            <option value="low">
+              💰 الأقل سعرًا
+            </option>
+
+            <option value="high">
+              💰 الأعلى سعرًا
+            </option>
+
+            <option value="rating">
+              ⭐ الأعلى تقييمًا
+            </option>
+
+            <option value="new">
+              🆕 الأحدث
+            </option>
+
+            <option value="best">
+              🔥 الأكثر مبيعًا
+            </option>
+
+          </select>
+
+          <input
+            type="number"
+            min="0"
+            placeholder="من سعر"
+            value={minPrice}
+            onChange={(event) =>
+              setMinPrice(
+                event.target.value
+              )
+            }
+          />
+
+          <input
+            type="number"
+            min="0"
+            placeholder="إلى سعر"
+            value={maxPrice}
+            onChange={(event) =>
+              setMaxPrice(
+                event.target.value
+              )
+            }
+          />
+
+          <label className="offers-filter">
+
+            <input
+              type="checkbox"
+              checked={showOffersOnly}
+              onChange={(event) =>
+                setShowOffersOnly(
+                  event.target.checked
+                )
+              }
+            />
+
+            <span>
+              🔥 العروض فقط
+            </span>
+
+          </label>
+
+        </div>
+
+        {/* =======================
+            PRODUCTS GRID
+        ======================= */}
+
+        {filteredProducts.length > 0 ? (
+
+          <div className="products-grid">
+
+            {filteredProducts.map(
+              (product) => {
+
+                const id =
+                  product.id ||
+                  product._id;
+
+                const image =
+                  product.image ||
+                  product.images?.[0] ||
+                  "https://via.placeholder.com/300";
+
+                const title =
+                  product.title ||
+                  product.name ||
+                  "منتج";
+
+                const price =
+                  Number(
+                    product.price || 0
+                  );
+
+                const oldPrice =
+                  Number(
+                    product.oldPrice || 0
+                  );
+
+                const discount =
+                  oldPrice > price &&
+                  oldPrice > 0
+                    ? Math.round(
+                        ((oldPrice - price) /
+                          oldPrice) *
+                          100
+                      )
+                    : 0;
+
+                return (
+
+                  <article
+                    className="product-card"
+                    key={id}
+                    onClick={() =>
+                      navigate(
+                        `/product/${id}`
+                      )
+                    }
+                  >
+
+                    {/* IMAGE */}
+
+                    <div className="product-card-image">
+
+                      {discount > 0 && (
+
+                        <span className="discount-badge">
+                          -{discount}%
+                        </span>
+
+                      )}
+
+                      {product.newArrival && (
+
+                        <span className="new-badge">
+                          جديد
+                        </span>
+
+                      )}
+
+                      <img
+                        src={image}
+                        alt={title}
+                        loading="lazy"
+                      />
+
+                    </div>
+
+                    {/* INFO */}
+
+                    <div className="product-card-info">
+
+                      <h3>
+                        {title}
+                      </h3>
+
+                      <div className="product-rating">
+
+                        ⭐{" "}
+                        {Number(
+                          product.rating || 0
+                        ).toFixed(1)}
+
+                      </div>
+
+                      <div className="product-price">
+
+                        <strong>
+                          {price}
+                          {" "}
+                          ج.م
+                        </strong>
+
+                        {oldPrice > price && (
+
+                          <del>
+                            {oldPrice}
+                            {" "}
+                            ج.م
+                          </del>
+
+                        )}
+
+                      </div>
+
+                      <button
+                        type="button"
+                        className="add-to-cart-btn"
+                        onClick={(event) => {
+
+                          event.stopPropagation();
+
+                          addToCart({
+                            ...product,
+                            quantity: 1
+                          });
+
+                        }}
+                      >
+                        🛒 أضف للسلة
+                      </button>
+
+                    </div>
+
+                  </article>
+
+                );
+
+              }
+            )}
+
+          </div>
+
+        ) : (
+
+          <div className="no-products">
+
+            <div className="no-products-icon">
+              📦
+            </div>
+
+            <h3>
+              لا توجد منتجات
+            </h3>
+
+            <p>
+              جرب تغيير البحث أو الفلاتر
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+
+                setSelectedCategory("الكل");
+                setSearchTerm("");
+                setSortBy("default");
+                setShowOffersOnly(false);
+                setMinPrice("");
+                setMaxPrice("");
+
+              }}
+            >
+              إعادة ضبط الفلاتر
+            </button>
+
+          </div>
+
+        )}
+
+      </section>
+
+      {/* =======================
+          FOOTER
+      ======================= */}
+
+      <footer className="store-footer">
+
+        <div className="footer-container">
+
+          {/* BRAND */}
+
+          <div className="footer-column">
+
+            <h2>
+              Elsafty Store
+            </h2>
+
+            <p>
+              متجر إلكتروني يوفر أفضل المنتجات
+              بأفضل الأسعار مع خدمة عملاء متميزة.
+            </p>
+
+          </div>
+
+          {/* QUICK LINKS */}
+
+          <div className="footer-column">
+
+            <h3>
+              روابط سريعة
+            </h3>
+
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() =>
+                navigate("/")
+              }
+            >
+              🏠 الرئيسية
+            </button>
+
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() =>
+                navigate("/cart")
+              }
+            >
+              🛒 السلة
+            </button>
+
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() =>
+                scrollToSection(
+                  ".products-section"
+                )
+              }
+            >
+              📦 جميع المنتجات
+            </button>
+
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() =>
+                scrollToSection(
+                  ".offer-banner"
+                )
+              }
+            >
+              🔥 العروض
+            </button>
+
+          </div>
+
+          {/* CUSTOMER SERVICE */}
+
+          <div className="footer-column">
+
+            <h3>
+              خدمة العملاء
+            </h3>
+
+            <p>
+              📞 دعم طوال الأسبوع
+            </p>
+
+            <p>
+              🚚 شحن لجميع المحافظات
+            </p>
+
+            <p>
+              🔒 دفع آمن
+            </p>
+
+            <p>
+              ⭐ ضمان جودة المنتجات
+            </p>
+
+          </div>
+
+          {/* SOCIAL */}
+
+          <div className="footer-column">
+
+            <h3>
+              تابعنا
+            </h3>
+
+            <div className="footer-social">
+
+              <button type="button">
+                📘
+              </button>
+
+              <button type="button">
+                📷
+              </button>
+
+              <button type="button">
+                🎵
+              </button>
+
+              <button type="button">
+                ▶️
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="footer-bottom">
+
+          © {new Date().getFullYear()}
+          {" "}
+          Elsafty Store
+          {" - "}
+          جميع الحقوق محفوظة.
+
+        </div>
+
+      </footer>
+
+    </div>
+  );
 }
-
-catch(error){
-
-
-console.log(error);
-
-
-}
-
-
-};
-
-
-
-loadCategories();
-
-
-
-},[]);
-
-
-
-
-
-
-
-
-
-// =======================
-// استقبال اختيار القسم من Navbar
-// =======================
-
-
-useEffect(()=>{
-
-
-const filterListener=(e)=>{
-
-
-setSelectedCategory(e.detail);
-
-
-
-setTimeout(()=>{
-
-
-productsRef.current?.scrollIntoView({
-
-behavior:"smooth",
-
-block:"start"
-
-});
-
-
-},100);
-
-
-
-};
-
-
-
-
-window.addEventListener(
-
-"filterCategory",
-
-filterListener
-
-);
-
-
-
-
-return ()=>{
-
-
-window.removeEventListener(
-
-"filterCategory",
-
-filterListener
-
-);
-
-
-};
-
-
-
-},[]);
-
-
-
-
-
-
-
-
-const scrollToSection=(className)=>{
-
-
-document
-
-.querySelector(className)
-
-?.scrollIntoView({
-
-behavior:"smooth"
-
-});
-
-
-};
-
-
-
-
-
-
-
-// =======================
-// فلترة المنتجات
-// =======================
-
-
-const filteredProducts = (products || [])
-
-.filter((product)=>{
-
-
-
-const title = String(
-
-product.title ||
-
-product.name ||
-
-""
-
-).toLowerCase();
-
-
-
-
-const description = String(
-
-product.description ||
-
-""
-
-).toLowerCase();
-
-
-
-
-const category = String(
-
-product.category ||
-
-""
-
-).toLowerCase();
-
-
-
-
-const searchText = String(
-
-searchTerm || ""
-
-).toLowerCase().trim();
-
-
-
-
-
-
-const matchSearch =
-
-searchText === ""
-
-||
-
-title.includes(searchText)
-
-||
-
-description.includes(searchText)
-
-||
-
-category.includes(searchText);
-
-
-
-
-
-
-const matchCategory =
-
-selectedCategory === "الكل"
-
-||
-
-product.category === selectedCategory;
-
-
-
-
-
-
-if(
-
-!matchSearch ||
-
-!matchCategory
-
-)
-
-return false;
-
-
-
-
-
-if(
-
-showOffersOnly &&
-
-!product.offer
-
-)
-
-return false;
-
-
-
-
-
-
-if(
-
-minPrice &&
-
-Number(product.price)
-
-<
-
-Number(minPrice)
-
-)
-
-return false;
-
-
-
-
-
-
-if(
-
-maxPrice &&
-
-Number(product.price)
-
->
-
-Number(maxPrice)
-
-)
-
-return false;
-
-
-
-
-
-
-return true;
-
-
-
-})
-
-.sort((a,b)=>{
-
-
-switch(sortBy){
-
-
-case "low":
-
-return Number(a.price)-Number(b.price);
-
-
-
-case "high":
-
-return Number(b.price)-Number(a.price);
-
-
-
-case "rating":
-
-return Number(b.rating)-Number(a.rating);
-
-
-
-case "new":
-
-return Number(!!b.newArrival)-Number(!!a.newArrival);
-
-
-
-case "best":
-
-return Number(!!b.bestSeller)-Number(!!a.bestSeller);
-
-
-
-default:
-
-return 0;
-
-
-}
-
-
-
-});
-
-
-// =======================
-// أقسام المنتجات الخاصة
-// =======================
-
-
-const offers = (products || []).filter(
-
-(p)=>p.offer
-
-);
-
-
-
-const bestSellers = (products || []).filter(
-
-(p)=>p.bestSeller
-
-);
-
-
-
-const newArrivals = (products || []).filter(
-
-(p)=>p.newArrival
-
-);
-
-
-
-const recommended = (products || []).filter(
-
-(p)=>p.recommended
-
-);
-
-
-
-
-
-
-return (
-
-<div className="store-container">
-
-
-
-
-
-<Navbar
-
-setCurrentView={setCurrentView}
-
-cartCount={cartCount}
-
-searchTerm={searchTerm}
-
-setSearchTerm={setSearchTerm}
-
-admin={admin}
-
-products={products}
-
-/>
-
-
-
-
-
-
-
-<HeroSlider />
-
-
-
-
-
-
-
-
-
-
-<section className="features-section">
-
-
-
-<div className="feature-card">
-
-🚚
-
-<h3>
-
-شحن سريع
-
-</h3>
-
-
-<p>
-
-توصيل لجميع المحافظات
-
-</p>
-
-
-</div>
-
-
-
-
-
-
-
-
-<div className="feature-card">
-
-🔒
-
-<h3>
-
-دفع آمن
-
-</h3>
-
-
-<p>
-
-طرق دفع آمنة
-
-</p>
-
-
-</div>
-
-
-
-
-
-
-
-
-<div className="feature-card">
-
-⭐
-
-<h3>
-
-جودة مضمونة
-
-</h3>
-
-
-<p>
-
-منتجات أصلية
-
-</p>
-
-
-</div>
-
-
-
-
-
-
-
-
-<div className="feature-card">
-
-💬
-
-<h3>
-
-دعم فني
-
-</h3>
-
-
-<p>
-
-خدمة عملاء مستمرة
-
-</p>
-
-
-</div>
-
-
-
-
-
-</section>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<section className="categories">
-
-
-
-<h2>
-
-الأقسام
-
-</h2>
-
-
-
-
-
-
-<div className="categories-grid">
-
-
-
-
-
-
-
-<div
-
-
-className="category-card"
-
-
-onClick={()=>setSelectedCategory("الكل")}
-
-
->
-
-
-
-<div className="category-icon">
-
-📦
-
-</div>
-
-
-
-<h3>
-
-كل المنتجات
-
-</h3>
-
-
-
-<span>
-
-عرض كل المنتجات
-
-</span>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-
-
-{
-
-
-categories.map((cat)=>(
-
-
-
-<div
-
-
-key={cat.id}
-
-
-className="category-card"
-
-
-onClick={()=>setSelectedCategory(cat.name)}
-
-
->
-
-
-
-
-
-{
-
-
-cat.image ? (
-
-
-
-<img
-
-
-src={cat.image}
-
-
-alt={cat.name}
-
-
-className="category-cover"
-
-
-/>
-
-
-
-)
-
-:
-
-(
-
-
-
-<div className="category-icon">
-
-
-{cat.icon || "📦"}
-
-
-</div>
-
-
-
-)
-
-
-
-}
-
-
-
-
-
-
-
-<h3>
-
-
-{cat.name}
-
-
-</h3>
-
-
-
-
-
-
-
-<span>
-
-
-تصفح المنتجات
-
-
-</span>
-
-
-
-
-
-
-
-</div>
-
-
-
-))
-
-
-
-}
-
-
-
-
-
-
-
-
-
-</div>
-
-
-
-
-</section>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<section className="offer-banner">
-
-
-
-<h2>
-
-🔥 خصومات تصل إلى 50%
-
-</h2>
-
-
-
-
-<p>
-
-لفترة محدودة على منتجات مختارة
-
-</p>
-
-
-
-</section>
-
-
-
-
-
-
-
-
-
-
-<section className="offers-section">
-
-
-
-
-
-<ProductsSlider
-
-title="🔥 عروض اليوم"
-
-badge="🔥 خصم"
-
-badgeClass="offer"
-
-products={offers}
-
-addToCart={addToCart}
-
-/>
-
-
-
-
-
-
-
-
-
-<ProductsSlider
-
-title="⭐ الأكثر مبيعًا"
-
-badge="⭐ الأكثر طلبًا"
-
-badgeClass="best"
-
-products={bestSellers}
-
-addToCart={addToCart}
-
-/>
-
-
-
-
-
-
-
-
-
-
-<ProductsSlider
-
-title="🆕 وصل حديثًا"
-
-badge="🆕 جديد"
-
-badgeClass="new"
-
-products={newArrivals}
-
-addToCart={addToCart}
-
-/>
-
-
-
-
-
-
-
-
-
-<ProductsSlider
-
-title="❤️ قد يعجبك"
-
-badge="❤️ مميز"
-
-badgeClass="recommended"
-
-products={recommended}
-
-addToCart={addToCart}
-
-/>
-
-
-
-
-
-
-</section>
-
-{/* =======================
-    PRODUCTS SECTION
-======================= */}
-<section
-
-className="products-section"
-
-ref={productsRef}
-
->
-
-
-<h2 className="section-title">
-
-📦 جميع المنتجات
-
-</h2>
-
-
-
-
-
-<div className="filters-bar">
-
-
-
-<select
-
-value={sortBy}
-
-onChange={(e)=>setSortBy(e.target.value)}
-
->
-
-<option value="default">
-
-ترتيب افتراضي
-
-</option>
-
-
-<option value="low">
-
-💰 الأقل سعرًا
-
-</option>
-
-
-<option value="high">
-
-💰 الأعلى سعرًا
-
-</option>
-
-
-<option value="rating">
-
-⭐ الأعلى تقييمًا
-
-</option>
-
-
-<option value="new">
-
-🆕 الأحدث
-
-</option>
-
-
-<option value="best">
-
-🔥 الأكثر مبيعًا
-
-</option>
-
-
-</select>
-
-
-
-
-
-
-<input
-
-type="number"
-
-placeholder="من سعر"
-
-value={minPrice}
-
-onChange={(e)=>setMinPrice(e.target.value)}
-
-/>
-
-
-
-
-
-
-<input
-
-type="number"
-
-placeholder="إلى سعر"
-
-value={maxPrice}
-
-onChange={(e)=>setMaxPrice(e.target.value)}
-
-/>
-
-
-
-
-
-
-<label>
-
-
-<input
-
-type="checkbox"
-
-checked={showOffersOnly}
-
-onChange={(e)=>setShowOffersOnly(e.target.checked)}
-
-/>
-
-
-🔥 العروض فقط
-
-
-</label>
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<div className="product-grid">
-
-
-
-{
-
-filteredProducts.length > 0 ? (
-
-
-filteredProducts.map((product)=>{
-
-
-const id = product.id || product._id;
-
-
-
-return (
-
-
-
-<div
-
-className="product-card"
-
-key={id}
-
-onClick={()=>navigate(`/product/${id}`)}
-
->
-
-
-
-
-<img
-
-src={
-
-product.image ||
-
-"https://via.placeholder.com/300"
-
-}
-
-alt={product.title || "product"}
-
-/>
-
-
-
-
-
-<h3>
-
-{product.title || product.name}
-
-</h3>
-
-
-
-
-
-<p>
-
-{product.price} ج.م
-
-</p>
-
-
-
-
-
-
-<button
-
-onClick={(e)=>{
-
-
-e.stopPropagation();
-
-
-addToCart(product);
-
-
-}}
-
->
-
-🛒 أضف للسلة
-
-</button>
-
-
-
-
-
-
-
-</div>
-
-
-
-);
-
-
-})
-
-
-)
-
-:
-
-(
-
-
-
-<h3>
-
-لا توجد منتجات
-
-</h3>
-
-
-
-)
-
-
-
-}
-
-
-
-</div>
-
-
-
-
-
-
-
-</section>
-
-
-
-
-
-
-
-{/* =======================
-    FOOTER START
-======================= */}
-<footer className="store-footer">
-
-
-<div className="footer-content">
-
-
-
-<div className="footer-section">
-
-
-<h3>
-
-Elsafty Store
-
-</h3>
-
-
-
-<p>
-
-متجر إلكتروني يوفر أفضل المنتجات بأفضل الأسعار
-مع خدمة عملاء متميزة.
-
-</p>
-
-
-
-</div>
-
-
-
-
-
-
-
-<div className="footer-section">
-
-
-<h3>
-
-روابط سريعة
-
-</h3>
-
-
-
-
-
-
-<button
-
-className="footer-link"
-
-onClick={()=>navigate("/")}
-
->
-
-🏠 الرئيسية
-
-</button>
-
-
-
-
-
-
-
-<button
-
-className="footer-link"
-
-onClick={()=>navigate("/cart")}
-
->
-
-🛒 السلة
-
-</button>
-
-
-
-
-
-
-
-<button
-
-className="footer-link"
-
-onClick={()=>scrollToSection(".products-section")}
-
->
-
-📦 جميع المنتجات
-
-</button>
-
-
-
-
-
-
-
-<button
-
-className="footer-link"
-
-onClick={()=>scrollToSection(".offer-banner")}
-
->
-
-🔥 العروض
-
-</button>
-
-
-
-
-
-
-</div>
-<div className="footer-section">
-
-
-<h3>
-
-خدمة العملاء
-
-</h3>
-
-
-
-
-<p>
-
-📞 دعم طوال الأسبوع
-
-</p>
-
-
-
-<p>
-
-🚚 شحن لجميع المحافظات
-
-</p>
-
-
-
-
-<p>
-
-🔒 دفع آمن
-
-</p>
-
-
-
-
-<p>
-
-⭐ ضمان جودة المنتجات
-
-</p>
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<div className="footer-section">
-
-
-<h3>
-
-تابعنا
-
-</h3>
-
-
-
-
-
-<div className="social-icons">
-
-
-
-<span>
-
-📘
-
-</span>
-
-
-
-
-<span>
-
-📷
-
-</span>
-
-
-
-
-<span>
-
-🎵
-
-</span>
-
-
-
-
-<span>
-
-▶️
-
-</span>
-
-
-
-
-</div>
-
-
-
-
-</div>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-<hr />
-
-
-
-
-
-
-
-<p className="copyright">
-
-
-© {new Date().getFullYear()} Elsafty Store
-
-- جميع الحقوق محفوظة.
-
-
-
-</p>
-
-
-
-
-
-
-
-
-</footer>
-
-
-
-
-
-
-</div>
-
-
-);
-
-
-
-}
-
 
 export default Home;
