@@ -2,6 +2,10 @@ import React, {
   useContext
 } from "react";
 
+import {
+  useNavigate
+} from "react-router-dom";
+
 import "./ProductCard.css";
 
 import {
@@ -13,235 +17,294 @@ import {
 } from "../../context/WishlistContext";
 
 
-
 function ProductCard({ product }) {
 
+  // =====================================================
+  // NAVIGATION
+  // =====================================================
 
-const {
-  addToCart
-} = useContext(CartContext);
-
-
-
-const {
-  toggleWishlist,
-  isFavorite
-} = useContext(WishlistContext);
+  const navigate = useNavigate();
 
 
+  // =====================================================
+  // CART
+  // =====================================================
+
+  const {
+    addToCart
+  } = useContext(CartContext);
 
 
-const productId =
-product.id || product._id;
+  // =====================================================
+  // WISHLIST
+  // =====================================================
+
+  const {
+    toggleWishlist,
+    isFavorite
+  } = useContext(WishlistContext);
 
 
+  // =====================================================
+  // PRODUCT ID
+  // =====================================================
 
-const favorite =
-isFavorite(productId);
-
-
-
-
-
-return (
-
-<div className="product-card">
+  const productId =
+    product?.id ||
+    product?._id;
 
 
+  // =====================================================
+  // FAVORITE
+  // =====================================================
 
-<div className="image-box">
+  const favorite =
+    isFavorite(productId);
 
 
+  // =====================================================
+  // PRODUCT DATA
+  // =====================================================
 
-<button
+  const title =
+    product?.title ||
+    product?.name ||
+    "منتج بدون اسم";
 
-className="wishlist-btn"
 
-onClick={(e)=>{
+  const image =
+    product?.image ||
+    "https://via.placeholder.com/300";
 
-e.stopPropagation();
 
-toggleWishlist(product);
+  const price =
+    Number(product?.price || 0);
 
-}}
 
->
+  const oldPrice =
+    Number(product?.oldPrice || 0);
 
-{
 
-favorite
-?
-"❤️"
-:
-"🤍"
+  const description =
+    product?.description ||
+    "منتج مميز بجودة عالية";
+
+
+  // =====================================================
+  // OFFER PERCENTAGE
+  // =====================================================
+
+  const hasOffer =
+    Boolean(
+      product?.offer &&
+      oldPrice > price &&
+      oldPrice > 0
+    );
+
+
+  const discountPercentage =
+    hasOffer
+      ? Math.round(
+          (
+            (oldPrice - price) /
+            oldPrice
+          ) * 100
+        )
+      : 0;
+
+
+  // =====================================================
+  // OPEN PRODUCT DETAILS
+  // =====================================================
+
+  const handleProductClick = () => {
+
+    if (!productId) {
+      return;
+    }
+
+    navigate(
+      `/product/${productId}`
+    );
+
+  };
+
+
+  // =====================================================
+  // WISHLIST
+  // =====================================================
+
+  const handleWishlist = (e) => {
+
+    e.stopPropagation();
+
+    toggleWishlist(product);
+
+  };
+
+
+  // =====================================================
+  // ADD TO CART
+  // =====================================================
+
+  const handleAddToCart = (e) => {
+
+    e.stopPropagation();
+
+    if (addToCart) {
+      addToCart(product);
+    }
+
+  };
+
+
+  // =====================================================
+  // RENDER
+  // =====================================================
+
+  return (
+
+    <div
+      className="product-card"
+      onClick={handleProductClick}
+    >
+
+      {/* =================================================
+          IMAGE
+          ================================================= */}
+
+      <div className="image-box">
+
+
+        {/* WISHLIST */}
+
+        <button
+          type="button"
+          className="wishlist-btn"
+          aria-label={
+            favorite
+              ? "إزالة المنتج من المفضلة"
+              : "إضافة المنتج للمفضلة"
+          }
+          onClick={handleWishlist}
+        >
+
+          {
+            favorite
+              ? "❤️"
+              : "🤍"
+          }
+
+        </button>
+
+
+        {/* OFFER */}
+
+        {
+          hasOffer && (
+
+            <span className="offer-badge">
+
+              🔥 -
+              {discountPercentage}
+              %
+
+            </span>
+
+          )
+        }
+
+
+        {/* PRODUCT IMAGE */}
+
+        <img
+          src={image}
+          alt={title}
+          loading="lazy"
+        />
+
+      </div>
+
+
+      {/* =================================================
+          TITLE
+          ================================================= */}
+
+      <h3>
+        {title}
+      </h3>
+
+
+      {/* =================================================
+          DESCRIPTION
+          ================================================= */}
+
+      <p className="description">
+        {description}
+      </p>
+
+
+      {/* =================================================
+          PRICE
+          ================================================= */}
+
+      <div className="product-price">
+
+
+        {
+          hasOffer && (
+
+            <span className="old-price">
+
+              {
+                oldPrice.toLocaleString(
+                  "ar-EG"
+                )
+              }
+
+              {" "}ج.م
+
+            </span>
+
+          )
+        }
+
+
+        <span className="current-price">
+
+          {
+            price.toLocaleString(
+              "ar-EG"
+            )
+          }
+
+          {" "}ج.م
+
+        </span>
+
+
+      </div>
+
+
+      {/* =================================================
+          ADD TO CART
+          ================================================= */}
+
+      <button
+        type="button"
+        onClick={handleAddToCart}
+      >
+
+        🛒 أضف للسلة
+
+      </button>
+
+
+    </div>
+
+  );
 
 }
-
-</button>
-
-
-
-
-
-{
-product.offer &&
-product.oldPrice > product.price && (
-
-<span className="offer-badge">
-
-🔥 -
-{
-Math.round(
-(
-(product.oldPrice - product.price) /
-product.oldPrice
-) * 100
-)
-}
-%
-
-</span>
-
-)
-
-}
-
-
-
-
-
-
-<img
-
-src={
-
-product.image ||
-
-"https://via.placeholder.com/300"
-
-}
-
-alt={
-
-product.title ||
-
-product.name ||
-
-"Product"
-
-}
-
-/>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<h3>
-
-{
-
-product.title ||
-
-product.name ||
-
-"منتج بدون اسم"
-
-}
-
-</h3>
-
-
-
-
-
-
-
-<p className="description">
-
-{
-
-product.description ||
-
-"منتج مميز بجودة عالية"
-
-}
-
-</p>
-
-
-
-
-
-
-
-<div className="product-price">
-
-
-{
-
-product.oldPrice >
-
-product.price && (
-
-<span className="old-price">
-
-{product.oldPrice} ج.م
-
-</span>
-
-)
-
-}
-
-
-
-
-
-<span className="current-price">
-
-{product.price} ج.م
-
-</span>
-
-
-</div>
-
-
-
-
-
-
-
-<button
-
-onClick={()=>addToCart(product)}
-
->
-
-🛒 أضف للسلة
-
-</button>
-
-
-
-
-
-</div>
-
-
-);
-
-
-}
-
 
 
 export default ProductCard;

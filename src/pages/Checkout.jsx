@@ -1,28 +1,28 @@
 import React, {
   useContext,
-  useState
+  useState,
 } from "react";
 
 import {
-  useNavigate
+  useNavigate,
 } from "react-router-dom";
 
 import {
   addDoc,
   collection,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 
 import {
-  db
+  db,
 } from "../firebase";
 
 import {
-  AuthContext
+  AuthContext,
 } from "../context/AuthContext";
 
 import {
-  CartContext
+  CartContext,
 } from "../context/CartContext";
 
 import "./Checkout.css";
@@ -32,18 +32,39 @@ function Checkout() {
 
   const navigate = useNavigate();
 
-  const { user } =
-    useContext(AuthContext);
 
-  const {
-    cart,
-    setCart
-  } = useContext(CartContext);
+  // ==================================================
+  // AUTH CONTEXT
+  // ==================================================
+
+  const authContext = useContext(
+    AuthContext
+  );
+
+  const user =
+    authContext?.user || null;
 
 
-  // =====================
+  // ==================================================
+  // CART CONTEXT
+  // ==================================================
+
+  const cartContext = useContext(
+    CartContext
+  );
+
+  const cart =
+    Array.isArray(cartContext?.cart)
+      ? cartContext.cart
+      : [];
+
+  const setCart =
+    cartContext?.setCart;
+
+
+  // ==================================================
   // CUSTOMER DATA
-  // =====================
+  // ==================================================
 
   const [name, setName] =
     useState("");
@@ -58,340 +79,531 @@ function Checkout() {
     useState(false);
 
 
-  // =====================
+  // ==================================================
   // TOTAL PRICE
-  // =====================
+  // ==================================================
 
   const totalPrice =
     cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(item.price || 0) *
-        Number(item.quantity || 0),
+      (sum, item) => {
+
+        const price =
+          Number(
+            item?.price || 0
+          );
+
+        const quantity =
+          Number(
+            item?.quantity || 0
+          );
+
+        return (
+          sum +
+          price * quantity
+        );
+      },
       0
     );
 
 
-  // =====================
-  // SEND ORDER
-  // =====================
+  // ==================================================
+  // NORMALIZE PHONE
+  // ==================================================
 
-  const sendOrder = async () => {
+  const normalizePhone = (
+    value
+  ) => {
 
-    // =====================
-    // VALIDATION
-    // =====================
+    let cleanPhone =
+      String(
+        value || ""
+      ).replace(
+        /\D/g,
+        ""
+      );
 
     if (
-      !name.trim() ||
-      !phone.trim() ||
-      !address.trim()
+      cleanPhone.startsWith("0")
     ) {
-
-      alert(
-        "من فضلك اكتب الاسم ورقم الهاتف والعنوان"
-      );
-
-      return;
+      cleanPhone =
+        "20" +
+        cleanPhone.slice(1);
     }
 
-
-    if (cart.length === 0) {
-
-      alert(
-        "السلة فارغة"
-      );
-
-      navigate("/");
-
-      return;
+    if (
+      cleanPhone.startsWith("+")
+    ) {
+      cleanPhone =
+        cleanPhone.slice(1);
     }
 
-
-    if (loading) {
-      return;
-    }
+    return cleanPhone;
+  };
 
 
-    setLoading(true);
+  // ==================================================
+  // SEND ORDER
+  // ==================================================
 
+  const sendOrder =
+    async () => {
 
-    // =====================
-    // WHATSAPP MESSAGE
-    // =====================
+      // ==================================================
+      // PREVENT DOUBLE CLICK
+      // ==================================================
 
-    let message =
-      "🛒 طلب جديد من الصفتي ستور\n\n";
-
-
-    message +=
-      `👤 الاسم:\n${name.trim()}\n\n`;
-
-
-    message +=
-      `📱 الهاتف:\n${phone.trim()}\n\n`;
-
-
-    message +=
-      `📍 العنوان:\n${address.trim()}\n\n`;
-
-
-    message +=
-      "📦 المنتجات:\n\n";
-
-
-    cart.forEach(
-      (item, index) => {
-
-        const itemName =
-          item.title ||
-          item.name ||
-          "منتج";
-
-
-        const variantName =
-          item.selectedVariant?.name ||
-          "";
-
-
-        const price =
-          Number(item.price || 0);
-
-
-        const quantity =
-          Number(item.quantity || 0);
-
-
-        const itemTotal =
-          price * quantity;
-
-
-        message +=
-          `${index + 1}- ${itemName}\n`;
-
-
-        if (variantName) {
-
-          message +=
-            `🔀 النوع: ${variantName}\n`;
-
-        }
-
-
-        message +=
-          `🔢 الكمية: ${quantity}\n`;
-
-
-        message +=
-          `💵 سعر الوحدة: ${price} جنيه\n`;
-
-
-        message +=
-          `💰 إجمالي المنتج: ${itemTotal} جنيه\n\n`;
-
+      if (loading) {
+        return;
       }
-    );
 
 
-    message +=
-      `💰 الإجمالي النهائي:\n${totalPrice} جنيه`;
+      // ==================================================
+      // VALIDATION
+      // ==================================================
+
+      const cleanName =
+        name.trim();
+
+      const cleanPhone =
+        phone.trim();
+
+      const cleanAddress =
+        address.trim();
 
 
-    // =====================
-    // FIRESTORE PRODUCTS
-    // =====================
+      if (
+        !cleanName ||
+        !cleanPhone ||
+        !cleanAddress
+      ) {
 
-    const orderProducts =
-      cart.map(
-        (item) => {
+        alert(
+          "من فضلك اكتب الاسم ورقم الهاتف والعنوان"
+        );
 
-          const productId =
-            item.id ||
-            item._id ||
-            null;
-
-
-          const cartId =
-            item.cartId ||
-            productId;
+        return;
+      }
 
 
-          return {
+      if (
+        cart.length === 0
+      ) {
 
-            id:
-              productId,
+        alert(
+          "السلة فارغة"
+        );
 
-            cartId:
-              cartId,
+        navigate("/");
 
-            title:
-              item.title ||
-              item.name ||
-              "منتج",
-
-            image:
-              item.image ||
-              item.images?.[0] ||
-              "",
-
-            price:
-              Number(item.price || 0),
-
-            oldPrice:
-              Number(item.oldPrice || 0),
-
-            quantity:
-              Number(item.quantity || 0),
-
-            stock:
-              Number(item.stock || 0),
-
-            selectedVariant:
-              item.selectedVariant
-                ? {
-                    ...item.selectedVariant
-                  }
-                : null,
-
-            variantName:
-              item.selectedVariant?.name ||
-              ""
-
-          };
-
-        }
-      );
+        return;
+      }
 
 
-    // =====================
-    // SAVE ORDER
-    // =====================
+      // ==================================================
+      // CHECK CART CONTEXT
+      // ==================================================
 
-    try {
+      if (
+        typeof setCart !==
+        "function"
+      ) {
 
-      await addDoc(
-        collection(
-          db,
-          "orders"
-        ),
-        {
+        console.error(
+          "CartContext setCart غير متاح"
+        );
 
-          // =====================
-          // CUSTOMER
-          // =====================
+        alert(
+          "حدث خطأ في السلة، برجاء إعادة تحميل الصفحة"
+        );
+
+        return;
+      }
+
+
+      setLoading(true);
+
+
+      try {
+
+        // ==================================================
+        // WHATSAPP MESSAGE
+        // ==================================================
+
+        let message =
+          "🛒 طلب جديد من الصفتي ستور\n\n";
+
+
+        message +=
+          `👤 الاسم:\n${cleanName}\n\n`;
+
+
+        message +=
+          `📱 الهاتف:\n${cleanPhone}\n\n`;
+
+
+        message +=
+          `📍 العنوان:\n${cleanAddress}\n\n`;
+
+
+        message +=
+          "📦 المنتجات:\n\n";
+
+
+        cart.forEach(
+          (
+            item,
+            index
+          ) => {
+
+            const itemName =
+              item?.title ||
+              item?.name ||
+              "منتج";
+
+
+            const variantName =
+              item?.selectedVariant
+                ?.name ||
+              "";
+
+
+            const price =
+              Number(
+                item?.price || 0
+              );
+
+
+            const quantity =
+              Number(
+                item?.quantity || 0
+              );
+
+
+            const itemTotal =
+              price * quantity;
+
+
+            message +=
+              `${index + 1}- ${itemName}\n`;
+
+
+            if (
+              variantName
+            ) {
+
+              message +=
+                `🔀 النوع: ${variantName}\n`;
+
+            }
+
+
+            message +=
+              `🔢 الكمية: ${quantity}\n`;
+
+
+            message +=
+              `💵 سعر الوحدة: ${price} جنيه\n`;
+
+
+            message +=
+              `💰 إجمالي المنتج: ${itemTotal} جنيه\n\n`;
+
+          }
+        );
+
+
+        message +=
+          `💰 الإجمالي النهائي:\n${totalPrice} جنيه`;
+
+
+        // ==================================================
+        // PREPARE ORDER PRODUCTS
+        // ==================================================
+
+        const orderProducts =
+          cart.map(
+            (item) => {
+
+              const productId =
+                item?.id ||
+                item?._id ||
+                null;
+
+
+              const cartId =
+                item?.cartId ||
+                productId ||
+                null;
+
+
+              const selectedVariant =
+                item?.selectedVariant
+                  ? {
+                      ...item.selectedVariant,
+                    }
+                  : null;
+
+
+              return {
+
+                id:
+                  productId,
+
+                cartId:
+                  cartId,
+
+                title:
+                  item?.title ||
+                  item?.name ||
+                  "منتج",
+
+                image:
+                  item?.image ||
+                  item?.images?.[0] ||
+                  "",
+
+                price:
+                  Number(
+                    item?.price || 0
+                  ),
+
+                oldPrice:
+                  Number(
+                    item?.oldPrice || 0
+                  ),
+
+                quantity:
+                  Number(
+                    item?.quantity || 0
+                  ),
+
+                stock:
+                  Number(
+                    item?.stock || 0
+                  ),
+
+                selectedVariant:
+                  selectedVariant,
+
+                variantName:
+                  selectedVariant?.name ||
+                  "",
+
+              };
+
+            }
+          );
+
+
+        // ==================================================
+        // PHONE
+        // ==================================================
+
+        const whatsappPhone =
+          normalizePhone(
+            cleanPhone
+          );
+
+
+        // ==================================================
+        // SAVE ORDER IN FIRESTORE
+        // ==================================================
+
+        const orderData = {
+
+          // ==================================================
+          // USER
+          // ==================================================
 
           userId:
-            user?.uid || null,
+            user?.uid ||
+            null,
+
+          uid:
+            user?.uid ||
+            null,
+
+          customerId:
+            user?.uid ||
+            null,
+
+          userUID:
+            user?.uid ||
+            null,
+
+
+          // ==================================================
+          // CUSTOMER
+          // ==================================================
 
           customerName:
-            name.trim(),
+            cleanName,
 
           email:
-            user?.email || "",
+            user?.email ||
+            "",
 
           phone:
-            phone.trim(),
+            cleanPhone,
 
           address:
-            address.trim(),
+            cleanAddress,
 
 
-          // =====================
+          // ==================================================
           // PRODUCTS
-          // =====================
+          // ==================================================
 
           products:
             orderProducts,
 
 
-          // =====================
+          // ==================================================
           // TOTAL
-          // =====================
+          // ==================================================
 
           total:
-            totalPrice,
+            Number(
+              totalPrice
+            ),
 
 
-          // =====================
+          // ==================================================
           // STATUS
-          // =====================
+          // ==================================================
 
           status:
-            "Pending",
+            "pending",
 
 
-          // =====================
+          // ==================================================
           // DATE
-          // =====================
+          // ==================================================
 
           createdAt:
-            serverTimestamp()
+            serverTimestamp(),
+
+        };
+
+
+        console.log(
+          "Saving order:",
+          orderData
+        );
+
+
+        await addDoc(
+          collection(
+            db,
+            "orders"
+          ),
+          orderData
+        );
+
+
+        // ==================================================
+        // WHATSAPP
+        // ==================================================
+
+        if (
+          whatsappPhone
+        ) {
+
+          const whatsappUrl =
+            `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+              message
+            )}`;
+
+
+          window.open(
+            whatsappUrl,
+            "_blank",
+            "noopener,noreferrer"
+          );
+
+        } else {
+
+          alert(
+            "تم حفظ الطلب، لكن رقم الهاتف غير صالح لفتح واتساب."
+          );
 
         }
-      );
 
 
-      // =====================
-      // WHATSAPP
-      // =====================
+        // ==================================================
+        // CLEAR CART
+        // ==================================================
 
-      const whatsappUrl =
-        `https://wa.me/201553570220?text=${encodeURIComponent(
-          message
-        )}`;
+        setCart([]);
 
 
-      window.open(
-        whatsappUrl,
-        "_blank"
-      );
+        // ==================================================
+        // SUCCESS
+        // ==================================================
+
+        alert(
+          "تم إرسال الطلب بنجاح ✅"
+        );
 
 
-      // =====================
-      // CLEAR CART
-      // =====================
-
-      setCart([]);
+        navigate("/");
 
 
-      alert(
-        "تم إرسال الطلب بنجاح ✅"
-      );
-
-
-      navigate("/");
-
-
-    } catch (error) {
-
-      console.error(
-        "Order Error:",
+      } catch (
         error
-      );
+      ) {
+
+        console.error(
+          "Order Error:",
+          error
+        );
 
 
-      alert(
-        "حدث خطأ أثناء حفظ الطلب"
-      );
+        // ==================================================
+        // FIREBASE ERROR
+        // ==================================================
 
-    } finally {
+        if (
+          error?.code ===
+          "permission-denied"
+        ) {
 
-      setLoading(false);
+          alert(
+            "تم رفض حفظ الطلب من Firebase. راجع Firestore Rules."
+          );
 
-    }
+        } else {
 
-  };
+          alert(
+            error?.message ||
+            "حدث خطأ أثناء حفظ الطلب"
+          );
+
+        }
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
 
 
-  // =====================
+  // ==================================================
   // EMPTY CART
-  // =====================
+  // ==================================================
 
-  if (cart.length === 0) {
+  if (
+    cart.length === 0
+  ) {
 
     return (
 
-      <div className="checkout-page">
+      <div
+        className="checkout-page"
+        dir="rtl"
+      >
 
         <div className="checkout-empty">
 
@@ -419,13 +631,16 @@ function Checkout() {
   }
 
 
-  // =====================
-  // RETURN
-  // =====================
+  // ==================================================
+  // CHECKOUT PAGE
+  // ==================================================
 
   return (
 
-    <div className="checkout-page">
+    <div
+      className="checkout-page"
+      dir="rtl"
+    >
 
       <h2>
         إتمام الطلب 🛒
@@ -434,50 +649,59 @@ function Checkout() {
 
       <div className="checkout-form">
 
-        {/* =====================
+        {/* ==================================================
             CUSTOMER NAME
-        ===================== */}
+        ================================================== */}
 
         <input
           type="text"
           placeholder="الاسم بالكامل"
           value={name}
           onChange={(e) =>
-            setName(e.target.value)
+            setName(
+              e.target.value
+            )
           }
+          disabled={loading}
         />
 
 
-        {/* =====================
+        {/* ==================================================
             PHONE
-        ===================== */}
+        ================================================== */}
 
         <input
           type="tel"
           placeholder="رقم الهاتف"
           value={phone}
           onChange={(e) =>
-            setPhone(e.target.value)
+            setPhone(
+              e.target.value
+            )
           }
+          disabled={loading}
         />
 
 
-        {/* =====================
+        {/* ==================================================
             ADDRESS
-        ===================== */}
+        ================================================== */}
 
         <textarea
           placeholder="العنوان بالتفصيل"
           value={address}
           onChange={(e) =>
-            setAddress(e.target.value)
+            setAddress(
+              e.target.value
+            )
           }
+          disabled={loading}
         />
 
 
-        {/* =====================
+        {/* ==================================================
             ORDER SUMMARY
-        ===================== */}
+        ================================================== */}
 
         <div className="checkout-summary">
 
@@ -487,24 +711,27 @@ function Checkout() {
 
 
           {cart.map(
-            (item, index) => {
+            (
+              item,
+              index
+            ) => {
 
               const itemId =
-                item.cartId ||
-                item.id ||
-                item._id ||
-                index;
+                item?.cartId ||
+                item?.id ||
+                item?._id ||
+                `checkout-item-${index}`;
 
 
               const price =
                 Number(
-                  item.price || 0
+                  item?.price || 0
                 );
 
 
               const quantity =
                 Number(
-                  item.quantity || 0
+                  item?.quantity || 0
                 );
 
 
@@ -513,7 +740,9 @@ function Checkout() {
 
 
               const variantName =
-                item.selectedVariant?.name;
+                item?.selectedVariant
+                  ?.name ||
+                "";
 
 
               return (
@@ -527,8 +756,8 @@ function Checkout() {
 
                     <strong>
                       {
-                        item.title ||
-                        item.name ||
+                        item?.title ||
+                        item?.name ||
                         "منتج"
                       }
                     </strong>
@@ -560,9 +789,9 @@ function Checkout() {
           )}
 
 
-          {/* =====================
+          {/* ==================================================
               TOTAL
-          ===================== */}
+          ================================================== */}
 
           <div className="checkout-total">
 
@@ -579,29 +808,31 @@ function Checkout() {
         </div>
 
 
-        {/* =====================
+        {/* ==================================================
             CONFIRM ORDER
-        ===================== */}
+        ================================================== */}
 
         <button
           type="button"
           className="checkout-btn"
-          onClick={sendOrder}
-          disabled={loading}
+          onClick={
+            sendOrder
+          }
+          disabled={
+            loading
+          }
         >
 
-          {
-            loading
-              ? "جاري إرسال الطلب..."
-              : "📦 تأكيد الطلب"
-          }
+          {loading
+            ? "⏳ جاري إرسال الطلب..."
+            : "📦 تأكيد الطلب"}
 
         </button>
 
 
-        {/* =====================
+        {/* ==================================================
             BACK TO CART
-        ===================== */}
+        ================================================== */}
 
         <button
           type="button"
@@ -609,7 +840,9 @@ function Checkout() {
           onClick={() =>
             navigate("/cart")
           }
-          disabled={loading}
+          disabled={
+            loading
+          }
         >
 
           ⬅ الرجوع للسلة

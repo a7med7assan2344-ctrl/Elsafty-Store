@@ -118,7 +118,9 @@ onClick={()=>setCurrentView("store")}
 
 </button>
 
-
+{currentView === "account" && (
+  <Account setCurrentView={setCurrentView} />
+)}
 
 
 

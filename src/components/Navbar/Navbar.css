@@ -1,11 +1,13 @@
 /* =====================================================
    ELSAFTY STORE - AMAZON STYLE NAVBAR
    RTL / DESKTOP + TABLET + MOBILE
+   FULLY COMPATIBLE WITH Navbar.jsx
 ===================================================== */
 
 :root {
   --nav-dark: #131e29;
   --nav-dark-2: #182838;
+
   --nav-blue: #223449;
   --nav-blue-hover: #30465c;
 
@@ -13,27 +15,49 @@
   --nav-gold-light: #f4d06f;
 
   --nav-white: #ffffff;
+
+  --nav-text-muted: #cbd5e1;
+
   --nav-border: rgba(255, 255, 255, 0.12);
 
   --nav-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
+
+  --mega-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+
+  --mega-radius: 0 0 8px 8px;
 }
 
+
 /* =====================================================
-   GLOBAL NAVBAR RESET
+   GLOBAL RESET
 ===================================================== */
 
 .top-offer-bar,
 .store-header,
 .navbar-bottom-wrapper,
-.logo-modal {
+.logo-modal,
+.mega-menu,
+.account-dropdown {
+  box-sizing: border-box;
+}
+
+.top-offer-bar *,
+.store-header *,
+.navbar-bottom-wrapper *,
+.logo-modal *,
+.mega-menu *,
+.account-dropdown * {
   box-sizing: border-box;
 }
 
 .top-offer-bar button,
 .store-header button,
-.navbar-bottom-wrapper button {
+.navbar-bottom-wrapper button,
+.mega-menu button,
+.account-dropdown button {
   font-family: Cairo, Tahoma, sans-serif;
 }
+
 
 /* =====================================================
    TOP OFFER BAR
@@ -99,6 +123,7 @@
   }
 }
 
+
 /* =====================================================
    MAIN HEADER
 ===================================================== */
@@ -120,12 +145,22 @@
   direction: rtl;
 
   position: relative;
-  z-index: 1000;
+
+  /*
+    مهم:
+    نخلي الهيدر فوق شريط الأقسام،
+    لكن بدون overflow hidden حتى الـ dropdown
+    يخرج منه بشكل طبيعي.
+  */
+  z-index: 1100;
+
+  overflow: visible;
 
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
   box-shadow: var(--nav-shadow);
 }
+
 
 /* =====================================================
    LOGO
@@ -165,6 +200,7 @@
   opacity: 0.95;
 }
 
+
 /* =====================================================
    SEARCH BOX
 ===================================================== */
@@ -183,7 +219,13 @@
   margin: 0 8px;
 
   direction: ltr;
+
+  /*
+    لازم يفضل ظاهر فوق العناصر اللي تحته
+  */
+  z-index: 1101;
 }
+
 
 /* =====================================================
    SEARCH INPUT
@@ -232,6 +274,7 @@
     inset 0 0 0 2px var(--nav-gold);
 }
 
+
 /* =====================================================
    SEARCH BUTTON
 ===================================================== */
@@ -274,6 +317,7 @@
   transform: scale(0.96);
 }
 
+
 /* =====================================================
    SEARCH SUGGESTIONS
 ===================================================== */
@@ -301,7 +345,7 @@
   box-shadow:
     0 8px 22px rgba(0, 0, 0, 0.25);
 
-  z-index: 100000;
+  z-index: 120000;
 
   direction: rtl;
 
@@ -320,6 +364,7 @@
   background: #c5c5c5;
   border-radius: 10px;
 }
+
 
 /* =====================================================
    SUGGESTION ITEM
@@ -378,6 +423,7 @@
   white-space: nowrap;
 }
 
+
 /* =====================================================
    SUGGESTION IMAGE
 ===================================================== */
@@ -397,6 +443,7 @@
   border: 1px solid #eee;
   border-radius: 5px;
 }
+
 
 /* =====================================================
    NO SEARCH RESULT
@@ -420,6 +467,7 @@
   text-align: right;
 }
 
+
 /* =====================================================
    NAV ACTIONS
 ===================================================== */
@@ -434,7 +482,15 @@
   gap: 8px;
 
   direction: ltr;
+
+  /*
+    مهم جدًا للـ Account Dropdown
+  */
+  position: relative;
+
+  z-index: 1200;
 }
+
 
 /* =====================================================
    COMMON NAV BUTTONS
@@ -510,6 +566,7 @@
   white-space: nowrap;
 }
 
+
 /* =====================================================
    WISHLIST
 ===================================================== */
@@ -549,19 +606,36 @@
   box-sizing: border-box;
 }
 
+
 /* =====================================================
-   ACCOUNT
+   ACCOUNT WRAPPER
 ===================================================== */
 
 .account-menu {
   position: relative;
+
   flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+
+  /*
+    يمنع أي عنصر من قص القائمة
+  */
+  overflow: visible;
+
+  z-index: 1300;
 }
+
+
+/* =====================================================
+   ACCOUNT DROPDOWN
+===================================================== */
 
 .account-dropdown {
   position: absolute;
 
-  top: calc(100% + 5px);
+  top: calc(100% + 8px);
   right: 0;
 
   width: 250px;
@@ -569,24 +643,83 @@
 
   padding: 8px;
 
-  background: #fff;
+  display: block;
+
+  background: #ffffff;
   color: var(--nav-dark);
 
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-top: 3px solid var(--nav-gold);
+
+  border-radius: 6px;
 
   box-shadow:
-    0 8px 25px rgba(0, 0, 0, 0.28);
+    0 10px 30px rgba(0, 0, 0, 0.30);
 
-  z-index: 100001;
+  z-index: 999999;
 
   direction: rtl;
 
   box-sizing: border-box;
+
+  /*
+    مهم جدًا:
+    لا تستخدم transform هنا لأنه ممكن يعمل
+    stacking context ويخلي القائمة تختفي.
+  */
+  opacity: 1;
+  visibility: visible;
+
+  animation: accountDropdownOpen 0.16s ease;
 }
+
+@keyframes accountDropdownOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* =====================================================
+   ACCOUNT DROPDOWN ARROW
+===================================================== */
+
+.account-dropdown::before {
+  content: "";
+
+  position: absolute;
+
+  top: -8px;
+  right: 18px;
+
+  width: 12px;
+  height: 12px;
+
+  background: #fff;
+
+  border-top: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+
+  transform: rotate(-45deg);
+
+  z-index: 1;
+}
+
+
+/* =====================================================
+   ACCOUNT BUTTONS
+===================================================== */
 
 .account-dropdown button {
   width: 100%;
+
+  min-height: 40px;
 
   display: flex;
   align-items: center;
@@ -605,8 +738,12 @@
 
   font-family: Cairo, Tahoma, sans-serif;
   font-size: 13px;
+  font-weight: 600;
 
   text-align: right;
+
+  position: relative;
+  z-index: 2;
 
   transition:
     background 0.2s ease,
@@ -617,6 +754,11 @@
   background: #f3f5f7;
   color: #a88416;
 }
+
+.account-dropdown button:active {
+  background: #eceff2;
+}
+
 
 /* =====================================================
    ACCOUNT USER INFO
@@ -637,6 +779,9 @@
   direction: rtl;
 
   box-sizing: border-box;
+
+  position: relative;
+  z-index: 2;
 }
 
 .account-user-info strong {
@@ -669,6 +814,7 @@
   text-align: right;
 }
 
+
 /* =====================================================
    ADMIN
 ===================================================== */
@@ -686,6 +832,7 @@
 
   background: var(--nav-gold);
 }
+
 
 /* =====================================================
    CART
@@ -734,8 +881,9 @@
   box-sizing: border-box;
 }
 
+
 /* =====================================================
-   CATEGORY BAR WRAPPER
+   CATEGORY BAR
 ===================================================== */
 
 .navbar-bottom-wrapper {
@@ -752,14 +900,11 @@
   direction: ltr;
 
   position: relative;
-  z-index: 999;
+
+  z-index: 900;
 
   box-sizing: border-box;
 }
-
-/* =====================================================
-   CATEGORY SCROLL BAR
-===================================================== */
 
 .navbar-bottom {
   flex: 1;
@@ -788,6 +933,27 @@
 .navbar-bottom::-webkit-scrollbar {
   display: none;
 }
+
+
+/* =====================================================
+   CATEGORY WRAPPER
+===================================================== */
+
+.nav-category-wrapper {
+  position: relative;
+
+  flex: 0 0 auto;
+
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+}
+
+.nav-category-wrapper.category-is-open {
+  z-index: 10000;
+}
+
 
 /* =====================================================
    CATEGORY ITEM
@@ -840,6 +1006,7 @@
   transform: scale(0.97);
 }
 
+
 /* =====================================================
    CATEGORY ICON
 ===================================================== */
@@ -854,6 +1021,7 @@
   line-height: 1;
 }
 
+
 /* =====================================================
    CATEGORY TITLE
 ===================================================== */
@@ -866,6 +1034,7 @@
 
   white-space: nowrap;
 }
+
 
 /* =====================================================
    CATEGORY IMAGE
@@ -888,6 +1057,20 @@
   border-radius: 50%;
 }
 
+
+/* =====================================================
+   CATEGORY ARROW
+===================================================== */
+
+.category-down-arrow {
+  font-size: 12px !important;
+
+  margin-right: 2px;
+
+  color: var(--nav-gold-light);
+}
+
+
 /* =====================================================
    HOME
 ===================================================== */
@@ -900,6 +1083,7 @@
   color: inherit;
 }
 
+
 /* =====================================================
    OFFERS
 ===================================================== */
@@ -911,6 +1095,7 @@
 .offer-item:hover {
   color: #fff;
 }
+
 
 /* =====================================================
    CATEGORY ARROWS
@@ -952,6 +1137,594 @@
 
   color: var(--nav-gold-light);
 }
+
+
+/* =====================================================
+   MEGA MENU
+===================================================== */
+
+.mega-menu {
+  position: absolute;
+
+  top: 40px;
+
+  right: 0;
+
+  width: min(950px, calc(100vw - 30px));
+
+  min-height: 100px;
+
+  background: #ffffff;
+
+  color: var(--nav-dark);
+
+  border: 1px solid #e1e5e9;
+
+  border-top: 3px solid var(--nav-gold);
+
+  border-radius: var(--mega-radius);
+
+  box-shadow: var(--mega-shadow);
+
+  direction: rtl;
+
+  z-index: 10000;
+
+  overflow: hidden;
+
+  animation: megaMenuOpen 0.18s ease;
+}
+
+@keyframes megaMenuOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* =====================================================
+   MEGA INNER
+===================================================== */
+
+.mega-menu-inner {
+  width: 100%;
+
+  padding: 18px;
+
+  background: #fff;
+
+  box-sizing: border-box;
+}
+
+
+/* =====================================================
+   MEGA TITLE
+===================================================== */
+
+.mega-menu-title {
+  width: 100%;
+
+  min-height: 62px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 10px 12px;
+
+  margin-bottom: 16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8fafc,
+      #ffffff
+    );
+
+  border: 1px solid #e8edf1;
+
+  border-right: 4px solid var(--nav-gold);
+
+  border-radius: 6px;
+
+  color: var(--nav-dark);
+}
+
+.mega-menu-title img {
+  width: 48px;
+  height: 48px;
+
+  flex: 0 0 48px;
+
+  object-fit: cover;
+
+  background: #fff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 50%;
+}
+
+.mega-menu-title > span {
+  width: 48px;
+  height: 48px;
+
+  flex: 0 0 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #f5f7f9;
+
+  border-radius: 50%;
+
+  font-size: 26px;
+}
+
+.mega-menu-title > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.mega-menu-title strong {
+  display: block;
+
+  color: var(--nav-dark);
+
+  font-family: Cairo, Tahoma, sans-serif;
+
+  font-size: 16px;
+  font-weight: 800;
+
+  line-height: 1.4;
+}
+
+.mega-menu-title small {
+  display: block;
+
+  color: #777;
+
+  font-family: Cairo, Tahoma, sans-serif;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+
+/* =====================================================
+   MEGA COLUMNS
+===================================================== */
+
+.mega-columns {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(170px, 1fr)
+    );
+
+  gap: 14px;
+
+  align-items: start;
+}
+
+
+/* =====================================================
+   MEGA COLUMN
+===================================================== */
+
+.mega-column {
+  min-width: 0;
+
+  padding: 10px;
+
+  background: #fafbfc;
+
+  border: 1px solid #e8edf1;
+
+  border-radius: 7px;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mega-column:hover {
+  background: #fff;
+
+  border-color: #d9dee3;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+
+/* =====================================================
+   MEGA COLUMN TITLE
+===================================================== */
+
+.mega-column-title {
+  width: 100%;
+
+  min-height: 44px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 6px 5px;
+
+  margin: 0;
+
+  background: transparent;
+
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+
+  color: var(--nav-dark);
+
+  cursor: pointer;
+
+  font-family: Cairo, Tahoma, sans-serif;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  text-align: right;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.mega-column-title:hover {
+  color: #a88416;
+
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.mega-column-title img {
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 32px;
+
+  object-fit: cover;
+
+  border-radius: 50%;
+
+  border: 1px solid #ddd;
+
+  background: #fff;
+}
+
+.mega-column-title > span:first-of-type {
+  display: inline-flex;
+
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 32px;
+
+  align-items: center;
+  justify-content: center;
+
+  background: #fff;
+
+  border-radius: 50%;
+
+  font-size: 18px;
+}
+
+.mega-column-title > span:last-child {
+  min-width: 0;
+
+  flex: 1;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   MEGA COLUMN ITEMS
+===================================================== */
+
+.mega-column-items {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
+  padding-top: 5px;
+}
+
+
+/* =====================================================
+   MEGA LINK
+===================================================== */
+
+.mega-link {
+  width: 100%;
+
+  min-height: 34px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 5px 6px;
+
+  background: transparent;
+
+  border: none;
+  border-radius: 4px;
+
+  color: #4b5563;
+
+  cursor: pointer;
+
+  font-family: Cairo, Tahoma, sans-serif;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  text-align: right;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    padding-right 0.18s ease;
+}
+
+.mega-link:hover {
+  background: #f0f3f6;
+
+  color: #a88416;
+
+  padding-right: 10px;
+}
+
+.mega-link img {
+  width: 26px;
+  height: 26px;
+
+  flex: 0 0 26px;
+
+  object-fit: cover;
+
+  background: #fff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 50%;
+}
+
+.mega-link > span:first-of-type {
+  width: 26px;
+  height: 26px;
+
+  flex: 0 0 26px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+}
+
+.mega-link > span:last-child {
+  min-width: 0;
+
+  flex: 1;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   SINGLE LINK
+===================================================== */
+
+.mega-single-link {
+  margin-top: 5px;
+
+  justify-content: center;
+
+  color: #a88416;
+
+  font-weight: 700;
+
+  background: rgba(212, 175, 55, 0.07);
+}
+
+.mega-single-link:hover {
+  background: rgba(212, 175, 55, 0.14);
+
+  color: #80650d;
+}
+
+
+/* =====================================================
+   RECURSIVE CATEGORY TREE
+===================================================== */
+
+.mega-sub-level {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  margin-top: 5px;
+
+  padding-right: 10px;
+
+  border-right: 1px solid #e5e7eb;
+}
+
+.mega-child-wrapper {
+  width: 100%;
+
+  position: relative;
+}
+
+.mega-child-item {
+  width: 100%;
+
+  min-height: 38px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 5px 8px;
+
+  background: #fff;
+
+  border: 1px solid #edf0f2;
+
+  border-radius: 5px;
+
+  color: var(--nav-dark);
+
+  cursor: pointer;
+
+  font-family: Cairo, Tahoma, sans-serif;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  text-align: right;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.mega-child-item:hover {
+  background: #f8fafc;
+
+  border-color: var(--nav-gold);
+
+  color: #a88416;
+
+  transform: translateX(-2px);
+}
+
+.mega-child-item img {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  object-fit: cover;
+
+  border-radius: 50%;
+
+  border: 1px solid #ddd;
+}
+
+.mega-child-icon {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #f5f7f9;
+
+  border-radius: 50%;
+
+  font-size: 16px;
+}
+
+.mega-child-item > span:not(.mega-child-icon) {
+  min-width: 0;
+
+  flex: 1;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   MEGA ARROW
+===================================================== */
+
+.mega-arrow {
+  margin-right: auto;
+
+  color: var(--nav-gold);
+
+  font-family: Arial, sans-serif;
+
+  font-size: 20px;
+
+  line-height: 1;
+}
+
+
+/* =====================================================
+   NESTED LEVELS
+===================================================== */
+
+.mega-sub-level.level-1 {
+  padding-right: 14px;
+}
+
+.mega-sub-level.level-2 {
+  padding-right: 12px;
+}
+
+.mega-sub-level.level-3 {
+  padding-right: 10px;
+}
+
+.mega-sub-level.level-4,
+.mega-sub-level.level-5 {
+  padding-right: 8px;
+}
+
 
 /* =====================================================
    LOGO MODAL
@@ -1052,6 +1825,7 @@
   }
 }
 
+
 /* =====================================================
    TABLET
 ===================================================== */
@@ -1060,11 +1834,8 @@
 
   .store-header {
     gap: 10px;
-
     padding: 7px 10px;
   }
-
-  /* LOGO */
 
   .nav-logo {
     min-width: 100px;
@@ -1075,13 +1846,9 @@
     height: 43px;
   }
 
-  /* SEARCH */
-
   .search-box {
     margin: 0 3px;
   }
-
-  /* ACTIONS */
 
   .nav-actions {
     gap: 2px;
@@ -1091,7 +1858,6 @@
   .cart-icon,
   .admin-btn {
     min-width: 55px;
-
     padding: 2px 4px;
   }
 
@@ -1107,8 +1873,6 @@
     font-size: 9px;
   }
 
-  /* CATEGORIES */
-
   .navbar-bottom {
     gap: 0;
   }
@@ -1116,7 +1880,51 @@
   .nav-category-item {
     padding: 0 9px;
   }
+
+  .mega-menu {
+    width: min(
+      850px,
+      calc(100vw - 20px)
+    );
+  }
+
+  .mega-menu-inner {
+    padding: 14px;
+  }
+
+  .mega-columns {
+    grid-template-columns:
+      repeat(
+        auto-fit,
+        minmax(150px, 1fr)
+      );
+
+    gap: 10px;
+  }
+
+  .mega-column {
+    padding: 8px;
+  }
+
+  .mega-column-title {
+    font-size: 12px;
+  }
+
+  .mega-link {
+    font-size: 10px;
+  }
+
+  /*
+    TABLET ACCOUNT
+  */
+
+  .account-dropdown {
+    top: calc(100% + 7px);
+    right: 0;
+    width: 240px;
+  }
 }
+
 
 /* =====================================================
    MOBILE
@@ -1135,16 +1943,15 @@
   .offer-track,
   .offer-text {
     gap: 25px;
-
     animation-duration: 18s;
   }
 
   .offer-track span,
   .offer-text span {
     padding: 0 7px;
-
     font-size: 11px;
   }
+
 
   /* ===================================================
      MAIN HEADER
@@ -1166,7 +1973,15 @@
     padding: 7px 8px;
 
     direction: rtl;
+
+    /*
+      مهم جدًا للـ account dropdown
+    */
+    overflow: visible;
+
+    z-index: 1100;
   }
+
 
   /* ===================================================
      LOGO
@@ -1185,6 +2000,7 @@
     height: 38px;
   }
 
+
   /* ===================================================
      ACTIONS
   =================================================== */
@@ -1201,6 +2017,10 @@
     gap: 1px;
 
     direction: ltr;
+
+    position: relative;
+
+    z-index: 1200;
   }
 
   .nav-icon,
@@ -1222,11 +2042,89 @@
   .cart-icon small,
   .admin-btn small {
     margin-top: 2px;
-
     font-size: 8px;
   }
 
-  /* BADGES */
+
+  /* ===================================================
+     ACCOUNT MOBILE
+  =================================================== */
+
+  .account-menu {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    overflow: visible;
+
+    z-index: 1300;
+  }
+
+  .account-dropdown {
+    position: fixed;
+
+    /*
+      يتم وضعه أسفل الهيدر مباشرة
+    */
+    top: 105px;
+
+    right: 8px;
+    left: auto;
+
+    width: min(
+      260px,
+      calc(100vw - 16px)
+    );
+
+    min-width: 0;
+
+    max-height: calc(100vh - 120px);
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    z-index: 999999;
+
+    padding: 8px;
+
+    background: #fff;
+
+    border: 1px solid #ddd;
+    border-top: 3px solid var(--nav-gold);
+
+    border-radius: 6px;
+
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.30);
+
+    direction: rtl;
+
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .account-dropdown::before {
+    top: -8px;
+    right: 18px;
+  }
+
+  .account-dropdown button {
+    min-height: 42px;
+
+    padding: 10px 12px;
+
+    font-size: 13px;
+  }
+
+  .account-user-info {
+    padding: 10px 12px;
+  }
+
+
+  /* ===================================================
+     BADGES
+  =================================================== */
 
   .wishlist-badge,
   .cart-badge {
@@ -1246,6 +2144,7 @@
     right: 0;
   }
 
+
   /* ===================================================
      SEARCH
   =================================================== */
@@ -1257,6 +2156,8 @@
     height: 40px;
 
     margin: 0;
+
+    z-index: 1101;
   }
 
   .search-box input {
@@ -1276,24 +2177,6 @@
     font-size: 18px;
   }
 
-  /* ===================================================
-     ACCOUNT DROPDOWN
-  =================================================== */
-
-  .account-dropdown {
-    position: fixed;
-
-    top: 105px;
-    right: 8px;
-
-    width: min(260px, calc(100vw - 16px));
-
-    min-width: 0;
-
-    max-height: calc(100vh - 120px);
-
-    overflow-y: auto;
-  }
 
   /* ===================================================
      CATEGORY BAR
@@ -1301,6 +2184,8 @@
 
   .navbar-bottom-wrapper {
     min-height: 38px;
+
+    z-index: 900;
   }
 
   .navbar-bottom {
@@ -1309,6 +2194,10 @@
     padding: 0 3px;
 
     gap: 1px;
+  }
+
+  .nav-category-wrapper {
+    height: 38px;
   }
 
   .nav-category-item {
@@ -1334,6 +2223,10 @@
     flex-basis: 20px;
   }
 
+  .category-down-arrow {
+    font-size: 10px !important;
+  }
+
   .category-arrow {
     width: 30px;
     height: 38px;
@@ -1343,12 +2236,15 @@
     font-size: 16px;
   }
 
+
   /* ===================================================
      SEARCH SUGGESTIONS
   =================================================== */
 
   .search-suggestions {
     max-height: 260px;
+
+    z-index: 120000;
   }
 
   .suggestion-item {
@@ -1367,6 +2263,205 @@
 
     flex-basis: 40px;
   }
+
+
+  /* ===================================================
+     MOBILE MEGA MENU
+  =================================================== */
+
+  .mega-menu {
+    position: fixed;
+
+    top: auto;
+    right: 8px;
+    left: 8px;
+
+    width: auto;
+
+    max-width: none;
+
+    max-height:
+      calc(100vh - 145px);
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    border-top-width: 3px;
+
+    border-radius: 0 0 8px 8px;
+
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.28);
+
+    z-index: 100000;
+
+    animation: mobileMegaOpen 0.18s ease;
+  }
+
+  @keyframes mobileMegaOpen {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .mega-menu-inner {
+    padding: 10px;
+  }
+
+
+  /* ===================================================
+     MOBILE MEGA TITLE
+  =================================================== */
+
+  .mega-menu-title {
+    min-height: 52px;
+
+    gap: 9px;
+
+    padding: 7px 9px;
+
+    margin-bottom: 10px;
+
+    border-right-width: 3px;
+  }
+
+  .mega-menu-title img,
+  .mega-menu-title > span {
+    width: 38px;
+    height: 38px;
+
+    flex-basis: 38px;
+  }
+
+  .mega-menu-title strong {
+    font-size: 13px;
+  }
+
+  .mega-menu-title small {
+    font-size: 9px;
+  }
+
+
+  /* ===================================================
+     MOBILE MEGA COLUMNS
+  =================================================== */
+
+  .mega-columns {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 8px;
+  }
+
+  .mega-column {
+    padding: 7px;
+
+    border-radius: 6px;
+  }
+
+  .mega-column-title {
+    min-height: 38px;
+
+    gap: 6px;
+
+    font-size: 11px;
+  }
+
+  .mega-column-title img,
+  .mega-column-title > span:first-of-type {
+    width: 27px;
+    height: 27px;
+
+    flex-basis: 27px;
+  }
+
+  .mega-column-title > span:first-of-type {
+    font-size: 15px;
+  }
+
+
+  /* ===================================================
+     MOBILE MEGA LINKS
+  =================================================== */
+
+  .mega-column-items {
+    gap: 1px;
+
+    padding-top: 3px;
+  }
+
+  .mega-link {
+    min-height: 30px;
+
+    gap: 5px;
+
+    padding: 4px;
+
+    font-size: 9px;
+  }
+
+  .mega-link:hover {
+    padding-right: 6px;
+  }
+
+  .mega-link img,
+  .mega-link > span:first-of-type {
+    width: 22px;
+    height: 22px;
+
+    flex-basis: 22px;
+  }
+
+  .mega-link > span:first-of-type {
+    font-size: 11px;
+  }
+
+
+  /* ===================================================
+     MOBILE RECURSIVE TREE
+  =================================================== */
+
+  .mega-sub-level {
+    margin-top: 4px;
+
+    padding-right: 7px;
+  }
+
+  .mega-child-item {
+    min-height: 34px;
+
+    gap: 6px;
+
+    padding: 4px 6px;
+
+    font-size: 10px;
+  }
+
+  .mega-child-item img,
+  .mega-child-icon {
+    width: 25px;
+    height: 25px;
+
+    flex-basis: 25px;
+  }
+
+  .mega-child-icon {
+    font-size: 13px;
+  }
+
+  .mega-arrow {
+    font-size: 17px;
+  }
+
 
   /* ===================================================
      LOGO MODAL
@@ -1394,13 +2489,12 @@
   }
 }
 
+
 /* =====================================================
    VERY SMALL MOBILE
 ===================================================== */
 
 @media (max-width: 380px) {
-
-  /* LOGO */
 
   .nav-logo {
     min-width: 76px;
@@ -1410,8 +2504,6 @@
     width: 78px;
     height: 35px;
   }
-
-  /* ACTIONS */
 
   .nav-icon,
   .cart-icon,
@@ -1431,8 +2523,6 @@
     font-size: 7px;
   }
 
-  /* CATEGORIES */
-
   .nav-category-item {
     padding: 0 7px;
   }
@@ -1443,10 +2533,131 @@
 
   .category-arrow {
     width: 27px;
-
     flex-basis: 27px;
   }
+
+  .mega-menu {
+    right: 5px;
+    left: 5px;
+
+    max-height:
+      calc(100vh - 135px);
+  }
+
+  .mega-menu-inner {
+    padding: 8px;
+  }
+
+  .mega-columns {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 6px;
+  }
+
+  .mega-column {
+    padding: 5px;
+  }
+
+  .mega-column-title {
+    font-size: 10px;
+  }
+
+  .mega-link {
+    font-size: 8px;
+  }
+
+  /*
+    ACCOUNT SMALL MOBILE
+  */
+
+  .account-dropdown {
+    top: 101px;
+
+    right: 5px;
+
+    width: calc(100vw - 10px);
+
+    max-width: 260px;
+
+    max-height:
+      calc(100vh - 115px);
+  }
 }
+
+
+/* =====================================================
+   LANDSCAPE MOBILE
+===================================================== */
+
+@media (
+  max-width: 700px
+) and (
+  orientation: landscape
+) {
+
+  .mega-menu {
+    max-height:
+      calc(100vh - 115px);
+  }
+
+  .account-dropdown {
+    top: 90px;
+
+    max-height:
+      calc(100vh - 100px);
+  }
+}
+
+
+/* =====================================================
+   TOUCH DEVICES
+===================================================== */
+
+@media (
+  hover: none
+) and (
+  pointer: coarse
+) {
+
+  .nav-category-item:hover,
+  .mega-column:hover,
+  .mega-link:hover,
+  .mega-child-item:hover {
+    transform: none;
+  }
+
+  .nav-category-item,
+  .mega-link,
+  .mega-child-item {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+
+/* =====================================================
+   FOCUS ACCESSIBILITY
+===================================================== */
+
+.nav-category-item:focus-visible,
+.category-arrow:focus-visible,
+.search-button:focus-visible,
+.nav-icon:focus-visible,
+.cart-icon:focus-visible,
+.admin-btn:focus-visible,
+.mega-column-title:focus-visible,
+.mega-link:focus-visible,
+.mega-child-item:focus-visible,
+.close-logo:focus-visible,
+.account-dropdown button:focus-visible {
+  outline: 2px solid var(--nav-gold-light);
+
+  outline-offset: 2px;
+}
+
 
 /* =====================================================
    REDUCED MOTION
@@ -1466,11 +2677,650 @@
   .admin-btn,
   .nav-category-item,
   .category-arrow,
-  .close-logo {
+  .close-logo,
+  .mega-menu,
+  .mega-column,
+  .mega-link,
+  .mega-child-item,
+  .account-dropdown {
     transition: none;
+    animation: none;
   }
 
   .navbar-bottom {
     scroll-behavior: auto;
   }
+}
+/* =====================================================
+   CATEGORY MENU - FIX Z-INDEX / OVERFLOW
+===================================================== */
+
+.navbar-bottom-wrapper {
+  position: relative;
+  z-index: 2000;
+  overflow: visible !important;
+}
+
+.navbar-bottom {
+  position: relative;
+  z-index: 2001;
+  overflow: visible !important;
+}
+
+.nav-category-wrapper {
+  position: static;
+  overflow: visible !important;
+}
+
+.nav-category-item {
+  position: relative;
+  z-index: 2002;
+}
+
+/* =====================================================
+   MEGA MENU
+===================================================== */
+
+.mega-menu {
+  position: absolute !important;
+
+  top: 100%;
+  right: 0;
+  left: 0;
+
+  width: 100%;
+
+  z-index: 99999 !important;
+
+  background: #ffffff;
+
+  color: #071a36;
+
+  border-top: 2px solid #d4af37;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.18);
+
+  overflow: visible !important;
+}
+
+/* المحتوى الداخلي */
+
+.mega-menu-inner {
+  position: relative;
+
+  z-index: 100000;
+
+  width: min(1400px, 96%);
+
+  margin: 0 auto;
+
+  padding: 20px;
+
+  background: #ffffff;
+
+  overflow: visible !important;
+}
+
+/* =====================================================
+   MEGA TITLE
+===================================================== */
+
+.mega-menu-title {
+  position: relative;
+  z-index: 100001;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding-bottom: 15px;
+
+  margin-bottom: 15px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mega-menu-title-icon {
+  width: 50px;
+  height: 50px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #f4f7fb;
+
+  overflow: hidden;
+}
+
+.mega-menu-title-icon img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+.mega-menu-title-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mega-menu-title-content strong {
+  color: #071a36;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.mega-menu-title-content small {
+  color: #6b7280;
+
+  font-size: 12px;
+}
+
+/* =====================================================
+   COLUMNS
+===================================================== */
+
+.mega-columns {
+  position: relative;
+
+  z-index: 100001;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(180px, 1fr)
+    );
+
+  gap: 18px;
+
+  overflow: visible !important;
+}
+
+.mega-column {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* =====================================================
+   COLUMN TITLE
+===================================================== */
+
+.mega-column-title {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 10px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #f5f7fa;
+
+  color: #071a36;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  text-align: right;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.mega-column-title:hover {
+  background: #071a36;
+
+  color: #ffffff;
+
+  transform: translateY(-1px);
+}
+
+.mega-column-title img {
+  width: 32px;
+  height: 32px;
+
+  object-fit: contain;
+
+  border-radius: 7px;
+}
+
+/* =====================================================
+   CHILD LINKS
+===================================================== */
+
+.mega-column-items {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+
+  padding-right: 5px;
+}
+
+.mega-link {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 7px 8px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #374151;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  border-radius: 7px;
+
+  text-align: right;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    padding-right 0.2s ease;
+}
+
+.mega-link:hover {
+  background: #f0f4f8;
+
+  color: #071a36;
+
+  padding-right: 13px;
+}
+
+.mega-link img {
+  width: 25px;
+  height: 25px;
+
+  object-fit: contain;
+
+  border-radius: 5px;
+}
+
+.mega-link-icon {
+  width: 25px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+}
+
+/* =====================================================
+   RECURSIVE TREE
+===================================================== */
+
+.mega-recursive-tree {
+  position: relative;
+
+  z-index: 100001;
+
+  margin-top: 20px;
+
+  padding-top: 15px;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+.mega-sub-level {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-bottom: 8px;
+
+  padding-right: 10px;
+}
+
+.mega-child-wrapper {
+  position: relative;
+
+  overflow: visible !important;
+}
+
+.mega-child-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 8px 10px;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: #071a36;
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+}
+
+.mega-child-item:hover {
+  background: #071a36;
+
+  color: #ffffff;
+
+  border-color: #071a36;
+}
+
+.mega-child-item img {
+  width: 24px;
+  height: 24px;
+
+  object-fit: contain;
+
+  border-radius: 5px;
+}
+
+.mega-arrow {
+  margin-right: auto;
+
+  font-size: 16px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .navbar-bottom-wrapper {
+    z-index: 3000;
+  }
+
+  .mega-menu {
+    position: absolute !important;
+
+    top: 100%;
+
+    right: 0;
+    left: 0;
+
+    width: 100%;
+
+    max-height: calc(100vh - 150px);
+
+    overflow-y: auto !important;
+
+    -webkit-overflow-scrolling: touch;
+
+    box-shadow:
+      0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  .mega-menu-inner {
+    width: 100%;
+
+    padding: 14px;
+  }
+
+  .mega-columns {
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+  }
+
+  .mega-column-title {
+    font-size: 12px;
+
+    padding: 8px;
+  }
+
+  .mega-link {
+    font-size: 12px;
+
+    padding: 6px;
+  }
+
+  .mega-menu-title-content strong {
+    font-size: 16px;
+  }
+
+  .mega-menu-title-content small {
+    font-size: 11px;
+  }
+
+  .mega-recursive-tree {
+    display: none;
+  }
+}
+/* =====================================================
+   ACCOUNT DROPDOWN - FIX
+===================================================== */
+
+/* الهيدر نفسه لازم يسمح للقائمة إنها تظهر */
+.store-header {
+  position: relative;
+  z-index: 3000;
+  overflow: visible !important;
+}
+
+/* منطقة حسابي */
+.account-menu {
+  position: relative;
+  z-index: 9999;
+}
+
+/* قائمة حسابي */
+.account-dropdown {
+  position: absolute !important;
+
+  top: calc(100% + 10px);
+  right: 0;
+
+  width: 250px;
+  min-width: 250px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(212, 175, 55, 0.35);
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.22);
+
+  padding: 10px;
+
+  z-index: 99999 !important;
+
+  direction: rtl;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+
+  overflow: visible !important;
+}
+
+/* معلومات المستخدم */
+.account-user-info {
+  padding: 12px 10px;
+
+  border-bottom: 1px solid #eeeeee;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  text-align: right;
+}
+
+.account-user-info strong {
+  color: #071a36;
+
+  font-size: 15px;
+
+  font-weight: 700;
+}
+
+.account-user-info span {
+  color: #777;
+
+  font-size: 12px;
+
+  direction: ltr;
+
+  text-align: right;
+
+  word-break: break-word;
+}
+
+/* أزرار القائمة */
+.account-dropdown > button {
+  width: 100%;
+
+  border: none;
+
+  background: transparent;
+
+  color: #071a36;
+
+  padding: 11px 12px;
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  font-family: Cairo, Tahoma, sans-serif;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  text-align: right;
+
+  direction: rtl;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.account-dropdown > button:hover {
+  background: #f0f4f8;
+
+  color: #d4af37;
+
+  transform: translateX(-2px);
+}
+
+/* أيقونة الزر */
+.account-dropdown > button span:first-child {
+  width: 28px;
+
+  height: 28px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  font-size: 17px;
+}
+
+/* زر تسجيل الخروج */
+.account-dropdown > button:last-child {
+  margin-top: 4px;
+
+  border-top: 1px solid #eeeeee;
+
+  border-radius: 0 0 9px 9px;
+
+  padding-top: 13px;
+}
+
+/* =====================================================
+   CATEGORY BAR
+   لازم تكون أقل من قائمة الحساب
+===================================================== */
+
+.navbar-bottom-wrapper {
+  position: relative;
+
+  z-index: 1000;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .account-dropdown {
+    position: absolute !important;
+
+    top: calc(100% + 8px);
+
+    right: 50%;
+
+    transform: translateX(50%);
+
+    width: 230px;
+
+    min-width: 230px;
+
+    max-width: calc(100vw - 20px);
+
+    z-index: 99999 !important;
+  }
+
 }

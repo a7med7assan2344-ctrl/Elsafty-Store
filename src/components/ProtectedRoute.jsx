@@ -1,25 +1,68 @@
+import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { onAuthStateChanged } from "firebase/auth";
+
+import { auth } from "../firebase";
 
 function ProtectedRoute({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const { user, loading } = useContext(AuthContext);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (currentUser) => {
+        setUser(currentUser);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // ==============================
+  // AUTH LOADING
+  // ==============================
 
   if (loading) {
-
-    return <h2>جارى التحميل...</h2>;
-
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          direction: "rtl",
+          fontFamily: "Cairo, Tahoma, sans-serif",
+          background: "#f0f4f8",
+          color: "#071a36",
+          fontSize: "20px",
+          fontWeight: "700",
+        }}
+      >
+        جاري تحميل الحساب... ⏳
+      </div>
+    );
   }
+
+  // ==============================
+  // NOT LOGGED IN
+  // ==============================
 
   if (!user) {
-
-    return <Navigate to="/login" />;
-
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
   }
 
-  return children;
+  // ==============================
+  // LOGGED IN
+  // ==============================
 
+  return children;
 }
 
 export default ProtectedRoute;

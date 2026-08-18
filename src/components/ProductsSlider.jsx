@@ -8,255 +8,391 @@ import "swiper/css";
 import "swiper/css/navigation";
 
 function ProductsSlider({
-title,
-badge,
-badgeClass = "",
-products = [],
-addToCart,
-categoryName,
-hideHeader = false,
-onTitleClick,
+  title,
+  badge,
+  badgeClass = "",
+  products = [],
+  addToCart,
+  categoryName,
+  hideHeader = false,
+  onTitleClick,
 }) {
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
-// لو مفيش منتجات
-if (!products || products.length === 0) {
-return null;
-}
+  // =====================================================
+  // NO PRODUCTS
+  // =====================================================
 
-// فتح صفحة القسم
-const openCategory = () => {
-if (!categoryName) return;
+  if (!products || products.length === 0) {
+    return null;
+  }
 
-navigate(
-  `/category/${encodeURIComponent(categoryName)}`
-);
+  // =====================================================
+  // OPEN CATEGORY
+  // =====================================================
 
-};
+  const openCategory = () => {
+    if (!categoryName) return;
 
-// الضغط على عنوان القسم
-const handleTitleClick = () => {
-if (onTitleClick) {
-onTitleClick();
-return;
-}
+    navigate(
+      `/category/${encodeURIComponent(categoryName)}`
+    );
+  };
 
-```
-openCategory();
-```
+  // =====================================================
+  // TITLE CLICK
+  // =====================================================
 
-};
+  const handleTitleClick = () => {
+    if (onTitleClick) {
+      onTitleClick();
+      return;
+    }
 
-// فتح المنتج
-const openProduct = (id) => {
-if (!id) return;
+    openCategory();
+  };
 
-navigate(`/product/${id}`);
+  // =====================================================
+  // OPEN PRODUCT
+  // =====================================================
 
-};
+  const openProduct = (id) => {
+    if (!id) return;
 
-return ( <section className="products-slider-section">
+    navigate(`/product/${id}`);
+  };
 
-```
-  {!hideHeader && (
-    <div className="products-slider-header">
+  // =====================================================
+  // RENDER
+  // =====================================================
 
-      <button
-        type="button"
-        className="section-title category-title-btn"
-        onClick={handleTitleClick}
-      >
-        {title}
-      </button>
+  return (
+    <section className="products-slider-section">
 
-      <button
-        type="button"
-        className="view-all-btn"
-        onClick={handleTitleClick}
-      >
-        عرض الكل
-      </button>
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
-    </div>
-  )}
+      {!hideHeader && (
+        <div className="products-slider-header">
 
-  <div className="products-slider-wrapper">
+          <button
+            type="button"
+            className="section-title category-title-btn"
+            onClick={handleTitleClick}
+          >
+            {title}
+          </button>
 
-    <Swiper
-      modules={[Navigation]}
-      navigation
-      spaceBetween={10}
-      slidesPerView={2}
-      breakpoints={{
-        320: {
-          slidesPerView: 2,
-          spaceBetween: 8,
-        },
+          <button
+            type="button"
+            className="view-all-btn"
+            onClick={handleTitleClick}
+          >
+            عرض الكل
+          </button>
 
-        480: {
-          slidesPerView: 2,
-          spaceBetween: 10,
-        },
+        </div>
+      )}
 
-        600: {
-          slidesPerView: 3,
-          spaceBetween: 12,
-        },
+      {/* =================================================
+          SLIDER
+      ================================================= */}
 
-        900: {
-          slidesPerView: 4,
-          spaceBetween: 15,
-        },
+      <div className="products-slider-wrapper">
 
-        1200: {
-          slidesPerView: 5,
-          spaceBetween: 18,
-        },
-      }}
-    >
+        <Swiper
+          modules={[Navigation]}
+          navigation
 
-      {products.map((product) => {
-        const id = product.id || product._id;
+          slidesPerView={2}
+          spaceBetween={8}
 
-        const productTitle =
-          product.title ||
-          product.name ||
-          product.productName ||
-          "منتج";
+          watchOverflow={true}
 
-        const image =
-          product.image ||
-          product.images?.[0] ||
-          "/default-product.png";
+          observer={true}
+          observeParents={true}
 
-        const ratingValue = Number(
-          product.rating || 5
-        );
+          breakpoints={{
 
-        const rating = Math.min(
-          5,
-          Math.max(
-            0,
-            Math.floor(ratingValue)
-          )
-        );
+            // ---------------------------------------------
+            // MOBILE
+            // ---------------------------------------------
 
-        const price = Number(
-          product.price || 0
-        );
+            320: {
+              slidesPerView: 2,
+              spaceBetween: 8,
+            },
 
-        const oldPrice = Number(
-          product.oldPrice || 0
-        );
+            400: {
+              slidesPerView: 2,
+              spaceBetween: 8,
+            },
 
-        const discount =
-          oldPrice > price && oldPrice > 0
-            ? Math.round(
-                ((oldPrice - price) / oldPrice) * 100
-              )
-            : 0;
+            480: {
+              slidesPerView: 2,
+              spaceBetween: 10,
+            },
 
-        return (
-          <SwiperSlide key={id}>
+            // ---------------------------------------------
+            // TABLET
+            // ---------------------------------------------
 
-            <article
-              className="product-card"
-              onClick={() => openProduct(id)}
-            >
+            600: {
+              slidesPerView: 3,
+              spaceBetween: 12,
+            },
 
-              {badge && (
-                <span
-                  className={`product-badge ${badgeClass}`}
-                >
-                  {badge}
-                </span>
-              )}
+            768: {
+              slidesPerView: 3,
+              spaceBetween: 14,
+            },
 
-              {discount > 0 && (
-                <span className="discount-badge">
-                  -{discount}%
-                </span>
-              )}
+            // ---------------------------------------------
+            // DESKTOP
+            // ---------------------------------------------
 
-              {product.newArrival && (
-                <span className="new-badge">
-                  جديد
-                </span>
-              )}
+            900: {
+              slidesPerView: 4,
+              spaceBetween: 15,
+            },
 
-              <div className="product-img-container">
-                <img
-                  src={image}
-                  alt={productTitle}
-                  loading="lazy"
-                  onError={(event) => {
-                    event.currentTarget.src =
-                      "/default-product.png";
-                  }}
-                />
-              </div>
+            1200: {
+              slidesPerView: 5,
+              spaceBetween: 18,
+            },
+          }}
+        >
 
-              <div className="product-card-content">
+          {products.map((product, index) => {
 
-                <h3>{productTitle}</h3>
+            // =================================================
+            // PRODUCT DATA
+            // =================================================
 
-                <div className="rating">
-                  {"⭐".repeat(rating)}
+            const id =
+              product.id ||
+              product._id ||
+              `product-${index}`;
 
-                  {rating > 0 && (
-                    <span className="rating-number">
-                      {" "}
-                      {ratingValue.toFixed(1)}
-                    </span>
-                  )}
-                </div>
+            const productTitle =
+              product.title ||
+              product.name ||
+              product.productName ||
+              "منتج";
 
-                <p className="product-price">
+            const image =
+              product.image ||
+              product.images?.[0] ||
+              "/default-product.png";
 
-                  <strong>
-                    {price} جنيه
-                  </strong>
+            // =================================================
+            // RATING
+            // =================================================
 
-                  {oldPrice > price && (
-                    <del>
-                      {oldPrice} جنيه
-                    </del>
-                  )}
+            const ratingValue = Number(
+              product.rating ?? 5
+            );
 
-                </p>
+            const safeRatingValue = Number.isFinite(
+              ratingValue
+            )
+              ? Math.min(
+                  5,
+                  Math.max(0, ratingValue)
+                )
+              : 5;
 
-                <button
-                  type="button"
-                  className="add-to-cart-btn"
-                  onClick={(event) => {
-                    event.stopPropagation();
+            const rating = Math.floor(
+              safeRatingValue
+            );
 
-                    if (addToCart) {
-                      addToCart({
-                        ...product,
-                        quantity: 1,
-                      });
+            // =================================================
+            // PRICE
+            // =================================================
+
+            const price = Number(
+              product.price ?? 0
+            );
+
+            const safePrice = Number.isFinite(price)
+              ? price
+              : 0;
+
+            const oldPrice = Number(
+              product.oldPrice ?? 0
+            );
+
+            const safeOldPrice =
+              Number.isFinite(oldPrice)
+                ? oldPrice
+                : 0;
+
+            // =================================================
+            // DISCOUNT
+            // =================================================
+
+            const discount =
+              safeOldPrice > safePrice &&
+              safeOldPrice > 0
+                ? Math.round(
+                    ((safeOldPrice - safePrice) /
+                      safeOldPrice) *
+                      100
+                  )
+                : 0;
+
+            return (
+              <SwiperSlide key={id}>
+
+                <article
+                  className="product-card"
+                  onClick={() => openProduct(id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (
+                      event.key === "Enter" ||
+                      event.key === " "
+                    ) {
+                      event.preventDefault();
+                      openProduct(id);
                     }
                   }}
                 >
-                  🛒 أضف للسلة
-                </button>
 
-              </div>
+                  {/* =========================================
+                      BADGE
+                  ========================================= */}
 
-            </article>
+                  {badge && (
+                    <span
+                      className={`product-badge ${badgeClass}`}
+                    >
+                      {badge}
+                    </span>
+                  )}
 
-          </SwiperSlide>
-        );
-      })}
+                  {/* =========================================
+                      DISCOUNT
+                  ========================================= */}
 
-    </Swiper>
+                  {discount > 0 && (
+                    <span className="discount-badge">
+                      -{discount}%
+                    </span>
+                  )}
 
-  </div>
+                  {/* =========================================
+                      NEW
+                  ========================================= */}
 
-</section>
+                  {product.newArrival && (
+                    <span className="new-badge">
+                      جديد
+                    </span>
+                  )}
 
-);
+                  {/* =========================================
+                      IMAGE
+                  ========================================= */}
+
+                  <div className="product-img-container">
+
+                    <img
+                      src={image}
+                      alt={productTitle}
+                      loading="lazy"
+                      draggable="false"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src =
+                          "/default-product.png";
+                      }}
+                    />
+
+                  </div>
+
+                  {/* =========================================
+                      CONTENT
+                  ========================================= */}
+
+                  <div className="product-card-content">
+
+                    <h3 title={productTitle}>
+                      {productTitle}
+                    </h3>
+
+                    {/* =======================================
+                        RATING
+                    ======================================= */}
+
+                    <div className="rating">
+
+                      {"⭐".repeat(rating)}
+
+                      {rating > 0 && (
+                        <span className="rating-number">
+                          {" "}
+                          {safeRatingValue.toFixed(1)}
+                        </span>
+                      )}
+
+                    </div>
+
+                    {/* =======================================
+                        PRICE
+                    ======================================= */}
+
+                    <p className="product-price">
+
+                      <strong>
+                        {safePrice} جنيه
+                      </strong>
+
+                      {safeOldPrice > safePrice && (
+                        <del>
+                          {safeOldPrice} جنيه
+                        </del>
+                      )}
+
+                    </p>
+
+                    {/* =======================================
+                        ADD TO CART
+                    ======================================= */}
+
+                    <button
+                      type="button"
+                      className="add-to-cart-btn"
+                      onClick={(event) => {
+                        event.stopPropagation();
+
+                        if (!addToCart) return;
+
+                        addToCart({
+                          ...product,
+                          quantity: 1,
+                        });
+                      }}
+                    >
+                      🛒 أضف للسلة
+                    </button>
+
+                  </div>
+
+                </article>
+
+              </SwiperSlide>
+            );
+          })}
+
+        </Swiper>
+
+      </div>
+
+    </section>
+  );
 }
 
 export default ProductsSlider;
