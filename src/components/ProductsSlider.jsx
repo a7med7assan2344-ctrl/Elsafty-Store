@@ -1,378 +1,262 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-import {
-  Swiper,
-  SwiperSlide,
-} from "swiper/react";
-
-import {
-  Navigation,
-} from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
 
 import "swiper/css";
 import "swiper/css/navigation";
 
 function ProductsSlider({
-  title,
-  badge,
-  badgeClass = "",
-  products = [],
-  addToCart,
-  categoryName,
-  hideHeader = false,
-  onTitleClick,
+title,
+badge,
+badgeClass = "",
+products = [],
+addToCart,
+categoryName,
+hideHeader = false,
+onTitleClick,
 }) {
-  const navigate = useNavigate();
+const navigate = useNavigate();
 
-  // =========================
-  // لو مفيش منتجات
-  // =========================
+// لو مفيش منتجات
+if (!products || products.length === 0) {
+return null;
+}
 
-  if (
-    !products ||
-    products.length === 0
-  ) {
-    return null;
-  }
+// فتح صفحة القسم
+const openCategory = () => {
+if (!categoryName) return;
 
-  // =========================
-  // فتح صفحة القسم
-  // =========================
+navigate(
+  `/category/${encodeURIComponent(categoryName)}`
+);
 
-  const openCategory = () => {
-    if (!categoryName) {
-      return;
-    }
+};
 
-    navigate(
-      `/category/${encodeURIComponent(
-        categoryName
-      )}`
-    );
-  };
+// الضغط على عنوان القسم
+const handleTitleClick = () => {
+if (onTitleClick) {
+onTitleClick();
+return;
+}
 
-  // =========================
-  // الضغط على عنوان القسم
-  // =========================
+```
+openCategory();
+```
 
-  const handleTitleClick = () => {
-    if (onTitleClick) {
-      onTitleClick();
-      return;
-    }
+};
 
-    openCategory();
-  };
+// فتح المنتج
+const openProduct = (id) => {
+if (!id) return;
 
-  // =========================
-  // PRODUCT CLICK
-  // =========================
+navigate(`/product/${id}`);
 
-  const openProduct = (id) => {
-    if (!id) {
-      return;
-    }
+};
 
-    navigate(`/product/${id}`);
-  };
+return ( <section className="products-slider-section">
 
-  // =========================
-  // RETURN
-  // =========================
+```
+  {!hideHeader && (
+    <div className="products-slider-header">
 
-  return (
-    <section className="products-slider-section">
+      <button
+        type="button"
+        className="section-title category-title-btn"
+        onClick={handleTitleClick}
+      >
+        {title}
+      </button>
 
-      {/* =========================
-          HEADER
-      ========================= */}
+      <button
+        type="button"
+        className="view-all-btn"
+        onClick={handleTitleClick}
+      >
+        عرض الكل
+      </button>
 
-      {!hideHeader && (
-        <div className="products-slider-header">
+    </div>
+  )}
 
-          <button
-            type="button"
-            className="section-title category-title-btn"
-            onClick={
-              handleTitleClick
-            }
-          >
-            {title}
-          </button>
+  <div className="products-slider-wrapper">
 
-          <button
-            type="button"
-            className="view-all-btn"
-            onClick={
-              handleTitleClick
-            }
-          >
-            عرض الكل
-          </button>
+    <Swiper
+      modules={[Navigation]}
+      navigation
+      spaceBetween={10}
+      slidesPerView={2}
+      breakpoints={{
+        320: {
+          slidesPerView: 2,
+          spaceBetween: 8,
+        },
 
-        </div>
-      )}
+        480: {
+          slidesPerView: 2,
+          spaceBetween: 10,
+        },
 
-      {/* =========================
-          PRODUCTS SLIDER
-      ========================= */}
+        600: {
+          slidesPerView: 3,
+          spaceBetween: 12,
+        },
 
-      <div className="products-slider-wrapper">
+        900: {
+          slidesPerView: 4,
+          spaceBetween: 15,
+        },
 
-        <Swiper
-          modules={[Navigation]}
-          navigation
-          spaceBetween={10}
-          slidesPerView={2}
+        1200: {
+          slidesPerView: 5,
+          spaceBetween: 18,
+        },
+      }}
+    >
 
-          breakpoints={{
-            320: {
-              slidesPerView: 2,
-              spaceBetween: 8,
-            },
+      {products.map((product) => {
+        const id = product.id || product._id;
 
-            480: {
-              slidesPerView: 2,
-              spaceBetween: 10,
-            },
+        const productTitle =
+          product.title ||
+          product.name ||
+          product.productName ||
+          "منتج";
 
-            600: {
-              slidesPerView: 3,
-              spaceBetween: 12,
-            },
+        const image =
+          product.image ||
+          product.images?.[0] ||
+          "/default-product.png";
 
-            900: {
-              slidesPerView: 4,
-              spaceBetween: 15,
-            },
+        const ratingValue = Number(
+          product.rating || 5
+        );
 
-            1200: {
-              slidesPerView: 5,
-              spaceBetween: 18,
-            },
-          }}
-        >
+        const rating = Math.min(
+          5,
+          Math.max(
+            0,
+            Math.floor(ratingValue)
+          )
+        );
 
-          {products.map(
-            (product) => {
+        const price = Number(
+          product.price || 0
+        );
 
-              const id =
-                product.id ||
-                product._id;
+        const oldPrice = Number(
+          product.oldPrice || 0
+        );
 
-              const productTitle =
-                product.title ||
-                product.name ||
-                product.productName ||
-                "منتج";
+        const discount =
+          oldPrice > price && oldPrice > 0
+            ? Math.round(
+                ((oldPrice - price) / oldPrice) * 100
+              )
+            : 0;
 
-              const image =
-                product.image ||
-                product.images?.[0] ||
-                "/default-product.png";
+        return (
+          <SwiperSlide key={id}>
 
-              // =====================
-              // RATING
-              // =====================
+            <article
+              className="product-card"
+              onClick={() => openProduct(id)}
+            >
 
-              const ratingValue =
-                Number(
-                  product.rating || 5
-                );
-
-              const rating = Math.min(
-                5,
-                Math.max(
-                  0,
-                  Math.floor(
-                    ratingValue
-                  )
-                )
-              );
-
-              // =====================
-              // PRICE
-              // =====================
-
-              const price =
-                Number(
-                  product.price || 0
-                );
-
-              const oldPrice =
-                Number(
-                  product.oldPrice || 0
-                );
-
-              // =====================
-              // DISCOUNT
-              // =====================
-
-              const discount =
-                oldPrice > price &&
-                oldPrice > 0
-                  ? Math.round(
-                      (
-                        (oldPrice -
-                          price) /
-                        oldPrice
-                      ) * 100
-                    )
-                  : 0;
-
-              return (
-                <SwiperSlide
-                  key={id}
+              {badge && (
+                <span
+                  className={`product-badge ${badgeClass}`}
                 >
+                  {badge}
+                </span>
+              )}
 
-                  <article
-                    className="product-card"
-                    onClick={() =>
-                      openProduct(id)
+              {discount > 0 && (
+                <span className="discount-badge">
+                  -{discount}%
+                </span>
+              )}
+
+              {product.newArrival && (
+                <span className="new-badge">
+                  جديد
+                </span>
+              )}
+
+              <div className="product-img-container">
+                <img
+                  src={image}
+                  alt={productTitle}
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.src =
+                      "/default-product.png";
+                  }}
+                />
+              </div>
+
+              <div className="product-card-content">
+
+                <h3>{productTitle}</h3>
+
+                <div className="rating">
+                  {"⭐".repeat(rating)}
+
+                  {rating > 0 && (
+                    <span className="rating-number">
+                      {" "}
+                      {ratingValue.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+
+                <p className="product-price">
+
+                  <strong>
+                    {price} جنيه
+                  </strong>
+
+                  {oldPrice > price && (
+                    <del>
+                      {oldPrice} جنيه
+                    </del>
+                  )}
+
+                </p>
+
+                <button
+                  type="button"
+                  className="add-to-cart-btn"
+                  onClick={(event) => {
+                    event.stopPropagation();
+
+                    if (addToCart) {
+                      addToCart({
+                        ...product,
+                        quantity: 1,
+                      });
                     }
-                  >
+                  }}
+                >
+                  🛒 أضف للسلة
+                </button>
 
-                    {/* =====================
-                        BADGE
-                    ===================== */}
+              </div>
 
-                    {badge && (
-                      <span
-                        className={`product-badge ${badgeClass}`}
-                      >
-                        {badge}
-                      </span>
-                    )}
+            </article>
 
-                    {/* =====================
-                        DISCOUNT
-                    ===================== */}
+          </SwiperSlide>
+        );
+      })}
 
-                    {discount > 0 && (
-                      <span className="discount-badge">
-                        -{discount}%
-                      </span>
-                    )}
+    </Swiper>
 
-                    {/* =====================
-                        NEW
-                    ===================== */}
+  </div>
 
-                    {product.newArrival && (
-                      <span className="new-badge">
-                        جديد
-                      </span>
-                    )}
+</section>
 
-                    {/* =====================
-                        IMAGE
-                    ===================== */}
-
-                    <div className="product-img-container">
-
-                      <img
-                        src={image}
-                        alt={productTitle}
-                        loading="lazy"
-                        onError={(
-                          event
-                        ) => {
-                          event.currentTarget.src =
-                            "/default-product.png";
-                        }}
-                      />
-
-                    </div>
-
-                    {/* =====================
-                        CONTENT
-                    ===================== */}
-
-                    <div className="product-card-content">
-
-                      {/* اسم المنتج */}
-
-                      <h3>
-                        {productTitle}
-                      </h3>
-
-                      {/* التقييم */}
-
-                      <div className="rating">
-
-                        {"⭐".repeat(
-                          rating
-                        )}
-
-                        {rating > 0 && (
-                          <span className="rating-number">
-                            {" "}
-                            {ratingValue.toFixed(
-                              1
-                            )}
-                          </span>
-                        )}
-
-                      </div>
-
-                      {/* السعر */}
-
-                      <p className="product-price">
-
-                        <strong>
-                          {price} جنيه
-                        </strong>
-
-                        {oldPrice >
-                          price && (
-                          <del>
-                            {oldPrice} جنيه
-                          </del>
-                        )}
-
-                      </p>
-
-                      {/* إضافة للسلة */}
-
-                      <button
-                        type="button"
-                        className="add-to-cart-btn"
-                        onClick={(
-                          event
-                        ) => {
-
-                          event.stopPropagation();
-
-                          if (
-                            addToCart
-                          ) {
-                            addToCart({
-                              ...product,
-                              quantity: 1,
-                            });
-                          }
-
-                        }}
-                      >
-                        🛒 أضف للسلة
-                      </button>
-
-                    </div>
-
-                  </article>
-
-                </SwiperSlide>
-              );
-            }
-          )}
-
-        </Swiper>
-
-      </div>
-
-    </section>
-  );
+);
 }
 
 export default ProductsSlider;
