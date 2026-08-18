@@ -20,6 +20,7 @@ import {
   getRating
 } from "../services/reviewService";
 
+
 function ProductDetails({ product }) {
 
   const navigate = useNavigate();
@@ -29,11 +30,13 @@ function ProductDetails({ product }) {
     cart
   } = useContext(CartContext);
 
+
   // =====================
   // STATES
   // =====================
 
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] =
+    useState(1);
 
   const [selectedVariant, setSelectedVariant] =
     useState(null);
@@ -41,11 +44,14 @@ function ProductDetails({ product }) {
   const [selectedImage, setSelectedImage] =
     useState("");
 
-  const [zoom, setZoom] = useState(false);
+  const [zoom, setZoom] =
+    useState(false);
 
-  const [reviews, setReviews] = useState([]);
+  const [reviews, setReviews] =
+    useState([]);
 
-  const [average, setAverage] = useState(0);
+  const [average, setAverage] =
+    useState(0);
 
   const [reviewCount, setReviewCount] =
     useState(0);
@@ -83,38 +89,57 @@ function ProductDetails({ product }) {
   // CURRENT PRICE
   // =====================
 
-  const currentPrice = hasVariants
-    ? Number(selectedVariant?.price || 0)
-    : Number(product?.price || 0);
+  const currentPrice =
+    hasVariants
+      ? Number(
+          selectedVariant?.price || 0
+        )
+      : Number(
+          product?.price || 0
+        );
 
 
   // =====================
   // CURRENT OLD PRICE
   // =====================
 
-  const currentOldPrice = hasVariants
-    ? Number(selectedVariant?.oldPrice || 0)
-    : Number(product?.oldPrice || 0);
+  const currentOldPrice =
+    hasVariants
+      ? Number(
+          selectedVariant?.oldPrice || 0
+        )
+      : Number(
+          product?.oldPrice || 0
+        );
 
 
   // =====================
   // CURRENT STOCK
   // =====================
 
-  const currentStock = hasVariants
-    ? Number(selectedVariant?.stock || 0)
-    : Number(product?.stock || 0);
+  const currentStock =
+    hasVariants
+      ? Number(
+          selectedVariant?.stock || 0
+        )
+      : Number(
+          product?.stock || 0
+        );
 
 
   // =====================
   // CART COUNT
   // =====================
 
-  const cartCount = (cart || []).reduce(
-    (total, item) =>
-      total + Number(item.quantity || 0),
-    0
-  );
+  const cartCount =
+    (cart || []).reduce(
+      (total, item) =>
+        total +
+        Number(
+          item.quantity || 0
+        ),
+      0
+    );
 
 
   // =====================
@@ -125,15 +150,23 @@ function ProductDetails({ product }) {
 
     if (!product) return;
 
+
     // تصفير الكمية
+
     setQuantity(1);
 
+
     // تصفير الزوم
+
     setZoom(false);
 
+
     // اختيار صورة المنتج الأولى
+
     if (
-      Array.isArray(product.images) &&
+      Array.isArray(
+        product.images
+      ) &&
       product.images.length > 0
     ) {
 
@@ -156,7 +189,9 @@ function ProductDetails({ product }) {
 
     if (
       product.hasVariants === true &&
-      Array.isArray(product.variants) &&
+      Array.isArray(
+        product.variants
+      ) &&
       product.variants.length > 0
     ) {
 
@@ -181,48 +216,60 @@ function ProductDetails({ product }) {
 
     if (!product?.id) return;
 
-    const loadReviews = async () => {
 
-      try {
+    const loadReviews =
+      async () => {
 
-        const list =
-          await getReviews(product.id);
+        try {
 
-        const rating =
-          await getRating(product.id);
+          const list =
+            await getReviews(
+              product.id
+            );
 
-        setReviews(
-          list || []
-        );
 
-        setAverage(
-          Number(
-            rating?.average || 0
-          )
-        );
+          const rating =
+            await getRating(
+              product.id
+            );
 
-        setReviewCount(
-          Number(
-            rating?.count || 0
-          )
-        );
 
-      } catch (error) {
+          setReviews(
+            list || []
+          );
 
-        console.log(
-          "خطأ في تحميل التقييمات:",
-          error
-        );
 
-        setReviews([]);
+          setAverage(
+            Number(
+              rating?.average || 0
+            )
+          );
 
-        setAverage(0);
 
-        setReviewCount(0);
+          setReviewCount(
+            Number(
+              rating?.count || 0
+            )
+          );
 
-      }
+        } catch (error) {
 
-    };
+          console.log(
+            "خطأ في تحميل التقييمات:",
+            error
+          );
+
+
+          setReviews([]);
+
+          setAverage(0);
+
+          setReviewCount(0);
+
+        }
+
+      };
+
 
     loadReviews();
 
@@ -243,11 +290,15 @@ function ProductDetails({ product }) {
           المنتج غير موجود
         </h2>
 
+
         <button
           type="button"
-          onClick={() => navigate("/")}
+          className="back-store-btn"
+          onClick={() =>
+            navigate("/")
+          }
         >
-          الرجوع للمتجر
+          ⬅ الرجوع للمتجر
         </button>
 
       </div>
@@ -261,239 +312,292 @@ function ProductDetails({ product }) {
   // QUANTITY
   // =====================
 
-  const increaseQuantity = () => {
+  const increaseQuantity =
+    () => {
 
-    if (currentStock <= 0) {
+      if (currentStock <= 0) {
 
-      alert(
-        "هذا المنتج غير متوفر حالياً"
+        alert(
+          "هذا المنتج غير متوفر حالياً"
+        );
+
+        return;
+
+      }
+
+
+      if (
+        quantity >= currentStock
+      ) {
+
+        alert(
+          "الكمية المطلوبة أكبر من المخزون المتاح"
+        );
+
+        return;
+
+      }
+
+
+      setQuantity(
+        prev => prev + 1
       );
 
-      return;
+    };
 
-    }
 
-    if (quantity >= currentStock) {
+  const decreaseQuantity =
+    () => {
 
-      alert(
-        "الكمية المطلوبة أكبر من المخزون المتاح"
+      setQuantity(
+        prev =>
+          prev > 1
+            ? prev - 1
+            : 1
       );
 
-      return;
-
-    }
-
-    setQuantity(
-      prev => prev + 1
-    );
-
-  };
-
-
-  const decreaseQuantity = () => {
-
-    setQuantity(
-      prev =>
-        prev > 1
-          ? prev - 1
-          : 1
-    );
-
-  };
+    };
 
 
   // =====================
   // CHANGE VARIANT
   // =====================
 
-  const handleVariantChange = (variant) => {
+  const handleVariantChange =
+    (variant) => {
 
-    if (
-      Number(variant?.stock || 0) <= 0
-    ) {
+      if (
+        Number(
+          variant?.stock || 0
+        ) <= 0
+      ) {
 
-      return;
+        return;
 
-    }
+      }
 
-    setSelectedVariant(variant);
 
-    // إعادة الكمية إلى 1
-    setQuantity(1);
+      setSelectedVariant(
+        variant
+      );
 
-  };
+
+      // إعادة الكمية إلى 1
+
+      setQuantity(1);
+
+    };
 
 
   // =====================
   // ADD TO CART
   // =====================
 
-  const handleAddToCart = () => {
+  const handleAddToCart =
+    () => {
 
-    // لازم اختيار Variant
-    if (
-      hasVariants &&
-      !selectedVariant
-    ) {
+      // لازم اختيار Variant
+
+      if (
+        hasVariants &&
+        !selectedVariant
+      ) {
+
+        alert(
+          "اختر النوع أولاً"
+        );
+
+        return;
+
+      }
+
+
+      // التأكد من المخزون
+
+      if (
+        currentStock <= 0
+      ) {
+
+        alert(
+          "هذا المنتج غير متوفر حالياً"
+        );
+
+        return;
+
+      }
+
+
+      // التأكد أن الكمية متاحة
+
+      if (
+        quantity >
+        currentStock
+      ) {
+
+        alert(
+          "الكمية المطلوبة أكبر من المخزون المتاح"
+        );
+
+        return;
+
+      }
+
+
+      // =====================
+      // ADD PRODUCT TO CART
+      // =====================
+
+      addToCart({
+
+        ...product,
+
+
+        // السعر الحالي
+
+        price:
+          currentPrice,
+
+
+        // السعر القديم
+
+        oldPrice:
+          currentOldPrice,
+
+
+        // المخزون الحالي
+
+        stock:
+          currentStock,
+
+
+        // الكمية
+
+        quantity:
+          quantity,
+
+
+        // بيانات الـ Variant
+
+        selectedVariant:
+          selectedVariant
+            ? {
+                ...selectedVariant
+              }
+            : null,
+
+
+        // ID مختلف لكل Variant
+
+        cartId:
+          selectedVariant
+            ? `${product.id}-${selectedVariant.id}`
+            : product.id
+
+      });
+
+
+      // رسالة النجاح
 
       alert(
-        "اختر النوع أولاً"
+        `تم إضافة ${quantity} من المنتج للسلة 🛒`
       );
 
-      return;
-
-    }
-
-
-    // التأكد من المخزون
-    if (currentStock <= 0) {
-
-      alert(
-        "هذا المنتج غير متوفر حالياً"
-      );
-
-      return;
-
-    }
-
-
-    // التأكد أن الكمية متاحة
-    if (quantity > currentStock) {
-
-      alert(
-        "الكمية المطلوبة أكبر من المخزون المتاح"
-      );
-
-      return;
-
-    }
-
-
-    // =====================
-    // ADD PRODUCT TO CART
-    // =====================
-
-    addToCart({
-
-      ...product,
-
-      // السعر الحالي
-      price: currentPrice,
-
-      // السعر القديم
-      oldPrice: currentOldPrice,
-
-      // المخزون الحالي
-      stock: currentStock,
-
-      // الكمية
-      quantity: quantity,
-
-      // بيانات الـ Variant
-      selectedVariant:
-        selectedVariant
-          ? {
-              ...selectedVariant
-            }
-          : null,
-
-      // ID مختلف لكل Variant
-      cartId:
-        selectedVariant
-          ? `${product.id}-${selectedVariant.id}`
-          : product.id
-
-    });
-
-
-    // رسالة النجاح
-    alert(
-      `تم إضافة ${quantity} من المنتج للسلة 🛒`
-    );
-
-  };
+    };
 
 
   // =====================
   // SUBMIT REVIEW
   // =====================
 
-  const handleSubmitReview = async () => {
+  const handleSubmitReview =
+    async () => {
 
-    if (!comment.trim()) {
+      if (
+        !comment.trim()
+      ) {
 
-      alert(
-        "اكتب رأيك عن المنتج أولاً"
-      );
-
-      return;
-
-    }
-
-    try {
-
-      await addReview(
-        product.id,
-        {
-          rating: userRating,
-          comment: comment.trim()
-        }
-      );
-
-
-      // تحميل التقييمات مرة أخرى
-      const list =
-        await getReviews(
-          product.id
+        alert(
+          "اكتب رأيك عن المنتج أولاً"
         );
 
-      const rating =
-        await getRating(
-          product.id
+        return;
+
+      }
+
+
+      try {
+
+        await addReview(
+          product.id,
+          {
+            rating:
+              userRating,
+
+            comment:
+              comment.trim()
+          }
         );
 
 
-      setReviews(
-        list || []
-      );
+        // تحميل التقييمات مرة أخرى
 
-      setAverage(
-        Number(
-          rating?.average || 0
-        )
-      );
-
-      setReviewCount(
-        Number(
-          rating?.count || 0
-        )
-      );
+        const list =
+          await getReviews(
+            product.id
+          );
 
 
-      // تنظيف الفورم
-      setComment("");
+        const rating =
+          await getRating(
+            product.id
+          );
 
-      setUserRating(5);
+
+        setReviews(
+          list || []
+        );
 
 
-      alert(
-        "تم إضافة تقييمك بنجاح ⭐"
-      );
+        setAverage(
+          Number(
+            rating?.average || 0
+          )
+        );
 
-    } catch (error) {
 
-      console.log(
-        "Review Error:",
-        error
-      );
+        setReviewCount(
+          Number(
+            rating?.count || 0
+          )
+        );
 
-      alert(
-        "حدث خطأ أثناء إضافة التقييم"
-      );
 
-    }
+        // تنظيف الفورم
 
-  };
+        setComment("");
+
+        setUserRating(5);
+
+
+        alert(
+          "تم إضافة تقييمك بنجاح ⭐"
+        );
+
+      } catch (error) {
+
+        console.log(
+          "Review Error:",
+          error
+        );
+
+
+        alert(
+          "حدث خطأ أثناء إضافة التقييم"
+        );
+
+      }
+
+    };
 
 
   // =====================
@@ -506,11 +610,48 @@ function ProductDetails({ product }) {
 
 
       {/* =====================
-          CART COUNT
+          TOP ACTIONS
       ===================== */}
 
-      <div className="cart-count">
-        🛒 {cartCount}
+      <div className="product-details-top">
+
+
+        {/* العودة للمتجر */}
+
+        <button
+          type="button"
+          className="back-store-btn"
+          onClick={() =>
+            navigate("/")
+          }
+        >
+          ⬅ العودة للمتجر
+        </button>
+
+
+        {/* السلة */}
+
+        <button
+          type="button"
+          className="details-cart-btn"
+          onClick={() =>
+            navigate("/cart")
+          }
+        >
+
+          🛒 السلة
+
+
+          {cartCount > 0 && (
+
+            <span className="details-cart-count">
+              {cartCount}
+            </span>
+
+          )}
+
+        </button>
+
       </div>
 
 
@@ -521,6 +662,7 @@ function ProductDetails({ product }) {
       <div className="product-images-section">
 
         <div className="details-image">
+
 
           {/* الصورة الرئيسية */}
 
@@ -534,9 +676,13 @@ function ProductDetails({ product }) {
               product.title ||
               "صورة المنتج"
             }
-            className={`main-image ${
-              zoom ? "zoomed" : ""
-            }`}
+            className={
+              `main-image ${
+                zoom
+                  ? "zoomed"
+                  : ""
+              }`
+            }
             onMouseEnter={() =>
               setZoom(true)
             }
@@ -544,7 +690,9 @@ function ProductDetails({ product }) {
               setZoom(false)
             }
             onClick={() =>
-              setZoom(prev => !prev)
+              setZoom(
+                prev => !prev
+              )
             }
           />
 
@@ -561,7 +709,9 @@ function ProductDetails({ product }) {
                 (img, index) => (
 
                   <img
-                    key={`${img}-${index}`}
+                    key={
+                      `${img}-${index}`
+                    }
                     src={img}
                     alt={
                       `${product.title || "المنتج"} ${index + 1}`
@@ -573,7 +723,9 @@ function ProductDetails({ product }) {
                     }
                     onClick={() => {
 
-                      setSelectedImage(img);
+                      setSelectedImage(
+                        img
+                      );
 
                       setZoom(false);
 
@@ -602,7 +754,10 @@ function ProductDetails({ product }) {
         {/* PRODUCT TITLE */}
 
         <h1>
-          {product.title || "منتج بدون اسم"}
+          {
+            product.title ||
+            "منتج بدون اسم"
+          }
         </h1>
 
 
@@ -616,15 +771,19 @@ function ProductDetails({ product }) {
             ⭐⭐⭐⭐⭐
           </span>
 
+
           <span>
             (
             {
               average > 0
                 ? average.toFixed(1)
-                : Number(product.rating || 5).toFixed(1)
+                : Number(
+                    product.rating || 5
+                  ).toFixed(1)
             }
             )
           </span>
+
 
           {reviewCount > 0 && (
 
@@ -664,6 +823,7 @@ function ProductDetails({ product }) {
               🔀 اختر النوع
             </h3>
 
+
             <div className="variants-list">
 
               {product.variants.map(
@@ -674,10 +834,13 @@ function ProductDetails({ product }) {
                       variant.stock || 0
                     );
 
+
                   return (
 
                     <button
-                      key={variant.id}
+                      key={
+                        variant.id
+                      }
                       type="button"
                       disabled={
                         variantStock <= 0
@@ -702,6 +865,7 @@ function ProductDetails({ product }) {
                         }
                       </span>
 
+
                       <span>
                         {
                           Number(
@@ -710,6 +874,7 @@ function ProductDetails({ product }) {
                         }{" "}
                         ج.م
                       </span>
+
 
                       {variantStock <= 0 && (
 
@@ -739,7 +904,8 @@ function ProductDetails({ product }) {
 
         <div className="product-price">
 
-          {currentOldPrice > currentPrice && (
+          {currentOldPrice >
+            currentPrice && (
 
             <span className="old-price">
               {currentOldPrice} ج.م
@@ -747,13 +913,13 @@ function ProductDetails({ product }) {
 
           )}
 
-          <strong>
 
+          <strong>
             {
-              currentPrice * quantity
+              currentPrice *
+              quantity
             }{" "}
             ج.م
-
           </strong>
 
         </div>
@@ -784,20 +950,27 @@ function ProductDetails({ product }) {
             الكمية:
           </span>
 
+
           <button
             type="button"
-            onClick={decreaseQuantity}
+            onClick={
+              decreaseQuantity
+            }
           >
             -
           </button>
+
 
           <span className="quantity-number">
             {quantity}
           </span>
 
+
           <button
             type="button"
-            onClick={increaseQuantity}
+            onClick={
+              increaseQuantity
+            }
             disabled={
               currentStock <= 0 ||
               quantity >= currentStock
@@ -816,7 +989,9 @@ function ProductDetails({ product }) {
         <button
           type="button"
           className="add-btn"
-          onClick={handleAddToCart}
+          onClick={
+            handleAddToCart
+          }
           disabled={
             currentStock <= 0
           }
@@ -849,7 +1024,9 @@ function ProductDetails({ product }) {
                       : "star"
                   }
                   onClick={() =>
-                    setUserRating(star)
+                    setUserRating(
+                      star
+                    )
                   }
                 >
                   ★
@@ -917,7 +1094,8 @@ function ProductDetails({ product }) {
                           Math.max(
                             0,
                             Number(
-                              review.rating || 0
+                              review.rating ||
+                              0
                             )
                           )
                         )
@@ -950,5 +1128,6 @@ function ProductDetails({ product }) {
   );
 
 }
+
 
 export default ProductDetails;

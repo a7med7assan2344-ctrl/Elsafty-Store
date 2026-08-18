@@ -76,6 +76,9 @@ function Admin({
 
   const audio = useRef(null);
 
+  const [newOrderCount, setNewOrderCount] =
+    useState(0);
+
   // ==================================================
   // PRODUCT STATES
   // ==================================================
@@ -250,6 +253,38 @@ function Admin({
   }, [orders]);
 
   // ==================================================
+  // PAID SALES
+  // ==================================================
+
+  const paidSales = useMemo(() => {
+    return orders.reduce(
+      (sum, order) => {
+        const paymentStatus =
+          String(
+            order?.paymentStatus ||
+              ""
+          ).toLowerCase();
+
+        if (
+          paymentStatus === "paid" ||
+          paymentStatus === "success" ||
+          paymentStatus === "successful"
+        ) {
+          return (
+            sum +
+            Number(
+              order?.total || 0
+            )
+          );
+        }
+
+        return sum;
+      },
+      0
+    );
+  }, [orders]);
+
+  // ==================================================
   // CATEGORY MAP
   // ==================================================
 
@@ -352,7 +387,6 @@ function Admin({
         );
       });
 
-    // يسمح باختيار نفس الصورة مرة أخرى
     e.target.value = "";
   };
 
@@ -403,7 +437,6 @@ function Admin({
         return "";
       }
 
-      // الصورة بالفعل URL
       if (
         !imageData.startsWith("data:")
       ) {
@@ -513,10 +546,6 @@ function Admin({
     const numericStock =
       Number(stock || 0);
 
-    // --------------------------------------------------
-    // BASIC VALIDATION
-    // --------------------------------------------------
-
     if (
       !cleanTitle ||
       price === "" ||
@@ -562,10 +591,6 @@ function Admin({
       return;
     }
 
-    // --------------------------------------------------
-    // VARIANT VALIDATION
-    // --------------------------------------------------
-
     if (
       hasVariants &&
       variants.length === 0
@@ -580,10 +605,6 @@ function Admin({
     setSavingProduct(true);
 
     try {
-      // ==================================================
-      // UPLOAD PRODUCT IMAGES
-      // ==================================================
-
       const sourceImages =
         images.length
           ? images
@@ -603,10 +624,6 @@ function Admin({
           "لم يتم رفع أي صورة للمنتج"
         );
       }
-
-      // ==================================================
-      // CLEAN VARIANTS
-      // ==================================================
 
       const cleanedVariants =
         variants
@@ -644,10 +661,6 @@ function Admin({
             })
           );
 
-      // ==================================================
-      // VALIDATE CLEANED VARIANTS
-      // ==================================================
-
       if (hasVariants) {
         const invalidVariant =
           cleanedVariants.find(
@@ -668,10 +681,6 @@ function Admin({
           return;
         }
       }
-
-      // ==================================================
-      // PRODUCT OBJECT
-      // ==================================================
 
       const product = {
         title: cleanTitle,
@@ -721,10 +730,6 @@ function Admin({
             : [],
       };
 
-      // ==================================================
-      // SAVE TO FIRESTORE
-      // ==================================================
-
       const wasEditing =
         Boolean(editingId);
 
@@ -739,20 +744,12 @@ function Admin({
         );
       }
 
-      // ==================================================
-      // REFRESH PRODUCTS
-      // ==================================================
-
       if (
         typeof loadProducts ===
         "function"
       ) {
         await loadProducts();
       }
-
-      // ==================================================
-      // CLEAR FORM
-      // ==================================================
 
       clearForm();
 
@@ -977,10 +974,6 @@ function Admin({
           const currentCount =
             list.length;
 
-          // ------------------------------------------
-          // FIRST LOAD
-          // ------------------------------------------
-
           if (
             firstLoad.current
           ) {
@@ -992,21 +985,27 @@ function Admin({
 
             setOrders(list);
 
+            setNewOrderCount(0);
+
             return;
           }
-
-          // ------------------------------------------
-          // NEW ORDER
-          // ------------------------------------------
 
           if (
             currentCount >
             previousOrdersCount.current
           ) {
+            const addedCount =
+              currentCount -
+              previousOrdersCount.current;
+
             const latestOrder =
               list[0];
 
-            // Play sound
+            setNewOrderCount(
+              (prev) =>
+                prev + addedCount
+            );
+
             if (audio.current) {
               audio.current.currentTime = 0;
 
@@ -1022,7 +1021,6 @@ function Admin({
                 );
             }
 
-            // Browser notification
             if (
               typeof window !==
                 "undefined" &&
@@ -1095,6 +1093,8 @@ function Admin({
           ),
           {
             status,
+            orderStatus:
+              status,
           }
         );
       } catch (error) {
@@ -1105,6 +1105,45 @@ function Admin({
 
         alert(
           "فشل تحديث حالة الطلب"
+        );
+      }
+    };
+
+  // ==================================================
+  // PAYMENT STATUS
+  // ==================================================
+
+  const changePaymentStatus =
+    async (
+      id,
+      paymentStatus
+    ) => {
+      if (
+        !id ||
+        !paymentStatus
+      ) {
+        return;
+      }
+
+      try {
+        await updateDoc(
+          doc(
+            db,
+            "orders",
+            id
+          ),
+          {
+            paymentStatus,
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Payment Status Error:",
+          error
+        );
+
+        alert(
+          "فشل تحديث حالة الدفع"
         );
       }
     };
@@ -1269,10 +1308,6 @@ function Admin({
         return;
       }
 
-      // ------------------------------------------
-      // PREVENT SELF PARENT
-      // ------------------------------------------
-
       if (
         editingCategoryId &&
         categoryParentId ===
@@ -1284,10 +1319,6 @@ function Admin({
 
         return;
       }
-
-      // ------------------------------------------
-      // PREVENT CIRCULAR TREE
-      // ------------------------------------------
 
       if (
         editingCategoryId &&
@@ -1315,10 +1346,6 @@ function Admin({
                   editingCategoryId
               )
             : null;
-
-        // ------------------------------------------
-        // UPLOAD CATEGORY IMAGE
-        // ------------------------------------------
 
         let finalCategoryImage =
           categoryImage || "";
@@ -1354,10 +1381,6 @@ function Admin({
                 true
               : true,
         };
-
-        // ------------------------------------------
-        // SAVE
-        // ------------------------------------------
 
         const wasEditing =
           Boolean(
@@ -1464,10 +1487,6 @@ function Admin({
         return;
       }
 
-      // ------------------------------------------
-      // CHECK CHILDREN
-      // ------------------------------------------
-
       const hasChildren =
         categories.some(
           (cat) =>
@@ -1483,10 +1502,6 @@ function Admin({
         return;
       }
 
-      // ------------------------------------------
-      // CHECK PRODUCTS
-      // ------------------------------------------
-
       const hasProducts =
         products.some(
           (product) =>
@@ -1501,10 +1516,6 @@ function Admin({
 
         return;
       }
-
-      // ------------------------------------------
-      // CONFIRM
-      // ------------------------------------------
 
       if (
         !window.confirm(
@@ -1683,15 +1694,12 @@ function Admin({
           );
         })
         .forEach((cat) => {
-          // Prevent circular data
           if (
             visited.has(cat.id)
           ) {
             return;
           }
 
-          // Don't allow current category
-          // to become its own parent
           if (
             cat.id ===
             editingCategoryId
@@ -1699,8 +1707,6 @@ function Admin({
             return;
           }
 
-          // Don't allow descendants
-          // as parent
           if (
             editingCategoryId &&
             isCategoryDescendant(
@@ -1760,7 +1766,6 @@ function Admin({
           );
         })
         .forEach((cat) => {
-          // Prevent circular data
           if (
             visited.has(cat.id)
           ) {
@@ -1874,7 +1879,7 @@ function Admin({
   };
 
   // ==================================================
-  // USER NAME
+  // USER HELPERS
   // ==================================================
 
   const getUserName = (
@@ -1889,10 +1894,6 @@ function Admin({
     );
   };
 
-  // ==================================================
-  // USER EMAIL
-  // ==================================================
-
   const getUserEmail = (
     user
   ) => {
@@ -1901,10 +1902,6 @@ function Admin({
       "غير مسجل"
     );
   };
-
-  // ==================================================
-  // USER PHONE
-  // ==================================================
 
   const getUserPhone = (
     user
@@ -1915,10 +1912,6 @@ function Admin({
     );
   };
 
-  // ==================================================
-  // USER ADDRESS
-  // ==================================================
-
   const getUserAddress = (
     user
   ) => {
@@ -1927,10 +1920,6 @@ function Admin({
       "غير مسجل"
     );
   };
-
-  // ==================================================
-  // LOGIN COUNT
-  // ==================================================
 
   const getLoginCount = (
     user
@@ -1941,10 +1930,6 @@ function Admin({
       0
     );
   };
-
-  // ==================================================
-  // VISITS
-  // ==================================================
 
   const getVisits = (
     user
@@ -1976,7 +1961,7 @@ function Admin({
   }, [users]);
 
   // ==================================================
-  // ORDER STATUS TEXT
+  // ORDER STATUS
   // ==================================================
 
   const getOrderStatusText =
@@ -1991,8 +1976,118 @@ function Admin({
         case "cancel":
           return "ملغي";
 
+        case "processing":
+          return "قيد التجهيز";
+
         default:
           return "جديد";
+      }
+    };
+
+  // ==================================================
+  // PAYMENT METHOD
+  // ==================================================
+
+  const getPaymentMethodText =
+    (method) => {
+      switch (
+        String(
+          method || ""
+        ).toLowerCase()
+      ) {
+        case "online":
+          return "💳 دفع إلكتروني";
+
+        case "card":
+          return "💳 بطاقة";
+
+        case "visa":
+          return "💳 Visa";
+
+        case "mastercard":
+          return "💳 MasterCard";
+
+        case "meeza":
+          return "💳 Meeza";
+
+        case "wallet":
+          return "📱 محفظة إلكترونية";
+
+        case "cod":
+        case "cash":
+        case "cash_on_delivery":
+          return "💵 دفع عند الاستلام";
+
+        default:
+          return method
+            ? String(method)
+            : "غير محدد";
+      }
+    };
+
+  // ==================================================
+  // PAYMENT STATUS
+  // ==================================================
+
+  const getPaymentStatusText =
+    (status) => {
+      switch (
+        String(
+          status || ""
+        ).toLowerCase()
+      ) {
+        case "paid":
+        case "success":
+        case "successful":
+          return "مدفوع ✅";
+
+        case "pending":
+          return "قيد الانتظار ⏳";
+
+        case "failed":
+        case "failure":
+          return "فشل الدفع ❌";
+
+        case "cancelled":
+        case "canceled":
+          return "ملغي ❌";
+
+        case "refunded":
+          return "تم رد المبلغ ↩️";
+
+        default:
+          return "غير محدد";
+      }
+    };
+
+  const getPaymentStatusClass =
+    (status) => {
+      switch (
+        String(
+          status || ""
+        ).toLowerCase()
+      ) {
+        case "paid":
+        case "success":
+        case "successful":
+          return "payment-paid";
+
+        case "pending":
+          return "payment-pending";
+
+        case "failed":
+        case "failure":
+          return "payment-failed";
+
+        case "cancelled":
+        case "canceled":
+          return "payment-cancelled";
+
+        case "refunded":
+          return "payment-refunded";
+
+        default:
+          return "payment-unknown";
       }
     };
 
@@ -2035,6 +2130,16 @@ function Admin({
   };
 
   // ==================================================
+  // CLEAR NEW ORDER NOTIFICATION
+  // ==================================================
+
+  const openOrdersTab = () => {
+    setTab("orders");
+
+    setNewOrderCount(0);
+  };
+
+  // ==================================================
   // RETURN
   // ==================================================
 
@@ -2048,19 +2153,19 @@ function Admin({
           NEW ORDER ALERT
       ================================================== */}
 
-      {orders.length > 0 && (
+      {newOrderCount > 0 && (
         <div className="new-order-alert">
 
           <span>
             🔔 يوجد{" "}
-            {orders.length}{" "}
-            طلب
+            {newOrderCount}{" "}
+            طلب جديد
           </span>
 
           <button
             type="button"
-            onClick={() =>
-              setTab("orders")
+            onClick={
+              openOrdersTab
             }
           >
             عرض الطلبات
@@ -2137,11 +2242,24 @@ function Admin({
 
         <div className="stat-card">
           <h3>
-            💰 المبيعات
+            💰 إجمالي الطلبات
           </h3>
 
           <p>
             {totalSales.toLocaleString(
+              "ar-EG"
+            )}{" "}
+            ج.م
+          </p>
+        </div>
+
+        <div className="stat-card">
+          <h3>
+            💳 المدفوع إلكترونيًا
+          </h3>
+
+          <p>
+            {paidSales.toLocaleString(
               "ar-EG"
             )}{" "}
             ج.م
@@ -2213,8 +2331,8 @@ function Admin({
               ? "active"
               : ""
           }
-          onClick={() =>
-            setTab("orders")
+          onClick={
+            openOrdersTab
           }
         >
           🧾 الطلبات (
@@ -2339,9 +2457,11 @@ function Admin({
                   {"— ".repeat(
                     cat.level
                   )}
+
                   {cat.icon
                     ? `${cat.icon} `
                     : ""}
+
                   {cat.name}
                 </option>
               )
@@ -2479,8 +2599,7 @@ function Admin({
                       step="0.01"
                       placeholder="السعر"
                       value={
-                        variant.price ??
-                        ""
+                        variant.price ?? ""
                       }
                       onChange={(e) =>
                         updateVariant(
@@ -2715,9 +2834,11 @@ function Admin({
                   {"— ".repeat(
                     cat.level
                   )}
+
                   {cat.icon
                     ? `${cat.icon} `
                     : ""}
+
                   {cat.name}
                 </option>
               )
@@ -3004,6 +3125,46 @@ function Admin({
             🧾 الطلبات
           </h2>
 
+          <div className="payment-summary">
+
+            <div>
+              <span>
+                إجمالي الطلبات
+              </span>
+
+              <strong>
+                {orders.length}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                إجمالي قيمة الطلبات
+              </span>
+
+              <strong>
+                {totalSales.toLocaleString(
+                  "ar-EG"
+                )}{" "}
+                ج.م
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                المدفوع إلكترونيًا
+              </span>
+
+              <strong>
+                {paidSales.toLocaleString(
+                  "ar-EG"
+                )}{" "}
+                ج.م
+              </strong>
+            </div>
+
+          </div>
+
           <div className="table-scroll">
 
             <table className="admin-table">
@@ -3032,7 +3193,19 @@ function Admin({
                   </th>
 
                   <th>
-                    الحالة
+                    طريقة الدفع
+                  </th>
+
+                  <th>
+                    حالة الدفع
+                  </th>
+
+                  <th>
+                    رقم العملية
+                  </th>
+
+                  <th>
+                    حالة الطلب
                   </th>
 
                   <th>
@@ -3048,135 +3221,279 @@ function Admin({
                 0 ? (
                   <tr>
                     <td
-                      colSpan="7"
+                      colSpan="10"
                     >
                       لا توجد طلبات
                     </td>
                   </tr>
                 ) : (
                   orders.map(
-                    (order) => (
-                      <tr
-                        key={
-                          order.id
-                        }
-                      >
+                    (order) => {
 
-                        <td>
-                          {
-                            order.customerName ||
-                            "غير مسجل"
+                      const paymentStatus =
+                        order.paymentStatus ||
+                        (
+                          order.paymentMethod ===
+                          "cod"
+                            ? "pending"
+                            : "pending"
+                        );
+
+                      const transactionId =
+                        order.transactionId ||
+                        order.transaction_id ||
+                        order.transactionID ||
+                        order.paymentId ||
+                        "";
+
+                      return (
+                        <tr
+                          key={
+                            order.id
                           }
-                        </td>
+                        >
 
-                        <td dir="ltr">
-                          {
-                            order.phone ||
-                            "غير مسجل"
-                          }
-                        </td>
+                          {/* CUSTOMER */}
 
-                        <td>
-                          {
-                            order.address ||
-                            "غير مسجل"
-                          }
-                        </td>
+                          <td>
 
-                        <td>
-                          {Array.isArray(
-                            order.products
-                          ) &&
-                            order.products.map(
-                              (
-                                item,
-                                index
-                              ) => (
-                                <div
-                                  key={
-                                    index
-                                  }
-                                >
-                                  {
-                                    item?.title ||
-                                    item?.name ||
-                                    "منتج"
-                                  }
+                            <strong>
+                              {
+                                order.customerName ||
+                                "غير مسجل"
+                              }
+                            </strong>
 
-                                  {" × "}
+                            <small
+                              className="order-date"
+                            >
+                              {
+                                formatDate(
+                                  order.createdAt
+                                )
+                              }
+                            </small>
 
-                                  {
-                                    item?.quantity ||
-                                    1
-                                  }
-                                </div>
-                              )
+                          </td>
+
+                          {/* PHONE */}
+
+                          <td dir="ltr">
+                            {
+                              order.phone ||
+                              "غير مسجل"
+                            }
+                          </td>
+
+                          {/* ADDRESS */}
+
+                          <td>
+                            {
+                              order.address ||
+                              "غير مسجل"
+                            }
+                          </td>
+
+                          {/* PRODUCTS */}
+
+                          <td>
+
+                            {Array.isArray(
+                              order.products
+                            ) &&
+                              order.products.map(
+                                (
+                                  item,
+                                  index
+                                ) => (
+                                  <div
+                                    key={
+                                      index
+                                    }
+                                    className="order-product-line"
+                                  >
+
+                                    <span>
+                                      {
+                                        item?.title ||
+                                        item?.name ||
+                                        "منتج"
+                                      }
+                                    </span>
+
+                                    <span>
+                                      ×{" "}
+                                      {
+                                        item?.quantity ||
+                                        1
+                                      }
+                                    </span>
+
+                                  </div>
+                                )
+                              )}
+
+                          </td>
+
+                          {/* TOTAL */}
+
+                          <td>
+
+                            <strong>
+                              {Number(
+                                order.total ||
+                                  0
+                              ).toLocaleString(
+                                "ar-EG"
+                              )}{" "}
+                              ج.م
+                            </strong>
+
+                          </td>
+
+                          {/* PAYMENT METHOD */}
+
+                          <td>
+
+                            <span className="payment-method-badge">
+                              {
+                                getPaymentMethodText(
+                                  order.paymentMethod
+                                )
+                              }
+                            </span>
+
+                          </td>
+
+                          {/* PAYMENT STATUS */}
+
+                          <td>
+
+                            <select
+                              className={`payment-status-select ${getPaymentStatusClass(
+                                paymentStatus
+                              )}`}
+                              value={
+                                paymentStatus
+                              }
+                              onChange={(e) =>
+                                changePaymentStatus(
+                                  order.id,
+                                  e.target.value
+                                )
+                              }
+                            >
+
+                              <option value="pending">
+                                قيد الانتظار ⏳
+                              </option>
+
+                              <option value="paid">
+                                مدفوع ✅
+                              </option>
+
+                              <option value="failed">
+                                فشل الدفع ❌
+                              </option>
+
+                              <option value="cancelled">
+                                ملغي ❌
+                              </option>
+
+                              <option value="refunded">
+                                تم رد المبلغ ↩️
+                              </option>
+
+                            </select>
+
+                          </td>
+
+                          {/* TRANSACTION ID */}
+
+                          <td>
+
+                            {transactionId ? (
+                              <span
+                                className="transaction-id"
+                                title={
+                                  transactionId
+                                }
+                              >
+                                {
+                                  transactionId
+                                }
+                              </span>
+                            ) : (
+                              <span className="no-transaction">
+                                لا يوجد
+                              </span>
                             )}
-                        </td>
 
-                        <td>
-                          {Number(
-                            order.total ||
-                              0
-                          ).toLocaleString(
-                            "ar-EG"
-                          )}{" "}
-                          ج.م
-                        </td>
+                          </td>
 
-                        <td>
+                          {/* ORDER STATUS */}
 
-                          <select
-                            value={
-                              order.status ||
-                              "pending"
-                            }
-                            onChange={(e) =>
-                              changeOrderStatus(
-                                order.id,
-                                e.target.value
-                              )
-                            }
-                          >
+                          <td>
 
-                            <option value="pending">
-                              جديد
-                            </option>
+                            <select
+                              value={
+                                order.status ||
+                                order.orderStatus ||
+                                "pending"
+                              }
+                              onChange={(e) =>
+                                changeOrderStatus(
+                                  order.id,
+                                  e.target.value
+                                )
+                              }
+                            >
 
-                            <option value="shipping">
-                              جاري الشحن
-                            </option>
+                              <option value="pending">
+                                جديد
+                              </option>
 
-                            <option value="done">
-                              تم التسليم
-                            </option>
+                              <option value="processing">
+                                قيد التجهيز
+                              </option>
 
-                            <option value="cancel">
-                              ملغي
-                            </option>
+                              <option value="shipping">
+                                جاري الشحن
+                              </option>
 
-                          </select>
+                              <option value="done">
+                                تم التسليم
+                              </option>
 
-                        </td>
+                              <option value="cancel">
+                                ملغي
+                              </option>
 
-                        <td>
+                            </select>
 
-                          <button
-                            type="button"
-                            className="whatsapp-btn"
-                            onClick={() =>
-                              openWhatsApp(
-                                order.phone
-                              )
-                            }
-                          >
-                            💬 واتساب
-                          </button>
+                          </td>
 
-                        </td>
+                          {/* WHATSAPP */}
 
-                      </tr>
-                    )
+                          <td>
+
+                            <button
+                              type="button"
+                              className="whatsapp-btn"
+                              onClick={() =>
+                                openWhatsApp(
+                                  order.phone
+                                )
+                              }
+                            >
+                              💬 واتساب
+                            </button>
+
+                          </td>
+
+                        </tr>
+                      );
+                    }
                   )
                 )}
 
@@ -3746,101 +4063,169 @@ function Admin({
                     <div className="user-orders-list">
 
                       {selectedUserOrders.map(
-                        (order) => (
-                          <div
-                            className="user-order-card"
-                            key={
-                              order.id
-                            }
-                          >
+                        (order) => {
 
-                            <div className="user-order-header">
+                          const paymentStatus =
+                            order.paymentStatus ||
+                            "pending";
 
-                              <strong>
-                                طلب #
-                                {order.id.slice(
-                                  0,
-                                  8
-                                )}
-                              </strong>
+                          const transactionId =
+                            order.transactionId ||
+                            order.transaction_id ||
+                            order.transactionID ||
+                            order.paymentId ||
+                            "";
 
-                              <span>
-                                {
-                                  formatDate(
-                                    order.createdAt
-                                  )
-                                }
-                              </span>
+                          return (
+                            <div
+                              className="user-order-card"
+                              key={
+                                order.id
+                              }
+                            >
 
-                            </div>
+                              <div className="user-order-header">
 
-                            <div className="user-order-products">
+                                <strong>
+                                  طلب #
+                                  {order.id.slice(
+                                    0,
+                                    8
+                                  )}
+                                </strong>
 
-                              {Array.isArray(
-                                order.products
-                              ) &&
-                                order.products.map(
-                                  (
-                                    item,
-                                    index
-                                  ) => (
-                                    <div
-                                      key={
-                                        index
+                                <span>
+                                  {
+                                    formatDate(
+                                      order.createdAt
+                                    )
+                                  }
+                                </span>
+
+                              </div>
+
+                              <div className="user-order-products">
+
+                                {Array.isArray(
+                                  order.products
+                                ) &&
+                                  order.products.map(
+                                    (
+                                      item,
+                                      index
+                                    ) => (
+                                      <div
+                                        key={
+                                          index
+                                        }
+                                      >
+
+                                        <span>
+                                          {
+                                            item?.title ||
+                                            item?.name ||
+                                            "منتج"
+                                          }
+                                        </span>
+
+                                        <span>
+                                          ×{" "}
+                                          {
+                                            item?.quantity ||
+                                            1
+                                          }
+                                        </span>
+
+                                      </div>
+                                    )
+                                  )}
+
+                              </div>
+
+                              {/* PAYMENT DETAILS */}
+
+                              <div className="user-order-payment">
+
+                                <div>
+                                  <span>
+                                    طريقة الدفع
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      getPaymentMethodText(
+                                        order.paymentMethod
+                                      )
+                                    }
+                                  </strong>
+                                </div>
+
+                                <div>
+                                  <span>
+                                    حالة الدفع
+                                  </span>
+
+                                  <strong
+                                    className={getPaymentStatusClass(
+                                      paymentStatus
+                                    )}
+                                  >
+                                    {
+                                      getPaymentStatusText(
+                                        paymentStatus
+                                      )
+                                    }
+                                  </strong>
+                                </div>
+
+                                {transactionId && (
+                                  <div>
+                                    <span>
+                                      رقم العملية
+                                    </span>
+
+                                    <strong>
+                                      {
+                                        transactionId
                                       }
-                                    >
-
-                                      <span>
-                                        {
-                                          item?.title ||
-                                          item?.name ||
-                                          "منتج"
-                                        }
-                                      </span>
-
-                                      <span>
-                                        ×{" "}
-                                        {
-                                          item?.quantity ||
-                                          1
-                                        }
-                                      </span>
-
-                                    </div>
-                                  )
+                                    </strong>
+                                  </div>
                                 )}
 
+                              </div>
+
+                              <div className="user-order-footer">
+
+                                <strong>
+                                  الإجمالي:
+                                  {" "}
+                                  {Number(
+                                    order.total ||
+                                      0
+                                  ).toLocaleString(
+                                    "ar-EG"
+                                  )}{" "}
+                                  ج.م
+                                </strong>
+
+                                <span
+                                  className={`order-status status-${
+                                    order.status ||
+                                    order.orderStatus ||
+                                    "pending"
+                                  }`}
+                                >
+                                  {getOrderStatusText(
+                                    order.status ||
+                                      order.orderStatus
+                                  )}
+                                </span>
+
+                              </div>
+
                             </div>
-
-                            <div className="user-order-footer">
-
-                              <strong>
-                                الإجمالي:
-                                {" "}
-                                {Number(
-                                  order.total ||
-                                    0
-                                ).toLocaleString(
-                                  "ar-EG"
-                                )}{" "}
-                                ج.م
-                              </strong>
-
-                              <span
-                                className={`order-status status-${
-                                  order.status ||
-                                  "pending"
-                                }`}
-                              >
-                                {getOrderStatusText(
-                                  order.status
-                                )}
-                              </span>
-
-                            </div>
-
-                          </div>
-                        )
+                          );
+                        }
                       )}
 
                     </div>
