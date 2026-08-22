@@ -1,96 +1,1204 @@
-.hero-slide{
-    height:520px;
-    background-size:cover;
-    background-position:center;
+/* ============================================================
+   HERO SLIDER - ELSAFTY STORE
+   Dynamic / Responsive / Firestore Settings Ready
+============================================================ */
+
+.hero-section {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  direction: rtl;
+  box-sizing: border-box;
 }
 
-.hero-overlay{
-    width:100%;
-    height:100%;
-    background:linear-gradient(
-        90deg,
-        rgba(0,0,0,.75),
-        rgba(0,0,0,.25)
+
+/* ============================================================
+   TOP OFFER STRIP
+============================================================ */
+
+.hero-offer-strip {
+  width: 100%;
+  height: var(--top-strip-height, 42px);
+
+  background: var(
+    --top-strip-bg,
+    #071A36
+  );
+
+  color: var(
+    --top-strip-text,
+    #FFFFFF
+  );
+
+  display: flex;
+  align-items: center;
+
+  overflow: hidden;
+
+  position: relative;
+  z-index: 5;
+
+  box-sizing: border-box;
+}
+
+
+.hero-offer-track {
+  display: flex;
+  align-items: center;
+
+  gap: 45px;
+
+  width: max-content;
+
+  min-width: max-content;
+
+  white-space: nowrap;
+
+  padding-inline: 30px;
+
+  font-family:
+    Cairo,
+    Tahoma,
+    sans-serif;
+
+  font-size: var(
+    --top-strip-font-size,
+    15px
+  );
+
+  font-weight: 700;
+
+  animation-name:
+    heroOfferMove;
+
+  animation-duration:
+    var(
+      --top-strip-duration,
+      40s
     );
-    display:flex;
-    align-items:center;
+
+  animation-timing-function:
+    linear;
+
+  animation-iteration-count:
+    infinite;
+
+  will-change:
+    transform;
 }
 
-.hero-text{
-    color:#fff;
-    max-width:650px;
-    margin-right:8%;
+
+.hero-offer-track:hover {
+  animation-play-state: paused;
 }
 
-.hero-tag{
-    display:inline-block;
-    background:#f59e0b;
-    color:#fff;
-    padding:8px 18px;
-    border-radius:30px;
-    margin-bottom:20px;
-    font-weight:bold;
+
+.hero-offer-track span {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  color: inherit;
+
+  flex-shrink: 0;
 }
 
-.hero-text h1{
-    font-size:58px;
-    margin-bottom:20px;
+
+@keyframes heroOfferMove {
+
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+
 }
 
-.hero-text p{
-    font-size:22px;
-    line-height:1.8;
-    margin-bottom:35px;
+
+/* ============================================================
+   HERO SLIDER WRAPPER
+============================================================ */
+
+.hero-slider-wrapper {
+  width: 100%;
+  max-width: 100%;
+
+  position: relative;
+
+  overflow: hidden;
+
+  background:
+    #0B1F3A;
 }
 
-.hero-text button{
-    padding:15px 40px;
-    background:#f59e0b;
-    border:none;
-    border-radius:8px;
-    color:#fff;
-    font-size:18px;
-    cursor:pointer;
-    transition:.3s;
+
+/* ============================================================
+   SWIPER
+============================================================ */
+
+.hero-swiper {
+  width: 100%;
+  height: var(
+    --hero-desktop-height,
+    420px
+  );
+
+  overflow: hidden;
 }
 
-.hero-text button:hover{
-    transform:translateY(-3px);
+
+/* ============================================================
+   SLIDE
+============================================================ */
+
+.hero-slide {
+  position: relative;
+
+  width: 100%;
+
+  height: var(
+    --hero-desktop-height,
+    420px
+  );
+
+  min-height: 180px;
+
+  background-size: cover;
+
+  background-position: center;
+
+  background-repeat: no-repeat;
+
+  overflow: hidden;
+
+  border-radius: var(
+    --hero-border-radius,
+    0px
+  );
+
+  box-sizing: border-box;
 }
 
-.swiper-button-next,
-.swiper-button-prev{
-    color:#fff;
+
+/* ============================================================
+   OVERLAY
+============================================================ */
+
+.hero-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background:
+    rgba(
+      0,
+      0,
+      0,
+      var(
+        --hero-overlay-opacity,
+        0.35
+      )
+    );
+
+  z-index: 2;
+
+  box-sizing: border-box;
 }
 
-.swiper-pagination-bullet{
-    background:#fff;
+
+/* ============================================================
+   CONTENT
+============================================================ */
+
+.hero-content {
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  padding:
+    30px 6%;
+
+  box-sizing: border-box;
+
+  z-index: 3;
 }
 
-.swiper-pagination-bullet-active{
-    background:#f59e0b;
+
+.hero-text {
+  max-width: 700px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  direction: rtl;
 }
 
-@media(max-width:768px){
 
-.hero-slide{
-    height:320px;
+/* ============================================================
+   TAG
+============================================================ */
+
+.hero-tag {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  width: fit-content;
+
+  max-width: 100%;
+
+  padding:
+    8px 18px;
+
+  margin-bottom: 12px;
+
+  border-radius: 30px;
+
+  background:
+    var(
+      --accent,
+      #D4AF37
+    );
+
+  color:
+    #FFFFFF;
+
+  font-family:
+    inherit;
+
+  font-size:
+    15px;
+
+  font-weight:
+    700;
+
+  line-height: 1.4;
+
+  box-sizing: border-box;
 }
 
-.hero-text{
-    margin:20px;
+
+/* ============================================================
+   TITLE
+============================================================ */
+
+.hero-text h1,
+.hero-title {
+  margin:
+    10px 0;
+
+  color:
+    inherit;
+
+  font-family:
+    inherit;
+
+  line-height:
+    1.25;
+
+  max-width: 100%;
+
+  word-break:
+    normal;
+
+  overflow-wrap:
+    break-word;
 }
 
-.hero-text h1{
-    font-size:32px;
+
+/* ============================================================
+   DESCRIPTION
+============================================================ */
+
+.hero-text p,
+.hero-description {
+  margin:
+    8px 0 18px;
+
+  color:
+    inherit;
+
+  font-family:
+    inherit;
+
+  line-height:
+    1.8;
+
+  max-width:
+    650px;
+
+  word-break:
+    normal;
+
+  overflow-wrap:
+    break-word;
 }
 
-.hero-text p{
-    font-size:16px;
+
+/* ============================================================
+   BUTTON
+============================================================ */
+
+.hero-text button,
+.hero-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  width: fit-content;
+
+  min-width: 150px;
+
+  padding:
+    13px 28px;
+
+  border:
+    none;
+
+  border-radius:
+    10px;
+
+  background:
+    var(
+      --hero-button-bg,
+      #D4AF37
+    );
+
+  color:
+    var(
+      --hero-button-text,
+      #FFFFFF
+    );
+
+  font-family:
+    inherit;
+
+  font-size:
+    17px;
+
+  font-weight:
+    700;
+
+  line-height:
+    1.4;
+
+  cursor:
+    pointer;
+
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease,
+    opacity .25s ease;
+
+  box-shadow:
+    0 5px 18px
+    rgba(0, 0, 0, .15);
 }
 
-.hero-text button{
-    width:100%;
+
+.hero-text button:hover,
+.hero-button:hover {
+  transform:
+    translateY(-3px);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, .22);
+
+  opacity:
+    .95;
 }
+
+
+.hero-text button:active,
+.hero-button:active {
+  transform:
+    translateY(-1px);
+}
+
+
+.hero-button span {
+  display: inline-flex;
+
+  font-size:
+    20px;
+
+  line-height:
+    1;
+}
+
+
+/* ============================================================
+   BRAND BADGE
+============================================================ */
+
+.hero-side-badge {
+  position: absolute;
+
+  top: 25px;
+  left: 25px;
+
+  width: 85px;
+  min-height: 85px;
+
+  border-radius: 50%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 2px;
+
+  background:
+    rgba(7, 26, 54, .78);
+
+  color:
+    #FFFFFF;
+
+  border:
+    1px solid
+    rgba(212, 175, 55, .8);
+
+  backdrop-filter:
+    blur(5px);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, .2);
+
+  z-index: 4;
+
+  pointer-events: none;
+}
+
+
+.hero-side-badge span {
+  font-size:
+    18px;
+
+  line-height:
+    1;
+}
+
+
+.hero-side-badge strong {
+  font-family:
+    Cairo,
+    Tahoma,
+    sans-serif;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.2;
+}
+
+
+.hero-side-badge small {
+  font-family:
+    Cairo,
+    Tahoma,
+    sans-serif;
+
+  font-size:
+    10px;
+
+  opacity:
+    .85;
+}
+
+
+/* ============================================================
+   SWIPER NAVIGATION
+============================================================ */
+
+.hero-swiper .swiper-button-next,
+.hero-swiper .swiper-button-prev {
+  width:
+    44px;
+
+  height:
+    44px;
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(7, 26, 54, .55);
+
+  color:
+    #FFFFFF;
+
+  transition:
+    .25s ease;
+}
+
+
+.hero-swiper .swiper-button-next:hover,
+.hero-swiper .swiper-button-prev:hover {
+  background:
+    rgba(7, 26, 54, .85);
+
+  transform:
+    scale(1.05);
+}
+
+
+.hero-swiper .swiper-button-next::after,
+.hero-swiper .swiper-button-prev::after {
+  font-size:
+    18px;
+
+  font-weight:
+    900;
+}
+
+
+/* ============================================================
+   SWIPER PAGINATION
+============================================================ */
+
+.hero-swiper .swiper-pagination {
+  bottom:
+    15px;
+}
+
+
+.hero-swiper .swiper-pagination-bullet {
+  width:
+    9px;
+
+  height:
+    9px;
+
+  opacity:
+    .8;
+
+  background:
+    #FFFFFF;
+
+  transition:
+    .25s ease;
+}
+
+
+.hero-swiper
+  .swiper-pagination-bullet-active {
+  width:
+    24px;
+
+  border-radius:
+    10px;
+
+  background:
+    var(
+      --accent,
+      #D4AF37
+    );
+}
+
+
+/* ============================================================
+   FEATURES BAR
+============================================================ */
+
+.hero-features {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-around;
+
+  gap: 10px;
+
+  padding:
+    10px 20px;
+
+  background:
+    #FFFFFF;
+
+  color:
+    #071A36;
+
+  border-top:
+    1px solid
+    rgba(212, 175, 55, .25);
+
+  border-bottom:
+    1px solid
+    rgba(212, 175, 55, .25);
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+}
+
+
+.hero-feature {
+  flex:
+    1 1 0;
+
+  min-width:
+    0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  padding:
+    8px 12px;
+
+  box-sizing: border-box;
+}
+
+
+.hero-feature-icon {
+  flex-shrink: 0;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size:
+    26px;
+
+  line-height:
+    1;
+
+  color:
+    var(
+      --accent,
+      #D4AF37
+    );
+}
+
+
+.hero-feature > div {
+  min-width:
+    0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+
+.hero-feature strong {
+  display: block;
+
+  font-family:
+    Cairo,
+    Tahoma,
+    sans-serif;
+
+  color:
+    inherit;
+
+  font-size:
+    15px;
+
+  line-height:
+    1.4;
+}
+
+
+.hero-feature small {
+  display: block;
+
+  font-family:
+    Cairo,
+    Tahoma,
+    sans-serif;
+
+  color:
+    inherit;
+
+  opacity:
+    .72;
+
+  font-size:
+    12px;
+
+  line-height:
+    1.4;
+}
+
+
+/* ============================================================
+   TABLET
+============================================================ */
+
+@media (max-width: 1024px) {
+
+  .hero-swiper,
+  .hero-slide {
+    height:
+      var(
+        --hero-tablet-height,
+        350px
+      );
+  }
+
+
+  .hero-content {
+    padding:
+      25px 5%;
+  }
+
+
+  .hero-text {
+    max-width:
+      600px;
+  }
+
+
+  .hero-side-badge {
+    width:
+      72px;
+
+    min-height:
+      72px;
+
+    top:
+      18px;
+
+    left:
+      18px;
+  }
+
+
+  .hero-side-badge strong {
+    font-size:
+      11px;
+  }
+
+
+  .hero-side-badge small {
+    font-size:
+      9px;
+  }
+
+
+  .hero-feature {
+    gap:
+      7px;
+
+    padding:
+      8px 6px;
+  }
+
+
+  .hero-feature-icon {
+    font-size:
+      22px;
+  }
+
+}
+
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (max-width: 768px) {
+
+  .hero-swiper,
+  .hero-slide {
+    height:
+      var(
+        --hero-mobile-height,
+        240px
+      );
+  }
+
+
+  .hero-content {
+    padding:
+      18px 20px;
+  }
+
+
+  .hero-text {
+    max-width:
+      100%;
+
+    width:
+      100%;
+  }
+
+
+  .hero-tag {
+    padding:
+      6px 12px;
+
+    margin-bottom:
+      6px;
+
+    font-size:
+      11px;
+  }
+
+
+  .hero-text h1,
+  .hero-title {
+    margin:
+      6px 0;
+
+    font-size:
+      clamp(
+        22px,
+        6vw,
+        34px
+      ) !important;
+
+    line-height:
+      1.2;
+  }
+
+
+  .hero-text p,
+  .hero-description {
+    margin:
+      4px 0 10px;
+
+    font-size:
+      clamp(
+        12px,
+        3.5vw,
+        17px
+      ) !important;
+
+    line-height:
+      1.6;
+  }
+
+
+  .hero-text button,
+  .hero-button {
+    min-width:
+      125px;
+
+    padding:
+      9px 16px;
+
+    font-size:
+      13px;
+
+    border-radius:
+      8px;
+  }
+
+
+  .hero-button span {
+    font-size:
+      16px;
+  }
+
+
+  .hero-side-badge {
+    top:
+      10px;
+
+    left:
+      10px;
+
+    width:
+      55px;
+
+    min-height:
+      55px;
+  }
+
+
+  .hero-side-badge span {
+    font-size:
+      12px;
+  }
+
+
+  .hero-side-badge strong {
+    font-size:
+      9px;
+  }
+
+
+  .hero-side-badge small {
+    display:
+      none;
+  }
+
+
+  .hero-swiper .swiper-button-next,
+  .hero-swiper .swiper-button-prev {
+    width:
+      30px;
+
+    height:
+      30px;
+  }
+
+
+  .hero-swiper .swiper-button-next::after,
+  .hero-swiper .swiper-button-prev::after {
+    font-size:
+      13px;
+  }
+
+
+  .hero-swiper .swiper-pagination {
+    bottom:
+      7px;
+  }
+
+
+  .hero-swiper .swiper-pagination-bullet {
+    width:
+      6px;
+
+    height:
+      6px;
+  }
+
+
+  .hero-swiper
+    .swiper-pagination-bullet-active {
+    width:
+      16px;
+  }
+
+
+  .hero-features {
+    height:
+      auto !important;
+
+    min-height:
+      65px;
+
+    padding:
+      7px 5px;
+
+    gap:
+      2px;
+
+    justify-content:
+      space-between;
+  }
+
+
+  .hero-feature {
+    flex:
+      1 1 25%;
+
+    flex-direction:
+      column;
+
+    gap:
+      4px;
+
+    padding:
+      5px 2px;
+
+    text-align:
+      center;
+  }
+
+
+  .hero-feature-icon {
+    font-size:
+      20px;
+  }
+
+
+  .hero-feature strong {
+    font-size:
+      10px !important;
+  }
+
+
+  .hero-feature small {
+    font-size:
+      8px !important;
+
+    line-height:
+      1.3;
+  }
+
+}
+
+
+/* ============================================================
+   SMALL MOBILE
+============================================================ */
+
+@media (max-width: 480px) {
+
+  .hero-swiper,
+  .hero-slide {
+    height:
+      var(
+        --hero-mobile-height,
+        220px
+      );
+  }
+
+
+  .hero-content {
+    padding:
+      14px;
+  }
+
+
+  .hero-tag {
+    font-size:
+      9px;
+
+    padding:
+      5px 9px;
+  }
+
+
+  .hero-text h1,
+  .hero-title {
+    font-size:
+      clamp(
+        19px,
+        6vw,
+        27px
+      ) !important;
+  }
+
+
+  .hero-text p,
+  .hero-description {
+    font-size:
+      11px !important;
+
+    line-height:
+      1.5;
+
+    margin-bottom:
+      8px;
+  }
+
+
+  .hero-text button,
+  .hero-button {
+    min-width:
+      105px;
+
+    padding:
+      8px 13px;
+
+    font-size:
+      11px;
+  }
+
+
+  .hero-side-badge {
+    display:
+      none;
+  }
+
+
+  .hero-feature-icon {
+    font-size:
+      17px;
+  }
+
+
+  .hero-feature strong {
+    font-size:
+      9px !important;
+  }
+
+
+  .hero-feature small {
+    display:
+      none;
+  }
+
+}
+
+
+/* ============================================================
+   ACCESSIBILITY
+============================================================ */
+
+.hero-text button:focus-visible,
+.hero-button:focus-visible,
+.hero-swiper
+  .swiper-button-next:focus-visible,
+.hero-swiper
+  .swiper-button-prev:focus-visible {
+  outline:
+    3px solid
+    var(
+      --accent,
+      #D4AF37
+    );
+
+  outline-offset:
+    3px;
+}
+
+
+/* ============================================================
+   REDUCED MOTION
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .hero-offer-track {
+    animation:
+      none;
+  }
+
+  .hero-text button,
+  .hero-button {
+    transition:
+      none;
+  }
 
 }

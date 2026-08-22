@@ -1,350 +1,526 @@
-.store-container{
-    width:100%;
-    min-height:100vh;
-    background:#F8FAFD;
-    padding-bottom:40px;
+/* =====================================================
+   ELSAFTY STORE - GLOBAL STORE STYLES
+   RTL / RESPONSIVE / DYNAMIC THEME
+===================================================== */
+
+:root {
+  --store-primary: #071A36;
+  --store-secondary: #0B1F3A;
+  --store-accent: #D4AF37;
+
+  --store-page-background: #F5F6F8;
+  --store-card-background: #FFFFFF;
+
+  --store-text-primary: #071A36;
+  --store-text-secondary: #64748B;
+
+  --store-border: #EEEEEE;
+
+  --store-button-background: #D4AF37;
+  --store-button-text: #071A36;
+
+  --store-navbar-background: #071A36;
+  --store-navbar-text: #FFFFFF;
+
+  --store-category-background: #FFFFFF;
+  --store-category-text: #071A36;
+
+  --store-top-strip-background: #071A36;
+  --store-top-strip-text: #FFFFFF;
+
+  --store-footer-background: #071A36;
+  --store-footer-text: #FFFFFF;
+
+  --store-accent-dark: #B8921F;
+  --store-accent-light: #F4D06F;
+
+  --store-soft-background: #FAFAFA;
+  --store-rating-color: #F2A900;
 }
 
 
-/* البانر الرئيسي */
-.hero-banner{
-    width:95%;
-    margin:25px auto;
-    height:380px;
-    border-radius:18px;
+/* =====================================================
+   HTML / BODY
+===================================================== */
 
-    background:
-    linear-gradient(
-        135deg,
-        #071A36,
-        #124E8C,
-        #3FA9F5
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+
+  margin: 0;
+  padding: 0;
+
+  overflow-x: hidden;
+
+  background:
+    var(
+      --store-page-background,
+      #F5F6F8
     );
 
-    display:flex;
-    align-items:center;
-    justify-content:center;
+  color:
+    var(
+      --store-text-primary,
+      #071A36
+    );
 
-    color:#fff;
-    overflow:hidden;
-    position:relative;
+  font-family:
+    Cairo,
+    Tahoma,
+    Arial,
+    sans-serif;
 }
 
 
-.hero-banner::before{
-    content:"";
-
-    position:absolute;
-
-    width:700px;
-    height:700px;
-
-    background:rgba(212,175,55,.18);
-
-    border-radius:50%;
-
-    right:-220px;
-    top:-180px;
-}
-
-
-
-.hero-content{
-    z-index:2;
-    text-align:center;
-    max-width:700px;
-    padding:20px;
-}
-
-
-
-.hero-content h1{
-    font-size:52px;
-
-    margin-bottom:15px;
-
-    color:#F4D06F;
-
-    font-weight:bold;
-}
-
-
-
-.hero-content p{
-
-    font-size:20px;
-
-    color:#fff;
-
-    margin-bottom:30px;
-
-    line-height:1.8;
-}
-
-
-
-.hero-content button{
-
-    background:#D4AF37;
-
-    color:#071A36;
-
-    border:none;
-
-    padding:16px 40px;
-
-    font-size:18px;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    font-weight:bold;
-
-    transition:.3s;
-}
-
-
-
-.hero-content button:hover{
-
-    background:#F4D06F;
-
-    transform:translateY(-3px);
-
-}
-
-
-
-/* الأقسام */
-
-.categories{
-
-    width:95%;
-
-    margin:auto;
-
-}
-
-
-
-.categories h2{
-
-    margin:25px 0;
-
-    font-size:30px;
-
-    color:#071A36;
-
-}
-
-
-
-.categories-bar{
-
-    display:flex;
-
-    gap:15px;
-
-    overflow:auto;
-
-    padding-bottom:10px;
-
-}
-
-
-
-.categories-bar::-webkit-scrollbar{
-
-    display:none;
-
-}
-
-
-
-.category-btn{
-
-    border:none;
-
-    background:#fff;
-
-    padding:14px 24px;
-
-    border-radius:40px;
-
-    cursor:pointer;
-
-    font-size:16px;
-
-    color:#071A36;
-
-    box-shadow:
-    0 5px 15px rgba(11,31,58,.12);
-
-    transition:.3s;
-
-    white-space:nowrap;
-
-}
-
-
-
-.category-btn:hover{
-
-    transform:translateY(-3px);
-
-    border:1px solid #D4AF37;
-
-}
-
-
-
-.category-btn.active{
-
-    background:#0B1F3A;
-
-    color:#F4D06F;
-
-    border:1px solid #D4AF37;
-
-}
-
-
-
-/* المنتجات */
-
-.products-section{
-
-    width:95%;
-
-    margin:45px auto;
-
-}
-
-
-
-.products-section h2{
-
-    margin-bottom:25px;
-
-    font-size:32px;
-
-    color:#071A36;
-
-}
-
-
-
-/* اللوجو والهيدر */
-
-.store-header {
-
-  position: relative;
-
-  background-image: 
-
-    linear-gradient(
-      rgba(7,26,54,.65),
-      rgba(7,26,54,.65)
-    ),
-
-    url("../assets/logo.png");
-
-
-  background-size:cover;
-
-  background-position:center;
-
-}
-
-
-
-.store-header > * {
-
-  position:relative;
-
-  z-index:1;
-
-}
-
-
-
-/* موبايل */
-
-
-
-.hero-banner{
-
-    height:320px;
-
-}
-
-
-.hero-content h1{
-
-    font-size:38px;
-
-}
-
-
-.hero-content p{
-
-    font-size:18px;
-
-}
-
-}
-
-
-
-
-.hero-banner{
-
-    height:260px;
-
-    border-radius:12px;
-
-}
-
-
-.hero-content h1{
-
-    font-size:28px;
-
-}
-
-
-.hero-content p{
-
-    font-size:15px;
-
-}
-
-
-.hero-content button{
-
-    width:100%;
-
-}
-
-
-
-.categories h2,
-.products-section h2{
-
-    font-size:24px;
-
-}
-
-
-body{
-    overflow-x:auto;
-}
-
-.store-container{
-    min-width:1400px;
-}
-html, body {
-  overflow-x: hidden;
+/* =====================================================
+   ROOT
+===================================================== */
+
+#root {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+
+/* =====================================================
+   STORE CONTAINER
+===================================================== */
+
+.store-container {
+  width: 100%;
+  max-width: 100%;
+
+  min-height: 100vh;
+
+  min-width: 0;
+
+  background:
+    var(
+      --store-page-background,
+      #F5F6F8
+    );
+
+  color:
+    var(
+      --store-text-primary,
+      #071A36
+    );
+
+  padding-bottom: 40px;
+
+  overflow-x: hidden;
+
+  box-sizing: border-box;
+
+  direction: rtl;
+}
+
+
+/* =====================================================
+   ALL BOX SIZING
+===================================================== */
+
+.store-container *,
+.store-container *::before,
+.store-container *::after {
+  box-sizing: border-box;
+}
+
+
+/* =====================================================
+   IMAGES
+===================================================== */
+
+.store-container img {
+  max-width: 100%;
+}
+
+
+/* =====================================================
+   BUTTONS / FORM
+===================================================== */
+
+.store-container button,
+.store-container input,
+.store-container select,
+.store-container textarea {
+  font-family: inherit;
+}
+
+
+/* =====================================================
+   OLD STATIC HERO
+   Hidden because HeroSlider is now responsible
+===================================================== */
+
+.store-container > .hero-banner {
+  display: none;
+}
+
+
+/* =====================================================
+   OLD STATIC CATEGORY BAR
+   Kept for compatibility with older components
+===================================================== */
+
+.categories-bar {
+  width: 100%;
+  display: flex;
+
+  gap: 12px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding-bottom: 10px;
+
+  scrollbar-width: none;
+
+  -webkit-overflow-scrolling: touch;
+}
+
+.categories-bar::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* =====================================================
+   OLD CATEGORY BUTTONS
+===================================================== */
+
+.category-btn {
+  flex-shrink: 0;
+
+  border:
+    1px solid
+    var(
+      --store-border,
+      #EEEEEE
+    );
+
+  background:
+    var(
+      --store-card-background,
+      #FFFFFF
+    );
+
+  color:
+    var(
+      --store-category-text,
+      #071A36
+    );
+
+  padding:
+    12px 20px;
+
+  border-radius:
+    30px;
+
+  cursor:
+    pointer;
+
+  font-family:
+    inherit;
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  white-space:
+    nowrap;
+
+  box-shadow:
+    0 2px 8px
+    rgba(11, 31, 58, 0.08);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.category-btn:hover {
+  transform:
+    translateY(-2px);
+
+  border-color:
+    var(
+      --store-accent,
+      #D4AF37
+    );
+}
+
+.category-btn.active {
+  background:
+    var(
+      --store-primary,
+      #071A36
+    );
+
+  color:
+    var(
+      --store-accent-light,
+      #F4D06F
+    );
+
+  border-color:
+    var(
+      --store-accent,
+      #D4AF37
+    );
+}
+
+
+/* =====================================================
+   LEGACY CATEGORIES
+===================================================== */
+
+.categories {
+  width: 100%;
+  max-width: 1400px;
+
+  margin:
+    15px auto;
+
+  padding:
+    0 12px;
+
+  color:
+    var(
+      --store-text-primary,
+      #071A36
+    );
+}
+
+.categories h2 {
+  color:
+    var(
+      --store-text-primary,
+      #071A36
+    );
+}
+
+
+/* =====================================================
+   LEGACY PRODUCTS SECTION
+===================================================== */
+
+.products-section {
+  color:
+    var(
+      --store-text-primary,
+      #071A36
+    );
+}
+
+
+/* =====================================================
+   GLOBAL LINKS
+===================================================== */
+
+.store-container a {
+  color:
+    inherit;
+
+  text-decoration:
+    none;
+}
+
+
+/* =====================================================
+   GLOBAL FOCUS
+===================================================== */
+
+.store-container
+  button:focus-visible,
+.store-container
+  input:focus-visible,
+.store-container
+  select:focus-visible,
+.store-container
+  textarea:focus-visible {
+  outline:
+    2px solid
+    var(
+      --store-accent,
+      #D4AF37
+    );
+
+  outline-offset:
+    2px;
+}
+
+
+/* =====================================================
+   SWIPER FIX
+===================================================== */
+
+.store-container
+  .swiper {
+  width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+}
+
+.store-container
+  .swiper-wrapper {
+  min-width: 0;
+}
+
+.store-container
+  .swiper-slide {
+  min-width: 0;
+}
+
+
+/* =====================================================
+   DESKTOP
+===================================================== */
+
+@media (min-width: 1201px) {
+
+  .store-container {
+    padding-bottom: 50px;
+  }
+
+}
+
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (min-width: 601px) and (max-width: 1200px) {
+
+  .store-container {
+    width: 100%;
+    min-width: 0;
+  }
+
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 600px) {
+
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: hidden;
+  }
+
+
+  #root {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  .store-container {
+    width: 100%;
+    max-width: 100%;
+
+    min-width: 0;
+
+    padding-bottom: 25px;
+  }
+
+
+  .categories {
+    width: 100%;
+
+    margin:
+      10px auto;
+
+    padding:
+      0 8px;
+  }
+
+
+  .categories h2 {
+    font-size:
+      18px;
+
+    margin:
+      12px 0;
+  }
+
+
+  .categories-bar {
+    gap:
+      7px;
+  }
+
+
+  .category-btn {
+    padding:
+      8px 13px;
+
+    font-size:
+      11px;
+  }
+
+
+  .products-section {
+    width: 100%;
+    max-width: 100%;
+
+    margin:
+      14px auto;
+  }
+
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 380px) {
+
+  .store-container {
+    width:
+      100%;
+
+    min-width:
+      0;
+  }
+
+
+  .category-btn {
+    padding:
+      7px 11px;
+
+    font-size:
+      10px;
+  }
+
+}
+
+
+/* =====================================================
+   PRINT
+===================================================== */
+
+@media print {
+
+  .store-container {
+    background:
+      #FFFFFF !important;
+
+    color:
+      #000000 !important;
+  }
+
 }

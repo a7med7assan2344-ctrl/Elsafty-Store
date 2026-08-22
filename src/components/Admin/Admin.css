@@ -1932,3 +1932,29 @@
   }
 
 }
+.back-to-store-btn {
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 1px solid #D4AF37;
+  border-radius: 8px;
+  background: #D4AF37;
+  color: #071A36;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+  white-space: nowrap;
+}
+
+.back-to-store-btn:hover {
+  background: #F4D06F;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 700px) {
+  .back-to-store-btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+}
