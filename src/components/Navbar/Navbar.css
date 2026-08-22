@@ -7,7 +7,6 @@
 :root {
   --nav-dark: #131e29;
   --nav-dark-2: #182838;
-
   --nav-blue: #223449;
   --nav-blue-hover: #30465c;
 
@@ -18,15 +17,12 @@
   --nav-text-muted: #cbd5e1;
 
   --nav-border: rgba(255, 255, 255, 0.12);
-
   --nav-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
   --mega-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
 
   --mega-radius: 0 0 8px 8px;
-
   --nav-font: Cairo, Tahoma, sans-serif;
 }
-
 
 /* =====================================================
    GLOBAL RESET
@@ -57,7 +53,6 @@
 .account-dropdown button {
   font-family: var(--nav-font);
 }
-
 
 /* =====================================================
    TOP OFFER BAR
@@ -96,7 +91,6 @@
   gap: 45px;
 
   animation: offerMove 24s linear infinite;
-
   will-change: transform;
 }
 
@@ -123,7 +117,6 @@
   }
 }
 
-
 /* =====================================================
    MAIN HEADER
 ===================================================== */
@@ -136,7 +129,6 @@
   align-items: center;
 
   gap: 16px;
-
   padding: 7px 18px;
 
   background: var(--nav-dark);
@@ -145,7 +137,6 @@
   direction: rtl;
 
   position: relative;
-
   z-index: 4000;
 
   overflow: visible !important;
@@ -154,7 +145,6 @@
 
   box-shadow: var(--nav-shadow);
 }
-
 
 /* =====================================================
    LOGO
@@ -181,7 +171,6 @@
   object-fit: contain;
 
   cursor: pointer;
-
   user-select: none;
 
   transition:
@@ -194,7 +183,6 @@
   opacity: 0.95;
 }
 
-
 /* =====================================================
    SEARCH BOX
 ===================================================== */
@@ -203,8 +191,8 @@
   position: relative;
 
   flex: 1;
-
   min-width: 180px;
+
   height: 44px;
 
   display: flex;
@@ -217,7 +205,6 @@
   z-index: 4100;
 }
 
-
 /* =====================================================
    SEARCH INPUT
 ===================================================== */
@@ -226,7 +213,6 @@
   flex: 1;
 
   min-width: 0;
-
   width: 100%;
   height: 44px;
 
@@ -262,7 +248,6 @@
   box-shadow:
     inset 0 0 0 2px var(--nav-gold);
 }
-
 
 /* =====================================================
    SEARCH BUTTON
@@ -306,7 +291,6 @@
   transform: scale(0.96);
 }
 
-
 /* =====================================================
    SEARCH SUGGESTIONS
 ===================================================== */
@@ -319,7 +303,6 @@
   left: 0;
 
   width: 100%;
-
   max-height: 310px;
 
   overflow-x: hidden;
@@ -354,7 +337,6 @@
   border-radius: 10px;
 }
 
-
 /* =====================================================
    SUGGESTION ITEM
 ===================================================== */
@@ -367,7 +349,6 @@
   align-items: center;
 
   gap: 12px;
-
   padding: 8px 12px;
 
   background: #ffffff;
@@ -400,16 +381,12 @@
 
 .suggestion-item span {
   flex: 1;
-
   min-width: 0;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
-
   white-space: nowrap;
 }
-
 
 /* =====================================================
    SUGGESTION IMAGE
@@ -431,7 +408,6 @@
   border-radius: 5px;
 }
 
-
 /* =====================================================
    NO SEARCH RESULT
 ===================================================== */
@@ -445,13 +421,11 @@
   color: var(--nav-dark);
 
   font-family: var(--nav-font);
-
   font-size: 14px;
   font-weight: 700;
 
   text-align: right;
 }
-
 
 /* =====================================================
    NAV ACTIONS
@@ -469,10 +443,8 @@
   direction: ltr;
 
   position: relative;
-
   z-index: 5000;
 }
-
 
 /* =====================================================
    COMMON NAV BUTTONS
@@ -512,7 +484,6 @@
 .cart-icon:hover,
 .admin-btn:hover {
   color: var(--nav-gold-light);
-
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -537,7 +508,6 @@
   color: inherit;
 
   font-family: var(--nav-font);
-
   font-size: 10px;
   font-weight: 700;
 
@@ -545,7 +515,6 @@
 
   white-space: nowrap;
 }
-
 
 /* =====================================================
    WISHLIST
@@ -577,13 +546,11 @@
   border-radius: 50%;
 
   font-family: Arial, sans-serif;
-
   font-size: 10px;
   font-weight: 700;
 
   line-height: 1;
 }
-
 
 /* =====================================================
    ACCOUNT MENU
@@ -601,7 +568,6 @@
 
   z-index: 99999;
 }
-
 
 /* =====================================================
    ACCOUNT DROPDOWN
@@ -627,7 +593,6 @@
   color: var(--nav-dark);
 
   border: 1px solid rgba(212, 175, 55, 0.35);
-
   border-top: 3px solid var(--nav-gold);
 
   border-radius: 12px;
@@ -656,7 +621,6 @@
   }
 }
 
-
 /* =====================================================
    ACCOUNT ARROW
 ===================================================== */
@@ -682,14 +646,12 @@
   z-index: 1;
 }
 
-
 /* =====================================================
    ACCOUNT USER INFO
 ===================================================== */
 
 .account-user-info {
   padding: 12px 10px;
-
   margin: 0;
 
   display: flex;
@@ -700,7 +662,6 @@
   border-bottom: 1px solid #eeeeee;
 
   direction: rtl;
-
   text-align: right;
 
   position: relative;
@@ -722,7 +683,6 @@
   max-width: 100%;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
 
   color: #777777;
@@ -732,12 +692,10 @@
   font-size: 12px;
 
   direction: ltr;
-
   text-align: right;
 
   word-break: break-word;
 }
-
 
 /* =====================================================
    ACCOUNT BUTTONS
@@ -745,7 +703,6 @@
 
 .account-dropdown > button {
   width: 100%;
-
   min-height: 42px;
 
   display: flex;
@@ -783,7 +740,6 @@
 
 .account-dropdown > button:hover {
   background: #f0f4f8;
-
   color: var(--nav-gold);
 
   transform: translateX(-2px);
@@ -806,7 +762,6 @@
   font-size: 17px;
 }
 
-
 /* =====================================================
    LOGOUT BUTTON
 ===================================================== */
@@ -820,7 +775,6 @@
 
   border-radius: 0 0 9px 9px;
 }
-
 
 /* =====================================================
    ADMIN
@@ -836,10 +790,8 @@
 
 .admin-btn:hover {
   color: var(--nav-dark);
-
   background: var(--nav-gold);
 }
-
 
 /* =====================================================
    CART
@@ -847,7 +799,6 @@
 
 .cart-icon {
   position: relative;
-
   min-width: 68px;
 }
 
@@ -876,6 +827,7 @@
   color: var(--nav-dark);
 
   border: 2px solid var(--nav-dark);
+
   border-radius: 50%;
 
   font-family: Arial, sans-serif;
@@ -885,7 +837,6 @@
 
   line-height: 1;
 }
-
 
 /* =====================================================
    CATEGORY BAR
@@ -905,12 +856,10 @@
   direction: ltr;
 
   position: relative;
-
   z-index: 3000;
 
   overflow: visible !important;
 }
-
 
 /* =====================================================
    CATEGORY SCROLLER
@@ -928,12 +877,6 @@
 
   gap: 2px;
 
-  /*
-    مهم:
-    لازم يفضل فيه scroll أفقي.
-    الـ Mega Menu معمول fixed عشان مايتقصش
-    بسبب overflow.
-  */
   overflow-x: auto;
   overflow-y: hidden;
 
@@ -952,7 +895,6 @@
 .navbar-bottom::-webkit-scrollbar {
   display: none;
 }
-
 
 /* =====================================================
    CATEGORY WRAPPER
@@ -976,7 +918,6 @@
 .nav-category-wrapper.category-is-open {
   z-index: 9999;
 }
-
 
 /* =====================================================
    CATEGORY ITEM
@@ -1009,6 +950,7 @@
   font-family: var(--nav-font);
 
   position: relative;
+
   z-index: 3003;
 
   transition:
@@ -1030,21 +972,19 @@
   transform: scale(0.97);
 }
 
-
 /* =====================================================
    CATEGORY ICON
 ===================================================== */
 
 .nav-category-item span {
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
 
   font-size: 16px;
-
   line-height: 1;
 }
-
 
 /* =====================================================
    CATEGORY TITLE
@@ -1058,7 +998,6 @@
 
   white-space: nowrap;
 }
-
 
 /* =====================================================
    CATEGORY IMAGE
@@ -1081,7 +1020,6 @@
   border-radius: 50%;
 }
 
-
 /* =====================================================
    CATEGORY ARROW
 ===================================================== */
@@ -1093,7 +1031,6 @@
 
   color: var(--nav-gold-light);
 }
-
 
 /* =====================================================
    HOME
@@ -1107,7 +1044,6 @@
   color: inherit;
 }
 
-
 /* =====================================================
    OFFERS
 ===================================================== */
@@ -1119,7 +1055,6 @@
 .offer-item:hover {
   color: #ffffff;
 }
-
 
 /* =====================================================
    CATEGORY SCROLL ARROWS
@@ -1140,6 +1075,7 @@
   border: none;
 
   background: var(--nav-blue);
+
   color: #ffffff;
 
   cursor: pointer;
@@ -1158,10 +1094,8 @@
 
 .category-arrow:hover {
   background: var(--nav-blue-hover);
-
   color: var(--nav-gold-light);
 }
-
 
 /* =====================================================
    MEGA MENU
@@ -1188,7 +1122,7 @@
 
   border-bottom: 1px solid #e1e5e9;
 
-  border-radius: 0 0 8px 8px;
+  border-radius: var(--mega-radius);
 
   box-shadow: var(--mega-shadow);
 
@@ -1213,7 +1147,6 @@
   }
 }
 
-
 /* =====================================================
    MEGA INNER
 ===================================================== */
@@ -1233,7 +1166,6 @@
 
   overflow: visible !important;
 }
-
 
 /* =====================================================
    MEGA TITLE
@@ -1272,7 +1204,6 @@
 
   z-index: 1000001;
 }
-
 
 /* =====================================================
    MEGA TITLE ICON
@@ -1337,7 +1268,6 @@
   border-radius: 0;
 }
 
-
 /* =====================================================
    MEGA TITLE CONTENT
 ===================================================== */
@@ -1387,7 +1317,6 @@
   line-height: 1.5;
 }
 
-
 /* =====================================================
    MEGA COLUMNS
 ===================================================== */
@@ -1413,7 +1342,6 @@
 
   overflow: visible !important;
 }
-
 
 /* =====================================================
    MEGA COLUMN
@@ -1449,7 +1377,6 @@
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.06);
 }
-
 
 /* =====================================================
    MEGA COLUMN TITLE
@@ -1494,7 +1421,6 @@
 
 .mega-column-title:hover {
   background: #071a36;
-
   color: #ffffff;
 
   transform: translateY(-1px);
@@ -1545,7 +1471,6 @@
   white-space: nowrap;
 }
 
-
 /* =====================================================
    MEGA COLUMN ITEMS
 ===================================================== */
@@ -1560,7 +1485,6 @@
 
   padding-top: 3px;
 }
-
 
 /* =====================================================
    MEGA LINK
@@ -1651,7 +1575,6 @@
   white-space: nowrap;
 }
 
-
 /* =====================================================
    SINGLE LINK
 ===================================================== */
@@ -1673,7 +1596,6 @@
 
   color: #80650d;
 }
-
 
 /* =====================================================
    RECURSIVE CATEGORY TREE
@@ -1783,6 +1705,7 @@
   flex: 0 0 30px;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -1805,7 +1728,6 @@
   white-space: nowrap;
 }
 
-
 /* =====================================================
    NESTED LEVELS
 ===================================================== */
@@ -1827,7 +1749,6 @@
   padding-right: 8px;
 }
 
-
 /* =====================================================
    MEGA ARROW
 ===================================================== */
@@ -1844,7 +1765,6 @@
   line-height: 1;
 }
 
-
 /* =====================================================
    LOGO MODAL
 ===================================================== */
@@ -1858,6 +1778,7 @@
   height: 100%;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -1897,15 +1818,18 @@
   height: 44px;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
   padding: 0;
 
   border: none;
+
   border-radius: 50%;
 
   background: var(--nav-gold);
+
   color: var(--nav-dark);
 
   cursor: pointer;
@@ -1940,16 +1864,13 @@
   }
 }
 
-
 /* =====================================================
    TABLET
 ===================================================== */
 
 @media (max-width: 1024px) {
-
   .store-header {
     gap: 10px;
-
     padding: 7px 10px;
   }
 
@@ -1974,7 +1895,6 @@
   .cart-icon,
   .admin-btn {
     min-width: 55px;
-
     padding: 2px 4px;
   }
 
@@ -2004,7 +1924,6 @@
 
   .mega-menu-inner {
     width: 96%;
-
     padding: 14px;
   }
 
@@ -2038,13 +1957,11 @@
   }
 }
 
-
 /* =====================================================
    MOBILE
 ===================================================== */
 
 @media (max-width: 700px) {
-
   /* ===================================================
      TOP OFFER
   =================================================== */
@@ -2066,7 +1983,6 @@
 
     font-size: 11px;
   }
-
 
   /* ===================================================
      MAIN HEADER
@@ -2094,7 +2010,6 @@
     z-index: 4000;
   }
 
-
   /* ===================================================
      LOGO
   =================================================== */
@@ -2111,7 +2026,6 @@
     width: 88px;
     height: 38px;
   }
-
 
   /* ===================================================
      ACTIONS
@@ -2139,6 +2053,7 @@
   .cart-icon,
   .admin-btn {
     min-width: 48px;
+
     height: 40px;
 
     padding: 1px 3px;
@@ -2158,7 +2073,6 @@
     font-size: 8px;
   }
 
-
   /* ===================================================
      ACCOUNT
   =================================================== */
@@ -2167,6 +2081,7 @@
     position: relative;
 
     display: flex;
+
     align-items: center;
 
     overflow: visible !important;
@@ -2216,7 +2131,9 @@
 
     right: 50%;
 
-    transform: translateX(50%) rotate(-45deg);
+    transform:
+      translateX(50%)
+      rotate(-45deg);
   }
 
   .account-dropdown > button {
@@ -2231,7 +2148,6 @@
     padding: 10px 12px;
   }
 
-
   /* ===================================================
      BADGES
   =================================================== */
@@ -2239,6 +2155,7 @@
   .wishlist-badge,
   .cart-badge {
     min-width: 16px;
+
     height: 16px;
 
     font-size: 9px;
@@ -2254,7 +2171,6 @@
     right: 0;
   }
 
-
   /* ===================================================
      SEARCH
   =================================================== */
@@ -2263,6 +2179,7 @@
     grid-area: search;
 
     width: 100%;
+
     height: 40px;
 
     margin: 0;
@@ -2280,13 +2197,13 @@
 
   .search-box .search-button {
     width: 45px;
+
     height: 40px;
 
     flex-basis: 45px;
 
     font-size: 18px;
   }
-
 
   /* ===================================================
      CATEGORY BAR
@@ -2308,6 +2225,7 @@
     gap: 1px;
 
     overflow-x: auto;
+
     overflow-y: hidden;
   }
 
@@ -2335,6 +2253,7 @@
 
   .nav-category-item img {
     width: 20px;
+
     height: 20px;
 
     flex-basis: 20px;
@@ -2346,13 +2265,13 @@
 
   .category-arrow {
     width: 30px;
+
     height: 38px;
 
     flex-basis: 30px;
 
     font-size: 16px;
   }
-
 
   /* ===================================================
      SEARCH SUGGESTIONS
@@ -2376,11 +2295,11 @@
 
   .suggestion-image {
     width: 40px;
+
     height: 40px;
 
     flex-basis: 40px;
   }
-
 
   /* ===================================================
      MOBILE MEGA MENU
@@ -2401,6 +2320,7 @@
     max-height: calc(100vh - 157px);
 
     overflow-x: hidden !important;
+
     overflow-y: auto !important;
 
     -webkit-overflow-scrolling: touch;
@@ -2420,11 +2340,13 @@
   @keyframes mobileMegaOpen {
     from {
       opacity: 0;
+
       transform: translateY(-8px);
     }
 
     to {
       opacity: 1;
+
       transform: translateY(0);
     }
   }
@@ -2434,7 +2356,6 @@
 
     padding: 10px;
   }
-
 
   /* ===================================================
      MOBILE MEGA TITLE
@@ -2455,6 +2376,7 @@
   .mega-menu-title img,
   .mega-menu-title > span {
     width: 38px;
+
     height: 38px;
 
     flex-basis: 38px;
@@ -2462,6 +2384,7 @@
 
   .mega-menu-title-icon {
     width: 38px;
+
     height: 38px;
 
     flex-basis: 38px;
@@ -2476,7 +2399,6 @@
   .mega-menu-title-content small {
     font-size: 9px;
   }
-
 
   /* ===================================================
      MOBILE COLUMNS
@@ -2511,6 +2433,7 @@
   .mega-column-title img,
   .mega-column-title > span:first-of-type {
     width: 27px;
+
     height: 27px;
 
     flex-basis: 27px;
@@ -2519,7 +2442,6 @@
   .mega-column-title > span:first-of-type {
     font-size: 15px;
   }
-
 
   /* ===================================================
      MOBILE LINKS
@@ -2549,6 +2471,7 @@
   .mega-link > span:first-of-type,
   .mega-link-icon {
     width: 22px;
+
     height: 22px;
 
     flex-basis: 22px;
@@ -2558,7 +2481,6 @@
   .mega-link-icon {
     font-size: 11px;
   }
-
 
   /* ===================================================
      MOBILE RECURSIVE TREE
@@ -2591,6 +2513,7 @@
   .mega-child-item img,
   .mega-child-icon {
     width: 25px;
+
     height: 25px;
 
     flex-basis: 25px;
@@ -2604,7 +2527,6 @@
     font-size: 17px;
   }
 
-
   /* ===================================================
      LOGO MODAL
   =================================================== */
@@ -2615,6 +2537,7 @@
 
   .logo-modal img {
     width: 250px;
+
     height: 250px;
 
     padding: 14px;
@@ -2622,28 +2545,29 @@
 
   .close-logo {
     top: 15px;
+
     right: 15px;
 
     width: 40px;
+
     height: 40px;
 
     font-size: 21px;
   }
 }
 
-
 /* =====================================================
    VERY SMALL MOBILE
 ===================================================== */
 
 @media (max-width: 380px) {
-
   .nav-logo {
     min-width: 76px;
   }
 
   .nav-logo img {
     width: 78px;
+
     height: 35px;
   }
 
@@ -2718,7 +2642,6 @@
   }
 }
 
-
 /* =====================================================
    LANDSCAPE MOBILE
 ===================================================== */
@@ -2728,7 +2651,6 @@
 ) and (
   orientation: landscape
 ) {
-
   .mega-menu {
     top: 119px;
 
@@ -2740,7 +2662,6 @@
   }
 }
 
-
 /* =====================================================
    TOUCH DEVICES
 ===================================================== */
@@ -2750,7 +2671,6 @@
 ) and (
   pointer: coarse
 ) {
-
   .nav-category-item:hover,
   .mega-column:hover,
   .mega-link:hover,
@@ -2764,7 +2684,6 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
-
 
 /* =====================================================
    FOCUS ACCESSIBILITY
@@ -2786,13 +2705,11 @@
   outline-offset: 2px;
 }
 
-
 /* =====================================================
    REDUCED MOTION
 ===================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-
   .offer-track,
   .offer-text {
     animation: none;
@@ -2812,6 +2729,7 @@
   .mega-child-item,
   .account-dropdown {
     transition: none;
+
     animation: none;
   }
 

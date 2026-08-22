@@ -6,20 +6,18 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  doc
+  doc,
 } from "firebase/firestore";
 
 import {
-  db
+  db,
 } from "../firebase";
 
-
-// =====================
+// ==================================================
 // جلب الفئات النشطة للموقع
-// =====================
+// ==================================================
 
 export const getCategories = async () => {
-
   const q = query(
     collection(db, "categories"),
     where("active", "==", true)
@@ -30,18 +28,15 @@ export const getCategories = async () => {
   return snapshot.docs.map((item) => ({
     id: item.id,
     parentId: item.data().parentId || null,
-    ...item.data()
+    ...item.data(),
   }));
-
 };
 
-
-// =====================
+// ==================================================
 // جلب كل الفئات للوحة الإدارة
-// =====================
+// ==================================================
 
 export const getAllCategories = async () => {
-
   const snapshot = await getDocs(
     collection(db, "categories")
   );
@@ -49,54 +44,70 @@ export const getAllCategories = async () => {
   return snapshot.docs.map((item) => ({
     id: item.id,
     parentId: item.data().parentId || null,
-    ...item.data()
+    ...item.data(),
   }));
-
 };
 
-
-// =====================
+// ==================================================
 // إضافة فئة
-// =====================
+// ==================================================
 
 export const addCategory = async (category) => {
-
   await addDoc(
     collection(db, "categories"),
     {
       name: category.name || "",
-      icon: category.icon || "",
-      image: category.image || "",
-      parentId: category.parentId || null,
-      active: category.active ?? true
+
+      // رقم القسم
+      categoryNumber:
+        category.categoryNumber || "",
+
+      // رقم واتساب القسم
+      whatsapp:
+        category.whatsapp || "",
+
+      icon:
+        category.icon || "",
+
+      image:
+        category.image || "",
+
+      parentId:
+        category.parentId || null,
+
+      active:
+        category.active ?? true,
     }
   );
-
 };
 
-
-// =====================
+// ==================================================
 // تعديل فئة
-// =====================
+// ==================================================
 
 export const editCategory = async (id, data) => {
-
   await updateDoc(
     doc(db, "categories", id),
-    data
-  );
+    {
+      ...data,
 
+      // ضمان حفظ رقم القسم
+      categoryNumber:
+        data.categoryNumber || "",
+
+      // ضمان حفظ رقم واتساب القسم
+      whatsapp:
+        data.whatsapp || "",
+    }
+  );
 };
 
-
-// =====================
+// ==================================================
 // حذف فئة
-// =====================
+// ==================================================
 
 export const removeCategory = async (id) => {
-
   await deleteDoc(
     doc(db, "categories", id)
   );
-
 };

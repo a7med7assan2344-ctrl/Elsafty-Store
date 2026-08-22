@@ -10,7 +10,12 @@ import {
 import {
   addDoc,
   collection,
+  doc,
+  getDocs,
+  query,
+  runTransaction,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
 
 import {
@@ -37,9 +42,8 @@ function Checkout() {
   // AUTH CONTEXT
   // ==================================================
 
-  const authContext = useContext(
-    AuthContext
-  );
+  const authContext =
+    useContext(AuthContext);
 
   const user =
     authContext?.user || null;
@@ -49,9 +53,8 @@ function Checkout() {
   // CART CONTEXT
   // ==================================================
 
-  const cartContext = useContext(
-    CartContext
-  );
+  const cartContext =
+    useContext(CartContext);
 
   const cart =
     Array.isArray(cartContext?.cart)
@@ -101,6 +104,7 @@ function Checkout() {
           sum +
           price * quantity
         );
+
       },
       0
     );
@@ -122,23 +126,434 @@ function Checkout() {
         ""
       );
 
+
+    if (
+      cleanPhone.startsWith("00")
+    ) {
+
+      cleanPhone =
+        cleanPhone.slice(2);
+
+    }
+
+
     if (
       cleanPhone.startsWith("0")
     ) {
+
       cleanPhone =
         "20" +
         cleanPhone.slice(1);
+
     }
 
-    if (
-      cleanPhone.startsWith("+")
-    ) {
-      cleanPhone =
-        cleanPhone.slice(1);
-    }
 
     return cleanPhone;
   };
+
+
+  // ==================================================
+  // GET CATEGORY WHATSAPP
+  // ==================================================
+
+  const getCategoryWhatsapp =
+    async (
+      categoryName
+    ) => {
+
+      if (
+        !categoryName
+      ) {
+
+        return null;
+
+      }
+
+
+      try {
+
+        const categoriesRef =
+          collection(
+            db,
+            "categories"
+          );
+
+
+        const q =
+          query(
+            categoriesRef,
+            where(
+              "name",
+              "==",
+              categoryName
+            )
+          );
+
+
+        const snapshot =
+          await getDocs(q);
+
+
+        if (
+          snapshot.empty
+        ) {
+
+          return null;
+
+        }
+
+
+        const categoryDoc =
+          snapshot.docs[0];
+
+
+        const categoryData =
+          categoryDoc.data() || {};
+
+
+        /*
+         * ندعم أكثر من اسم محتمل للحقل
+         */
+
+        const rawWhatsapp =
+          categoryData.whatsapp ||
+          categoryData.whatsappPhone ||
+          categoryData.whatsappNumber ||
+          categoryData.phone ||
+          categoryData.phoneNumber ||
+          categoryData.contactPhone ||
+          "";
+
+
+        const whatsapp =
+          normalizePhone(
+            rawWhatsapp
+          );
+
+
+        if (
+          !whatsapp
+        ) {
+
+          return null;
+
+        }
+
+
+        return {
+
+          id:
+            categoryDoc.id,
+
+          name:
+            categoryData.name ||
+            categoryName,
+
+          whatsapp:
+
+            whatsapp,
+
+        };
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          "Category WhatsApp Error:",
+          error
+        );
+
+        return null;
+
+      }
+
+    };
+
+
+  // ==================================================
+  // GET DEPARTMENTS USED BY CART
+  // ==================================================
+
+  const getDepartmentsForOrder =
+    async () => {
+
+      const departmentMap =
+        new Map();
+
+
+      for (
+        const item of cart
+      ) {
+
+        const categoryName =
+          String(
+            item?.category ||
+            item?.categoryName ||
+            ""
+          ).trim();
+
+
+        if (
+          !categoryName
+        ) {
+
+          continue;
+
+        }
+
+
+        if (
+          departmentMap.has(
+            categoryName
+          )
+        ) {
+
+          continue;
+
+        }
+
+
+        const department =
+          await getCategoryWhatsapp(
+            categoryName
+          );
+
+
+        departmentMap.set(
+          categoryName,
+          department
+        );
+
+      }
+
+
+      return Array.from(
+        departmentMap.values()
+      ).filter(
+        Boolean
+      );
+
+    };
+
+
+  // ==================================================
+  // CREATE SEQUENTIAL ORDER NUMBER
+  // ==================================================
+
+  const createSequentialOrderNumber =
+    async () => {
+
+      const counterRef =
+        doc(
+          db,
+          "counters",
+          "orders"
+        );
+
+
+      const orderNumber =
+        await runTransaction(
+          db,
+          async (
+            transaction
+          ) => {
+
+            const counterSnap =
+              await transaction.get(
+                counterRef
+              );
+
+
+            let nextNumber =
+              1;
+
+
+            if (
+              counterSnap.exists()
+            ) {
+
+              const currentNumber =
+                Number(
+                  counterSnap.data()
+                    ?.lastNumber || 0
+                );
+
+
+              nextNumber =
+                currentNumber + 1;
+
+            }
+
+
+            transaction.set(
+              counterRef,
+              {
+
+                lastNumber:
+                  nextNumber,
+
+                updatedAt:
+                  serverTimestamp(),
+
+              },
+              {
+
+                merge:
+                  true,
+
+              }
+            );
+
+
+            return nextNumber;
+
+          }
+        );
+
+
+      return orderNumber;
+
+    };
+
+
+  // ==================================================
+  // BUILD WHATSAPP MESSAGE
+  // ==================================================
+
+  const buildWhatsappMessage =
+    (
+      orderNumber,
+      departmentName
+    ) => {
+
+      let message =
+        "🛒 *طلب جديد من Elsafty Store*\n\n";
+
+
+      message +=
+        `🔢 *رقم الطلب: #${orderNumber}*\n\n`;
+
+
+      if (
+        departmentName
+      ) {
+
+        message +=
+          `🏷️ *القسم: ${departmentName}*\n\n`;
+
+      }
+
+
+      message +=
+        `👤 *اسم العميل:*\n${name.trim()}\n\n`;
+
+
+      message +=
+        `📱 *رقم العميل:*\n${phone.trim()}\n\n`;
+
+
+      message +=
+        `📍 *العنوان:*\n${address.trim()}\n\n`;
+
+
+      message +=
+        "📦 *المنتجات:*\n\n";
+
+
+      cart.forEach(
+        (
+          item,
+          index
+        ) => {
+
+          const itemName =
+            item?.title ||
+            item?.name ||
+            "منتج";
+
+
+          const variantName =
+            item?.selectedVariant
+              ?.name ||
+            item?.variantName ||
+            "";
+
+
+          const price =
+            Number(
+              item?.price || 0
+            );
+
+
+          const quantity =
+            Number(
+              item?.quantity || 0
+            );
+
+
+          const itemTotal =
+            price * quantity;
+
+
+          message +=
+            `${index + 1}- *${itemName}*\n`;
+
+
+          if (
+            item?.category ||
+            item?.categoryName
+          ) {
+
+            message +=
+              `🏷️ القسم: ${
+                item?.category ||
+                item?.categoryName
+              }\n`;
+
+          }
+
+
+          if (
+            variantName
+          ) {
+
+            message +=
+              `🔀 النوع: ${variantName}\n`;
+
+          }
+
+
+          message +=
+            `🔢 الكمية: ${quantity}\n`;
+
+
+          message +=
+            `💵 سعر الوحدة: ${price} جنيه\n`;
+
+
+          message +=
+            `💰 إجمالي المنتج: ${itemTotal} جنيه\n\n`;
+
+        }
+      );
+
+
+      message +=
+        "━━━━━━━━━━━━━━━━\n";
+
+
+      message +=
+        `💰 *الإجمالي النهائي: ${totalPrice} جنيه*\n\n`;
+
+
+      message +=
+        "🌐 تم تسجيل الطلب على الموقع.";
+
+
+      return message;
+
+    };
 
 
   // ==================================================
@@ -152,8 +567,12 @@ function Checkout() {
       // PREVENT DOUBLE CLICK
       // ==================================================
 
-      if (loading) {
+      if (
+        loading
+      ) {
+
         return;
+
       }
 
 
@@ -178,10 +597,11 @@ function Checkout() {
       ) {
 
         alert(
-          "من فضلك اكتب الاسم ورقم الهاتف والعنوان"
+          "من فضلك اكتب الاسم ورقم الهاتف والعنوان."
         );
 
         return;
+
       }
 
 
@@ -190,18 +610,15 @@ function Checkout() {
       ) {
 
         alert(
-          "السلة فارغة"
+          "السلة فارغة."
         );
 
         navigate("/");
 
         return;
+
       }
 
-
-      // ==================================================
-      // CHECK CART CONTEXT
-      // ==================================================
 
       if (
         typeof setCart !==
@@ -213,10 +630,11 @@ function Checkout() {
         );
 
         alert(
-          "حدث خطأ في السلة، برجاء إعادة تحميل الصفحة"
+          "حدث خطأ في السلة، برجاء إعادة تحميل الصفحة."
         );
 
         return;
+
       }
 
 
@@ -226,103 +644,48 @@ function Checkout() {
       try {
 
         // ==================================================
-        // WHATSAPP MESSAGE
+        // 1 — GET DEPARTMENTS
         // ==================================================
 
-        let message =
-          "🛒 طلب جديد من الصفتي ستور\n\n";
+        const departments =
+          await getDepartmentsForOrder();
 
 
-        message +=
-          `👤 الاسم:\n${cleanName}\n\n`;
+        /*
+         * لازم يكون فيه قسم ورقم واتساب
+         * قبل السماح بإتمام الطلب.
+         */
 
+        if (
+          departments.length === 0
+        ) {
 
-        message +=
-          `📱 الهاتف:\n${cleanPhone}\n\n`;
+          alert(
+            "لا يمكن إتمام الطلب.\n\nلا يوجد رقم واتساب مضاف للقسم الخاص بالمنتج.\n\nأضف رقم واتساب للقسم من لوحة الأدمن ثم حاول مرة أخرى."
+          );
 
+          return;
 
-        message +=
-          `📍 العنوان:\n${cleanAddress}\n\n`;
-
-
-        message +=
-          "📦 المنتجات:\n\n";
-
-
-        cart.forEach(
-          (
-            item,
-            index
-          ) => {
-
-            const itemName =
-              item?.title ||
-              item?.name ||
-              "منتج";
-
-
-            const variantName =
-              item?.selectedVariant
-                ?.name ||
-              "";
-
-
-            const price =
-              Number(
-                item?.price || 0
-              );
-
-
-            const quantity =
-              Number(
-                item?.quantity || 0
-              );
-
-
-            const itemTotal =
-              price * quantity;
-
-
-            message +=
-              `${index + 1}- ${itemName}\n`;
-
-
-            if (
-              variantName
-            ) {
-
-              message +=
-                `🔀 النوع: ${variantName}\n`;
-
-            }
-
-
-            message +=
-              `🔢 الكمية: ${quantity}\n`;
-
-
-            message +=
-              `💵 سعر الوحدة: ${price} جنيه\n`;
-
-
-            message +=
-              `💰 إجمالي المنتج: ${itemTotal} جنيه\n\n`;
-
-          }
-        );
-
-
-        message +=
-          `💰 الإجمالي النهائي:\n${totalPrice} جنيه`;
+        }
 
 
         // ==================================================
-        // PREPARE ORDER PRODUCTS
+        // 2 — CREATE ORDER NUMBER
+        // ==================================================
+
+        const orderNumber =
+          await createSequentialOrderNumber();
+
+
+        // ==================================================
+        // 3 — PREPARE PRODUCTS
         // ==================================================
 
         const orderProducts =
           cart.map(
-            (item) => {
+            (
+              item
+            ) => {
 
               const productId =
                 item?.id ||
@@ -357,6 +720,11 @@ function Checkout() {
                   item?.name ||
                   "منتج",
 
+                name:
+                  item?.name ||
+                  item?.title ||
+                  "منتج",
+
                 image:
                   item?.image ||
                   item?.images?.[0] ||
@@ -382,11 +750,17 @@ function Checkout() {
                     item?.stock || 0
                   ),
 
+                category:
+                  item?.category ||
+                  item?.categoryName ||
+                  "",
+
                 selectedVariant:
                   selectedVariant,
 
                 variantName:
                   selectedVariant?.name ||
+                  item?.variantName ||
                   "",
 
               };
@@ -396,24 +770,75 @@ function Checkout() {
 
 
         // ==================================================
-        // PHONE
+        // 4 — DEPARTMENT DATA
         // ==================================================
 
-        const whatsappPhone =
-          normalizePhone(
-            cleanPhone
+        const departmentData =
+          departments.map(
+            (
+              department
+            ) => ({
+
+              id:
+                department.id,
+
+              name:
+                department.name,
+
+              whatsapp:
+                department.whatsapp,
+
+            })
           );
 
 
+        /*
+         * أول قسم هو القسم الذي سيتم فتح واتساب الخاص به.
+         */
+
+        const firstDepartment =
+          departmentData[0];
+
+
+        const departmentWhatsapp =
+          normalizePhone(
+            firstDepartment?.whatsapp
+          );
+
+
+        if (
+          !departmentWhatsapp
+        ) {
+
+          alert(
+            "لا يوجد رقم واتساب صالح للقسم.\n\nتم إيقاف الطلب ولم يتم حفظه."
+          );
+
+          return;
+
+        }
+
+
         // ==================================================
-        // SAVE ORDER IN FIRESTORE
+        // 5 — SAVE ORDER IN FIRESTORE FIRST
         // ==================================================
 
         const orderData = {
 
-          // ==================================================
+          // ----------------------------------------------
+          // ORDER NUMBER
+          // ----------------------------------------------
+
+          orderNumber:
+            orderNumber,
+
+          orderNumberText:
+            `#${orderNumber}`,
+
+
+          // ----------------------------------------------
           // USER
-          // ==================================================
+          // ----------------------------------------------
 
           userId:
             user?.uid ||
@@ -432,9 +857,9 @@ function Checkout() {
             null,
 
 
-          // ==================================================
+          // ----------------------------------------------
           // CUSTOMER
-          // ==================================================
+          // ----------------------------------------------
 
           customerName:
             cleanName,
@@ -450,17 +875,17 @@ function Checkout() {
             cleanAddress,
 
 
-          // ==================================================
+          // ----------------------------------------------
           // PRODUCTS
-          // ==================================================
+          // ----------------------------------------------
 
           products:
             orderProducts,
 
 
-          // ==================================================
+          // ----------------------------------------------
           // TOTAL
-          // ==================================================
+          // ----------------------------------------------
 
           total:
             Number(
@@ -468,17 +893,48 @@ function Checkout() {
             ),
 
 
-          // ==================================================
+          // ----------------------------------------------
+          // DEPARTMENTS
+          // ----------------------------------------------
+
+          departments:
+            departmentData,
+
+          departmentName:
+            departmentData
+              .map(
+                (
+                  department
+                ) =>
+                  department.name
+              )
+              .join(
+                "، "
+              ),
+
+
+          // ----------------------------------------------
+          // WHATSAPP
+          // ----------------------------------------------
+
+          whatsappPhone:
+            departmentWhatsapp,
+
+          whatsappSent:
+            false,
+
+
+          // ----------------------------------------------
           // STATUS
-          // ==================================================
+          // ----------------------------------------------
 
           status:
             "pending",
 
 
-          // ==================================================
+          // ----------------------------------------------
           // DATE
-          // ==================================================
+          // ----------------------------------------------
 
           createdAt:
             serverTimestamp(),
@@ -487,66 +943,107 @@ function Checkout() {
 
 
         console.log(
-          "Saving order:",
+          "Saving order BEFORE WhatsApp:",
           orderData
         );
 
 
-        await addDoc(
-          collection(
-            db,
-            "orders"
-          ),
-          orderData
+        /*
+         * مهم جدًا:
+         *
+         * الطلب يتحفظ هنا أولًا.
+         *
+         * لو addDoc فشل:
+         * لن يتم فتح WhatsApp.
+         */
+
+        const orderRef =
+          await addDoc(
+            collection(
+              db,
+              "orders"
+            ),
+            orderData
+          );
+
+
+        console.log(
+          "Order saved successfully:",
+          orderRef.id
         );
 
 
         // ==================================================
-        // WHATSAPP
+        // 6 — BUILD WHATSAPP MESSAGE
         // ==================================================
 
-        if (
-          whatsappPhone
-        ) {
-
-          const whatsappUrl =
-            `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-              message
-            )}`;
-
-
-          window.open(
-            whatsappUrl,
-            "_blank",
-            "noopener,noreferrer"
+        const whatsappMessage =
+          buildWhatsappMessage(
+            orderNumber,
+            firstDepartment?.name
           );
-
-        } else {
-
-          alert(
-            "تم حفظ الطلب، لكن رقم الهاتف غير صالح لفتح واتساب."
-          );
-
-        }
 
 
         // ==================================================
-        // CLEAR CART
+        // 7 — CREATE WHATSAPP URL
+        // ==================================================
+
+        const whatsappUrl =
+          `https://wa.me/${departmentWhatsapp}?text=${encodeURIComponent(
+            whatsappMessage
+          )}`;
+
+
+        console.log(
+          "WhatsApp Department:",
+          firstDepartment?.name
+        );
+
+        console.log(
+          "WhatsApp Number:",
+          departmentWhatsapp
+        );
+
+        console.log(
+          "WhatsApp URL:",
+          whatsappUrl
+        );
+
+
+        // ==================================================
+        // 8 — CLEAR CART
         // ==================================================
 
         setCart([]);
 
 
         // ==================================================
-        // SUCCESS
+        // 9 — OPEN WHATSAPP
         // ==================================================
 
-        alert(
-          "تم إرسال الطلب بنجاح ✅"
+        /*
+         * الطلب تم حفظه بالفعل في Firestore.
+         * الآن فقط يتم فتح WhatsApp.
+         */
+
+        window.location.href =
+          whatsappUrl;
+
+
+        // ==================================================
+        // 10 — SUCCESS
+        // ==================================================
+
+        setTimeout(
+          () => {
+
+            alert(
+              `تم تسجيل الطلب رقم #${orderNumber} بنجاح ✅\n\nتم حفظ الطلب في لوحة الأدمن.\n\nسيتم فتح واتساب القسم لإرسال تفاصيل الطلب.`
+            );
+
+          },
+          300
         );
-
-
-        navigate("/");
 
 
       } catch (
@@ -560,7 +1057,7 @@ function Checkout() {
 
 
         // ==================================================
-        // FIREBASE ERROR
+        // FIRESTORE ERROR
         // ==================================================
 
         if (
@@ -569,14 +1066,14 @@ function Checkout() {
         ) {
 
           alert(
-            "تم رفض حفظ الطلب من Firebase. راجع Firestore Rules."
+            "فشل حفظ الطلب في لوحة الأدمن.\n\nتم إيقاف إرسال واتساب لأن حفظ الطلب لم ينجح.\n\nراجع Firestore Rules."
           );
 
         } else {
 
           alert(
             error?.message ||
-            "حدث خطأ أثناء حفظ الطلب"
+            "حدث خطأ أثناء تسجيل الطلب."
           );
 
         }
@@ -605,7 +1102,9 @@ function Checkout() {
         dir="rtl"
       >
 
-        <div className="checkout-empty">
+        <div
+          className="checkout-empty"
+        >
 
           <h2>
             لا يوجد منتجات لإتمام الطلب 🛒
@@ -619,7 +1118,9 @@ function Checkout() {
               navigate("/")
             }
           >
+
             ⬅ العودة للمتجر
+
           </button>
 
         </div>
@@ -647,7 +1148,9 @@ function Checkout() {
       </h2>
 
 
-      <div className="checkout-form">
+      <div
+        className="checkout-form"
+      >
 
         {/* ==================================================
             CUSTOMER NAME
@@ -703,7 +1206,9 @@ function Checkout() {
             ORDER SUMMARY
         ================================================== */}
 
-        <div className="checkout-summary">
+        <div
+          className="checkout-summary"
+        >
 
           <h3>
             ملخص الطلب
@@ -742,6 +1247,7 @@ function Checkout() {
               const variantName =
                 item?.selectedVariant
                   ?.name ||
+                item?.variantName ||
                 "";
 
 
@@ -752,22 +1258,47 @@ function Checkout() {
                   key={itemId}
                 >
 
-                  <div className="checkout-item-info">
+                  <div
+                    className="checkout-item-info"
+                  >
 
                     <strong>
+
                       {
                         item?.title ||
                         item?.name ||
                         "منتج"
                       }
+
                     </strong>
+
+
+                    {(
+                      item?.category ||
+                      item?.categoryName
+                    ) && (
+
+                      <small>
+
+                        🏷️ القسم:{" "}
+
+                        {
+                          item?.category ||
+                          item?.categoryName
+                        }
+
+                      </small>
+
+                    )}
 
 
                     {variantName && (
 
                       <small>
+
                         🔀 النوع:{" "}
                         {variantName}
+
                       </small>
 
                     )}
@@ -776,9 +1307,13 @@ function Checkout() {
 
 
                   <span>
+
                     {quantity} × {price} جنيه
+
                     {" = "}
+
                     {itemTotal} جنيه
+
                   </span>
 
                 </div>
@@ -793,7 +1328,9 @@ function Checkout() {
               TOTAL
           ================================================== */}
 
-          <div className="checkout-total">
+          <div
+            className="checkout-total"
+          >
 
             <strong>
               الإجمالي:
@@ -824,8 +1361,12 @@ function Checkout() {
         >
 
           {loading
-            ? "⏳ جاري إرسال الطلب..."
-            : "📦 تأكيد الطلب"}
+
+            ? "⏳ جاري تسجيل الطلب وفتح واتساب..."
+
+            : "📦 تأكيد الطلب وإرسال واتساب"
+
+          }
 
         </button>
 

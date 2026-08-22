@@ -3,7 +3,7 @@ import React, {
   useState,
   useContext,
 } from "react";
-
+import UserLogin from "./pages/UserLogin";
 import {
   BrowserRouter,
   Routes,
@@ -528,7 +528,10 @@ function AppContent() {
           <CartWrapper />
         }
       />
-
+<Route
+  path="/user-login"
+  element={<UserLogin />}
+/>
       {/* ==================================================
           WISHLIST
       ================================================== */}
@@ -544,15 +547,14 @@ function AppContent() {
           CHECKOUT
       ================================================== */}
 
-      <Route
-        path="/checkout"
-        element={
-          <ProtectedRoute>
-            <Checkout />
-          </ProtectedRoute>
-        }
-      />
-
+<Route
+  path="/checkout"
+  element={
+    <ProtectedRoute>
+      <CheckoutWrapper />
+    </ProtectedRoute>
+  }
+/>
       {/* ==================================================
           ADMIN LOGIN
       ================================================== */}
@@ -772,7 +774,74 @@ function CartWrapper() {
     />
   );
 }
+// ======================================================
+// CHECKOUT WRAPPER
+// ======================================================
 
+function CheckoutWrapper() {
+
+  const {
+    cart,
+    setCart,
+  } = useContext(
+    CartContext
+  );
+
+  const navigate =
+    useNavigate();
+
+
+  return (
+    <Checkout
+      cart={
+        cart
+      }
+
+      setCart={
+        setCart
+      }
+
+      setCurrentView={
+        (page) => {
+
+          switch (page) {
+
+            case "store":
+              navigate(
+                "/"
+              );
+              break;
+
+            case "cart":
+              navigate(
+                "/cart"
+              );
+              break;
+
+            case "account":
+              navigate(
+                "/account"
+              );
+              break;
+
+            case "orders":
+              navigate(
+                "/orders"
+              );
+              break;
+
+            default:
+              navigate(
+                "/"
+              );
+              break;
+          }
+
+        }
+      }
+    />
+  );
+}
 // ======================================================
 // EXPORT
 // ======================================================

@@ -81,28 +81,6 @@ function toggleCartOnAdd() {
 }
 
 // إرسال الطلب عبر واتساب مع تفاصيل المنتجات
-function sendToWhatsApp() {
-    if (cart.length === 0) {
-        alert("سلة المشتريات فارغة!");
-        return;
-    }
-
-    // ضع رقم واتساب الخاص بك هنا (مثلاً بمصر: 201000000000 بدون علامة +)
-    const myWhatsAppNumber = "201553570220"; 
-
-    let message = "مرحباً، أريد طلب المنتجات التالية من *Elsafty Store*:%0A%0A";
-    let total = 0;
-
-    cart.forEach((item, index) => {
-        message += `${index + 1}. ${item.name} - *${item.price} جنيه*%0A`;
-        total += item.price;
-    });
-
-    message += `%0A━━━━━━━━━━━━━━%0A*الإجمالي الكلي: ${total} جنيه*`;
-
-    // فتح محادثة واتساب بالرسالة الجاهزة
-    window.open(`https://wa.me/${myWhatsAppNumber}?text=${message}`, '_blank');
-}
 
 // تشغيل عرض المنتجات لأول مرة عند فتح الصفحة
 displayProducts(products);

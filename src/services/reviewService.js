@@ -4,83 +4,307 @@ import {
   query,
   where,
   getDocs,
-  orderBy,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { db, auth } from "../firebase";
 
+// =====================================================
+// REVIEWS COLLECTION
+// =====================================================
+
+const reviewsCollection = collection(
+  db,
+  "reviews"
+);
+
+
+// =====================================================
+// ADD REVIEW
+// =====================================================
+
 export const addReview = async (
   productId,
-  rating,
-  comment
+  reviewData
 ) => {
-
   const user = auth.currentUser;
 
+  // ---------------------------------------------------
+  // التأكد من تسجيل الدخول
+  // ---------------------------------------------------
+
   if (!user) {
-    throw new Error("يجب تسجيل الدخول");
+    throw new Error(
+      "يجب تسجيل الدخول أولاً"
+    );
   }
 
-  const q = query(
-    collection(db, "reviews"),
-    where("productId", "==", productId),
-    where("userId", "==", user.uid)
-  );
+  // ---------------------------------------------------
+  // التأكد من وجود المنتج
+  // ---------------------------------------------------
 
-  const exist = await getDocs(q);
-
-  if (!exist.empty) {
-    throw new Error("لقد قمت بتقييم هذا المنتج بالفعل");
+  if (!productId) {
+    throw new Error(
+      "رقم المنتج غير موجود"
+    );
   }
 
-  await addDoc(collection(db, "reviews"), {
-    productId,
-    userId: user.uid,
-    customerName: user.displayName || "مستخدم",
-    rating,
-    comment,
-    createdAt: serverTimestamp()
-  });
+  // ---------------------------------------------------
+  // بيانات التقييم
+  // ---------------------------------------------------
 
-};
-
-export const getReviews = async (productId) => {
-
-  const q = query(
-    collection(db, "reviews"),
-    where("productId", "==", productId),
-    orderBy("createdAt", "desc")
+  const rating = Number(
+    reviewData?.rating || 0
   );
 
-  const snap = await getDocs(q);
+  const comment = String(
+    reviewData?.comment || ""
+  ).trim();
 
-  return snap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
+  // ---------------------------------------------------
+  // التحقق من التقييم
+  // ---------------------------------------------------
 
+  if (
+    rating < 1 ||
+    rating > 5
+  ) {
+    throw new Error(
+      "التقييم يجب أن يكون من 1 إلى 5 نجوم"
+    );
+  }
+
+  // ---------------------------------------------------
+  // التحقق من التعليق
+  // ---------------------------------------------------
+
+  if (!comment) {
+    throw new Error(
+      "اكتب رأيك عن المنتج أولاً"
+    );
+  }
+
+  // ---------------------------------------------------
+  // البحث عن تقييم سابق لنفس المستخدم
+  // ---------------------------------------------------
+
+  const existingQuery = query(
+    reviewsCollection,
+
+    where(
+      "productId",
+      "==",
+      productId
+    ),
+
+    where(
+      "userId",
+      "==",
+      user.uid
+    )
+  );
+
+  const existingSnapshot =
+    await getDocs(
+      existingQuery
+    );
+
+  // ---------------------------------------------------
+  // منع التقييم المتكرر
+  // ---------------------------------------------------
+
+  if (
+    !existingSnapshot.empty
+  ) {
+    throw new Error(
+      "لقد قمت بتقييم هذا المنتج بالفعل"
+    );
+  }
+
+  // ---------------------------------------------------
+  // إضافة التقييم
+  // ---------------------------------------------------
+
+  await addDoc(
+    reviewsCollection,
+    {
+      productId,
+
+      userId:
+        user.uid,
+
+      customerName:
+        user.displayName ||
+        user.email ||
+        "مستخدم",
+
+      rating,
+
+      comment,
+
+      createdAt:
+        serverTimestamp(),
+    }
+  );
 };
 
-export const getRating = async (productId) => {
 
-  const reviews = await getReviews(productId);
+// =====================================================
+// GET REVIEWS
+// =====================================================
+//
+// ملاحظة:
+// لا نستخدم orderBy هنا حتى لا نحتاج Composite Index.
+// سيتم ترتيب التقييمات داخل JavaScript.
+// =====================================================
 
-  if (reviews.length === 0) {
+export const getReviews = async (
+  productId
+) => {
+  // ---------------------------------------------------
+  // التأكد من وجود Product ID
+  // ---------------------------------------------------
+
+  if (!productId) {
+    return [];
+  }
+
+  // ---------------------------------------------------
+  // البحث بالتقييمات الخاصة بالمنتج فقط
+  // ---------------------------------------------------
+
+  const reviewsQuery = query(
+    reviewsCollection,
+
+    where(
+      "productId",
+      "==",
+      productId
+    )
+  );
+
+  const snapshot =
+    await getDocs(
+      reviewsQuery
+    );
+
+  // ---------------------------------------------------
+  // تحويل Firestore إلى Array
+  // ---------------------------------------------------
+
+  const reviews =
+    snapshot.docs.map(
+      (doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
+
+  // ---------------------------------------------------
+  // ترتيب الأحدث أولاً
+  //
+  // بعض التقييمات القديمة ممكن يكون createdAt
+  // غير موجود أو لسه Pending بسبب serverTimestamp.
+  // لذلك نستخدم حماية.
+  // ---------------------------------------------------
+
+  reviews.sort(
+    (a, b) => {
+
+      const timeA =
+        a?.createdAt?.toMillis
+          ? a.createdAt.toMillis()
+          : 0;
+
+      const timeB =
+        b?.createdAt?.toMillis
+          ? b.createdAt.toMillis()
+          : 0;
+
+      return timeB - timeA;
+    }
+  );
+
+  return reviews;
+};
+
+
+// =====================================================
+// GET RATING
+// =====================================================
+
+export const getRating = async (
+  productId
+) => {
+  // ---------------------------------------------------
+  // لا يوجد Product ID
+  // ---------------------------------------------------
+
+  if (!productId) {
     return {
       average: 0,
-      count: 0
+      count: 0,
     };
   }
 
-  const total = reviews.reduce(
-    (sum, review) => sum + Number(review.rating),
-    0
-  );
+  // ---------------------------------------------------
+  // جلب التقييمات
+  // ---------------------------------------------------
+
+  const reviews =
+    await getReviews(
+      productId
+    );
+
+  // ---------------------------------------------------
+  // لا توجد تقييمات
+  // ---------------------------------------------------
+
+  if (
+    !reviews ||
+    reviews.length === 0
+  ) {
+    return {
+      average: 0,
+      count: 0,
+    };
+  }
+
+  // ---------------------------------------------------
+  // حساب مجموع التقييمات
+  // ---------------------------------------------------
+
+  const total =
+    reviews.reduce(
+      (
+        sum,
+        review
+      ) =>
+        sum +
+        Number(
+          review?.rating || 0
+        ),
+      0
+    );
+
+  // ---------------------------------------------------
+  // حساب المتوسط
+  // ---------------------------------------------------
+
+  const average =
+    total /
+    reviews.length;
+
+  // ---------------------------------------------------
+  // النتيجة
+  // ---------------------------------------------------
 
   return {
-    average: Number(total / reviews.length).toFixed(1),
-    count: reviews.length
-  };
+    average: Number(
+      average.toFixed(1)
+    ),
 
+    count:
+      reviews.length,
+  };
 };

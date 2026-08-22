@@ -60,11 +60,7 @@ function toggleCart() {
 }
 
 // الربط الفعلي بواتساب لإرسال الأوردر
-function sendToWhatsApp() {
-    if (cart.length === 0) {
-        alert("السلة فارغة!");
-        return;
-    }
+
 
     // ضع رقم واتساب الخاص بك هنا (متبوعاً برمز الدولة، مثال لمصر: 201xxxxxxxxx)
     const myWhatsAppNumber = "201000000000"; 

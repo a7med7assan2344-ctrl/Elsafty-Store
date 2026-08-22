@@ -1,22 +1,23 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import {
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 
 import {
   doc,
   getDoc,
-  updateDoc,
   setDoc,
-  serverTimestamp
+  updateDoc,
+  increment,
+  serverTimestamp,
+  arrayUnion,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
 
-function Login() {
-
+function UserLogin() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -24,25 +25,33 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const login = async (e) => {
-
     e.preventDefault();
 
-    if (loading) {
+    if (loading) return;
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      alert("برجاء إدخال البريد الإلكتروني");
       return;
     }
 
+    if (!password) {
+      alert("برجاء إدخال كلمة المرور");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-
-      setLoading(true);
-
-      // ==========================================
-      // FIREBASE AUTH
-      // ==========================================
+      // ============================================
+      // FIREBASE LOGIN
+      // ============================================
 
       const result =
         await signInWithEmailAndPassword(
           auth,
-          email.trim().toLowerCase(),
+          cleanEmail,
           password
         );
 
@@ -50,13 +59,13 @@ function Login() {
 
       if (!user?.uid) {
         throw new Error(
-          "لم يتم العثور على بيانات المستخدم"
+          "لم يتم تسجيل الدخول بشكل صحيح"
         );
       }
 
-      // ==========================================
-      // FIRESTORE USER
-      // ==========================================
+      // ============================================
+      // USER DOCUMENT
+      // ============================================
 
       const userRef = doc(
         db,
@@ -64,79 +73,72 @@ function Login() {
         user.uid
       );
 
-      const userSnap =
+      const userSnapshot =
         await getDoc(userRef);
 
-      // ==========================================
-      // LOGIN VISIT
-      // ==========================================
+      // ============================================
+      // لو الحساب موجود في Firestore
+      // ============================================
 
-      const loginVisit = {
-        date: new Date().toISOString(),
-        type: "login"
-      };
+      if (userSnapshot.exists()) {
+        const userData =
+          userSnapshot.data();
 
-      // ==========================================
-      // USER EXISTS
-      // ==========================================
+        const currentLoginCount =
+          Number(
+            userData.loginCount || 0
+          );
 
-      if (userSnap.exists()) {
-
-        const userData = userSnap.data();
-
-        const oldVisits =
-          Array.isArray(userData.visits)
-            ? userData.visits
-            : [];
+        const visit = {
+          date: new Date().toISOString(),
+          type: "login",
+        };
 
         await updateDoc(
           userRef,
           {
+            loginCount:
+              currentLoginCount + 1,
 
             lastLoginAt:
               serverTimestamp(),
 
-            loginCount:
-              Number(
-                userData.loginCount || 0
-              ) + 1,
-
-            visits: [
-              ...oldVisits,
-              loginVisit
-            ],
-
-            updatedAt:
-              serverTimestamp()
-
+            visits:
+              arrayUnion(visit),
           }
         );
-
       }
 
-      // ==========================================
-      // AUTH USER EXISTS BUT FIRESTORE USER MISSING
-      // ==========================================
+      // ============================================
+      // لو الحساب قديم في Authentication
+      // ومش موجود في users
+      // ============================================
 
       else {
-
         await setDoc(
           userRef,
           {
-
             uid: user.uid,
 
             name:
-              user.displayName || "",
+              user.displayName ||
+              "مستخدم",
 
             displayName:
-              user.displayName || "",
+              user.displayName ||
+              "مستخدم",
+
+            fullName:
+              user.displayName ||
+              "مستخدم",
 
             email:
-              user.email || "",
+              user.email ||
+              cleanEmail,
 
-            phone:
-              user.phoneNumber || "",
+            phone: "",
+
+            address: "",
 
             role: "user",
 
@@ -147,102 +149,97 @@ function Login() {
             lastLoginAt:
               serverTimestamp(),
 
-            visits: [
-              loginVisit
-            ],
-
             createdAt:
               serverTimestamp(),
 
             registeredAt:
               serverTimestamp(),
 
-            address: "",
+            visits: [
+              {
+                date:
+                  new Date().toISOString(),
 
-            updatedAt:
-              serverTimestamp()
-
+                type: "login",
+              },
+            ],
           }
         );
-
       }
 
-      // ==========================================
+      // ============================================
       // SUCCESS
-      // ==========================================
+      // ============================================
+
+      alert(
+        "تم تسجيل الدخول بنجاح ✅"
+      );
 
       navigate("/");
 
-    }
-
-    catch (err) {
-
+    } catch (err) {
       console.error(
-        "Login Error:",
+        "User Login Error:",
         err
       );
 
       switch (err?.code) {
-
         case "auth/invalid-credential":
         case "auth/wrong-password":
         case "auth/user-not-found":
-
           alert(
             "البريد الإلكتروني أو كلمة المرور غير صحيحة"
           );
-
           break;
 
         case "auth/invalid-email":
-
           alert(
             "البريد الإلكتروني غير صحيح"
           );
+          break;
 
+        case "auth/user-disabled":
+          alert(
+            "هذا الحساب تم إيقافه"
+          );
           break;
 
         case "auth/too-many-requests":
-
           alert(
             "تمت محاولات دخول كثيرة، حاول مرة أخرى لاحقًا"
           );
-
           break;
 
         case "auth/network-request-failed":
-
           alert(
             "تأكد من اتصال الإنترنت وحاول مرة أخرى"
           );
+          break;
 
+        case "permission-denied":
+        case "firestore/permission-denied":
+          alert(
+            "لا توجد صلاحية لتحديث بيانات الحساب"
+          );
           break;
 
         default:
-
           alert(
-            "حدث خطأ أثناء تسجيل الدخول"
+            err?.message ||
+              "حدث خطأ أثناء تسجيل الدخول"
           );
-
       }
 
-    }
-
-    finally {
-
+    } finally {
       setLoading(false);
-
     }
-
   };
 
   return (
-
     <div
       className="auth-page"
       dir="rtl"
     >
-
       <form
         className="auth-form"
         onSubmit={login}
@@ -280,15 +277,12 @@ function Login() {
           type="submit"
           disabled={loading}
         >
-
           {loading
-            ? "⏳ جاري الدخول..."
-            : "دخول"}
-
+            ? "⏳ جاري تسجيل الدخول..."
+            : "تسجيل الدخول"}
         </button>
 
         <p>
-
           ليس لديك حساب؟
 
           {" "}
@@ -296,15 +290,11 @@ function Login() {
           <Link to="/register">
             إنشاء حساب
           </Link>
-
         </p>
 
       </form>
-
     </div>
-
   );
-
 }
 
-export default Login;
+export default UserLogin;

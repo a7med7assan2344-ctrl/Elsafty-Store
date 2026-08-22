@@ -20,14 +20,14 @@ import { getCategories } from "../services/categoryService";
 function Home({
   products = [],
   admin,
-  searchTerm,
+  searchTerm = "",
   setSearchTerm,
   setCurrentView,
 }) {
   const navigate = useNavigate();
   const productsRef = useRef(null);
 
-  const { cart, addToCart } = useContext(CartContext);
+  const { cart = [], addToCart } = useContext(CartContext);
 
   // =====================================================
   // STATES
@@ -46,8 +46,9 @@ function Home({
   // CART COUNT
   // =====================================================
 
-  const cartCount = (cart || []).reduce(
-    (total, item) => total + Number(item?.quantity || 0),
+  const cartCount = cart.reduce(
+    (total, item) =>
+      total + Number(item?.quantity || 0),
     0
   );
 
@@ -56,22 +57,37 @@ function Home({
   // =====================================================
 
   useEffect(() => {
+    let mounted = true;
+
     const loadCategories = async () => {
       try {
         const data = await getCategories();
 
+        if (!mounted) return;
+
         const activeCategories = (data || []).filter(
-          (category) => category?.active === true
+          (category) =>
+            category?.active === true
         );
 
         setCategories(activeCategories);
       } catch (error) {
-        console.error("خطأ في تحميل الأقسام:", error);
-        setCategories([]);
+        console.error(
+          "خطأ في تحميل الأقسام:",
+          error
+        );
+
+        if (mounted) {
+          setCategories([]);
+        }
       }
     };
 
     loadCategories();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // =====================================================
@@ -80,7 +96,8 @@ function Home({
 
   useEffect(() => {
     const filterListener = (event) => {
-      const category = event?.detail || "الكل";
+      const category =
+        event?.detail || "الكل";
 
       if (category === "الكل") {
         setSelectedCategory("الكل");
@@ -96,7 +113,9 @@ function Home({
       }
 
       navigate(
-        `/category/${encodeURIComponent(category)}`
+        `/category/${encodeURIComponent(
+          category
+        )}`
       );
     };
 
@@ -118,7 +137,8 @@ function Home({
   // =====================================================
 
   const scrollToSection = (selector) => {
-    const element = document.querySelector(selector);
+    const element =
+      document.querySelector(selector);
 
     if (!element) return;
 
@@ -132,7 +152,9 @@ function Home({
   // CATEGORY CLICK
   // =====================================================
 
-  const handleCategoryClick = (category) => {
+  const handleCategoryClick = (
+    category
+  ) => {
     if (category === "الكل") {
       setSelectedCategory("الكل");
 
@@ -147,19 +169,23 @@ function Home({
     }
 
     navigate(
-      `/category/${encodeURIComponent(category)}`
+      `/category/${encodeURIComponent(
+        category
+      )}`
     );
   };
 
   // =====================================================
-  // OPEN CATEGORY PAGE
+  // OPEN CATEGORY
   // =====================================================
 
   const openCategory = (categoryName) => {
     if (!categoryName) return;
 
     navigate(
-      `/category/${encodeURIComponent(categoryName)}`
+      `/category/${encodeURIComponent(
+        categoryName
+      )}`
     );
   };
 
@@ -167,7 +193,9 @@ function Home({
   // FILTER PRODUCTS
   // =====================================================
 
-  const filteredProducts = (products || [])
+  const filteredProducts = [
+    ...(products || []),
+  ]
     .filter((product) => {
       const title = String(
         product?.title ||
@@ -190,9 +218,7 @@ function Home({
         .toLowerCase()
         .trim();
 
-      // -------------------------------
       // SEARCH
-      // -------------------------------
 
       const matchSearch =
         searchText === "" ||
@@ -200,22 +226,25 @@ function Home({
         description.includes(searchText) ||
         category.includes(searchText);
 
-      // -------------------------------
       // CATEGORY
-      // -------------------------------
 
       const matchCategory =
         selectedCategory === "الكل" ||
-        String(product?.category || "").trim() ===
-          String(selectedCategory || "").trim();
+        String(
+          product?.category || ""
+        ).trim() ===
+          String(
+            selectedCategory || ""
+          ).trim();
 
-      if (!matchSearch || !matchCategory) {
+      if (
+        !matchSearch ||
+        !matchCategory
+      ) {
         return false;
       }
 
-      // -------------------------------
       // OFFERS
-      // -------------------------------
 
       if (
         showOffersOnly &&
@@ -224,9 +253,7 @@ function Home({
         return false;
       }
 
-      // -------------------------------
       // MIN PRICE
-      // -------------------------------
 
       if (
         minPrice !== "" &&
@@ -236,9 +263,7 @@ function Home({
         return false;
       }
 
-      // -------------------------------
       // MAX PRICE
-      // -------------------------------
 
       if (
         maxPrice !== "" &&
@@ -272,14 +297,22 @@ function Home({
 
         case "new":
           return (
-            Number(Boolean(b?.newArrival)) -
-            Number(Boolean(a?.newArrival))
+            Number(
+              Boolean(b?.newArrival)
+            ) -
+            Number(
+              Boolean(a?.newArrival)
+            )
           );
 
         case "best":
           return (
-            Number(Boolean(b?.bestSeller)) -
-            Number(Boolean(a?.bestSeller))
+            Number(
+              Boolean(b?.bestSeller)
+            ) -
+            Number(
+              Boolean(a?.bestSeller)
+            )
           );
 
         default:
@@ -292,37 +325,51 @@ function Home({
   // =====================================================
 
   const offers = (products || []).filter(
-    (product) => product?.offer === true
+    (product) =>
+      product?.offer === true
   );
 
-  const bestSellers = (products || []).filter(
-    (product) => product?.bestSeller === true
+  const bestSellers = (
+    products || []
+  ).filter(
+    (product) =>
+      product?.bestSeller === true
   );
 
-  const newArrivals = (products || []).filter(
-    (product) => product?.newArrival === true
+  const newArrivals = (
+    products || []
+  ).filter(
+    (product) =>
+      product?.newArrival === true
   );
 
-  const recommended = (products || []).filter(
-    (product) => product?.recommended === true
+  const recommended = (
+    products || []
+  ).filter(
+    (product) =>
+      product?.recommended === true
   );
 
   // =====================================================
   // CATEGORY PRODUCTS
   // =====================================================
 
-  const getCategoryProducts = (categoryName) => {
-    const normalizedCategory = String(
-      categoryName || ""
-    )
-      .trim()
-      .toLowerCase();
+  const getCategoryProducts = (
+    categoryName
+  ) => {
+    const normalizedCategory =
+      String(categoryName || "")
+        .trim()
+        .toLowerCase();
 
     return (products || []).filter(
       (product) =>
-        String(product?.category || "")
+        String(
+          product?.category || ""
+        )
           .trim()
-          .toLowerCase() === normalizedCategory
+          .toLowerCase() ===
+        normalizedCategory
     );
   };
 
@@ -332,7 +379,11 @@ function Home({
 
   const resetFilters = () => {
     setSelectedCategory("الكل");
-    setSearchTerm("");
+
+    if (typeof setSearchTerm === "function") {
+      setSearchTerm("");
+    }
+
     setSortBy("default");
     setShowOffersOnly(false);
     setMinPrice("");
@@ -348,7 +399,9 @@ function Home({
       5,
       Math.max(
         0,
-        Math.round(Number(rating || 0))
+        Math.round(
+          Number(rating || 0)
+        )
       )
     );
 
@@ -371,6 +424,26 @@ function Home({
   };
 
   // =====================================================
+  // ADD TO CART
+  // =====================================================
+
+  const handleAddToCart = (
+    event,
+    product
+  ) => {
+    event.stopPropagation();
+
+    if (typeof addToCart !== "function") {
+      return;
+    }
+
+    addToCart({
+      ...product,
+      quantity: 1,
+    });
+  };
+
+  // =====================================================
   // RENDER
   // =====================================================
 
@@ -388,7 +461,9 @@ function Home({
         setSearchTerm={setSearchTerm}
         admin={admin}
         products={products}
-        setSelectedCategory={setSelectedCategory}
+        setSelectedCategory={
+          setSelectedCategory
+        }
       />
 
       {/* =================================================
@@ -398,7 +473,9 @@ function Home({
       <section className="features-section">
 
         <div className="feature-card">
-          <div className="feature-icon">🚚</div>
+          <div className="feature-icon">
+            🚚
+          </div>
 
           <h3>شحن سريع</h3>
 
@@ -408,7 +485,9 @@ function Home({
         </div>
 
         <div className="feature-card">
-          <div className="feature-icon">🔒</div>
+          <div className="feature-icon">
+            🔒
+          </div>
 
           <h3>دفع آمن</h3>
 
@@ -418,7 +497,9 @@ function Home({
         </div>
 
         <div className="feature-card">
-          <div className="feature-icon">⭐</div>
+          <div className="feature-icon">
+            ⭐
+          </div>
 
           <h3>جودة مضمونة</h3>
 
@@ -428,7 +509,9 @@ function Home({
         </div>
 
         <div className="feature-card">
-          <div className="feature-icon">💬</div>
+          <div className="feature-icon">
+            💬
+          </div>
 
           <h3>دعم فني</h3>
 
@@ -496,43 +579,53 @@ function Home({
 
           {/* CATEGORIES */}
 
-          {categories.map((category) => (
-            <button
-              type="button"
-              key={category.id}
-              className="category-card"
-              onClick={() =>
-                handleCategoryClick(
-                  category.name
-                )
-              }
-            >
-              <div className="category-image-wrap">
+          {categories.map(
+            (category) => (
+              <button
+                type="button"
+                key={
+                  category?.id ||
+                  category?.name
+                }
+                className="category-card"
+                onClick={() =>
+                  handleCategoryClick(
+                    category?.name
+                  )
+                }
+              >
+                <div className="category-image-wrap">
 
-                {category.image ? (
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="category-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <span className="category-icon">
-                    {category.icon || "📦"}
-                  </span>
-                )}
+                  {category?.image ? (
+                    <img
+                      src={category.image}
+                      alt={
+                        category?.name ||
+                        "قسم"
+                      }
+                      className="category-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="category-icon">
+                      {category?.icon ||
+                        "📦"}
+                    </span>
+                  )}
 
-              </div>
+                </div>
 
-              <strong>
-                {category.name}
-              </strong>
+                <strong>
+                  {category?.name}
+                </strong>
 
-              <small>
-                تصفح المنتجات
-              </small>
-            </button>
-          ))}
+                <small>
+                  تصفح المنتجات
+                </small>
+
+              </button>
+            )
+          )}
 
         </div>
       </section>
@@ -655,82 +748,98 @@ function Home({
 
       <section className="home-categories-products">
 
-        {categories.map((category) => {
+        {categories.map(
+          (category) => {
+            const categoryProducts =
+              getCategoryProducts(
+                category?.name
+              );
 
-          const categoryProducts =
-            getCategoryProducts(
-              category.name
+            if (
+              !categoryProducts.length
+            ) {
+              return null;
+            }
+
+            return (
+              <section
+                className="category-products-section"
+                key={
+                  category?.id ||
+                  category?.name
+                }
+              >
+
+                {/* CATEGORY HEADER */}
+
+                <div className="category-products-header">
+
+                  <button
+                    type="button"
+                    className="category-section-title"
+                    onClick={() =>
+                      openCategory(
+                        category?.name
+                      )
+                    }
+                  >
+
+                    {category?.image ? (
+                      <img
+                        src={
+                          category.image
+                        }
+                        alt={
+                          category?.name ||
+                          "قسم"
+                        }
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span>
+                        {category?.icon ||
+                          "📦"}
+                      </span>
+                    )}
+
+                    <strong>
+                      {category?.name}
+                    </strong>
+
+                  </button>
+
+                  <button
+                    type="button"
+                    className="category-view-all"
+                    onClick={() =>
+                      openCategory(
+                        category?.name
+                      )
+                    }
+                  >
+                    عرض الكل ❯
+                  </button>
+
+                </div>
+
+                {/* PRODUCTS */}
+
+                <ProductsSlider
+                  title=""
+                  badge=""
+                  products={
+                    categoryProducts
+                  }
+                  addToCart={
+                    addToCart
+                  }
+                  hideHeader={true}
+                />
+
+              </section>
             );
-
-          if (!categoryProducts.length) {
-            return null;
           }
-
-          return (
-            <section
-              className="category-products-section"
-              key={category.id}
-            >
-
-              {/* CATEGORY HEADER */}
-
-              <div className="category-products-header">
-
-                <button
-                  type="button"
-                  className="category-section-title"
-                  onClick={() =>
-                    openCategory(
-                      category.name
-                    )
-                  }
-                >
-
-                  {category.image ? (
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span>
-                      {category.icon || "📦"}
-                    </span>
-                  )}
-
-                  <strong>
-                    {category.name}
-                  </strong>
-
-                </button>
-
-                <button
-                  type="button"
-                  className="category-view-all"
-                  onClick={() =>
-                    openCategory(
-                      category.name
-                    )
-                  }
-                >
-                  عرض الكل ❯
-                </button>
-
-              </div>
-
-              {/* PRODUCTS */}
-
-              <ProductsSlider
-                title=""
-                badge=""
-                products={categoryProducts}
-                addToCart={addToCart}
-                hideHeader={true}
-              />
-
-            </section>
-          );
-        })}
+        )}
 
       </section>
 
@@ -748,39 +857,48 @@ function Home({
         <div className="section-header">
 
           <div>
+
             <h2>
               📦 جميع المنتجات
             </h2>
 
-            {selectedCategory !== "الكل" && (
+            {selectedCategory !==
+              "الكل" && (
               <p className="selected-category">
                 القسم:{" "}
                 <strong>
-                  {selectedCategory}
+                  {
+                    selectedCategory
+                  }
                 </strong>
               </p>
             )}
+
           </div>
 
           <span className="products-count">
-            {filteredProducts.length} منتج
+            {
+              filteredProducts.length
+            }{" "}
+            منتج
           </span>
 
         </div>
 
-        {/* =================================================
-            FILTERS
-        ================================================= */}
+        {/* FILTERS */}
 
         <div className="products-filters">
 
           <select
             value={sortBy}
             onChange={(event) =>
-              setSortBy(event.target.value)
+              setSortBy(
+                event.target.value
+              )
             }
             aria-label="ترتيب المنتجات"
           >
+
             <option value="default">
               ترتيب افتراضي
             </option>
@@ -804,6 +922,7 @@ function Home({
             <option value="best">
               🔥 الأكثر مبيعًا
             </option>
+
           </select>
 
           <input
@@ -812,7 +931,9 @@ function Home({
             placeholder="من سعر"
             value={minPrice}
             onChange={(event) =>
-              setMinPrice(event.target.value)
+              setMinPrice(
+                event.target.value
+              )
             }
             aria-label="أقل سعر"
           />
@@ -823,7 +944,9 @@ function Home({
             placeholder="إلى سعر"
             value={maxPrice}
             onChange={(event) =>
-              setMaxPrice(event.target.value)
+              setMaxPrice(
+                event.target.value
+              )
             }
             aria-label="أعلى سعر"
           />
@@ -832,7 +955,9 @@ function Home({
 
             <input
               type="checkbox"
-              checked={showOffersOnly}
+              checked={
+                showOffersOnly
+              }
               onChange={(event) =>
                 setShowOffersOnly(
                   event.target.checked
@@ -848,156 +973,183 @@ function Home({
 
         </div>
 
-        {/* =================================================
-            PRODUCTS GRID
-        ================================================= */}
+        {/* PRODUCTS GRID */}
 
-        {filteredProducts.length > 0 ? (
+        {filteredProducts.length >
+        0 ? (
 
           <div className="product-grid">
 
-            {filteredProducts.map((product) => {
+            {filteredProducts.map(
+              (product) => {
 
-              const id =
-                product?.id ||
-                product?._id;
+                const id =
+                  product?.id ||
+                  product?._id;
 
-              const image =
-                product?.image ||
-                product?.images?.[0] ||
-                "/default-product.png";
+                const image =
+                  product?.image ||
+                  product?.images?.[0] ||
+                  "/default-product.png";
 
-              const title =
-                product?.title ||
-                product?.name ||
-                product?.productName ||
-                "منتج";
+                const title =
+                  product?.title ||
+                  product?.name ||
+                  product?.productName ||
+                  "منتج";
 
-              const price =
-                Number(product?.price || 0);
+                const price =
+                  Number(
+                    product?.price || 0
+                  );
 
-              const oldPrice =
-                Number(product?.oldPrice || 0);
+                const oldPrice =
+                  Number(
+                    product?.oldPrice || 0
+                  );
 
-              const discount =
-                oldPrice > price && oldPrice > 0
-                  ? Math.round(
-                      ((oldPrice - price) /
-                        oldPrice) *
-                        100
-                    )
-                  : 0;
+                const discount =
+                  oldPrice > price &&
+                  oldPrice > 0
+                    ? Math.round(
+                        ((oldPrice -
+                          price) /
+                          oldPrice) *
+                          100
+                      )
+                    : 0;
 
-              return (
-                <article
-                  className="product-card"
-                  key={id}
-                  onClick={() =>
-                    openProduct(id)
-                  }
-                >
+                return (
+                  <article
+                    className="product-card"
+                    key={id}
+                    onClick={() =>
+                      openProduct(id)
+                    }
+                  >
 
-                  {/* PRODUCT IMAGE */}
+                    {/* IMAGE */}
 
-                  <div className="product-img-container">
+                    <div className="product-img-container">
 
-                    {discount > 0 && (
-                      <span className="product-badge offer">
-                        -{discount}%
-                      </span>
-                    )}
-
-                    {product?.newArrival && (
-                      <span className="product-badge new">
-                        جديد
-                      </span>
-                    )}
-
-                    <img
-                      src={image}
-                      alt={title}
-                      loading="lazy"
-                    />
-
-                  </div>
-
-                  {/* PRODUCT INFO */}
-
-                  <div className="product-info">
-
-                    <h3>
-                      {title}
-                    </h3>
-
-                    {/* RATING */}
-
-                    <div className="rating">
-                      {renderRating(
-                        product?.rating
-                      )}
-                    </div>
-
-                    {/* PRICE */}
-
-                    <div className="product-price">
-
-                      <strong>
-                        {price} ج.م
-                      </strong>
-
-                      {oldPrice > price && (
-                        <del>
-                          {oldPrice} ج.م
-                        </del>
+                      {discount > 0 && (
+                        <span className="product-badge offer">
+                          -{discount}%
+                        </span>
                       )}
 
-                    </div>
+                      {product?.newArrival && (
+                        <span className="product-badge new">
+                          جديد
+                        </span>
+                      )}
 
-                    {/* ACTIONS */}
+                      {product?.bestSeller && (
+                        <span className="product-badge best">
+                          ⭐
+                        </span>
+                      )}
 
-                    <div className="product-actions">
-
-                      <button
-                        type="button"
-                        className="details-btn"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openProduct(id);
-                        }}
-                      >
-                        التفاصيل
-                      </button>
-
-                      <button
-                        type="button"
-                        className="add-to-cart-btn"
-                        onClick={(event) => {
-                          event.stopPropagation();
-
-                          addToCart({
-                            ...product,
-                            quantity: 1,
-                          });
-                        }}
-                      >
-                        🛒 أضف للسلة
-                      </button>
+                      <img
+                        src={image}
+                        alt={title}
+                        loading="lazy"
+                      />
 
                     </div>
 
-                  </div>
+                    {/* INFO */}
 
-                </article>
-              );
-            })}
+                    <div className="product-info">
+
+                      <h3>
+                        {title}
+                      </h3>
+
+                      {/* RATING */}
+
+                      <div className="rating">
+                        {renderRating(
+                          product?.rating
+                        )}
+
+                        {Number(
+                          product?.rating || 0
+                        ) > 0 && (
+                          <span className="rating-number">
+                            {" "}
+                            {Number(
+                              product?.rating
+                            ).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* PRICE */}
+
+                      <div className="product-price">
+
+                        <strong>
+                          {price} ج.م
+                        </strong>
+
+                        {oldPrice >
+                          price && (
+                          <del>
+                            {oldPrice} ج.م
+                          </del>
+                        )}
+
+                      </div>
+
+                      {/* ACTIONS */}
+
+                      <div className="product-actions">
+
+                        <button
+                          type="button"
+                          className="details-btn"
+                          onClick={(
+                            event
+                          ) => {
+                            event.stopPropagation();
+                            openProduct(
+                              id
+                            );
+                          }}
+                        >
+                          التفاصيل
+                        </button>
+
+                        <button
+                          type="button"
+                          className="add-to-cart-btn"
+                          onClick={(
+                            event
+                          ) =>
+                            handleAddToCart(
+                              event,
+                              product
+                            )
+                          }
+                        >
+                          🛒 أضف للسلة
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </article>
+                );
+              }
+            )}
 
           </div>
 
         ) : (
 
-          /* =================================================
-             NO PRODUCTS
-          ================================================= */
+          /* NO PRODUCTS */
 
           <div className="no-products">
 
@@ -1015,7 +1167,9 @@ function Home({
 
             <button
               type="button"
-              onClick={resetFilters}
+              onClick={
+                resetFilters
+              }
             >
               إعادة ضبط الفلاتر
             </button>
@@ -1175,7 +1329,9 @@ function Home({
         {/* FOOTER BOTTOM */}
 
         <div className="footer-bottom">
-          © {new Date().getFullYear()} Elsafty Store
+          ©{" "}
+          {new Date().getFullYear()}{" "}
+          Elsafty Store
           {" - "}
           جميع الحقوق محفوظة.
         </div>

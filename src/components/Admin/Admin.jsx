@@ -1,4162 +1,3492 @@
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  useMemo,
-} from "react";
+// ============================================================
+// Admin.jsx - PART 1 / 3
+// Elsafty Store - Full Admin Panel
+// ============================================================
 
-import { useNavigate } from "react-router-dom";
-
+import React, { useEffect, useMemo, useState } from "react";
 import {
+  addDoc,
   collection,
-  onSnapshot,
-  query,
-  orderBy,
+  deleteDoc,
   doc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 
-import { db, auth } from "../../firebase";
-
-import { signOut } from "firebase/auth";
-
+import { db } from "../../firebase";
 import "./Admin.css";
 
-import {
-  addProduct,
-  editProduct,
-  removeProduct,
-} from "../../services/productService";
+// ============================================================
+// HELPERS
+// ============================================================
 
-import {
-  getAllCategories,
-  addCategory,
-  editCategory,
-  removeCategory,
-} from "../../services/categoryService";
+const toDate = (value) => {
+  if (!value) return null;
 
+  if (value?.toDate) return value.toDate();
+  if (value instanceof Date) return value;
 
-function Admin({
-  products = [],
-  loadProducts,
-}) {
-  const navigate = useNavigate();
+  const date = new Date(value);
 
-  // ==================================================
-  // GENERAL STATES
-  // ==================================================
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
-  const [tab, setTab] = useState("products");
+const formatDate = (value) => {
+  const date = toDate(value);
 
-  const [orders, setOrders] = useState([]);
+  if (!date) return "غير متوفر";
 
+  return date.toLocaleString("ar-EG", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+};
+
+const normalizeText = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
+
+const getUserName = (user) =>
+  user?.name ||
+  user?.displayName ||
+  user?.fullName ||
+  user?.username ||
+  "بدون اسم";
+
+const getUserEmail = (user) =>
+  user?.email ||
+  user?.mail ||
+  "لا يوجد بريد";
+
+const getUserPhone = (user) =>
+  user?.phone ||
+  user?.phoneNumber ||
+  user?.mobile ||
+  "لا يوجد هاتف";
+
+const getUserAddress = (user) => {
+  if (typeof user?.address === "string") {
+    return user.address || "لا يوجد عنوان";
+  }
+
+  if (user?.address) {
+    return (
+      [
+        user.address.governorate,
+        user.address.city,
+        user.address.area,
+        user.address.street,
+        user.address.details,
+      ]
+        .filter(Boolean)
+        .join(" - ") || "لا يوجد عنوان"
+    );
+  }
+
+  return (
+    user?.shippingAddress ||
+    user?.location ||
+    "لا يوجد عنوان"
+  );
+};
+
+const getUserRole = (user) =>
+  user?.role === "admin" ? "مشرف" : "عميل";
+
+const getLoginCount = (user) =>
+  Number(
+    user?.loginCount ||
+      user?.loginAttempts ||
+      user?.visitsCount ||
+      0
+  );
+
+const getVisits = (user) => {
+  if (Array.isArray(user?.visits)) return user.visits;
+  if (Array.isArray(user?.visitHistory))
+    return user.visitHistory;
+  if (Array.isArray(user?.loginHistory))
+    return user.loginHistory;
+
+  return [];
+};
+
+const getPaymentMethodText = (method) => {
+  const value = normalizeText(method);
+
+  if (
+    value === "cash" ||
+    value === "cod" ||
+    value.includes("cash")
+  ) {
+    return "الدفع عند الاستلام";
+  }
+
+  if (
+    value === "card" ||
+    value === "credit" ||
+    value === "visa" ||
+    value === "online"
+  ) {
+    return "الدفع الإلكتروني";
+  }
+
+  return method || "غير محدد";
+};
+
+const getPaymentStatusText = (status) => {
+  const value = normalizeText(status);
+
+  if (
+    value === "paid" ||
+    value === "success" ||
+    value === "completed"
+  ) {
+    return "مدفوع";
+  }
+
+  if (
+    value === "failed" ||
+    value === "cancelled"
+  ) {
+    return "فشل";
+  }
+
+  return "معلق";
+};
+
+const getPaymentStatusClass = (status) => {
+  const value = normalizeText(status);
+
+  if (
+    value === "paid" ||
+    value === "success" ||
+    value === "completed"
+  ) {
+    return "payment-paid";
+  }
+
+  if (
+    value === "failed" ||
+    value === "cancelled"
+  ) {
+    return "payment-failed";
+  }
+
+  return "payment-pending";
+};
+
+const getOrderStatusText = (status) => {
+  const value = normalizeText(status);
+
+  const statuses = {
+    pending: "قيد الانتظار",
+    processing: "جاري التجهيز",
+    confirmed: "تم التأكيد",
+    shipped: "تم الشحن",
+    delivered: "تم التسليم",
+    completed: "مكتمل",
+    cancelled: "ملغي",
+    canceled: "ملغي",
+  };
+
+  return statuses[value] || status || "قيد الانتظار";
+};
+
+// ============================================================
+// ADMIN COMPONENT
+// ============================================================
+
+function Admin() {
+  // ==========================================================
+  // MAIN STATE
+  // ==========================================================
+
+  const [tab, setTab] = useState("dashboard");
+
+  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-
+  const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
 
-  const [selectedUser, setSelectedUser] =
+  const [banners, setBanners] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [supportMessages, setSupportMessages] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [shippingZones, setShippingZones] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+
+  const [storeSettings, setStoreSettings] = useState({
+    storeName: "Elsafty Store",
+    logo: "",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    address: "",
+    facebook: "",
+    instagram: "",
+    telegram: "",
+    announcement: "",
+  });
+
+  // ==========================================================
+  // PRODUCT FORM
+  // ==========================================================
+
+  const [showProductForm, setShowProductForm] =
+    useState(false);
+
+  const [editingProduct, setEditingProduct] =
     useState(null);
+
+  const [productForm, setProductForm] = useState({
+    title: "",
+    price: "",
+    oldPrice: "",
+    image: "",
+    description: "",
+    categoryId: "",
+    stock: "",
+    offer: false,
+    bestSeller: false,
+    newArrival: false,
+    recommended: false,
+    active: true,
+  });
+
+  // ==========================================================
+  // CATEGORY FORM
+  // ==========================================================
+
+  const [showCategoryForm, setShowCategoryForm] =
+    useState(false);
+
+  const [editingCategory, setEditingCategory] =
+    useState(null);
+
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    description: "",
+    image: "",
+    categoryNumber: "",
+    whatsapp: "",
+    parentId: "",
+    active: true,
+  });
+
+  // ==========================================================
+  // USER DETAILS
+  // ==========================================================
 
   const [showUserDetails, setShowUserDetails] =
     useState(false);
 
-  const [savingProduct, setSavingProduct] =
-    useState(false);
-
-  const [savingCategory, setSavingCategory] =
-    useState(false);
-
-  // ==================================================
-  // ORDER NOTIFICATION
-  // ==================================================
-
-  const firstLoad = useRef(true);
-
-  const previousOrdersCount = useRef(0);
-
-  const audio = useRef(null);
-
-  const [newOrderCount, setNewOrderCount] =
-    useState(0);
-
-  // ==================================================
-  // PRODUCT STATES
-  // ==================================================
-
-  const [title, setTitle] = useState("");
-
-  const [description, setDescription] =
-    useState("");
-
-  const [price, setPrice] = useState("");
-
-  const [oldPrice, setOldPrice] =
-    useState("");
-
-  const [category, setCategory] =
-    useState("");
-
-  const [rating, setRating] = useState(5);
-
-  const [stock, setStock] = useState(1);
-
-  const [offer, setOffer] = useState(false);
-
-  const [bestSeller, setBestSeller] =
-    useState(false);
-
-  const [newArrival, setNewArrival] =
-    useState(false);
-
-  const [recommended, setRecommended] =
-    useState(false);
-
-  const [hasVariants, setHasVariants] =
-    useState(false);
-
-  const [variants, setVariants] =
-    useState([]);
-
-  const [image, setImage] = useState("");
-
-  const [images, setImages] = useState([]);
-
-  const [editingId, setEditingId] =
+  const [selectedUser, setSelectedUser] =
     useState(null);
 
-  // ==================================================
-  // VARIANTS
-  // ==================================================
-
-  const addVariant = () => {
-    setVariants((prev) => [
-      ...prev,
-      {
-        id: `variant-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 8)}`,
-        name: "",
-        price: "",
-        oldPrice: "",
-        stock: 1,
-      },
-    ]);
-  };
-
-  const updateVariant = (
-    id,
-    field,
-    value
-  ) => {
-    setVariants((prev) =>
-      prev.map((variant) =>
-        variant.id === id
-          ? {
-              ...variant,
-              [field]: value,
-            }
-          : variant
-      )
-    );
-  };
-
-  const removeVariant = (id) => {
-    setVariants((prev) =>
-      prev.filter(
-        (variant) =>
-          variant.id !== id
-      )
-    );
-  };
-
-  // ==================================================
-  // CATEGORY STATES
-  // ==================================================
-
-  const [categoryName, setCategoryName] =
+  const [userSearch, setUserSearch] =
     useState("");
 
-  const [categoryIcon, setCategoryIcon] =
-    useState("");
+  // ==========================================================
+  // ORDER DETAILS
+  // ==========================================================
 
-  const [categoryImage, setCategoryImage] =
-    useState("");
+  const [showOrderDetails, setShowOrderDetails] =
+    useState(false);
 
-  const [editingCategoryId, setEditingCategoryId] =
+  const [selectedOrder, setSelectedOrder] =
     useState(null);
 
-  const [categoryParentId, setCategoryParentId] =
+  // ==========================================================
+  // SEARCH / FILTER
+  // ==========================================================
+
+  const [productSearch, setProductSearch] =
     useState("");
 
-  // ==================================================
-  // INITIALIZE AUDIO
-  // ==================================================
+  const [orderSearch, setOrderSearch] =
+    useState("");
+
+  const [categorySearch, setCategorySearch] =
+    useState("");
+
+  const [orderStatusFilter, setOrderStatusFilter] =
+    useState("all");
+
+  // ==========================================================
+  // GENERIC FORMS
+  // ==========================================================
+
+  const [showGenericForm, setShowGenericForm] =
+    useState(false);
+
+  const [genericType, setGenericType] =
+    useState("");
+
+  const [genericEditingId, setGenericEditingId] =
+    useState(null);
+
+  const [genericForm, setGenericForm] =
+    useState({});
+
+  const [actionLoading, setActionLoading] =
+    useState(false);
+
+  // ==========================================================
+  // REALTIME FIRESTORE
+  // ==========================================================
 
   useEffect(() => {
-    try {
-      audio.current = new Audio(
-        "/sounds/new-order.mp3"
+    const unsubscribers = [];
+
+    const watchCollection = (
+      collectionName,
+      setter,
+      sorter = null
+    ) => {
+      const unsubscribe = onSnapshot(
+        collection(db, collectionName),
+        (snapshot) => {
+          let data = snapshot.docs.map((item) => ({
+            id: item.id,
+            ...item.data(),
+          }));
+
+          if (sorter) {
+            data.sort(sorter);
+          }
+
+          setter(data);
+        },
+        (error) => {
+          console.error(
+            `${collectionName} error:`,
+            error
+          );
+          setter([]);
+        }
       );
 
-      audio.current.preload = "auto";
-    } catch (error) {
-      console.error(
-        "Audio initialization error:",
-        error
-      );
-    }
+      unsubscribers.push(unsubscribe);
+    };
+
+    watchCollection("products", setProducts);
+    watchCollection("categories", setCategories);
+    watchCollection(
+      "orders",
+      setOrders,
+      (a, b) =>
+        (toDate(b.createdAt)?.getTime() || 0) -
+        (toDate(a.createdAt)?.getTime() || 0)
+    );
+    watchCollection("users", setUsers);
+
+    watchCollection("banners", setBanners);
+    watchCollection("coupons", setCoupons);
+    watchCollection(
+      "announcements",
+      setAnnouncements
+    );
+
+    watchCollection(
+      "notifications",
+      setNotifications,
+      (a, b) =>
+        (toDate(b.createdAt)?.getTime() || 0) -
+        (toDate(a.createdAt)?.getTime() || 0)
+    );
+
+    watchCollection(
+      "supportMessages",
+      setSupportMessages
+    );
+    watchCollection("favorites", setFavorites);
+    watchCollection(
+      "blockedUsers",
+      setBlockedUsers
+    );
+    watchCollection(
+      "shippingZones",
+      setShippingZones
+    );
+    watchCollection(
+      "paymentMethods",
+      setPaymentMethods
+    );
+    watchCollection("admins", setAdmins);
+    watchCollection(
+      "activityLogs",
+      setActivityLogs,
+      (a, b) =>
+        (toDate(b.createdAt)?.getTime() || 0) -
+        (toDate(a.createdAt)?.getTime() || 0)
+    );
+
+    const unsubscribeSettings = onSnapshot(
+      doc(db, "settings", "store"),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setStoreSettings((previous) => ({
+            ...previous,
+            ...snapshot.data(),
+          }));
+        }
+      },
+      (error) => {
+        console.error(
+          "Store settings error:",
+          error
+        );
+      }
+    );
+
+    unsubscribers.push(unsubscribeSettings);
 
     return () => {
-      if (audio.current) {
-        audio.current.pause();
-        audio.current = null;
-      }
+      unsubscribers.forEach((unsubscribe) =>
+        unsubscribe()
+      );
     };
   }, []);
 
-  // ==================================================
-  // NOTIFICATION PERMISSION
-  // ==================================================
-
-  useEffect(() => {
-    if (
-      typeof window === "undefined"
-    ) {
-      return;
-    }
-
-    if (
-      "Notification" in window &&
-      Notification.permission === "default"
-    ) {
-      Notification.requestPermission().catch(
-        (error) => {
-          console.log(
-            "Notification permission error:",
-            error
-          );
-        }
-      );
-    }
-  }, []);
-
-  // ==================================================
-  // TOTAL SALES
-  // ==================================================
-
-  const totalSales = useMemo(() => {
-    return orders.reduce(
-      (sum, order) =>
-        sum + Number(order?.total || 0),
-      0
-    );
-  }, [orders]);
-
-  // ==================================================
-  // PAID SALES
-  // ==================================================
-
-  const paidSales = useMemo(() => {
-    return orders.reduce(
-      (sum, order) => {
-        const paymentStatus =
-          String(
-            order?.paymentStatus ||
-              ""
-          ).toLowerCase();
-
-        if (
-          paymentStatus === "paid" ||
-          paymentStatus === "success" ||
-          paymentStatus === "successful"
-        ) {
-          return (
-            sum +
-            Number(
-              order?.total || 0
-            )
-          );
-        }
-
-        return sum;
-      },
-      0
-    );
-  }, [orders]);
-
-  // ==================================================
+  // ==========================================================
   // CATEGORY MAP
-  // ==================================================
+  // ==========================================================
 
   const categoryMap = useMemo(() => {
     const map = {};
 
-    categories.forEach((cat) => {
-      map[cat.id] = cat;
+    categories.forEach((category) => {
+      map[category.id] = category;
     });
 
     return map;
   }, [categories]);
 
-  // ==================================================
-  // CLEAR PRODUCT FORM
-  // ==================================================
+  const getCategoryFullName = (categoryId) => {
+    if (!categoryId) return "";
 
-  const clearForm = () => {
-    setTitle("");
+    const category = categoryMap[categoryId];
 
-    setDescription("");
+    if (!category) return "بدون قسم";
 
-    setPrice("");
+    const names = [category.name];
+    let current = category;
+    const visited = new Set();
 
-    setOldPrice("");
+    while (
+      current?.parentId &&
+      !visited.has(current.parentId)
+    ) {
+      visited.add(current.parentId);
 
-    setCategory("");
+      const parent =
+        categoryMap[current.parentId];
 
-    setRating(5);
+      if (!parent) break;
 
-    setStock(1);
+      names.unshift(parent.name);
+      current = parent;
+    }
 
-    setOffer(false);
-
-    setBestSeller(false);
-
-    setNewArrival(false);
-
-    setRecommended(false);
-
-    setHasVariants(false);
-
-    setVariants([]);
-
-    setImage("");
-
-    setImages([]);
-
-    setEditingId(null);
+    return names.join(" ← ");
   };
 
-  // ==================================================
-  // IMAGE UPLOAD
-  // ==================================================
+  // ==========================================================
+  // FILTERING
+  // ==========================================================
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(
-      e.target.files || []
+  const filteredProducts = useMemo(() => {
+    const search = normalizeText(productSearch);
+
+    if (!search) return products;
+
+    return products.filter((product) =>
+      [
+        product.title,
+        product.name,
+        product.description,
+        getCategoryFullName(product.categoryId),
+      ]
+        .filter(Boolean)
+        .map(normalizeText)
+        .some((value) => value.includes(search))
     );
+  }, [products, productSearch, categories]);
 
-    if (!files.length) {
-      return;
-    }
+  const filteredCategories = useMemo(() => {
+    const search = normalizeText(categorySearch);
 
-    const readers = files.map((file) => {
-      return new Promise(
-        (resolve, reject) => {
-          const reader =
-            new FileReader();
+    if (!search) return categories;
 
-          reader.onloadend = () => {
-            resolve(
-              reader.result
-            );
-          };
+    return categories.filter((category) =>
+      [
+        category.name,
+        category.categoryNumber,
+        category.whatsapp,
+      ]
+        .filter(Boolean)
+        .map(normalizeText)
+        .some((value) => value.includes(search))
+    );
+  }, [categories, categorySearch]);
 
-          reader.onerror = reject;
+  const filteredOrders = useMemo(() => {
+    const search = normalizeText(orderSearch);
 
-          reader.readAsDataURL(file);
-        }
-      );
-    });
+    return orders.filter((order) => {
+      const status =
+        order?.status ||
+        order?.orderStatus ||
+        "pending";
 
-    Promise.all(readers)
-      .then((result) => {
-        setImages(result);
+      const matchesStatus =
+        orderStatusFilter === "all" ||
+        normalizeText(status) ===
+          normalizeText(orderStatusFilter);
 
-        setImage(
-          result[0] || ""
-        );
-      })
-      .catch((error) => {
-        console.error(
-          "Image read error:",
-          error
-        );
-
-        alert(
-          "حدث خطأ أثناء قراءة الصور"
-        );
-      });
-
-    e.target.value = "";
-  };
-
-  // ==================================================
-  // CATEGORY IMAGE UPLOAD
-  // ==================================================
-
-  const handleCategoryImageUpload = (
-    e
-  ) => {
-    const file =
-      e.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    const reader =
-      new FileReader();
-
-    reader.onloadend = () => {
-      setCategoryImage(
-        reader.result || ""
-      );
-    };
-
-    reader.onerror = () => {
-      alert(
-        "حدث خطأ أثناء قراءة صورة القسم"
-      );
-    };
-
-    reader.readAsDataURL(file);
-
-    e.target.value = "";
-  };
-
-  // ==================================================
-  // UPLOAD IMAGE TO CLOUDINARY
-  // ==================================================
-
-  const uploadImageToCloudinary =
-    async (imageData) => {
-      if (
-        !imageData ||
-        typeof imageData !== "string"
-      ) {
-        return "";
-      }
-
-      if (
-        !imageData.startsWith("data:")
-      ) {
-        return imageData;
-      }
-
-      const formData =
-        new FormData();
-
-      const blob =
-        await (
-          await fetch(imageData)
-        ).blob();
-
-      formData.append(
-        "file",
-        blob
-      );
-
-      formData.append(
-        "upload_preset",
-        "elsafty_store"
-      );
-
-      const response =
-        await fetch(
-          "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        console.error(
-          "Cloudinary upload error:",
-          data
-        );
-
-        throw new Error(
-          data?.error?.message ||
-            "فشل رفع الصورة"
-        );
-      }
+      const searchable = [
+        order?.id,
+        order?.customerName,
+        order?.name,
+        order?.email,
+        order?.phone,
+        order?.customerPhone,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
       return (
-        data?.secure_url || ""
+        matchesStatus &&
+        (!search ||
+          normalizeText(searchable).includes(search))
       );
-    };
+    });
+  }, [
+    orders,
+    orderSearch,
+    orderStatusFilter,
+  ]);
 
-  // ==================================================
-  // UPLOAD MULTIPLE IMAGES
-  // ==================================================
+  const sortedUsers = useMemo(() => {
+    const search = normalizeText(userSearch);
 
-  const uploadProductImages =
-    async (sourceImages) => {
-      const uploadedImages = [];
+    let result = [...users];
 
-      for (
-        const img of sourceImages
-      ) {
-        if (!img) {
-          continue;
+    if (search) {
+      result = result.filter((user) =>
+        [
+          getUserName(user),
+          getUserEmail(user),
+          getUserPhone(user),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(search)
+      );
+    }
+
+    result.sort(
+      (a, b) =>
+        (toDate(
+          b.lastLoginAt ||
+            b.lastLogin ||
+            b.createdAt
+        )?.getTime() || 0) -
+        (toDate(
+          a.lastLoginAt ||
+            a.lastLogin ||
+            a.createdAt
+        )?.getTime() || 0)
+    );
+
+    return result;
+  }, [users, userSearch]);
+
+  // ==========================================================
+  // USER / ORDER HELPERS
+  // ==========================================================
+
+  const getOrdersForUser = (userId) =>
+    orders.filter(
+      (order) =>
+        order?.userId === userId ||
+        order?.uid === userId ||
+        order?.customerId === userId ||
+        order?.userUID === userId
+    );
+
+  const selectedUserOrders = useMemo(() => {
+    if (!selectedUser) return [];
+    return getOrdersForUser(selectedUser.id);
+  }, [selectedUser, orders]);
+
+  const getUserTotalPurchases = (userId) =>
+    getOrdersForUser(userId).reduce(
+      (sum, order) =>
+        sum +
+        Number(
+          order?.total ||
+            order?.grandTotal ||
+            order?.amount ||
+            0
+        ),
+      0
+    );
+
+  // ==========================================================
+  // SALES / SPECIAL LISTS
+  // ==========================================================
+
+  const totalSales = useMemo(
+    () =>
+      orders.reduce(
+        (sum, order) =>
+          normalizeText(
+            order?.status ||
+              order?.orderStatus
+          ) === "cancelled"
+            ? sum
+            : sum +
+              Number(
+                order?.total ||
+                  order?.grandTotal ||
+                  order?.amount ||
+                  0
+              ),
+        0
+      ),
+    [orders]
+  );
+
+  const paidSales = useMemo(
+    () =>
+      orders.reduce((sum, order) => {
+        const orderStatus = normalizeText(
+          order?.status ||
+            order?.orderStatus
+        );
+
+        const paymentStatus = normalizeText(
+          order?.paymentStatus
+        );
+
+        if (orderStatus === "cancelled")
+          return sum;
+
+        if (
+          ![
+            "paid",
+            "success",
+            "successful",
+            "completed",
+          ].includes(paymentStatus)
+        ) {
+          return sum;
         }
 
-        const imageUrl =
-          await uploadImageToCloudinary(
-            img
-          );
+        return (
+          sum +
+          Number(
+            order?.total ||
+              order?.grandTotal ||
+              order?.amount ||
+              0
+          )
+        );
+      }, 0),
+    [orders]
+  );
 
-        if (imageUrl) {
-          uploadedImages.push(
-            imageUrl
-          );
-        }
-      }
+  const offerProducts = useMemo(
+    () =>
+      products.filter(
+        (product) => product.offer === true
+      ),
+    [products]
+  );
 
-      return uploadedImages;
-    };
+  const bestSellerProducts = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          product.bestSeller === true
+      ),
+    [products]
+  );
 
-  // ==================================================
-  // SAVE PRODUCT
-  // ==================================================
+  const newArrivalProducts = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          product.newArrival === true
+      ),
+    [products]
+  );
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const recommendedProducts = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          product.recommended === true
+      ),
+    [products]
+  );
 
-    if (savingProduct) {
-      return;
-    }
+  const pendingOrders = orders.filter(
+    (order) =>
+      normalizeText(
+        order?.status ||
+          order?.orderStatus
+      ) === "pending"
+  ).length;
 
-    const cleanTitle =
-      title.trim();
+  const deliveredOrders = orders.filter(
+    (order) =>
+      ["delivered", "completed"].includes(
+        normalizeText(
+          order?.status ||
+            order?.orderStatus
+        )
+      )
+  ).length;
 
-    const numericPrice =
-      Number(price);
+  const unreadNotifications =
+    notifications.filter(
+      (item) => item?.read !== true
+    ).length;
 
-    const numericOldPrice =
-      Number(oldPrice || 0);
+  // ==========================================================
+  // USER DETAILS
+  // ==========================================================
 
-    const numericRating =
-      Number(rating || 5);
+  const openUserDetails = (user) => {
+    setSelectedUser(user);
+    setShowUserDetails(true);
+  };
 
-    const numericStock =
-      Number(stock || 0);
+  const closeUserDetails = () => {
+    setSelectedUser(null);
+    setShowUserDetails(false);
+  };
 
-    if (
-      !cleanTitle ||
-      price === "" ||
-      Number.isNaN(numericPrice) ||
-      numericPrice <= 0 ||
-      !image
-    ) {
-      alert(
-        "اكمل بيانات المنتج بشكل صحيح"
-      );
+  // ==========================================================
+  // PRODUCT ACTIONS
+  // ==========================================================
 
-      return;
-    }
+  const resetProductForm = () => {
+    setProductForm({
+      title: "",
+      price: "",
+      oldPrice: "",
+      image: "",
+      description: "",
+      categoryId: "",
+      stock: "",
+      offer: false,
+      bestSeller: false,
+      newArrival: false,
+      recommended: false,
+      active: true,
+    });
 
-    if (
-      numericOldPrice < 0
-    ) {
-      alert(
-        "السعر قبل الخصم غير صحيح"
-      );
+    setEditingProduct(null);
+    setShowProductForm(false);
+  };
 
-      return;
-    }
+  const handleProductChange = (event) => {
+    const {
+      name,
+      value,
+      type,
+      checked,
+    } = event.target;
 
-    if (
-      numericRating < 0 ||
-      numericRating > 5
-    ) {
-      alert(
-        "التقييم يجب أن يكون بين 0 و 5"
-      );
+    setProductForm((previous) => ({
+      ...previous,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
+    }));
+  };
 
-      return;
-    }
-
-    if (
-      numericStock < 0
-    ) {
-      alert(
-        "المخزون لا يمكن أن يكون أقل من صفر"
-      );
-
-      return;
-    }
-
-    if (
-      hasVariants &&
-      variants.length === 0
-    ) {
-      alert(
-        "أضف متغير واحد على الأقل للمنتج"
-      );
-
-      return;
-    }
-
-    setSavingProduct(true);
+  const handleProductSubmit = async (event) => {
+    event.preventDefault();
 
     try {
-      const sourceImages =
-        images.length
-          ? images
-          : image
-          ? [image]
-          : [];
-
-      const uploadedImages =
-        await uploadProductImages(
-          sourceImages
-        );
-
-      if (
-        uploadedImages.length === 0
-      ) {
-        throw new Error(
-          "لم يتم رفع أي صورة للمنتج"
-        );
-      }
-
-      const cleanedVariants =
-        variants
-          .filter(
-            (variant) =>
-              variant?.name
-                ?.trim() !== ""
-          )
-          .map(
-            (
-              variant,
-              index
-            ) => ({
-              id:
-                variant.id ||
-                `variant-${Date.now()}-${index}`,
-
-              name:
-                variant.name.trim(),
-
-              price:
-                Number(
-                  variant.price || 0
-                ),
-
-              oldPrice:
-                Number(
-                  variant.oldPrice || 0
-                ),
-
-              stock:
-                Number(
-                  variant.stock || 0
-                ),
-            })
-          );
-
-      if (hasVariants) {
-        const invalidVariant =
-          cleanedVariants.find(
-            (variant) =>
-              !variant.name ||
-              variant.price <= 0 ||
-              variant.stock < 0 ||
-              variant.oldPrice < 0
-          );
-
-        if (invalidVariant) {
-          alert(
-            "تأكد من إدخال اسم وسعر ومخزون صحيح لكل متغير"
-          );
-
-          setSavingProduct(false);
-
-          return;
-        }
-      }
-
-      const product = {
-        title: cleanTitle,
-
+      const productData = {
+        title: productForm.title.trim(),
+        price: Number(productForm.price || 0),
+        oldPrice: Number(
+          productForm.oldPrice || 0
+        ),
+        image: productForm.image.trim(),
         description:
-          description.trim(),
-
-        price:
-          numericPrice,
-
-        oldPrice:
-          numericOldPrice,
-
-        image:
-          uploadedImages[0],
-
-        images:
-          uploadedImages,
-
-        categoryId:
-          category || null,
-
-        rating:
-          numericRating,
-
-        stock:
-          numericStock,
-
-        offer:
-          Boolean(offer),
-
-        bestSeller:
-          Boolean(bestSeller),
-
-        newArrival:
-          Boolean(newArrival),
-
-        recommended:
-          Boolean(recommended),
-
-        hasVariants:
-          Boolean(hasVariants),
-
-        variants:
-          hasVariants
-            ? cleanedVariants
-            : [],
+          productForm.description.trim(),
+        categoryId: productForm.categoryId,
+        stock: Number(productForm.stock || 0),
+        offer: Boolean(productForm.offer),
+        bestSeller: Boolean(
+          productForm.bestSeller
+        ),
+        newArrival: Boolean(
+          productForm.newArrival
+        ),
+        recommended: Boolean(
+          productForm.recommended
+        ),
+        active: Boolean(productForm.active),
+        updatedAt: serverTimestamp(),
       };
 
-      const wasEditing =
-        Boolean(editingId);
-
-      if (wasEditing) {
-        await editProduct(
-          editingId,
-          product
+      if (editingProduct) {
+        await updateDoc(
+          doc(
+            db,
+            "products",
+            editingProduct.id
+          ),
+          productData
         );
       } else {
-        await addProduct(
-          product
+        await setDoc(
+          doc(collection(db, "products")),
+          {
+            ...productData,
+            createdAt: serverTimestamp(),
+          }
         );
       }
 
-      if (
-        typeof loadProducts ===
-        "function"
-      ) {
-        await loadProducts();
-      }
-
-      clearForm();
-
-      alert(
-        wasEditing
-          ? "تم تعديل المنتج بنجاح ✅"
-          : "تم إضافة المنتج بنجاح ✅"
-      );
+      resetProductForm();
     } catch (error) {
       console.error(
-        "Save Product Error:",
+        "Product save error:",
         error
       );
-
-      alert(
-        error?.message ||
-          "حدث خطأ أثناء حفظ المنتج"
-      );
-    } finally {
-      setSavingProduct(false);
+      alert("حدث خطأ أثناء حفظ المنتج.");
     }
   };
 
-  // ==================================================
-  // EDIT PRODUCT
-  // ==================================================
+  const handleAddProduct = () => {
+    setEditingProduct(null);
+    setProductForm({
+      title: "",
+      price: "",
+      oldPrice: "",
+      image: "",
+      description: "",
+      categoryId: "",
+      stock: "",
+      offer: false,
+      bestSeller: false,
+      newArrival: false,
+      recommended: false,
+      active: true,
+    });
+    setShowProductForm(true);
+    setTab("products");
+  };
 
-  const handleEdit = (
-    product
-  ) => {
-    if (!product) {
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+
+    setProductForm({
+      title:
+        product?.title ||
+        product?.name ||
+        "",
+      price: product?.price ?? "",
+      oldPrice: product?.oldPrice ?? "",
+      image: product?.image || "",
+      description:
+        product?.description || "",
+      categoryId:
+        product?.categoryId || "",
+      stock: product?.stock ?? "",
+      offer: Boolean(product?.offer),
+      bestSeller: Boolean(
+        product?.bestSeller
+      ),
+      newArrival: Boolean(
+        product?.newArrival
+      ),
+      recommended: Boolean(
+        product?.recommended
+      ),
+      active: product?.active !== false,
+    });
+
+    setShowProductForm(true);
+    setTab("products");
+  };
+
+  const handleCancelProduct = () => {
+    resetProductForm();
+  };
+
+  const handleDeleteProduct = async (product) => {
+    if (
+      !window.confirm(
+        `هل أنت متأكد من حذف المنتج "${product?.title || product?.name || ""}"؟`
+      )
+    ) {
       return;
     }
 
-    setEditingId(
-      product.id
-    );
-
-    setTitle(
-      product.title || ""
-    );
-
-    setDescription(
-      product.description || ""
-    );
-
-    setPrice(
-      product.price ?? ""
-    );
-
-    setOldPrice(
-      product.oldPrice ?? ""
-    );
-
-    setCategory(
-      product.categoryId ||
-        product.category ||
-        ""
-    );
-
-    setRating(
-      product.rating ?? 5
-    );
-
-    setStock(
-      product.stock ?? 1
-    );
-
-    setOffer(
-      Boolean(product.offer)
-    );
-
-    setBestSeller(
-      Boolean(product.bestSeller)
-    );
-
-    setNewArrival(
-      Boolean(product.newArrival)
-    );
-
-    setRecommended(
-      Boolean(product.recommended)
-    );
-
-    setHasVariants(
-      Boolean(product.hasVariants)
-    );
-
-    setVariants(
-      Array.isArray(
-        product.variants
-      )
-        ? product.variants.map(
-            (
-              variant,
-              index
-            ) => ({
-              id:
-                variant.id ||
-                `variant-${Date.now()}-${index}`,
-
-              name:
-                variant.name || "",
-
-              price:
-                variant.price ?? "",
-
-              oldPrice:
-                variant.oldPrice ??
-                "",
-
-              stock:
-                variant.stock ?? 1,
-            })
-          )
-        : []
-    );
-
-    setImage(
-      product.image || ""
-    );
-
-    setImages(
-      Array.isArray(
-        product.images
-      ) &&
-        product.images.length
-        ? product.images
-        : product.image
-        ? [product.image]
-        : []
-    );
-
-    setTab("products");
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    try {
+      await deleteDoc(
+        doc(
+          db,
+          "products",
+          product.id
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      alert("حدث خطأ أثناء حذف المنتج.");
+    }
   };
 
-  // ==================================================
-  // DELETE PRODUCT
-  // ==================================================
+  // ==========================================================
+  // CATEGORY ACTIONS
+  // ==========================================================
 
-  const handleDelete = async (
-    id
+  const resetCategoryForm = () => {
+    setCategoryForm({
+      name: "",
+      description: "",
+      image: "",
+      categoryNumber: "",
+      whatsapp: "",
+      parentId: "",
+      active: true,
+    });
+
+    setEditingCategory(null);
+    setShowCategoryForm(false);
+  };
+
+  const handleCategoryChange = (event) => {
+    const {
+      name,
+      value,
+      type,
+      checked,
+    } = event.target;
+
+    setCategoryForm((previous) => ({
+      ...previous,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
+    }));
+  };
+
+  const handleCategorySubmit = async (event) => {
+    event.preventDefault();
+
+    try {
+      const categoryData = {
+        name: categoryForm.name.trim(),
+        description:
+          categoryForm.description?.trim() ||
+          "",
+        image: categoryForm.image.trim(),
+        categoryNumber:
+          categoryForm.categoryNumber.trim(),
+        whatsapp:
+          categoryForm.whatsapp.trim(),
+        parentId:
+          categoryForm.parentId || null,
+        active: Boolean(
+          categoryForm.active
+        ),
+        updatedAt: serverTimestamp(),
+      };
+
+      if (editingCategory) {
+        await updateDoc(
+          doc(
+            db,
+            "categories",
+            editingCategory.id
+          ),
+          categoryData
+        );
+      } else {
+        await setDoc(
+          doc(collection(db, "categories")),
+          {
+            ...categoryData,
+            createdAt: serverTimestamp(),
+          }
+        );
+      }
+
+      resetCategoryForm();
+    } catch (error) {
+      console.error(error);
+      alert("حدث خطأ أثناء حفظ القسم.");
+    }
+  };
+
+  const handleEditCategory = (category) => {
+    setEditingCategory(category);
+
+    setCategoryForm({
+      name: category?.name || "",
+      description:
+        category?.description || "",
+      image: category?.image || "",
+      categoryNumber:
+        category?.categoryNumber || "",
+      whatsapp:
+        category?.whatsapp || "",
+      parentId:
+        category?.parentId || "",
+      active: category?.active !== false,
+    });
+
+    setShowCategoryForm(true);
+    setTab("categories");
+  };
+
+  const handleDeleteCategory = async (
+    category
   ) => {
-    if (!id) {
+    const hasChildren = categories.some(
+      (item) =>
+        item.parentId === category.id
+    );
+
+    if (hasChildren) {
+      alert(
+        "لا يمكن حذف هذا القسم لأنه يحتوي على أقسام فرعية."
+      );
       return;
     }
 
     if (
       !window.confirm(
-        "هل أنت متأكد من حذف المنتج؟"
+        `هل أنت متأكد من حذف القسم "${category?.name || ""}"؟`
       )
     ) {
       return;
     }
 
     try {
-      await removeProduct(id);
+      await deleteDoc(
+        doc(
+          db,
+          "categories",
+          category.id
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      alert("حدث خطأ أثناء حذف القسم.");
+    }
+  };
 
-      if (
-        typeof loadProducts ===
-        "function"
-      ) {
-        await loadProducts();
-      }
+  const renderCategoryTree = (
+    items,
+    level = 0
+  ) => (
+    <div>
+      {items.map((category) => {
+        const children = categories.filter(
+          (item) =>
+            item.parentId === category.id
+        );
 
-      if (
-        editingId === id
-      ) {
-        clearForm();
-      }
+        return (
+          <div key={category.id}>
+            <div
+              className="category-tree-item"
+              style={{
+                paddingRight: `${level * 24}px`,
+              }}
+            >
+              <strong>
+                {level > 0 ? "↳ " : "📂 "}
+                {category.name}
+              </strong>
 
-      alert(
-        "تم حذف المنتج بنجاح ✅"
+              <span>
+                {category.categoryNumber ||
+                  "—"}
+              </span>
+
+              <div className="table-actions">
+                <button
+                  type="button"
+                  className="edit-btn"
+                  onClick={() =>
+                    handleEditCategory(
+                      category
+                    )
+                  }
+                >
+                  ✏️ تعديل
+                </button>
+
+                <button
+                  type="button"
+                  className="delete-btn"
+                  onClick={() =>
+                    handleDeleteCategory(
+                      category
+                    )
+                  }
+                >
+                  🗑️ حذف
+                </button>
+              </div>
+            </div>
+
+            {children.length > 0 &&
+              renderCategoryTree(
+                children,
+                level + 1
+              )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ==========================================================
+  // ACTIVITY / ORDERS
+  // ==========================================================
+
+  const addActivityLog = async (
+    action,
+    description
+  ) => {
+    try {
+      await setDoc(
+        doc(collection(db, "activityLogs")),
+        {
+          action,
+          description,
+          createdAt: serverTimestamp(),
+        }
       );
     } catch (error) {
       console.error(
-        "Delete Product Error:",
+        "Activity log error:",
         error
-      );
-
-      alert(
-        error?.message ||
-          "فشل حذف المنتج"
       );
     }
   };
 
-  // ==================================================
-  // LOAD ORDERS
-  // ==================================================
-
-  useEffect(() => {
-    const ordersQuery =
-      query(
-        collection(
-          db,
-          "orders"
-        ),
-        orderBy(
-          "createdAt",
-          "desc"
-        )
-      );
-
-    const unsubscribe =
-      onSnapshot(
-        ordersQuery,
-        (snapshot) => {
-          const list =
-            snapshot.docs.map(
-              (item) => ({
-                id: item.id,
-                ...item.data(),
-              })
-            );
-
-          const currentCount =
-            list.length;
-
-          if (
-            firstLoad.current
-          ) {
-            firstLoad.current =
-              false;
-
-            previousOrdersCount.current =
-              currentCount;
-
-            setOrders(list);
-
-            setNewOrderCount(0);
-
-            return;
-          }
-
-          if (
-            currentCount >
-            previousOrdersCount.current
-          ) {
-            const addedCount =
-              currentCount -
-              previousOrdersCount.current;
-
-            const latestOrder =
-              list[0];
-
-            setNewOrderCount(
-              (prev) =>
-                prev + addedCount
-            );
-
-            if (audio.current) {
-              audio.current.currentTime = 0;
-
-              audio.current
-                .play()
-                .catch(
-                  (error) => {
-                    console.log(
-                      "لم يتم تشغيل صوت الطلب:",
-                      error
-                    );
-                  }
-                );
-            }
-
-            if (
-              typeof window !==
-                "undefined" &&
-              "Notification" in
-                window &&
-              Notification.permission ===
-                "granted"
-            ) {
-              try {
-                new Notification(
-                  "🛒 طلب جديد",
-                  {
-                    body:
-                      `${
-                        latestOrder
-                          ?.customerName ||
-                        "عميل جديد"
-                      } - ${
-                        latestOrder
-                          ?.total ||
-                        0
-                      } جنيه`,
-                  }
-                );
-              } catch (error) {
-                console.log(
-                  "Notification error:",
-                  error
-                );
-              }
-            }
-          }
-
-          previousOrdersCount.current =
-            currentCount;
-
-          setOrders(list);
-        },
-        (error) => {
-          console.error(
-            "Orders Error:",
-            error
-          );
-        }
-      );
-
-    return () =>
-      unsubscribe();
-  }, []);
-
-  // ==================================================
-  // CHANGE ORDER STATUS
-  // ==================================================
-
-  const changeOrderStatus =
-    async (
-      id,
-      status
-    ) => {
-      if (!id || !status) {
-        return;
-      }
-
-      try {
-        await updateDoc(
-          doc(
-            db,
-            "orders",
-            id
-          ),
-          {
-            status,
-            orderStatus:
-              status,
-          }
-        );
-      } catch (error) {
-        console.error(
-          "Order Status Error:",
-          error
-        );
-
-        alert(
-          "فشل تحديث حالة الطلب"
-        );
-      }
-    };
-
-  // ==================================================
-  // PAYMENT STATUS
-  // ==================================================
-
-  const changePaymentStatus =
-    async (
-      id,
-      paymentStatus
-    ) => {
-      if (
-        !id ||
-        !paymentStatus
-      ) {
-        return;
-      }
-
-      try {
-        await updateDoc(
-          doc(
-            db,
-            "orders",
-            id
-          ),
-          {
-            paymentStatus,
-          }
-        );
-      } catch (error) {
-        console.error(
-          "Payment Status Error:",
-          error
-        );
-
-        alert(
-          "فشل تحديث حالة الدفع"
-        );
-      }
-    };
-
-  // ==================================================
-  // LOAD CATEGORIES
-  // ==================================================
-
-  const loadCategories =
-    async () => {
-      try {
-        const data =
-          await getAllCategories();
-
-        setCategories(
-          Array.isArray(data)
-            ? data
-            : []
-        );
-      } catch (error) {
-        console.error(
-          "Categories Error:",
-          error
-        );
-
-        setCategories([]);
-      }
-    };
-
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  // ==================================================
-  // LOAD USERS
-  // ==================================================
-
-  useEffect(() => {
-    const usersQuery =
-      query(
-        collection(
-          db,
-          "users"
-        )
-      );
-
-    const unsubscribe =
-      onSnapshot(
-        usersQuery,
-        (snapshot) => {
-          const list =
-            snapshot.docs.map(
-              (item) => ({
-                id: item.id,
-                ...item.data(),
-              })
-            );
-
-          setUsers(list);
-        },
-        (error) => {
-          console.error(
-            "Users Error:",
-            error
-          );
-
-          setUsers([]);
-        }
-      );
-
-    return () =>
-      unsubscribe();
-  }, []);
-
-  // ==================================================
-  // GET USER ORDERS
-  // ==================================================
-
-  const getOrdersForUser = (
-    userId
+  const updateOrderStatus = async (
+    order,
+    newStatus
   ) => {
-    if (!userId) {
-      return [];
-    }
+    try {
+      await updateDoc(
+        doc(
+          db,
+          "orders",
+          order.id
+        ),
+        {
+          status: newStatus,
+          orderStatus: newStatus,
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
 
-    return orders.filter(
-      (order) =>
-        order?.userId ===
-          userId ||
-        order?.uid ===
-          userId ||
-        order?.customerId ===
-          userId ||
-        order?.userUID ===
-          userId
+      await addActivityLog(
+        "تحديث طلب",
+        `تم تغيير حالة الطلب ${order.id} إلى ${getOrderStatusText(newStatus)}`
+      );
+    } catch (error) {
+      console.error(error);
+      alert(
+        "حدث خطأ أثناء تحديث الطلب."
+      );
+    }
+  };
+
+  const handleOrderStatusChange = async (
+    orderId,
+    newStatus
+  ) => {
+    const order = orders.find(
+      (item) => item.id === orderId
+    );
+
+    if (!order) return;
+
+    await updateOrderStatus(
+      order,
+      newStatus
     );
   };
 
-  // ==================================================
-  // SELECTED USER ORDERS
-  // ==================================================
-
-  const selectedUserOrders =
-    useMemo(() => {
-      if (!selectedUser?.id) {
-        return [];
-      }
-
-      return getOrdersForUser(
-        selectedUser.id
-      );
-    }, [
-      orders,
-      selectedUser,
-    ]);
-
-  // ==================================================
-  // OPEN USER DETAILS
-  // ==================================================
-
-  const openUserDetails = (
-    user
-  ) => {
-    if (!user) {
-      return;
-    }
-
-    setSelectedUser(user);
-
-    setShowUserDetails(true);
+  const openOrderDetails = (order) => {
+    setSelectedOrder(order);
+    setShowOrderDetails(true);
   };
 
-  // ==================================================
-  // CLOSE USER DETAILS
-  // ==================================================
-
-  const closeUserDetails =
-    () => {
-      setSelectedUser(null);
-
-      setShowUserDetails(false);
-    };
-
-  // ==================================================
-  // SAVE CATEGORY
-  // ==================================================
-
-  const saveCategory =
-    async () => {
-      if (savingCategory) {
-        return;
-      }
-
-      const cleanName =
-        categoryName.trim();
-
-      if (!cleanName) {
-        alert(
-          "اكتب اسم القسم"
-        );
-
-        return;
-      }
-
-      if (
-        editingCategoryId &&
-        categoryParentId ===
-          editingCategoryId
-      ) {
-        alert(
-          "لا يمكن جعل القسم أبًا لنفسه"
-        );
-
-        return;
-      }
-
-      if (
-        editingCategoryId &&
-        categoryParentId &&
-        isCategoryDescendant(
-          categoryParentId,
-          editingCategoryId
-        )
-      ) {
-        alert(
-          "لا يمكن اختيار قسم فرعي تابع لهذا القسم كقسم أب"
-        );
-
-        return;
-      }
-
-      setSavingCategory(true);
-
-      try {
-        const existingCategory =
-          editingCategoryId
-            ? categories.find(
-                (cat) =>
-                  cat.id ===
-                  editingCategoryId
-              )
-            : null;
-
-        let finalCategoryImage =
-          categoryImage || "";
-
-        if (
-          finalCategoryImage.startsWith(
-            "data:"
-          )
-        ) {
-          finalCategoryImage =
-            await uploadImageToCloudinary(
-              finalCategoryImage
-            );
-        }
-
-        const data = {
-          name:
-            cleanName,
-
-          icon:
-            categoryIcon.trim(),
-
-          image:
-            finalCategoryImage,
-
-          parentId:
-            categoryParentId ||
-            null,
-
-          active:
-            editingCategoryId
-              ? existingCategory?.active ??
-                true
-              : true,
-        };
-
-        const wasEditing =
-          Boolean(
-            editingCategoryId
-          );
-
-        if (wasEditing) {
-          await editCategory(
-            editingCategoryId,
-            data
-          );
-        } else {
-          await addCategory(
-            data
-          );
-        }
-
-        await loadCategories();
-
-        clearCategoryForm();
-
-        alert(
-          wasEditing
-            ? "تم تعديل القسم بنجاح ✅"
-            : "تم إضافة القسم بنجاح ✅"
-        );
-      } catch (error) {
-        console.error(
-          "Save Category Error:",
-          error
-        );
-
-        alert(
-          error?.message ||
-            "حدث خطأ أثناء حفظ القسم"
-        );
-      } finally {
-        setSavingCategory(false);
-      }
-    };
-
-  // ==================================================
-  // CLEAR CATEGORY FORM
-  // ==================================================
-
-  const clearCategoryForm =
-    () => {
-      setCategoryName("");
-
-      setCategoryIcon("");
-
-      setCategoryImage("");
-
-      setCategoryParentId("");
-
-      setEditingCategoryId(null);
-    };
-
-  // ==================================================
-  // EDIT CATEGORY
-  // ==================================================
-
-  const handleEditCategory =
-    (cat) => {
-      if (!cat) {
-        return;
-      }
-
-      setEditingCategoryId(
-        cat.id
-      );
-
-      setCategoryName(
-        cat.name || ""
-      );
-
-      setCategoryIcon(
-        cat.icon || ""
-      );
-
-      setCategoryImage(
-        cat.image || ""
-      );
-
-      setCategoryParentId(
-        cat.parentId || ""
-      );
-
-      setTab("categories");
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    };
-
-  // ==================================================
-  // DELETE CATEGORY
-  // ==================================================
-
-  const handleDeleteCategory =
-    async (id) => {
-      if (!id) {
-        return;
-      }
-
-      const hasChildren =
-        categories.some(
-          (cat) =>
-            (cat.parentId ||
-              null) === id
-        );
-
-      if (hasChildren) {
-        alert(
-          "لا يمكن حذف هذا القسم لأنه يحتوي على أقسام فرعية. احذف أو انقل الأقسام الفرعية أولاً."
-        );
-
-        return;
-      }
-
-      const hasProducts =
-        products.some(
-          (product) =>
-            product?.categoryId ===
-            id
-        );
-
-      if (hasProducts) {
-        alert(
-          "لا يمكن حذف القسم لأنه مرتبط بمنتجات. انقل المنتجات لقسم آخر أولاً."
-        );
-
-        return;
-      }
-
-      if (
-        !window.confirm(
-          "هل أنت متأكد من حذف القسم؟"
-        )
-      ) {
-        return;
-      }
-
-      try {
-        await removeCategory(
-          id
-        );
-
-        await loadCategories();
-
-        if (
-          editingCategoryId ===
-          id
-        ) {
-          clearCategoryForm();
-        }
-
-        alert(
-          "تم حذف القسم بنجاح ✅"
-        );
-      } catch (error) {
-        console.error(
-          "Delete Category Error:",
-          error
-        );
-
-        alert(
-          error?.message ||
-            "فشل حذف القسم"
-        );
-      }
-    };
-
-  // ==================================================
-  // TOGGLE CATEGORY STATUS
-  // ==================================================
-
-  const toggleCategoryStatus =
-    async (cat) => {
-      if (!cat?.id) {
-        return;
-      }
-
-      try {
-        await editCategory(
-          cat.id,
-          {
-            active:
-              !Boolean(cat.active),
-          }
-        );
-
-        await loadCategories();
-      } catch (error) {
-        console.error(
-          "Category Status Error:",
-          error
-        );
-
-        alert(
-          "فشل تغيير حالة القسم"
-        );
-      }
-    };
-
-  // ==================================================
-  // LOGOUT
-  // ==================================================
-
-  const handleLogout =
-    async () => {
-      try {
-        await signOut(auth);
-
-        navigate("/");
-      } catch (error) {
-        console.error(
-          "Logout Error:",
-          error
-        );
-
-        alert(
-          "حدث خطأ أثناء تسجيل الخروج"
-        );
-      }
-    };
-
-  // ==================================================
-  // CATEGORY DESCENDANT CHECK
-  // ==================================================
-
-  const isCategoryDescendant =
-    (
-      possibleChildId,
-      categoryId
-    ) => {
-      if (
-        !possibleChildId ||
-        !categoryId
-      ) {
-        return false;
-      }
-
-      let currentId =
-        possibleChildId;
-
-      const visited =
-        new Set();
-
-      while (
-        currentId &&
-        !visited.has(currentId)
-      ) {
-        visited.add(
-          currentId
-        );
-
-        const currentCategory =
-          categories.find(
-            (cat) =>
-              cat.id ===
-              currentId
-          );
-
-        if (
-          !currentCategory
-        ) {
-          return false;
-        }
-
-        const parentId =
-          currentCategory.parentId ||
-          null;
-
-        if (
-          parentId ===
-          categoryId
-        ) {
-          return true;
-        }
-
-        currentId =
-          parentId;
-      }
-
-      return false;
-    };
-
-  // ==================================================
-  // CATEGORY TREE OPTIONS
-  // ==================================================
-
-  const getCategoryTreeOptions =
-    (
-      parentId = null,
-      level = 0,
-      visited = new Set()
-    ) => {
-      let result = [];
-
-      categories
-        .filter((cat) => {
-          const currentParentId =
-            cat.parentId ||
-            null;
-
-          return (
-            currentParentId ===
-            parentId
-          );
-        })
-        .forEach((cat) => {
-          if (
-            visited.has(cat.id)
-          ) {
-            return;
-          }
-
-          if (
-            cat.id ===
-            editingCategoryId
-          ) {
-            return;
-          }
-
-          if (
-            editingCategoryId &&
-            isCategoryDescendant(
-              cat.id,
-              editingCategoryId
-            )
-          ) {
-            return;
-          }
-
-          result.push({
-            ...cat,
-            level,
-          });
-
-          const nextVisited =
-            new Set(visited);
-
-          nextVisited.add(
-            cat.id
-          );
-
-          result = [
-            ...result,
-            ...getCategoryTreeOptions(
-              cat.id,
-              level + 1,
-              nextVisited
-            ),
-          ];
-        });
-
-      return result;
-    };
-
-  // ==================================================
-  // CATEGORY TREE
-  // ==================================================
-
-  const getCategoryTree =
-    (
-      parentId = null,
-      level = 0,
-      visited = new Set()
-    ) => {
-      let result = [];
-
-      categories
-        .filter((cat) => {
-          const currentParentId =
-            cat.parentId ||
-            null;
-
-          return (
-            currentParentId ===
-            parentId
-          );
-        })
-        .forEach((cat) => {
-          if (
-            visited.has(cat.id)
-          ) {
-            return;
-          }
-
-          result.push({
-            ...cat,
-            level,
-          });
-
-          const nextVisited =
-            new Set(visited);
-
-          nextVisited.add(
-            cat.id
-          );
-
-          result = [
-            ...result,
-            ...getCategoryTree(
-              cat.id,
-              level + 1,
-              nextVisited
-            ),
-          ];
-        });
-
-      return result;
-    };
-
-  // ==================================================
-  // MEMOIZED CATEGORY TREE
-  // ==================================================
-
-  const categoryTree =
-    useMemo(() => {
-      return getCategoryTree();
-    }, [categories]);
-
-  // ==================================================
-  // MEMOIZED CATEGORY OPTIONS
-  // ==================================================
-
-  const categoryTreeOptions =
-    useMemo(() => {
-      return getCategoryTreeOptions();
-    }, [
-      categories,
-      editingCategoryId,
-    ]);
-
-  // ==================================================
-  // FORMAT DATE
-  // ==================================================
-
-  const formatDate = (
-    value
-  ) => {
-    if (!value) {
-      return "غير مسجل";
+  const closeOrderDetails = () => {
+    setSelectedOrder(null);
+    setShowOrderDetails(false);
+  };
+
+  const deleteOrder = async (order) => {
+    if (
+      !window.confirm(
+        "هل أنت متأكد من حذف هذا الطلب؟"
+      )
+    ) {
+      return;
     }
 
     try {
-      let date;
-
-      if (
-        typeof value?.toDate ===
-        "function"
-      ) {
-        date =
-          value.toDate();
-      } else if (
-        typeof value?.seconds ===
-        "number"
-      ) {
-        date =
-          new Date(
-            value.seconds *
-              1000
-          );
-      } else if (
-        value instanceof Date
-      ) {
-        date = value;
-      } else {
-        date =
-          new Date(value);
-      }
-
-      if (
-        Number.isNaN(
-          date.getTime()
+      await deleteDoc(
+        doc(
+          db,
+          "orders",
+          order.id
         )
-      ) {
-        return "غير مسجل";
-      }
-
-      return date.toLocaleString(
-        "ar-EG",
-        {
-          dateStyle:
-            "medium",
-          timeStyle:
-            "short",
-        }
       );
-    } catch {
-      return "غير مسجل";
+
+      await addActivityLog(
+        "حذف طلب",
+        `تم حذف الطلب: ${order.id}`
+      );
+    } catch (error) {
+      console.error(error);
+      alert("حدث خطأ أثناء حذف الطلب.");
     }
   };
 
-  // ==================================================
-  // USER HELPERS
-  // ==================================================
+  // ==========================================================
+  // GENERIC ACTIONS
+  // ==========================================================
 
-  const getUserName = (
-    user
-  ) => {
-    return (
-      user?.name ||
-      user?.displayName ||
-      user?.fullName ||
-      user?.email ||
-      "مستخدم بدون اسم"
-    );
-  };
-
-  const getUserEmail = (
-    user
-  ) => {
-    return (
-      user?.email ||
-      "غير مسجل"
-    );
-  };
-
-  const getUserPhone = (
-    user
-  ) => {
-    return (
-      user?.phone ||
-      "غير مسجل"
-    );
-  };
-
-  const getUserAddress = (
-    user
-  ) => {
-    return (
-      user?.address ||
-      "غير مسجل"
-    );
-  };
-
-  const getLoginCount = (
-    user
-  ) => {
-    return (
-      user?.loginCount ??
-      user?.loginAttempts ??
-      0
-    );
-  };
-
-  const getVisits = (
-    user
-  ) => {
-    const visits =
-      user?.visits ||
-      user?.loginHistory ||
-      [];
-
-    return Array.isArray(
-      visits
-    )
-      ? visits
-      : [];
-  };
-
-  // ==================================================
-  // SORTED USERS
-  // ==================================================
-
-  const sortedUsers = useMemo(() => {
-    return [...users].sort(
-      (a, b) =>
-        getUserName(a).localeCompare(
-          getUserName(b),
-          "ar"
-        )
-    );
-  }, [users]);
-
-  // ==================================================
-  // ORDER STATUS
-  // ==================================================
-
-  const getOrderStatusText =
-    (status) => {
-      switch (status) {
-        case "done":
-          return "تم التسليم";
-
-        case "shipping":
-          return "جاري الشحن";
-
-        case "cancel":
-          return "ملغي";
-
-        case "processing":
-          return "قيد التجهيز";
-
-        default:
-          return "جديد";
-      }
+  const getGenericCollection = (type) => {
+    const collections = {
+      banners: "banners",
+      coupons: "coupons",
+      announcements:
+        "announcements",
+      notifications:
+        "notifications",
+      support:
+        "supportMessages",
+      favorites: "favorites",
+      "blocked-users":
+        "blockedUsers",
+      shipping:
+        "shippingZones",
+      payments:
+        "paymentMethods",
+      admins: "admins",
     };
 
-  // ==================================================
-  // PAYMENT METHOD
-  // ==================================================
+    return collections[type];
+  };
 
-  const getPaymentMethodText =
-    (method) => {
-      switch (
-        String(
-          method || ""
-        ).toLowerCase()
-      ) {
-        case "online":
-          return "💳 دفع إلكتروني";
-
-        case "card":
-          return "💳 بطاقة";
-
-        case "visa":
-          return "💳 Visa";
-
-        case "mastercard":
-          return "💳 MasterCard";
-
-        case "meeza":
-          return "💳 Meeza";
-
-        case "wallet":
-          return "📱 محفظة إلكترونية";
-
-        case "cod":
-        case "cash":
-        case "cash_on_delivery":
-          return "💵 دفع عند الاستلام";
-
-        default:
-          return method
-            ? String(method)
-            : "غير محدد";
-      }
-    };
-
-  // ==================================================
-  // PAYMENT STATUS
-  // ==================================================
-
-  const getPaymentStatusText =
-    (status) => {
-      switch (
-        String(
-          status || ""
-        ).toLowerCase()
-      ) {
-        case "paid":
-        case "success":
-        case "successful":
-          return "مدفوع ✅";
-
-        case "pending":
-          return "قيد الانتظار ⏳";
-
-        case "failed":
-        case "failure":
-          return "فشل الدفع ❌";
-
-        case "cancelled":
-        case "canceled":
-          return "ملغي ❌";
-
-        case "refunded":
-          return "تم رد المبلغ ↩️";
-
-        default:
-          return "غير محدد";
-      }
-    };
-
-  const getPaymentStatusClass =
-    (status) => {
-      switch (
-        String(
-          status || ""
-        ).toLowerCase()
-      ) {
-        case "paid":
-        case "success":
-        case "successful":
-          return "payment-paid";
-
-        case "pending":
-          return "payment-pending";
-
-        case "failed":
-        case "failure":
-          return "payment-failed";
-
-        case "cancelled":
-        case "canceled":
-          return "payment-cancelled";
-
-        case "refunded":
-          return "payment-refunded";
-
-        default:
-          return "payment-unknown";
-      }
-    };
-
-  // ==================================================
-  // WHATSAPP
-  // ==================================================
-
-  const openWhatsApp = (
-    phone
+  const openGenericForm = (
+    type,
+    item = null
   ) => {
-    let cleanPhone =
-      String(
-        phone || ""
-      ).replace(
-        /\D/g,
-        ""
+    setGenericType(type);
+    setGenericEditingId(
+      item?.id || null
+    );
+    setGenericForm(
+      item ? { ...item } : {}
+    );
+    setShowGenericForm(true);
+  };
+
+  const closeGenericForm = () => {
+    setShowGenericForm(false);
+    setGenericType("");
+    setGenericEditingId(null);
+    setGenericForm({});
+  };
+
+  const handleGenericChange = (event) => {
+    const {
+      name,
+      value,
+      type,
+      checked,
+    } = event.target;
+
+    setGenericForm((previous) => ({
+      ...previous,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
+    }));
+  };
+
+  const handleGenericSubmit = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    const collectionName =
+      getGenericCollection(genericType);
+
+    if (!collectionName) return;
+
+    setActionLoading(true);
+
+    try {
+      if (genericEditingId) {
+        await updateDoc(
+          doc(
+            db,
+            collectionName,
+            genericEditingId
+          ),
+          {
+            ...genericForm,
+            updatedAt:
+              serverTimestamp(),
+          }
+        );
+      } else {
+        await addDoc(
+          collection(
+            db,
+            collectionName
+          ),
+          {
+            ...genericForm,
+            createdAt:
+              serverTimestamp(),
+            updatedAt:
+              serverTimestamp(),
+          }
+        );
+      }
+
+      await addActivityLog(
+        genericEditingId
+          ? "تعديل بيانات"
+          : "إضافة بيانات",
+        `تم تحديث قسم ${genericType}`
       );
+
+      closeGenericForm();
+    } catch (error) {
+      console.error(error);
+      alert(
+        "حدث خطأ أثناء الحفظ."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const deleteGenericItem = async (
+    type,
+    item
+  ) => {
+    const collectionName =
+      getGenericCollection(type);
+
+    if (!collectionName) return;
 
     if (
-      cleanPhone.startsWith("0")
+      !window.confirm(
+        "هل أنت متأكد من الحذف؟"
+      )
     ) {
-      cleanPhone =
-        "20" +
-        cleanPhone.slice(1);
-    }
-
-    if (!cleanPhone) {
-      alert(
-        "رقم الهاتف غير مسجل"
-      );
-
       return;
     }
 
-    window.open(
-      `https://wa.me/${cleanPhone}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    try {
+      await deleteDoc(
+        doc(
+          db,
+          collectionName,
+          item.id
+        )
+      );
+
+      await addActivityLog(
+        "حذف بيانات",
+        `تم حذف عنصر من قسم ${type}`
+      );
+    } catch (error) {
+      console.error(error);
+      alert("حدث خطأ أثناء الحذف.");
+    }
   };
 
-  // ==================================================
-  // CLEAR NEW ORDER NOTIFICATION
-  // ==================================================
+  // ==========================================================
+  // STORE SETTINGS
+  // ==========================================================
 
-  const openOrdersTab = () => {
-    setTab("orders");
+  const saveStoreSettings = async (
+    event
+  ) => {
+    event.preventDefault();
 
-    setNewOrderCount(0);
+    try {
+      await setDoc(
+        doc(
+          db,
+          "settings",
+          "store"
+        ),
+        {
+          ...storeSettings,
+          updatedAt:
+            serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      await addActivityLog(
+        "إعدادات المتجر",
+        "تم تحديث إعدادات المتجر"
+      );
+
+      alert(
+        "تم حفظ إعدادات المتجر بنجاح."
+      );
+    } catch (error) {
+      console.error(error);
+      alert(
+        "حدث خطأ أثناء حفظ الإعدادات."
+      );
+    }
   };
 
-  // ==================================================
-  // RETURN
-  // ==================================================
+  // ==========================================================
+  // SIDEBAR SECTIONS
+  // ==========================================================
+
+  const menuSections = [
+    {
+      title: "الرئيسية",
+      items: [
+        {
+          id: "dashboard",
+          icon: "🏠",
+          title: "الرئيسية",
+        },
+        {
+          id: "reports",
+          icon: "📈",
+          title: "الإحصائيات والتقارير",
+        },
+      ],
+    },
+
+    {
+      title: "المتجر",
+      items: [
+        {
+          id: "products",
+          icon: "📦",
+          title: "المنتجات",
+          count: products.length,
+        },
+        {
+          id: "categories",
+          icon: "📂",
+          title: "الأقسام",
+          count: categories.length,
+        },
+        {
+          id: "offers",
+          icon: "⭐",
+          title: "العروض",
+          count: offerProducts.length,
+        },
+        {
+          id: "bestsellers",
+          icon: "🔥",
+          title: "الأكثر مبيعًا",
+          count: bestSellerProducts.length,
+        },
+        {
+          id: "new-arrivals",
+          icon: "🆕",
+          title: "المنتجات الجديدة",
+          count: newArrivalProducts.length,
+        },
+        {
+          id: "recommended",
+          icon: "👍",
+          title: "المنتجات المقترحة",
+          count: recommendedProducts.length,
+        },
+      ],
+    },
+
+    {
+      title: "العملاء والطلبات",
+      items: [
+        {
+          id: "users",
+          icon: "👥",
+          title: "المستخدمون",
+          count: users.length,
+        },
+        {
+          id: "customers",
+          icon: "🧑‍💼",
+          title: "العملاء",
+          count: users.length,
+        },
+        {
+          id: "orders",
+          icon: "🛒",
+          title: "الطلبات",
+          count: orders.length,
+        },
+        {
+          id: "sales",
+          icon: "💰",
+          title: "المبيعات",
+        },
+        {
+          id: "favorites",
+          icon: "❤️",
+          title: "المفضلة",
+          count: favorites.length,
+        },
+        {
+          id: "blocked-users",
+          icon: "🚫",
+          title: "المحظورون",
+          count: blockedUsers.length,
+        },
+        {
+          id: "support",
+          icon: "💬",
+          title: "خدمة العملاء",
+          count: supportMessages.length,
+        },
+      ],
+    },
+
+    {
+      title: "التسويق",
+      items: [
+        {
+          id: "banners",
+          icon: "🖼️",
+          title: "البانرات",
+          count: banners.length,
+        },
+        {
+          id: "coupons",
+          icon: "🏷️",
+          title: "الكوبونات والخصومات",
+          count: coupons.length,
+        },
+        {
+          id: "announcements",
+          icon: "📢",
+          title: "الإعلانات",
+          count: announcements.length,
+        },
+        {
+          id: "notifications",
+          icon: "🔔",
+          title: "الإشعارات",
+          count: unreadNotifications,
+        },
+      ],
+    },
+
+    {
+      title: "الإعدادات",
+      items: [
+        {
+          id: "settings",
+          icon: "⚙️",
+          title: "إعدادات المتجر",
+        },
+        {
+          id: "shipping",
+          icon: "🚚",
+          title: "الشحن والتوصيل",
+          count: shippingZones.length,
+        },
+        {
+          id: "payments",
+          icon: "💳",
+          title: "طرق الدفع",
+          count: paymentMethods.length,
+        },
+        {
+          id: "contact",
+          icon: "📱",
+          title: "بيانات التواصل",
+        },
+        {
+          id: "admins",
+          icon: "🔐",
+          title: "المشرفون والصلاحيات",
+          count: admins.length,
+        },
+        {
+          id: "activity-log",
+          icon: "📝",
+          title: "سجل العمليات",
+          count: activityLogs.length,
+        },
+        {
+          id: "security",
+          icon: "🔑",
+          title: "الأمان",
+        },
+      ],
+    },
+  ];
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <div
-      className="admin-container"
+      className="admin-page"
       dir="rtl"
     >
-
-      {/* ==================================================
-          NEW ORDER ALERT
-      ================================================== */}
-
-      {newOrderCount > 0 && (
-        <div className="new-order-alert">
-
-          <span>
-            🔔 يوجد{" "}
-            {newOrderCount}{" "}
-            طلب جديد
-          </span>
-
-          <button
-            type="button"
-            onClick={
-              openOrdersTab
-            }
-          >
-            عرض الطلبات
-          </button>
-
-        </div>
-      )}
-
-      {/* ==================================================
-          STATS
-      ================================================== */}
-
-      <div className="admin-stats">
-
-        <div
-          className="stat-card"
-          onClick={() =>
-            setTab("products")
-          }
-        >
-          <h3>
-            📦 المنتجات
-          </h3>
-
-          <p>
-            {products.length}
-          </p>
-        </div>
-
-        <div
-          className="stat-card"
-          onClick={() =>
-            setTab("orders")
-          }
-        >
-          <h3>
-            🧾 الطلبات
-          </h3>
-
-          <p>
-            {orders.length}
-          </p>
-        </div>
-
-        <div
-          className="stat-card"
-          onClick={() =>
-            setTab("categories")
-          }
-        >
-          <h3>
-            🗂️ الفئات
-          </h3>
-
-          <p>
-            {categories.length}
-          </p>
-        </div>
-
-        <div
-          className="stat-card"
-          onClick={() =>
-            setTab("users")
-          }
-        >
-          <h3>
-            👥 الحسابات
-          </h3>
-
-          <p>
-            {users.length}
-          </p>
-        </div>
-
-        <div className="stat-card">
-          <h3>
-            💰 إجمالي الطلبات
-          </h3>
-
-          <p>
-            {totalSales.toLocaleString(
-              "ar-EG"
-            )}{" "}
-            ج.م
-          </p>
-        </div>
-
-        <div className="stat-card">
-          <h3>
-            💳 المدفوع إلكترونيًا
-          </h3>
-
-          <p>
-            {paidSales.toLocaleString(
-              "ar-EG"
-            )}{" "}
-            ج.م
-          </p>
-        </div>
-
-      </div>
-
-      {/* ==================================================
-          HEADER
-      ================================================== */}
-
-      <div className="admin-top-bar">
-
-        <h2>
-          لوحة التحكم
-        </h2>
-
-        <div className="admin-actions">
-
-          <button
-            type="button"
-            className="store-btn"
-            onClick={() =>
-              navigate("/")
-            }
-          >
-            🛒 العودة للمتجر
-          </button>
-
-          <button
-            type="button"
-            className="logout-btn"
-            onClick={
-              handleLogout
-            }
-          >
-            🚪 تسجيل خروج
-          </button>
-
-        </div>
-
-      </div>
-
-      {/* ==================================================
-          TABS
-      ================================================== */}
-
-      <div className="admin-tabs">
-
-        <button
-          type="button"
-          className={
-            tab === "products"
-              ? "active"
-              : ""
-          }
-          onClick={() =>
-            setTab("products")
-          }
-        >
-          📦 المنتجات
-        </button>
-
-        <button
-          type="button"
-          className={
-            tab === "orders"
-              ? "active"
-              : ""
-          }
-          onClick={
-            openOrdersTab
-          }
-        >
-          🧾 الطلبات (
-          {orders.length}
-          )
-        </button>
-
-        <button
-          type="button"
-          className={
-            tab === "categories"
-              ? "active"
-              : ""
-          }
-          onClick={() =>
-            setTab("categories")
-          }
-        >
-          🗂️ الأقسام
-        </button>
-
-        <button
-          type="button"
-          className={
-            tab === "users"
-              ? "active"
-              : ""
-          }
-          onClick={() =>
-            setTab("users")
-          }
-        >
-          👥 الحسابات (
-          {users.length}
-          )
-        </button>
-
-      </div>
-
-      {/* ==================================================
-          PRODUCTS FORM
-      ================================================== */}
-
-      {tab === "products" && (
-        <form
-          className="admin-form"
-          onSubmit={
-            handleSubmit
-          }
-        >
-
-          <input
-            type="text"
-            placeholder="اسم المنتج"
-            value={title}
-            onChange={(e) =>
-              setTitle(
-                e.target.value
-              )
-            }
-          />
-
-          <textarea
-            placeholder="وصف المنتج"
-            value={description}
-            onChange={(e) =>
-              setDescription(
-                e.target.value
-              )
-            }
-          />
-
-          <div className="price-row">
-
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="السعر"
-              value={price}
-              onChange={(e) =>
-                setPrice(
-                  e.target.value
-                )
-              }
-            />
-
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="السعر قبل الخصم"
-              value={oldPrice}
-              onChange={(e) =>
-                setOldPrice(
-                  e.target.value
-                )
-              }
-            />
-
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-logo">
+          <div className="admin-logo-icon">
+            🛍️
           </div>
 
-          <select
-            value={category}
-            onChange={(e) =>
-              setCategory(
-                e.target.value
-              )
-            }
-          >
+          <div>
+            <strong>
+              Elsafty Store
+            </strong>
 
-            <option value="">
-              اختر القسم
-            </option>
-
-            {categoryTreeOptions.map(
-              (cat) => (
-                <option
-                  key={cat.id}
-                  value={cat.id}
-                >
-                  {"— ".repeat(
-                    cat.level
-                  )}
-
-                  {cat.icon
-                    ? `${cat.icon} `
-                    : ""}
-
-                  {cat.name}
-                </option>
-              )
-            )}
-
-          </select>
-
-          {/* ==================================================
-              PRODUCT OPTIONS
-          ================================================== */}
-
-          <div className="product-options">
-
-            <label>
-              <input
-                type="checkbox"
-                checked={offer}
-                onChange={(e) =>
-                  setOffer(
-                    e.target.checked
-                  )
-                }
-              />
-              🔥 عرض
-            </label>
-
-            <label>
-              <input
-                type="checkbox"
-                checked={
-                  bestSeller
-                }
-                onChange={(e) =>
-                  setBestSeller(
-                    e.target.checked
-                  )
-                }
-              />
-              ⭐ الأكثر مبيعاً
-            </label>
-
-            <label>
-              <input
-                type="checkbox"
-                checked={
-                  newArrival
-                }
-                onChange={(e) =>
-                  setNewArrival(
-                    e.target.checked
-                  )
-                }
-              />
-              🆕 جديد
-            </label>
-
-            <label>
-              <input
-                type="checkbox"
-                checked={
-                  recommended
-                }
-                onChange={(e) =>
-                  setRecommended(
-                    e.target.checked
-                  )
-                }
-              />
-              ❤️ مميز
-            </label>
-
-            <label>
-              <input
-                type="checkbox"
-                checked={
-                  hasVariants
-                }
-                onChange={(e) =>
-                  setHasVariants(
-                    e.target.checked
-                  )
-                }
-              />
-              🔀 المنتج له متغيرات
-            </label>
-
+            <small>
+              لوحة الإدارة
+            </small>
           </div>
+        </div>
 
-          {/* ==================================================
-              VARIANTS
-          ================================================== */}
+        <div className="admin-menu">
+          {menuSections.map(
+            (section) => (
+              <div
+                className="admin-menu-section"
+                key={section.title}
+              >
+                <div className="admin-menu-title">
+                  {section.title}
+                </div>
 
-          {hasVariants && (
-            <div className="variants-box">
-
-              <h3>
-                🔀 متغيرات المنتج
-              </h3>
-
-              {variants.length ===
-                0 && (
-                <p>
-                  لم تتم إضافة متغيرات بعد.
-                </p>
-              )}
-
-              {variants.map(
-                (variant) => (
-                  <div
-                    className="variant-row"
-                    key={
-                      variant.id
-                    }
-                  >
-
-                    <input
-                      type="text"
-                      placeholder="اسم المتغير"
-                      value={
-                        variant.name ||
-                        ""
-                      }
-                      onChange={(e) =>
-                        updateVariant(
-                          variant.id,
-                          "name",
-                          e.target.value
-                        )
-                      }
-                    />
-
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="السعر"
-                      value={
-                        variant.price ?? ""
-                      }
-                      onChange={(e) =>
-                        updateVariant(
-                          variant.id,
-                          "price",
-                          e.target.value
-                        )
-                      }
-                    />
-
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="السعر قبل الخصم"
-                      value={
-                        variant.oldPrice ??
-                        ""
-                      }
-                      onChange={(e) =>
-                        updateVariant(
-                          variant.id,
-                          "oldPrice",
-                          e.target.value
-                        )
-                      }
-                    />
-
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="المخزون"
-                      value={
-                        variant.stock ??
-                        ""
-                      }
-                      onChange={(e) =>
-                        updateVariant(
-                          variant.id,
-                          "stock",
-                          e.target.value
-                        )
-                      }
-                    />
-
+                {section.items.map(
+                  (item) => (
                     <button
                       type="button"
-                      className="delete-btn"
-                      onClick={() =>
-                        removeVariant(
-                          variant.id
-                        )
+                      key={item.id}
+                      className={
+                        tab === item.id
+                          ? "admin-menu-item active"
+                          : "admin-menu-item"
                       }
+                      onClick={() => {
+                        setTab(item.id);
+                        setShowUserDetails(false);
+                        setShowOrderDetails(false);
+                      }}
                     >
-                      🗑 حذف
+                      <span className="admin-menu-icon">
+                        {item.icon}
+                      </span>
+
+                      <span className="admin-menu-text">
+                        {item.title}
+                      </span>
+
+                      {item.count !==
+                        undefined && (
+                        <span className="admin-menu-count">
+                          {item.count}
+                        </span>
+                      )}
                     </button>
-
-                  </div>
-                )
-              )}
-
-              <button
-                type="button"
-                className="add-variant-btn"
-                onClick={
-                  addVariant
-                }
-              >
-                ➕ إضافة متغير
-              </button>
-
-            </div>
-          )}
-
-          {/* ==================================================
-              RATING / STOCK
-          ================================================== */}
-
-          <div className="price-row">
-
-            <input
-              type="number"
-              min="0"
-              max="5"
-              step="0.1"
-              placeholder="التقييم"
-              value={rating}
-              onChange={(e) =>
-                setRating(
-                  e.target.value
-                )
-              }
-            />
-
-            <input
-              type="number"
-              min="0"
-              placeholder="المخزون"
-              value={stock}
-              onChange={(e) =>
-                setStock(
-                  e.target.value
-                )
-              }
-            />
-
-          </div>
-
-          {/* ==================================================
-              IMAGES
-          ================================================== */}
-
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={
-              handleImageUpload
-            }
-          />
-
-          {images.length > 1 && (
-            <div className="image-preview-grid">
-
-              {images.map(
-                (img, index) => (
-                  <img
-                    key={index}
-                    src={img}
-                    className="img-preview"
-                    alt={`preview-${index}`}
-                  />
-                )
-              )}
-
-            </div>
-          )}
-
-          {image &&
-            images.length <= 1 && (
-              <img
-                src={image}
-                className="img-preview"
-                alt="preview"
-              />
-            )}
-
-          {/* ==================================================
-              FORM ACTIONS
-          ================================================== */}
-
-          <div className="admin-form-actions">
-
-            <button
-              type="submit"
-              className="save-btn"
-              disabled={
-                savingProduct
-              }
-            >
-              {savingProduct
-                ? "⏳ جاري الحفظ..."
-                : editingId
-                ? "💾 حفظ التعديل"
-                : "➕ إضافة المنتج"}
-            </button>
-
-            {editingId && (
-              <button
-                type="button"
-                className="cancel-btn"
-                onClick={
-                  clearForm
-                }
-                disabled={
-                  savingProduct
-                }
-              >
-                ❌ إلغاء التعديل
-              </button>
-            )}
-
-          </div>
-
-        </form>
-      )}
-
-      {/* ==================================================
-          CATEGORY FORM
-      ================================================== */}
-
-      {tab === "categories" && (
-        <div className="category-box">
-
-          <h2>
-            🗂️ إدارة الأقسام
-          </h2>
-
-          <input
-            placeholder="اسم القسم"
-            value={
-              categoryName
-            }
-            onChange={(e) =>
-              setCategoryName(
-                e.target.value
-              )
-            }
-          />
-
-          <select
-            value={
-              categoryParentId
-            }
-            onChange={(e) =>
-              setCategoryParentId(
-                e.target.value
-              )
-            }
-          >
-
-            <option value="">
-              📁 قسم رئيسي
-            </option>
-
-            {categoryTreeOptions.map(
-              (cat) => (
-                <option
-                  key={cat.id}
-                  value={cat.id}
-                >
-                  {"— ".repeat(
-                    cat.level
-                  )}
-
-                  {cat.icon
-                    ? `${cat.icon} `
-                    : ""}
-
-                  {cat.name}
-                </option>
-              )
-            )}
-
-          </select>
-
-          <input
-            placeholder="أيقونة القسم - مثال: 📱"
-            value={
-              categoryIcon
-            }
-            onChange={(e) =>
-              setCategoryIcon(
-                e.target.value
-              )
-            }
-          />
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={
-              handleCategoryImageUpload
-            }
-          />
-
-          {categoryImage && (
-            <img
-              src={
-                categoryImage
-              }
-              className="category-img-preview"
-              alt="category"
-            />
-          )}
-
-          <div className="admin-form-actions">
-
-            <button
-              type="button"
-              onClick={
-                saveCategory
-              }
-              className="save-btn"
-              disabled={
-                savingCategory
-              }
-            >
-              {savingCategory
-                ? "⏳ جاري الحفظ..."
-                : editingCategoryId
-                ? "💾 حفظ التعديل"
-                : "➕ إضافة قسم"}
-            </button>
-
-            {editingCategoryId && (
-              <button
-                type="button"
-                className="cancel-btn"
-                onClick={
-                  clearCategoryForm
-                }
-                disabled={
-                  savingCategory
-                }
-              >
-                ❌ إلغاء التعديل
-              </button>
-            )}
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ==================================================
-          PRODUCTS TABLE
-      ================================================== */}
-
-      {tab === "products" && (
-        <div className="table-container">
-
-          <h2>
-            📦 قائمة المنتجات
-          </h2>
-
-          <div className="table-scroll">
-
-            <table className="admin-table">
-
-              <thead>
-                <tr>
-
-                  <th>
-                    الصورة
-                  </th>
-
-                  <th>
-                    الاسم
-                  </th>
-
-                  <th>
-                    السعر
-                  </th>
-
-                  <th>
-                    القسم
-                  </th>
-
-                  <th>
-                    الحالة
-                  </th>
-
-                  <th>
-                    المخزون
-                  </th>
-
-                  <th>
-                    الإجراءات
-                  </th>
-
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {products.length ===
-                0 ? (
-                  <tr>
-                    <td
-                      colSpan="7"
-                    >
-                      لا توجد منتجات
-                    </td>
-                  </tr>
-                ) : (
-                  products.map(
-                    (product) => (
-                      <tr
-                        key={
-                          product.id
-                        }
-                      >
-
-                        <td>
-                          <img
-                            src={
-                              product.image ||
-                              "https://via.placeholder.com/80"
-                            }
-                            className="table-img"
-                            alt={
-                              product.title ||
-                              "منتج"
-                            }
-                          />
-                        </td>
-
-                        <td>
-                          {
-                            product.title
-                          }
-                        </td>
-
-                        <td>
-                          {
-                            product.price
-                          }{" "}
-                          ج.م
-                        </td>
-
-                        <td>
-                          {
-                            categoryMap[
-                              product.categoryId
-                            ]?.name ||
-                              product.category ||
-                              "بدون قسم"
-                          }
-                        </td>
-
-                        <td>
-
-                          {product.offer && (
-                            <div>
-                              🔥 عرض
-                            </div>
-                          )}
-
-                          {product.bestSeller && (
-                            <div>
-                              ⭐ الأكثر مبيعاً
-                            </div>
-                          )}
-
-                          {product.newArrival && (
-                            <div>
-                              🆕 جديد
-                            </div>
-                          )}
-
-                          {product.recommended && (
-                            <div>
-                              ❤️ مميز
-                            </div>
-                          )}
-
-                          {product.hasVariants && (
-                            <div>
-                              🔀 متغيرات
-                            </div>
-                          )}
-
-                          {!product.offer &&
-                            !product.bestSeller &&
-                            !product.newArrival &&
-                            !product.recommended &&
-                            !product.hasVariants && (
-                              <div>
-                                عادي
-                              </div>
-                            )}
-
-                        </td>
-
-                        <td>
-                          {
-                            product.stock ??
-                            0
-                          }
-                        </td>
-
-                        <td>
-
-                          <button
-                            type="button"
-                            className="edit-btn"
-                            onClick={() =>
-                              handleEdit(
-                                product
-                              )
-                            }
-                          >
-                            ✏️ تعديل
-                          </button>
-
-                          <button
-                            type="button"
-                            className="delete-btn"
-                            onClick={() =>
-                              handleDelete(
-                                product.id
-                              )
-                            }
-                          >
-                            🗑 حذف
-                          </button>
-
-                        </td>
-
-                      </tr>
-                    )
                   )
                 )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
+              </div>
+            )
+          )}
         </div>
-      )}
+      </aside>
 
-      {/* ==================================================
-          ORDERS TABLE
-      ================================================== */}
+      <main className="admin-main">
+        <header className="admin-topbar">
+          <div>
+            <h1>
+              {menuSections
+                .flatMap(
+                  (section) =>
+                    section.items
+                )
+                .find(
+                  (item) =>
+                    item.id === tab
+                )?.title ||
+                "لوحة الإدارة"}
+            </h1>
 
-      {tab === "orders" && (
-        <div className="table-container">
-
-          <h2>
-            🧾 الطلبات
-          </h2>
-
-          <div className="payment-summary">
-
-            <div>
-              <span>
-                إجمالي الطلبات
-              </span>
-
-              <strong>
-                {orders.length}
-              </strong>
-            </div>
-
-            <div>
-              <span>
-                إجمالي قيمة الطلبات
-              </span>
-
-              <strong>
-                {totalSales.toLocaleString(
-                  "ar-EG"
-                )}{" "}
-                ج.م
-              </strong>
-            </div>
-
-            <div>
-              <span>
-                المدفوع إلكترونيًا
-              </span>
-
-              <strong>
-                {paidSales.toLocaleString(
-                  "ar-EG"
-                )}{" "}
-                ج.م
-              </strong>
-            </div>
-
+            <p>
+              إدارة Elsafty Store
+            </p>
           </div>
 
-          <div className="table-scroll">
+          <div className="admin-topbar-stats">
+            <span>
+              👥 {users.length} عميل
+            </span>
 
-            <table className="admin-table">
+            <span>
+              🛒 {orders.length} طلب
+            </span>
 
-              <thead>
-                <tr>
+            <span>
+              💰{" "}
+              {totalSales.toLocaleString(
+                "ar-EG"
+              )}{" "}
+              ج.م
+            </span>
+          </div>
+        </header>
 
-                  <th>
-                    العميل
-                  </th>
+        {tab === "dashboard" && (
+          <div className="admin-dashboard">
+            <div className="admin-stats">
+              <button
+                type="button"
+                className="stat-card"
+                onClick={() =>
+                  setTab("users")
+                }
+              >
+                <h3>
+                  👥 المستخدمون
+                </h3>
+                <p>{users.length}</p>
+              </button>
 
-                  <th>
-                    الهاتف
-                  </th>
+              <button
+                type="button"
+                className="stat-card"
+                onClick={() =>
+                  setTab("products")
+                }
+              >
+                <h3>
+                  📦 المنتجات
+                </h3>
+                <p>{products.length}</p>
+              </button>
 
-                  <th>
-                    العنوان
-                  </th>
+              <button
+                type="button"
+                className="stat-card"
+                onClick={() =>
+                  setTab("categories")
+                }
+              >
+                <h3>
+                  📂 الأقسام
+                </h3>
+                <p>{categories.length}</p>
+              </button>
 
-                  <th>
-                    المنتجات
-                  </th>
+              <button
+                type="button"
+                className="stat-card"
+                onClick={() =>
+                  setTab("orders")
+                }
+              >
+                <h3>
+                  🛒 الطلبات
+                </h3>
+                <p>{orders.length}</p>
+              </button>
 
-                  <th>
-                    الإجمالي
-                  </th>
+              <div className="stat-card">
+                <h3>
+                  ⏳ طلبات معلقة
+                </h3>
+                <p>{pendingOrders}</p>
+              </div>
 
-                  <th>
-                    طريقة الدفع
-                  </th>
+              <div className="stat-card">
+                <h3>
+                  ✅ طلبات مكتملة
+                </h3>
+                <p>{deliveredOrders}</p>
+              </div>
 
-                  <th>
-                    حالة الدفع
-                  </th>
+              <div className="stat-card">
+                <h3>
+                  💰 إجمالي المبيعات
+                </h3>
+                <p>
+                  {totalSales.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </p>
+              </div>
 
-                  <th>
-                    رقم العملية
-                  </th>
+              <div className="stat-card">
+                <h3>
+                  💳 مدفوع إلكترونيًا
+                </h3>
+                <p>
+                  {paidSales.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </p>
+              </div>
+            </div>
 
-                  <th>
-                    حالة الطلب
-                  </th>
+            <div className="admin-dashboard-grid">
+              <div className="table-container">
+                <div className="section-header">
+                  <div>
+                    <h2>
+                      🛒 آخر الطلبات
+                    </h2>
 
-                  <th>
-                    واتساب
-                  </th>
+                    <p>
+                      أحدث الطلبات المسجلة
+                    </p>
+                  </div>
 
-                </tr>
-              </thead>
+                  <button
+                    type="button"
+                    className="save-btn"
+                    onClick={() =>
+                      setTab("orders")
+                    }
+                  >
+                    عرض كل الطلبات
+                  </button>
+                </div>
 
-              <tbody>
+                <div className="table-scroll">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>الطلب</th>
+                        <th>العميل</th>
+                        <th>الإجمالي</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                      </tr>
+                    </thead>
 
-                {orders.length ===
-                0 ? (
-                  <tr>
-                    <td
-                      colSpan="10"
+                    <tbody>
+                      {orders
+                        .slice(0, 8)
+                        .map((order) => {
+                          const status =
+                            order?.status ||
+                            order?.orderStatus ||
+                            "pending";
+
+                          return (
+                            <tr
+                              key={order.id}
+                            >
+                              <td dir="ltr">
+                                #
+                                {order.id?.slice(
+                                  0,
+                                  8
+                                )}
+                              </td>
+
+                              <td>
+                                {order?.customerName ||
+                                  order?.name ||
+                                  "عميل"}
+                              </td>
+
+                              <td>
+                                {Number(
+                                  order?.total ||
+                                    0
+                                ).toLocaleString(
+                                  "ar-EG"
+                                )}{" "}
+                                ج.م
+                              </td>
+
+                              <td>
+                                <span
+                                  className={`order-status status-${status}`}
+                                >
+                                  {getOrderStatusText(
+                                    status
+                                  )}
+                                </span>
+                              </td>
+
+                              <td>
+                                {formatDate(
+                                  order?.createdAt
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                      {orders.length ===
+                        0 && (
+                        <tr>
+                          <td colSpan="5">
+                            لا توجد طلبات حتى الآن.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="table-container">
+                <div className="section-header">
+                  <div>
+                    <h2>
+                      👥 أحدث العملاء
+                    </h2>
+
+                    <p>
+                      آخر الحسابات المسجلة
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="save-btn"
+                    onClick={() =>
+                      setTab("users")
+                    }
+                  >
+                    عرض العملاء
+                  </button>
+                </div>
+
+                <div className="dashboard-users-list">
+                  {sortedUsers
+                    .slice(0, 8)
+                    .map((user) => (
+                      <button
+                        type="button"
+                        className="dashboard-user-item"
+                        key={user.id}
+                        onClick={() => {
+                          setTab("users");
+                          openUserDetails(
+                            user
+                          );
+                        }}
+                      >
+                        <span>👤</span>
+
+                        <div>
+                          <strong>
+                            {getUserName(
+                              user
+                            )}
+                          </strong>
+
+                          <small>
+                            {getUserEmail(
+                              user
+                            )}
+                          </small>
+                        </div>
+                      </button>
+                    ))}
+
+                  {users.length === 0 && (
+                    <div className="empty-state">
+                      <div>👥</div>
+                      <p>
+                        لا يوجد عملاء حتى الآن.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================
+            PRODUCTS
+        ==================================================== */}
+
+        {tab === "products" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>📦 إدارة المنتجات</h2>
+                <p>
+                  إجمالي المنتجات:{" "}
+                  <strong>{products.length}</strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="save-btn"
+                onClick={handleAddProduct}
+              >
+                ➕ إضافة منتج
+              </button>
+            </div>
+
+            <div className="accounts-search">
+              <input
+                type="search"
+                placeholder="🔎 ابحث عن منتج..."
+                value={productSearch}
+                onChange={(event) =>
+                  setProductSearch(event.target.value)
+                }
+              />
+
+              {productSearch && (
+                <button
+                  type="button"
+                  onClick={() => setProductSearch("")}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {showProductForm && (
+              <form
+                className="admin-form"
+                onSubmit={handleProductSubmit}
+              >
+                <h3>
+                  {editingProduct
+                    ? "✏️ تعديل المنتج"
+                    : "➕ إضافة منتج جديد"}
+                </h3>
+
+                <div className="form-grid">
+                  <label>
+                    <span>اسم المنتج</span>
+                    <input
+                      name="title"
+                      value={productForm.title}
+                      onChange={handleProductChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>السعر</span>
+                    <input
+                      name="price"
+                      type="number"
+                      min="0"
+                      value={productForm.price}
+                      onChange={handleProductChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>السعر القديم</span>
+                    <input
+                      name="oldPrice"
+                      type="number"
+                      min="0"
+                      value={productForm.oldPrice}
+                      onChange={handleProductChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>المخزون</span>
+                    <input
+                      name="stock"
+                      type="number"
+                      min="0"
+                      value={productForm.stock}
+                      onChange={handleProductChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>رابط الصورة</span>
+                    <input
+                      name="image"
+                      value={productForm.image}
+                      onChange={handleProductChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>القسم</span>
+                    <select
+                      name="categoryId"
+                      value={productForm.categoryId}
+                      onChange={handleProductChange}
                     >
-                      لا توجد طلبات
-                    </td>
+                      <option value="">
+                        اختر القسم
+                      </option>
+
+                      {categories.map((category) => (
+                        <option
+                          key={category.id}
+                          value={category.id}
+                        >
+                          {getCategoryFullName(category.id)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <label>
+                  <span>وصف المنتج</span>
+                  <textarea
+                    name="description"
+                    value={productForm.description}
+                    onChange={handleProductChange}
+                    rows="4"
+                  />
+                </label>
+
+                <div className="admin-checkboxes">
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="offer"
+                      checked={productForm.offer}
+                      onChange={handleProductChange}
+                    />
+                    ⭐ عرض
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="bestSeller"
+                      checked={productForm.bestSeller}
+                      onChange={handleProductChange}
+                    />
+                    🔥 الأكثر مبيعًا
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="newArrival"
+                      checked={productForm.newArrival}
+                      onChange={handleProductChange}
+                    />
+                    🆕 جديد
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="recommended"
+                      checked={productForm.recommended}
+                      onChange={handleProductChange}
+                    />
+                    👍 مقترح
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="active"
+                      checked={productForm.active}
+                      onChange={handleProductChange}
+                    />
+                    ✅ ظاهر في المتجر
+                  </label>
+                </div>
+
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="save-btn"
+                    disabled={actionLoading}
+                  >
+                    💾 حفظ
+                  </button>
+
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={handleCancelProduct}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>الصورة</th>
+                    <th>المنتج</th>
+                    <th>السعر</th>
+                    <th>القسم</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
                   </tr>
-                ) : (
-                  orders.map(
-                    (order) => {
+                </thead>
+
+                <tbody>
+                  {filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="6">
+                        لا توجد منتجات.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProducts.map((product) => (
+                      <tr key={product.id}>
+                        <td>
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              className="table-img"
+                              alt={product.title || "منتج"}
+                            />
+                          ) : (
+                            <div className="table-img-placeholder">
+                              📦
+                            </div>
+                          )}
+                        </td>
+
+                        <td>
+                          <strong>
+                            {product.title || product.name}
+                          </strong>
+
+                          <div className="product-badges">
+                            {product.offer && (
+                              <span>⭐ عرض</span>
+                            )}
+
+                            {product.bestSeller && (
+                              <span>🔥 مميز</span>
+                            )}
+
+                            {product.newArrival && (
+                              <span>🆕 جديد</span>
+                            )}
+
+                            {product.recommended && (
+                              <span>👍 مقترح</span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td>
+                          <strong>
+                            {Number(product.price || 0).toLocaleString(
+                              "ar-EG"
+                            )}{" "}
+                            ج.م
+                          </strong>
+
+                          {product.oldPrice > 0 && (
+                            <small
+                              style={{
+                                display: "block",
+                                textDecoration: "line-through",
+                              }}
+                            >
+                              {Number(product.oldPrice).toLocaleString(
+                                "ar-EG"
+                              )}{" "}
+                              ج.م
+                            </small>
+                          )}
+                        </td>
+
+                        <td>
+                          {getCategoryFullName(product.categoryId) ||
+                            "بدون قسم"}
+                        </td>
+
+                        <td>
+                          {product.active !== false ? (
+                            <span className="status-active">
+                              ✅ مفعل
+                            </span>
+                          ) : (
+                            <span className="status-inactive">
+                              ⛔ غير مفعل
+                            </span>
+                          )}
+                        </td>
+
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              type="button"
+                              className="edit-btn"
+                              onClick={() => handleEdit(product)}
+                            >
+                              ✏️ تعديل
+                            </button>
+
+                            <button
+                              type="button"
+                              className="delete-btn"
+                              onClick={() =>
+                                handleDeleteProduct(product)
+                              }
+                            >
+                              🗑️ حذف
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================
+            CATEGORIES
+        ==================================================== */}
+
+        {tab === "categories" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>📂 إدارة الأقسام</h2>
+                <p>
+                  إجمالي الأقسام:{" "}
+                  <strong>{categories.length}</strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="save-btn"
+                onClick={() => {
+                  setEditingCategory(null);
+                  setCategoryForm({
+                    name: "",
+                    description: "",
+                    image: "",
+                    categoryNumber: "",
+                    whatsapp: "",
+                    parentId: "",
+                    active: true,
+                  });
+                  setShowCategoryForm(true);
+                }}
+              >
+                ➕ إضافة قسم
+              </button>
+            </div>
+
+            <div className="accounts-search">
+              <input
+                type="search"
+                placeholder="🔎 ابحث عن قسم..."
+                value={categorySearch}
+                onChange={(event) =>
+                  setCategorySearch(event.target.value)
+                }
+              />
+
+              {categorySearch && (
+                <button
+                  type="button"
+                  onClick={() => setCategorySearch("")}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {showCategoryForm && (
+              <form
+                className="admin-form"
+                onSubmit={handleCategorySubmit}
+              >
+                <h3>
+                  {editingCategory
+                    ? "✏️ تعديل القسم"
+                    : "➕ إضافة قسم جديد"}
+                </h3>
+
+                <div className="form-grid">
+                  <label>
+                    <span>اسم القسم</span>
+                    <input
+                      name="name"
+                      value={categoryForm.name}
+                      onChange={handleCategoryChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>رقم القسم</span>
+                    <input
+                      name="categoryNumber"
+                      value={categoryForm.categoryNumber}
+                      onChange={handleCategoryChange}
+                    />
+                  </label>
+
+                  <label>
+                    <span>رقم واتساب القسم</span>
+                    <input
+                      name="whatsapp"
+                      value={categoryForm.whatsapp}
+                      onChange={handleCategoryChange}
+                      dir="ltr"
+                    />
+                  </label>
+
+                  <label>
+                    <span>القسم الأب</span>
+
+                    <select
+                      name="parentId"
+                      value={categoryForm.parentId}
+                      onChange={handleCategoryChange}
+                    >
+                      <option value="">
+                        قسم رئيسي
+                      </option>
+
+                      {categories
+                        .filter(
+                          (category) =>
+                            category.id !==
+                            editingCategory?.id
+                        )
+                        .map((category) => (
+                          <option
+                            key={category.id}
+                            value={category.id}
+                          >
+                            {getCategoryFullName(category.id)}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>رابط الصورة</span>
+                    <input
+                      name="image"
+                      value={categoryForm.image}
+                      onChange={handleCategoryChange}
+                    />
+                  </label>
+
+                  <label className="form-group-full">
+                    <span>وصف القسم</span>
+
+                    <textarea
+                      name="description"
+                      rows="3"
+                      value={categoryForm.description}
+                      onChange={handleCategoryChange}
+                    />
+                  </label>
+                </div>
+
+                <div className="admin-checkboxes">
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="active"
+                      checked={categoryForm.active}
+                      onChange={handleCategoryChange}
+                    />
+                    ✅ القسم نشط
+                  </label>
+                </div>
+
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="save-btn"
+                  >
+                    💾 حفظ القسم
+                  </button>
+
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={resetCategoryForm}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>الصورة</th>
+                    <th>القسم</th>
+                    <th>الرقم</th>
+                    <th>القسم الأب</th>
+                    <th>واتساب</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredCategories.length === 0 ? (
+                    <tr>
+                      <td colSpan="7">
+                        لا توجد أقسام.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCategories.map((category) => (
+                      <tr key={category.id}>
+                        <td>
+                          {category.image ? (
+                            <img
+                              src={category.image}
+                              className="table-img"
+                              alt={category.name}
+                            />
+                          ) : (
+                            <div className="table-img-placeholder">
+                              📂
+                            </div>
+                          )}
+                        </td>
+
+                        <td>
+                          <strong>
+                            {category.parentId ? "↳ " : "📂 "}
+                            {category.name}
+                          </strong>
+                        </td>
+
+                        <td>
+                          {category.categoryNumber || "—"}
+                        </td>
+
+                        <td>
+                          {categoryMap[category.parentId]?.name ||
+                            "قسم رئيسي"}
+                        </td>
+
+                        <td dir="ltr">
+                          {category.whatsapp || "—"}
+                        </td>
+
+                        <td>
+                          {category.active !== false
+                            ? "🟢 نشط"
+                            : "🔴 متوقف"}
+                        </td>
+
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              type="button"
+                              className="edit-btn"
+                              onClick={() =>
+                                handleEditCategory(category)
+                              }
+                            >
+                              ✏️ تعديل
+                            </button>
+
+                            <button
+                              type="button"
+                              className="delete-btn"
+                              onClick={() =>
+                                handleDeleteCategory(category)
+                              }
+                            >
+                              🗑️ حذف
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {categories.length > 0 && (
+              <div className="category-tree">
+                {renderCategoryTree(
+                  categories.filter(
+                    (category) => !category.parentId
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ====================================================
+            ORDERS
+        ==================================================== */}
+
+        {tab === "orders" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>🛒 إدارة الطلبات</h2>
+
+                <p>
+                  إجمالي الطلبات:{" "}
+                  <strong>{orders.length}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="orders-toolbar">
+              <input
+                type="search"
+                placeholder="🔎 ابحث برقم الطلب أو اسم العميل أو الهاتف..."
+                value={orderSearch}
+                onChange={(event) =>
+                  setOrderSearch(event.target.value)
+                }
+              />
+
+              <select
+                value={orderStatusFilter}
+                onChange={(event) =>
+                  setOrderStatusFilter(event.target.value)
+                }
+              >
+                <option value="all">كل الحالات</option>
+                <option value="pending">قيد الانتظار</option>
+                <option value="confirmed">تم التأكيد</option>
+                <option value="processing">جاري التجهيز</option>
+                <option value="shipped">تم الشحن</option>
+                <option value="delivered">تم التسليم</option>
+                <option value="completed">مكتمل</option>
+                <option value="cancelled">ملغي</option>
+              </select>
+            </div>
+
+            <div className="orders-summary">
+              <div>
+                <span>كل الطلبات</span>
+                <strong>{orders.length}</strong>
+              </div>
+
+              <div>
+                <span>قيد الانتظار</span>
+                <strong>{pendingOrders}</strong>
+              </div>
+
+              <div>
+                <span>قيد التجهيز</span>
+                <strong>
+                  {
+                    orders.filter(
+                      (order) =>
+                        normalizeText(
+                          order.status ||
+                            order.orderStatus
+                        ) === "processing"
+                    ).length
+                  }
+                </strong>
+              </div>
+
+              <div>
+                <span>تم التسليم</span>
+                <strong>{deliveredOrders}</strong>
+              </div>
+            </div>
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>رقم الطلب</th>
+                    <th>العميل</th>
+                    <th>الهاتف</th>
+                    <th>التاريخ</th>
+                    <th>الدفع</th>
+                    <th>الإجمالي</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan="8">
+                        لا توجد طلبات.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredOrders.map((order) => {
+                      const status =
+                        order?.status ||
+                        order?.orderStatus ||
+                        "pending";
 
                       const paymentStatus =
-                        order.paymentStatus ||
-                        (
-                          order.paymentMethod ===
-                          "cod"
-                            ? "pending"
-                            : "pending"
-                        );
-
-                      const transactionId =
-                        order.transactionId ||
-                        order.transaction_id ||
-                        order.transactionID ||
-                        order.paymentId ||
-                        "";
+                        order?.paymentStatus ||
+                        "pending";
 
                       return (
-                        <tr
-                          key={
-                            order.id
-                          }
-                        >
-
-                          {/* CUSTOMER */}
+                        <tr key={order.id}>
+                          <td dir="ltr">
+                            #
+                            {order.id?.slice(0, 8) || "—"}
+                          </td>
 
                           <td>
-
                             <strong>
-                              {
-                                order.customerName ||
-                                "غير مسجل"
-                              }
+                              {order?.customerName ||
+                                order?.name ||
+                                "عميل"}
                             </strong>
 
                             <small
-                              className="order-date"
+                              style={{
+                                display: "block",
+                              }}
                             >
-                              {
-                                formatDate(
-                                  order.createdAt
-                                )
-                              }
+                              {order?.email || ""}
                             </small>
-
                           </td>
-
-                          {/* PHONE */}
 
                           <td dir="ltr">
-                            {
-                              order.phone ||
-                              "غير مسجل"
-                            }
+                            {order?.phone ||
+                              order?.customerPhone ||
+                              "—"}
                           </td>
 
-                          {/* ADDRESS */}
-
                           <td>
-                            {
-                              order.address ||
-                              "غير مسجل"
-                            }
+                            {formatDate(order?.createdAt)}
                           </td>
 
-                          {/* PRODUCTS */}
-
                           <td>
-
-                            {Array.isArray(
-                              order.products
-                            ) &&
-                              order.products.map(
-                                (
-                                  item,
-                                  index
-                                ) => (
-                                  <div
-                                    key={
-                                      index
-                                    }
-                                    className="order-product-line"
-                                  >
-
-                                    <span>
-                                      {
-                                        item?.title ||
-                                        item?.name ||
-                                        "منتج"
-                                      }
-                                    </span>
-
-                                    <span>
-                                      ×{" "}
-                                      {
-                                        item?.quantity ||
-                                        1
-                                      }
-                                    </span>
-
-                                  </div>
-                                )
+                            <div>
+                              {getPaymentMethodText(
+                                order?.paymentMethod
                               )}
 
+                              <small
+                                style={{
+                                  display: "block",
+                                }}
+                              >
+                                {getPaymentStatusText(
+                                  paymentStatus
+                                )}
+                              </small>
+                            </div>
                           </td>
 
-                          {/* TOTAL */}
-
                           <td>
-
                             <strong>
                               {Number(
-                                order.total ||
+                                order?.total ||
+                                  order?.grandTotal ||
+                                  order?.amount ||
                                   0
                               ).toLocaleString(
                                 "ar-EG"
                               )}{" "}
                               ج.م
                             </strong>
-
                           </td>
 
-                          {/* PAYMENT METHOD */}
-
                           <td>
-
-                            <span className="payment-method-badge">
-                              {
-                                getPaymentMethodText(
-                                  order.paymentMethod
-                                )
-                              }
-                            </span>
-
-                          </td>
-
-                          {/* PAYMENT STATUS */}
-
-                          <td>
-
                             <select
-                              className={`payment-status-select ${getPaymentStatusClass(
-                                paymentStatus
-                              )}`}
-                              value={
-                                paymentStatus
-                              }
-                              onChange={(e) =>
-                                changePaymentStatus(
+                              value={status}
+                              onChange={(event) =>
+                                handleOrderStatusChange(
                                   order.id,
-                                  e.target.value
+                                  event.target.value
                                 )
                               }
                             >
-
                               <option value="pending">
-                                قيد الانتظار ⏳
+                                قيد الانتظار
                               </option>
-
-                              <option value="paid">
-                                مدفوع ✅
+                              <option value="confirmed">
+                                تم التأكيد
                               </option>
-
-                              <option value="failed">
-                                فشل الدفع ❌
-                              </option>
-
-                              <option value="cancelled">
-                                ملغي ❌
-                              </option>
-
-                              <option value="refunded">
-                                تم رد المبلغ ↩️
-                              </option>
-
-                            </select>
-
-                          </td>
-
-                          {/* TRANSACTION ID */}
-
-                          <td>
-
-                            {transactionId ? (
-                              <span
-                                className="transaction-id"
-                                title={
-                                  transactionId
-                                }
-                              >
-                                {
-                                  transactionId
-                                }
-                              </span>
-                            ) : (
-                              <span className="no-transaction">
-                                لا يوجد
-                              </span>
-                            )}
-
-                          </td>
-
-                          {/* ORDER STATUS */}
-
-                          <td>
-
-                            <select
-                              value={
-                                order.status ||
-                                order.orderStatus ||
-                                "pending"
-                              }
-                              onChange={(e) =>
-                                changeOrderStatus(
-                                  order.id,
-                                  e.target.value
-                                )
-                              }
-                            >
-
-                              <option value="pending">
-                                جديد
-                              </option>
-
                               <option value="processing">
-                                قيد التجهيز
+                                جاري التجهيز
                               </option>
-
-                              <option value="shipping">
-                                جاري الشحن
+                              <option value="shipped">
+                                تم الشحن
                               </option>
-
-                              <option value="done">
+                              <option value="delivered">
                                 تم التسليم
                               </option>
-
-                              <option value="cancel">
+                              <option value="completed">
+                                مكتمل
+                              </option>
+                              <option value="cancelled">
                                 ملغي
                               </option>
-
                             </select>
-
                           </td>
-
-                          {/* WHATSAPP */}
 
                           <td>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="edit-btn"
+                                onClick={() =>
+                                  openOrderDetails(order)
+                                }
+                              >
+                                👁️ التفاصيل
+                              </button>
 
-                            <button
-                              type="button"
-                              className="whatsapp-btn"
-                              onClick={() =>
-                                openWhatsApp(
-                                  order.phone
-                                )
-                              }
-                            >
-                              💬 واتساب
-                            </button>
-
+                              <button
+                                type="button"
+                                className="delete-btn"
+                                onClick={() =>
+                                  deleteOrder(order)
+                                }
+                              >
+                                🗑️ حذف
+                              </button>
+                            </div>
                           </td>
-
                         </tr>
                       );
-                    }
-                  )
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ==================================================
-          CATEGORIES TABLE
-      ================================================== */}
-
-      {tab === "categories" && (
-        <div className="table-container">
-
-          <h2>
-            🗂️ الأقسام
-          </h2>
-
-          <div className="table-scroll">
-
-            <table className="admin-table">
-
-              <thead>
-                <tr>
-
-                  <th>
-                    الصورة
-                  </th>
-
-                  <th>
-                    الاسم
-                  </th>
-
-                  <th>
-                    الحالة
-                  </th>
-
-                  <th>
-                    الإجراءات
-                  </th>
-
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {categoryTree.length ===
-                0 ? (
-                  <tr>
-                    <td
-                      colSpan="4"
-                    >
-                      لا توجد أقسام
-                    </td>
-                  </tr>
-                ) : (
-                  categoryTree.map(
-                    (cat) => (
-                      <tr
-                        key={
-                          cat.id
-                        }
-                      >
-
-                        <td>
-
-                          {cat.image ? (
-                            <img
-                              src={
-                                cat.image
-                              }
-                              className="category-img"
-                              alt={
-                                cat.name
-                              }
-                            />
-                          ) : (
-                            cat.icon ||
-                            "📁"
-                          )}
-
-                        </td>
-
-                        <td>
-
-                          <div className="category-tree-name">
-
-                            <span className="category-level">
-                              {"— ".repeat(
-                                cat.level
-                              )}
-                            </span>
-
-                            <span>
-                              {cat.icon
-                                ? `${cat.icon} `
-                                : ""}
-
-                              {
-                                cat.name
-                              }
-                            </span>
-
-                          </div>
-
-                        </td>
-
-                        <td>
-
-                          <button
-                            type="button"
-                            className={
-                              cat.active
-                                ? "active-btn"
-                                : "inactive-btn"
-                            }
-                            onClick={() =>
-                              toggleCategoryStatus(
-                                cat
-                              )
-                            }
-                          >
-                            {cat.active
-                              ? "مفعلة ✅"
-                              : "موقوفة ❌"}
-                          </button>
-
-                        </td>
-
-                        <td>
-
-                          <button
-                            type="button"
-                            className="edit-btn"
-                            onClick={() =>
-                              handleEditCategory(
-                                cat
-                              )
-                            }
-                          >
-                            ✏️ تعديل
-                          </button>
-
-                          <button
-                            type="button"
-                            className="delete-btn"
-                            onClick={() =>
-                              handleDeleteCategory(
-                                cat.id
-                              )
-                            }
-                          >
-                            🗑 حذف
-                          </button>
-
-                        </td>
-
-                      </tr>
-                    )
-                  )
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ==================================================
-          USERS / ACCOUNTS
-      ================================================== */}
-
-      {tab === "users" && (
-        <div className="table-container accounts-container">
-
-          <div className="accounts-header">
-
-            <div>
-
-              <h2>
-                👥 حسابات العملاء
-              </h2>
-
-              <p>
-                إجمالي الحسابات:
-                {" "}
-                <strong>
-                  {users.length}
-                </strong>
-              </p>
-
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
-
           </div>
+        )}
 
-          {!showUserDetails && (
-            <div className="accounts-list">
+        {/* ====================================================
+            ORDER DETAILS
+        ==================================================== */}
 
-              {sortedUsers.length ===
-              0 ? (
-                <div className="empty-state">
+        {showOrderDetails &&
+          selectedOrder && (
+            <div
+              className="order-details-overlay"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  closeOrderDetails();
+                }
+              }}
+            >
+              <div className="order-details-modal">
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={closeOrderDetails}
+                >
+                  ✕
+                </button>
 
+                <h2>🧾 تفاصيل الطلب</h2>
+
+                <div className="order-detail-grid">
                   <div>
-                    👥
+                    <span>رقم الطلب</span>
+                    <strong dir="ltr">
+                      {selectedOrder.id || "—"}
+                    </strong>
                   </div>
 
-                  <h3>
-                    لا يوجد حسابات
-                  </h3>
+                  <div>
+                    <span>اسم العميل</span>
+                    <strong>
+                      {selectedOrder.customerName ||
+                        selectedOrder.name ||
+                        "—"}
+                    </strong>
+                  </div>
 
-                  <p>
-                    لم يتم تسجيل أي
-                    حسابات حتى الآن.
-                  </p>
+                  <div>
+                    <span>الهاتف</span>
+                    <strong dir="ltr">
+                      {selectedOrder.phone ||
+                        selectedOrder.customerPhone ||
+                        "—"}
+                    </strong>
+                  </div>
 
+                  <div>
+                    <span>العنوان</span>
+                    <strong>
+                      {typeof selectedOrder.address === "object"
+                        ? getUserAddress({
+                            address:
+                              selectedOrder.address,
+                          })
+                        : selectedOrder.address ||
+                          selectedOrder.customerAddress ||
+                          "—"}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>التاريخ</span>
+                    <strong>
+                      {formatDate(
+                        selectedOrder.createdAt
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>طريقة الدفع</span>
+                    <strong>
+                      {getPaymentMethodText(
+                        selectedOrder.paymentMethod
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>حالة الطلب</span>
+                    <strong>
+                      {getOrderStatusText(
+                        selectedOrder.status ||
+                          selectedOrder.orderStatus ||
+                          "pending"
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>حالة الدفع</span>
+                    <strong
+                      className={getPaymentStatusClass(
+                        selectedOrder.paymentStatus ||
+                          "pending"
+                      )}
+                    >
+                      {getPaymentStatusText(
+                        selectedOrder.paymentStatus ||
+                          "pending"
+                      )}
+                    </strong>
+                  </div>
                 </div>
-              ) : (
-                sortedUsers.map(
-                  (user) => {
 
+                <div className="order-products-details">
+                  <h3>📦 المنتجات</h3>
+
+                  {Array.isArray(selectedOrder.products) &&
+                  selectedOrder.products.length ? (
+                    selectedOrder.products.map(
+                      (item, index) => (
+                        <div
+                          className="order-product-row"
+                          key={index}
+                        >
+                          <span>
+                            {item?.title ||
+                              item?.name ||
+                              item?.productName ||
+                              "منتج"}
+                          </span>
+
+                          <span>
+                            ×{" "}
+                            {Number(
+                              item?.quantity ||
+                                item?.qty ||
+                                1
+                            )}
+                          </span>
+
+                          <strong>
+                            {Number(
+                              item?.price || 0
+                            ).toLocaleString(
+                              "ar-EG"
+                            )}{" "}
+                            ج.م
+                          </strong>
+                        </div>
+                      )
+                    )
+                  ) : (
+                    <p>لا توجد منتجات مسجلة.</p>
+                  )}
+                </div>
+
+                <div className="order-total-box">
+                  <span>الإجمالي</span>
+
+                  <strong>
+                    {Number(
+                      selectedOrder.total ||
+                        selectedOrder.grandTotal ||
+                        selectedOrder.amount ||
+                        0
+                    ).toLocaleString(
+                      "ar-EG"
+                    )}{" "}
+                    ج.م
+                  </strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {/* ====================================================
+            USERS
+        ==================================================== */}
+
+        {tab === "users" && (
+          <div className="table-container accounts-container">
+            <div className="accounts-header">
+              <div>
+                <h2>👥 حسابات العملاء</h2>
+                <p>
+                  إجمالي الحسابات:{" "}
+                  <strong>{users.length}</strong>
+                </p>
+              </div>
+            </div>
+
+            {!showUserDetails && (
+              <div className="accounts-search">
+                <input
+                  type="search"
+                  placeholder="🔎 ابحث بالاسم أو البريد أو الهاتف..."
+                  value={userSearch}
+                  onChange={(event) =>
+                    setUserSearch(event.target.value)
+                  }
+                />
+
+                {userSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setUserSearch("")}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!showUserDetails && (
+              <div className="accounts-list">
+                {sortedUsers.length === 0 ? (
+                  <div className="empty-state">
+                    <div>👥</div>
+                    <h3>
+                      {userSearch
+                        ? "لا توجد نتائج"
+                        : "لا يوجد حسابات"}
+                    </h3>
+                    <p>
+                      {userSearch
+                        ? "لم يتم العثور على حساب مطابق للبحث."
+                        : "لم يتم تسجيل أي حسابات حتى الآن."}
+                    </p>
+                  </div>
+                ) : (
+                  sortedUsers.map((user) => {
                     const userOrders =
-                      getOrdersForUser(
-                        user.id
-                      );
+                      getOrdersForUser(user.id);
+
+                    const totalPurchases =
+                      getUserTotalPurchases(user.id);
 
                     return (
                       <button
                         type="button"
                         className="account-list-item"
-                        key={
-                          user.id
-                        }
+                        key={user.id}
                         onClick={() =>
-                          openUserDetails(
-                            user
-                          )
+                          openUserDetails(user)
                         }
                       >
-
                         <div className="account-avatar">
                           👤
                         </div>
 
                         <div className="account-list-info">
-
                           <h3>
-                            {
-                              getUserName(
-                                user
-                              )
-                            }
+                            {getUserName(user)}
                           </h3>
 
                           <p>
-                            {
-                              getUserEmail(
-                                user
-                              )
-                            }
+                            {getUserEmail(user)}
                           </p>
 
+                          <small>
+                            📱{" "}
+                            {getUserPhone(user)}
+                          </small>
                         </div>
 
                         <div className="account-list-meta">
-
                           <span>
-                            📦{" "}
-                            {
-                              userOrders.length
-                            }{" "}
-                            طلب
+                            📦 {userOrders.length} طلب
                           </span>
 
                           <span>
-                            🔐{" "}
-                            {
-                              getLoginCount(
-                                user
-                              )
-                            }{" "}
-                            دخول
+                            💰{" "}
+                            {totalPurchases.toLocaleString(
+                              "ar-EG"
+                            )}{" "}
+                            ج.م
                           </span>
 
+                          <span>
+                            🔐 {getLoginCount(user)} دخول
+                          </span>
                         </div>
 
                         <div className="account-arrow">
                           ←
                         </div>
-
                       </button>
                     );
-                  }
-                )
-              )}
+                  })
+                )}
+              </div>
+            )}
 
-            </div>
-          )}
+            {showUserDetails &&
+              selectedUser && (
+                <div className="account-details">
+                  <button
+                    type="button"
+                    className="account-back-button"
+                    onClick={closeUserDetails}
+                  >
+                    → رجوع للحسابات
+                  </button>
 
-          {/* ==================================================
-              USER DETAILS
-          ================================================== */}
+                  <div className="account-profile-card">
+                    <div className="account-profile-avatar">
+                      👤
+                    </div>
 
-          {showUserDetails &&
-            selectedUser && (
-              <div className="account-details">
+                    <div>
+                      <h2>
+                        {getUserName(selectedUser)}
+                      </h2>
 
-                <button
-                  type="button"
-                  className="account-back-button"
-                  onClick={
-                    closeUserDetails
-                  }
-                >
-                  → رجوع للحسابات
-                </button>
+                      <p>
+                        {getUserEmail(selectedUser)}
+                      </p>
 
-                {/* PROFILE */}
-
-                <div className="account-profile-card">
-
-                  <div className="account-profile-avatar">
-                    👤
+                      <span>
+                        👤 الدور:{" "}
+                        <strong>
+                          {getUserRole(selectedUser)}
+                        </strong>
+                      </span>
+                    </div>
                   </div>
 
-                  <div>
+                  <div className="account-info-card">
+                    <h3>👤 البيانات الشخصية</h3>
 
-                    <h2>
-                      {
-                        getUserName(
-                          selectedUser
-                        )
-                      }
-                    </h2>
+                    <div className="account-info-grid">
+                      <div>
+                        <span>الاسم</span>
+                        <strong>
+                          {getUserName(selectedUser)}
+                        </strong>
+                      </div>
 
-                    <p>
-                      {
-                        getUserEmail(
-                          selectedUser
-                        )
-                      }
-                    </p>
+                      <div>
+                        <span>البريد الإلكتروني</span>
+                        <strong dir="ltr">
+                          {getUserEmail(selectedUser)}
+                        </strong>
+                      </div>
 
-                  </div>
+                      <div>
+                        <span>رقم الهاتف</span>
+                        <strong dir="ltr">
+                          {getUserPhone(selectedUser)}
+                        </strong>
+                      </div>
 
-                </div>
+                      <div>
+                        <span>العنوان</span>
+                        <strong>
+                          {getUserAddress(selectedUser)}
+                        </strong>
+                      </div>
 
-                {/* PERSONAL DATA */}
-
-                <div className="account-info-card">
-
-                  <h3>
-                    👤 البيانات الشخصية
-                  </h3>
-
-                  <div className="account-info-grid">
-
-                    <div>
-                      <span>
-                        الاسم
-                      </span>
-
-                      <strong>
-                        {
-                          getUserName(
-                            selectedUser
-                          )
-                        }
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        البريد الإلكتروني
-                      </span>
-
-                      <strong dir="ltr">
-                        {
-                          getUserEmail(
-                            selectedUser
-                          )
-                        }
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        رقم الهاتف
-                      </span>
-
-                      <strong dir="ltr">
-                        {
-                          getUserPhone(
-                            selectedUser
-                          )
-                        }
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        العنوان
-                      </span>
-
-                      <strong>
-                        {
-                          getUserAddress(
-                            selectedUser
-                          )
-                        }
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        تاريخ التسجيل
-                      </span>
-
-                      <strong>
-                        {
-                          formatDate(
+                      <div>
+                        <span>تاريخ التسجيل</span>
+                        <strong>
+                          {formatDate(
                             selectedUser.createdAt ||
                               selectedUser.registeredAt ||
                               selectedUser.createdDate
-                          )
-                        }
-                      </strong>
-                    </div>
+                          )}
+                        </strong>
+                      </div>
 
-                    <div>
-                      <span>
-                        آخر دخول
-                      </span>
-
-                      <strong>
-                        {
-                          formatDate(
+                      <div>
+                        <span>آخر دخول</span>
+                        <strong>
+                          {formatDate(
                             selectedUser.lastLoginAt ||
                               selectedUser.lastLogin
-                          )
-                        }
-                      </strong>
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>عدد مرات الدخول</span>
+                        <strong>
+                          {getLoginCount(selectedUser)}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>عدد الطلبات</span>
+                        <strong>
+                          {selectedUserOrders.length}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>إجمالي المشتريات</span>
+                        <strong>
+                          {getUserTotalPurchases(
+                            selectedUser.id
+                          ).toLocaleString(
+                            "ar-EG"
+                          )}{" "}
+                          ج.م
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Firebase UID</span>
+                        <strong
+                          dir="ltr"
+                          title={
+                            selectedUser.uid ||
+                            selectedUser.id
+                          }
+                        >
+                          {selectedUser.uid ||
+                            selectedUser.id}
+                        </strong>
+                      </div>
                     </div>
-
-                    <div>
-                      <span>
-                        عدد مرات الدخول
-                      </span>
-
-                      <strong>
-                        {
-                          getLoginCount(
-                            selectedUser
-                          )
-                        }
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        عدد الطلبات
-                      </span>
-
-                      <strong>
-                        {
-                          selectedUserOrders.length
-                        }
-                      </strong>
-                    </div>
-
                   </div>
 
-                </div>
+                  <div className="account-info-card">
+                    <h3>🕐 سجل الزيارات والدخول</h3>
 
-                {/* VISITS */}
+                    {getVisits(selectedUser).length ===
+                    0 ? (
+                      <div className="account-empty-history">
+                        لا يوجد سجل زيارات مسجل لهذا الحساب.
+                      </div>
+                    ) : (
+                      <div className="account-visits-list">
+                        {[...getVisits(selectedUser)]
+                          .reverse()
+                          .map((visit, index) => {
+                            const visitDate =
+                              visit?.date ||
+                              visit?.visitedAt ||
+                              visit?.loginAt ||
+                              visit;
 
-                <div className="account-info-card">
+                            const visitType =
+                              visit?.type || "";
 
-                  <h3>
-                    🕐 سجل الزيارات والدخول
-                  </h3>
+                            const visitTypeText =
+                              visitType === "register"
+                                ? "🆕 إنشاء الحساب"
+                                : visitType === "login"
+                                ? "🔐 تسجيل دخول"
+                                : "👁️ زيارة";
 
-                  {getVisits(
-                    selectedUser
-                  ).length === 0 ? (
-                    <div className="account-empty-history">
-                      لا يوجد سجل زيارات
-                      مسجل لهذا الحساب.
-                    </div>
-                  ) : (
-                    <div className="account-visits-list">
+                            return (
+                              <div
+                                className="account-visit-item"
+                                key={`${visitDate}-${index}`}
+                              >
+                                <span className="visit-icon">
+                                  🕐
+                                </span>
 
-                      {[
-                        ...getVisits(
-                          selectedUser
-                        ),
-                      ]
-                        .reverse()
-                        .map(
-                          (
-                            visit,
-                            index
-                          ) => (
-                            <div
-                              className="account-visit-item"
-                              key={
-                                index
-                              }
-                            >
+                                <div>
+                                  <strong>
+                                    {formatDate(
+                                      visitDate
+                                    )}
+                                  </strong>
 
-                              <span className="visit-icon">
-                                🕐
-                              </span>
-
-                              <div>
-
-                                <strong>
-                                  {formatDate(
-                                    visit?.date ||
-                                      visit?.visitedAt ||
-                                      visit?.loginAt ||
-                                      visit
-                                  )}
-                                </strong>
-
-                                {visit?.type && (
                                   <small>
-                                    {
-                                      visit.type
-                                    }
+                                    {visitTypeText}
                                   </small>
-                                )}
-
+                                </div>
                               </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
 
-                            </div>
-                          )
-                        )}
+                  <div className="account-info-card">
+                    <h3>🧾 طلبات العميل</h3>
 
-                    </div>
-                  )}
-
-                </div>
-
-                {/* USER ORDERS */}
-
-                <div className="account-info-card">
-
-                  <h3>
-                    🧾 طلبات العميل
-                  </h3>
-
-                  {selectedUserOrders.length ===
-                  0 ? (
-                    <div className="account-empty-history">
-                      هذا العميل لم يقم
-                      بعمل أي طلبات حتى الآن.
-                    </div>
-                  ) : (
-                    <div className="user-orders-list">
-
-                      {selectedUserOrders.map(
-                        (order) => {
-
+                    {selectedUserOrders.length ===
+                    0 ? (
+                      <div className="account-empty-history">
+                        هذا العميل لم يقم بعمل طلبات حتى الآن.
+                      </div>
+                    ) : (
+                      <div className="user-orders-list">
+                        {selectedUserOrders.map((order) => {
                           const paymentStatus =
-                            order.paymentStatus ||
+                            order?.paymentStatus ||
                             "pending";
 
                           const transactionId =
-                            order.transactionId ||
-                            order.transaction_id ||
-                            order.transactionID ||
-                            order.paymentId ||
+                            order?.transactionId ||
+                            order?.transaction_id ||
+                            order?.transactionID ||
+                            order?.paymentId ||
                             "";
+
+                          const orderStatus =
+                            order?.status ||
+                            order?.orderStatus ||
+                            "pending";
+
+                          const productsList =
+                            Array.isArray(order?.products)
+                              ? order.products
+                              : [];
 
                           return (
                             <div
                               className="user-order-card"
-                              key={
-                                order.id
-                              }
+                              key={order.id}
                             >
-
                               <div className="user-order-header">
-
                                 <strong>
                                   طلب #
-                                  {order.id.slice(
-                                    0,
-                                    8
-                                  )}
+                                  {order.id
+                                    ? order.id.slice(0, 8)
+                                    : "غير معروف"}
                                 </strong>
 
                                 <span>
-                                  {
-                                    formatDate(
-                                      order.createdAt
-                                    )
-                                  }
+                                  {formatDate(
+                                    order?.createdAt
+                                  )}
                                 </span>
-
                               </div>
 
                               <div className="user-order-products">
-
-                                {Array.isArray(
-                                  order.products
-                                ) &&
-                                  order.products.map(
-                                    (
-                                      item,
-                                      index
-                                    ) => (
+                                {productsList.length === 0 ? (
+                                  <div>
+                                    لا توجد منتجات مسجلة
+                                  </div>
+                                ) : (
+                                  productsList.map(
+                                    (item, index) => (
                                       <div
-                                        key={
-                                          index
-                                        }
+                                        key={`${order.id}-product-${index}`}
                                       >
-
                                         <span>
-                                          {
-                                            item?.title ||
+                                          {item?.title ||
                                             item?.name ||
-                                            "منتج"
-                                          }
+                                            item?.productName ||
+                                            "منتج"}
                                         </span>
 
                                         <span>
                                           ×{" "}
-                                          {
+                                          {Number(
                                             item?.quantity ||
-                                            1
-                                          }
+                                              item?.qty ||
+                                              1
+                                          )}
                                         </span>
-
                                       </div>
                                     )
-                                  )}
-
+                                  )
+                                )}
                               </div>
 
-                              {/* PAYMENT DETAILS */}
-
                               <div className="user-order-payment">
-
                                 <div>
                                   <span>
                                     طريقة الدفع
                                   </span>
 
                                   <strong>
-                                    {
-                                      getPaymentMethodText(
-                                        order.paymentMethod
-                                      )
-                                    }
+                                    {getPaymentMethodText(
+                                      order?.paymentMethod
+                                    )}
                                   </strong>
                                 </div>
 
@@ -4170,11 +3500,9 @@ function Admin({
                                       paymentStatus
                                     )}
                                   >
-                                    {
-                                      getPaymentStatusText(
-                                        paymentStatus
-                                      )
-                                    }
+                                    {getPaymentStatusText(
+                                      paymentStatus
+                                    )}
                                   </strong>
                                 </div>
 
@@ -4184,23 +3512,20 @@ function Admin({
                                       رقم العملية
                                     </span>
 
-                                    <strong>
-                                      {
-                                        transactionId
-                                      }
+                                    <strong dir="ltr">
+                                      {transactionId}
                                     </strong>
                                   </div>
                                 )}
-
                               </div>
 
                               <div className="user-order-footer">
-
                                 <strong>
-                                  الإجمالي:
-                                  {" "}
+                                  الإجمالي:{" "}
                                   {Number(
-                                    order.total ||
+                                    order?.total ||
+                                      order?.grandTotal ||
+                                      order?.amount ||
                                       0
                                   ).toLocaleString(
                                     "ar-EG"
@@ -4209,39 +3534,1631 @@ function Admin({
                                 </strong>
 
                                 <span
-                                  className={`order-status status-${
-                                    order.status ||
-                                    order.orderStatus ||
-                                    "pending"
-                                  }`}
+                                  className={`order-status status-${orderStatus}`}
                                 >
                                   {getOrderStatusText(
-                                    order.status ||
-                                      order.orderStatus
+                                    orderStatus
                                   )}
                                 </span>
-
                               </div>
-
                             </div>
                           );
-                        }
-                      )}
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+          </div>
+        )}
 
-                    </div>
+        {/* ====================================================
+            OFFERS
+        ==================================================== */}
+
+        {tab === "offers" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>⭐ إدارة العروض</h2>
+
+                <p>
+                  المنتجات الموجودة حاليًا في العروض:{" "}
+                  <strong>
+                    {offerProducts.length}
+                  </strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="add-btn"
+                onClick={handleAddProduct}
+              >
+                ➕ إضافة منتج للعرض
+              </button>
+            </div>
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>الصورة</th>
+                    <th>المنتج</th>
+                    <th>السعر</th>
+                    <th>السعر القديم</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {offerProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="6">
+                        لا توجد منتجات عروض حاليًا
+                      </td>
+                    </tr>
+                  ) : (
+                    offerProducts.map((product) => (
+                      <tr key={product.id}>
+                        <td>
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              className="table-img"
+                              alt={
+                                product.title || "منتج"
+                              }
+                            />
+                          ) : (
+                            "📦"
+                          )}
+                        </td>
+
+                        <td>
+                          {product.title || "بدون اسم"}
+                        </td>
+
+                        <td>
+                          {Number(
+                            product.price || 0
+                          ).toLocaleString(
+                            "ar-EG"
+                          )}{" "}
+                          ج.م
+                        </td>
+
+                        <td>
+                          {product.oldPrice
+                            ? Number(
+                                product.oldPrice
+                              ).toLocaleString(
+                                "ar-EG"
+                              ) + " ج.م"
+                            : "—"}
+                        </td>
+
+                        <td>🔥 عرض</td>
+
+                        <td>
+                          <button
+                            type="button"
+                            className="edit-btn"
+                            onClick={() =>
+                              handleEdit(product)
+                            }
+                          >
+                            ✏️ تعديل
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
+        {/* ====================================================
+            BEST SELLERS
+        ==================================================== */}
+
+        {tab === "bestsellers" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>🔥 الأكثر مبيعًا</h2>
+
+                <p>
+                  عدد المنتجات:{" "}
+                  <strong>
+                    {bestSellerProducts.length}
+                  </strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="add-btn"
+                onClick={handleAddProduct}
+              >
+                ➕ إضافة منتج
+              </button>
+            </div>
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>الصورة</th>
+                    <th>المنتج</th>
+                    <th>السعر</th>
+                    <th>القسم</th>
+                    <th>إجراء</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {bestSellerProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="5">
+                        لا توجد منتجات محددة كالأكثر مبيعًا
+                      </td>
+                    </tr>
+                  ) : (
+                    bestSellerProducts.map((product) => (
+                      <tr key={product.id}>
+                        <td>
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              className="table-img"
+                              alt={
+                                product.title || "منتج"
+                              }
+                            />
+                          ) : (
+                            "📦"
+                          )}
+                        </td>
+
+                        <td>
+                          {product.title || "بدون اسم"}
+                        </td>
+
+                        <td>
+                          {Number(
+                            product.price || 0
+                          ).toLocaleString(
+                            "ar-EG"
+                          )}{" "}
+                          ج.م
+                        </td>
+
+                        <td>
+                          {getCategoryFullName(
+                            product.categoryId
+                          ) || "بدون قسم"}
+                        </td>
+
+                        <td>
+                          <button
+                            type="button"
+                            className="edit-btn"
+                            onClick={() =>
+                              handleEdit(product)
+                            }
+                          >
+                            ✏️ تعديل
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================
+            NEW ARRIVALS
+        ==================================================== */}
+
+        {tab === "new-arrivals" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>🆕 المنتجات الجديدة</h2>
+
+                <p>
+                  عدد المنتجات:{" "}
+                  <strong>
+                    {newArrivalProducts.length}
+                  </strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="add-btn"
+                onClick={handleAddProduct}
+              >
+                ➕ إضافة منتج
+              </button>
+            </div>
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>الصورة</th>
+                    <th>المنتج</th>
+                    <th>السعر</th>
+                    <th>القسم</th>
+                    <th>إجراء</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {newArrivalProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="5">
+                        لا توجد منتجات محددة كمنتجات جديدة
+                      </td>
+                    </tr>
+                  ) : (
+                    newArrivalProducts.map((product) => (
+                      <tr key={product.id}>
+                        <td>
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              className="table-img"
+                              alt={
+                                product.title || "منتج"
+                              }
+                            />
+                          ) : (
+                            "📦"
+                          )}
+                        </td>
+
+                        <td>
+                          {product.title || "بدون اسم"}
+                        </td>
+
+                        <td>
+                          {Number(
+                            product.price || 0
+                          ).toLocaleString(
+                            "ar-EG"
+                          )}{" "}
+                          ج.م
+                        </td>
+
+                        <td>
+                          {getCategoryFullName(
+                            product.categoryId
+                          ) || "بدون قسم"}
+                        </td>
+
+                        <td>
+                          <button
+                            type="button"
+                            className="edit-btn"
+                            onClick={() =>
+                              handleEdit(product)
+                            }
+                          >
+                            ✏️ تعديل
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================
+            REPORTS
+        ==================================================== */}
+
+        {tab === "reports" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>📈 الإحصائيات والتقارير</h2>
+                <p>
+                  ملخص شامل لحالة المتجر والمبيعات والعملاء.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-stats">
+              <div className="stat-card">
+                <h3>👥 العملاء</h3>
+                <p>{users.length}</p>
+              </div>
+
+              <div className="stat-card">
+                <h3>📦 المنتجات</h3>
+                <p>{products.length}</p>
+              </div>
+
+              <div className="stat-card">
+                <h3>📂 الأقسام</h3>
+                <p>{categories.length}</p>
+              </div>
+
+              <div className="stat-card">
+                <h3>🛒 الطلبات</h3>
+                <p>{orders.length}</p>
+              </div>
+
+              <div className="stat-card">
+                <h3>💰 المبيعات</h3>
+                <p>
+                  {totalSales.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </p>
+              </div>
+
+              <div className="stat-card">
+                <h3>
+                  💳 المدفوع إلكترونيًا
+                </h3>
+
+                <p>
+                  {paidSales.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </p>
+              </div>
+            </div>
+
+            <div className="orders-summary">
+              <div>
+                <span>العروض</span>
+                <strong>
+                  {offerProducts.length}
+                </strong>
+              </div>
+
+              <div>
+                <span>الأكثر مبيعًا</span>
+                <strong>
+                  {bestSellerProducts.length}
+                </strong>
+              </div>
+
+              <div>
+                <span>المنتجات الجديدة</span>
+                <strong>
+                  {newArrivalProducts.length}
+                </strong>
+              </div>
+
+              <div>
+                <span>المقترحة</span>
+                <strong>
+                  {recommendedProducts.length}
+                </strong>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================
+            SALES
+        ==================================================== */}
+
+        {tab === "sales" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>💰 المبيعات</h2>
+                <p>
+                  متابعة إجمالي المبيعات والمدفوعات.
+                </p>
+              </div>
+            </div>
+
+            <div className="payment-summary">
+              <div>
+                <span>إجمالي المبيعات</span>
+                <strong>
+                  {totalSales.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  المبيعات المدفوعة إلكترونيًا
+                </span>
+
+                <strong>
+                  {paidSales.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  المبيعات غير المدفوعة إلكترونيًا
+                </span>
+
+                <strong>
+                  {Math.max(
+                    totalSales - paidSales,
+                    0
+                  ).toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </strong>
+              </div>
+
+              <div>
+                <span>متوسط الطلب</span>
+
+                <strong>
+                  {orders.length
+                    ? (
+                        totalSales /
+                        orders.length
+                      ).toLocaleString(
+                        "ar-EG",
+                        {
+                          maximumFractionDigits: 2,
+                        }
+                      )
+                    : "0"}{" "}
+                  ج.م
+                </strong>
+              </div>
+            </div>
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>رقم الطلب</th>
+                    <th>العميل</th>
+                    <th>التاريخ</th>
+                    <th>طريقة الدفع</th>
+                    <th>حالة الدفع</th>
+                    <th>الحالة</th>
+                    <th>الإجمالي</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan="7">
+                        لا توجد مبيعات حتى الآن
+                      </td>
+                    </tr>
+                  ) : (
+                    orders.map((order) => {
+                      const orderStatus =
+                        order.status ||
+                        order.orderStatus ||
+                        "pending";
+
+                      const paymentStatus =
+                        order.paymentStatus ||
+                        "pending";
+
+                      return (
+                        <tr key={order.id}>
+                          <td dir="ltr">
+                            #{order.id?.slice(0, 8) || "—"}
+                          </td>
+
+                          <td>
+                            {order.customerName ||
+                              order.name ||
+                              "عميل"}
+                          </td>
+
+                          <td>
+                            {formatDate(order.createdAt)}
+                          </td>
+
+                          <td>
+                            {getPaymentMethodText(
+                              order.paymentMethod
+                            )}
+                          </td>
+
+                          <td>
+                            <span
+                              className={getPaymentStatusClass(
+                                paymentStatus
+                              )}
+                            >
+                              {getPaymentStatusText(
+                                paymentStatus
+                              )}
+                            </span>
+                          </td>
+
+                          <td>
+                            <span
+                              className={`order-status status-${orderStatus}`}
+                            >
+                              {getOrderStatusText(
+                                orderStatus
+                              )}
+                            </span>
+                          </td>
+
+                          <td>
+                            <strong>
+                              {Number(
+                                order.total ||
+                                  order.grandTotal ||
+                                  order.amount ||
+                                  0
+                              ).toLocaleString(
+                                "ar-EG"
+                              )}{" "}
+                              ج.م
+                            </strong>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================
+            CUSTOMERS
+        ==================================================== */}
+
+        {tab === "customers" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>🧑‍💼 عملاء المتجر</h2>
+                <p>
+                  إدارة ملفات العملاء والطلبات الخاصة بهم.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-stats">
+              <div className="stat-card">
+                <h3>👥 إجمالي العملاء</h3>
+                <p>{users.length}</p>
+              </div>
+
+              <div className="stat-card">
+                <h3>🛒 إجمالي الطلبات</h3>
+                <p>{orders.length}</p>
+              </div>
+
+              <div className="stat-card">
+                <h3>💰 إجمالي المشتريات</h3>
+                <p>
+                  {totalSales.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="save-btn"
+              onClick={() => setTab("users")}
+            >
+              👥 فتح إدارة المستخدمين
+            </button>
+          </div>
+        )}
+
+        {/* ====================================================
+            BANNERS
+        ==================================================== */}
+
+        {tab === "banners" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>🖼️ إدارة البانرات</h2>
+                <p>
+                  إدارة صور البانرات والإعلانات الرئيسية للمتجر.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="add-btn"
+                onClick={() => {
+                  setGenericType("banners");
+                  setGenericEditingId(null);
+                  setGenericForm({
+                    title: "",
+                    image: "",
+                    link: "",
+                    active: true,
+                    order: 0,
+                  });
+                  setShowGenericForm(true);
+                }}
+              >
+                ➕ إضافة بانر
+              </button>
+            </div>
+
+            {showGenericForm &&
+              genericType === "banners" && (
+                <form
+                  className="admin-form"
+                  onSubmit={handleGenericSubmit}
+                >
+                  <h3>
+                    {genericEditingId
+                      ? "✏️ تعديل البانر"
+                      : "➕ إضافة بانر جديد"}
+                  </h3>
+
+                  <div className="form-grid">
+                    <label>
+                      <span>العنوان</span>
+                      <input
+                        name="title"
+                        value={genericForm.title || ""}
+                        onChange={handleGenericChange}
+                      />
+                    </label>
+
+                    <label>
+                      <span>رابط الصورة</span>
+                      <input
+                        name="image"
+                        dir="ltr"
+                        value={genericForm.image || ""}
+                        onChange={handleGenericChange}
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      <span>الرابط</span>
+                      <input
+                        name="link"
+                        dir="ltr"
+                        value={genericForm.link || ""}
+                        onChange={handleGenericChange}
+                      />
+                    </label>
+
+                    <label>
+                      <span>الترتيب</span>
+                      <input
+                        name="order"
+                        type="number"
+                        value={genericForm.order ?? 0}
+                        onChange={handleGenericChange}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="admin-checkboxes">
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="active"
+                        checked={
+                          genericForm.active !== false
+                        }
+                        onChange={handleGenericChange}
+                      />
+                      ✅ البانر مفعل
+                    </label>
+                  </div>
+
+                  <div className="form-actions">
+                    <button
+                      type="submit"
+                      className="save-btn"
+                      disabled={actionLoading}
+                    >
+                      💾 حفظ البانر
+                    </button>
+
+                    <button
+                      type="button"
+                      className="cancel-btn"
+                      onClick={closeGenericForm}
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              )}
+
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>الصورة</th>
+                    <th>العنوان</th>
+                    <th>الرابط</th>
+                    <th>الترتيب</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {banners.length === 0 ? (
+                    <tr>
+                      <td colSpan="6">
+                        لا توجد بانرات حاليًا
+                      </td>
+                    </tr>
+                  ) : (
+                    [...banners]
+                      .sort(
+                        (a, b) =>
+                          Number(a.order || 0) -
+                          Number(b.order || 0)
+                      )
+                      .map((banner) => (
+                        <tr key={banner.id}>
+                          <td>
+                            {banner.image ? (
+                              <img
+                                src={banner.image}
+                                className="table-img"
+                                alt={banner.title || "بانر"}
+                              />
+                            ) : (
+                              "🖼️"
+                            )}
+                          </td>
+
+                          <td>
+                            {banner.title || "بدون عنوان"}
+                          </td>
+
+                          <td dir="ltr">
+                            {banner.link || "—"}
+                          </td>
+
+                          <td>{banner.order || 0}</td>
+
+                          <td>
+                            {banner.active !== false
+                              ? "🟢 نشط"
+                              : "🔴 متوقف"}
+                          </td>
+
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="edit-btn"
+                                onClick={() => {
+                                  setGenericType(
+                                    "banners"
+                                  );
+                                  setGenericEditingId(
+                                    banner.id
+                                  );
+                                  setGenericForm({
+                                    ...banner,
+                                  });
+                                  setShowGenericForm(
+                                    true
+                                  );
+                                }}
+                              >
+                                ✏️ تعديل
+                              </button>
+
+                              <button
+                                type="button"
+                                className="delete-btn"
+                                onClick={() =>
+                                  deleteGenericItem(
+                                    "banners",
+                                    banner
+                                  )
+                                }
+                              >
+                                🗑️ حذف
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+                {/* ====================================================
+            GENERIC ADMIN SECTIONS
+        ==================================================== */}
+
+        {[
+          {
+            id: "coupons",
+            icon: "🏷️",
+            title: "الكوبونات والخصومات",
+            collectionType: "coupons",
+            data: coupons,
+            fields: [
+              {
+                name: "code",
+                label: "كود الخصم",
+              },
+              {
+                name: "type",
+                label: "نوع الخصم",
+                type: "select",
+                options: [
+                  ["percentage", "نسبة مئوية"],
+                  ["fixed", "قيمة ثابتة"],
+                ],
+              },
+              {
+                name: "value",
+                label: "قيمة الخصم",
+                type: "number",
+              },
+              {
+                name: "minOrder",
+                label: "الحد الأدنى للطلب",
+                type: "number",
+              },
+              {
+                name: "active",
+                label: "الكوبون مفعل",
+                type: "checkbox",
+              },
+            ],
+          },
+
+          {
+            id: "announcements",
+            icon: "📢",
+            title: "الإعلانات",
+            collectionType: "announcements",
+            data: announcements,
+            fields: [
+              {
+                name: "title",
+                label: "العنوان",
+              },
+              {
+                name: "text",
+                label: "نص الإعلان",
+                type: "textarea",
+              },
+              {
+                name: "active",
+                label: "الإعلان مفعل",
+                type: "checkbox",
+              },
+            ],
+          },
+
+          {
+            id: "support",
+            icon: "💬",
+            title: "خدمة العملاء",
+            collectionType: "support",
+            data: supportMessages,
+            readOnly: true,
+          },
+
+          {
+            id: "notifications",
+            icon: "🔔",
+            title: "الإشعارات",
+            collectionType: "notifications",
+            data: notifications,
+            readOnly: true,
+          },
+
+          {
+            id: "favorites",
+            icon: "❤️",
+            title: "المفضلة",
+            collectionType: "favorites",
+            data: favorites,
+            readOnly: true,
+          },
+
+          {
+            id: "blocked-users",
+            icon: "🚫",
+            title: "العملاء المحظورون",
+            collectionType: "blocked-users",
+            data: blockedUsers,
+            readOnly: true,
+          },
+
+          {
+            id: "shipping",
+            icon: "🚚",
+            title: "الشحن والتوصيل",
+            collectionType: "shipping",
+            data: shippingZones,
+            fields: [
+              {
+                name: "name",
+                label: "اسم المنطقة",
+              },
+              {
+                name: "price",
+                label: "سعر الشحن",
+                type: "number",
+              },
+              {
+                name: "active",
+                label: "المنطقة مفعلة",
+                type: "checkbox",
+              },
+            ],
+          },
+
+          {
+            id: "payments",
+            icon: "💳",
+            title: "طرق الدفع",
+            collectionType: "payments",
+            data: paymentMethods,
+            fields: [
+              {
+                name: "name",
+                label: "اسم طريقة الدفع",
+              },
+              {
+                name: "active",
+                label: "مفعلة",
+                type: "checkbox",
+              },
+            ],
+          },
+
+          {
+            id: "admins",
+            icon: "🔐",
+            title: "المشرفون والصلاحيات",
+            collectionType: "admins",
+            data: admins,
+            readOnly: true,
+          },
+
+          {
+            id: "activity-log",
+            icon: "📝",
+            title: "سجل العمليات",
+            collectionType: "activity-log",
+            data: activityLogs,
+            readOnly: true,
+          },
+        ].map((section) =>
+          tab === section.id ? (
+            <div
+              className="table-container"
+              key={section.id}
+            >
+              <div className="section-header">
+                <div>
+                  <h2>
+                    {section.icon} {section.title}
+                  </h2>
+
+                  <p>
+                    إجمالي العناصر:{" "}
+                    <strong>
+                      {section.data.length}
+                    </strong>
+                  </p>
                 </div>
 
+                {!section.readOnly && (
+                  <button
+                    type="button"
+                    className="add-btn"
+                    onClick={() => {
+                      setGenericType(
+                        section.collectionType
+                      );
+                      setGenericEditingId(null);
+
+                      const initialForm = {};
+
+                      section.fields?.forEach(
+                        (field) => {
+                          initialForm[field.name] =
+                            field.type ===
+                            "checkbox"
+                              ? true
+                              : field.type ===
+                                "number"
+                              ? 0
+                              : "";
+                        }
+                      );
+
+                      setGenericForm(initialForm);
+                      setShowGenericForm(true);
+                    }}
+                  >
+                    ➕ إضافة
+                  </button>
+                )}
               </div>
-            )}
 
-        </div>
-      )}
+              {showGenericForm &&
+                genericType ===
+                  section.collectionType &&
+                !section.readOnly && (
+                  <form
+                    className="admin-form"
+                    onSubmit={
+                      handleGenericSubmit
+                    }
+                  >
+                    <h3>
+                      {genericEditingId
+                        ? `✏️ تعديل ${section.title}`
+                        : `➕ إضافة ${section.title}`}
+                    </h3>
 
+                    <div className="form-grid">
+                      {section.fields?.map(
+                        (field) => (
+                          <label
+                            key={field.name}
+                            className={
+                              field.type ===
+                              "textarea"
+                                ? "form-group-full"
+                                : ""
+                            }
+                          >
+                            {field.type ===
+                            "checkbox" ? (
+                              <>
+                                <input
+                                  type="checkbox"
+                                  name={field.name}
+                                  checked={
+                                    genericForm[
+                                      field.name
+                                    ] !== false
+                                  }
+                                  onChange={
+                                    handleGenericChange
+                                  }
+                                />
+
+                                <span>
+                                  {field.label}
+                                </span>
+                              </>
+                            ) : field.type ===
+                              "select" ? (
+                              <>
+                                <span>
+                                  {field.label}
+                                </span>
+
+                                <select
+                                  name={
+                                    field.name
+                                  }
+                                  value={
+                                    genericForm[
+                                      field.name
+                                    ] || ""
+                                  }
+                                  onChange={
+                                    handleGenericChange
+                                  }
+                                >
+                                  {field.options?.map(
+                                    (option) => (
+                                      <option
+                                        key={
+                                          option[0]
+                                        }
+                                        value={
+                                          option[0]
+                                        }
+                                      >
+                                        {option[1]}
+                                      </option>
+                                    )
+                                  )}
+                                </select>
+                              </>
+                            ) : field.type ===
+                              "textarea" ? (
+                              <>
+                                <span>
+                                  {field.label}
+                                </span>
+
+                                <textarea
+                                  name={
+                                    field.name
+                                  }
+                                  rows="4"
+                                  value={
+                                    genericForm[
+                                      field.name
+                                    ] || ""
+                                  }
+                                  onChange={
+                                    handleGenericChange
+                                  }
+                                />
+                              </>
+                            ) : (
+                              <>
+                                <span>
+                                  {field.label}
+                                </span>
+
+                                <input
+                                  type={
+                                    field.type ||
+                                    "text"
+                                  }
+                                  name={
+                                    field.name
+                                  }
+                                  value={
+                                    genericForm[
+                                      field.name
+                                    ] ?? ""
+                                  }
+                                  onChange={
+                                    handleGenericChange
+                                  }
+                                />
+                              </>
+                            )}
+                          </label>
+                        )
+                      )}
+                    </div>
+
+                    <div className="form-actions">
+                      <button
+                        type="submit"
+                        className="save-btn"
+                        disabled={actionLoading}
+                      >
+                        💾 حفظ
+                      </button>
+
+                      <button
+                        type="button"
+                        className="cancel-btn"
+                        onClick={
+                          closeGenericForm
+                        }
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+              {section.data.length === 0 ? (
+                <div className="empty-state">
+                  <div>{section.icon}</div>
+
+                  <h3>
+                    لا توجد بيانات
+                  </h3>
+
+                  <p>
+                    لا توجد عناصر مسجلة حاليًا في هذا القسم.
+                  </p>
+                </div>
+              ) : (
+                <div className="table-scroll">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>البيانات</th>
+                        <th>التاريخ</th>
+
+                        {!section.readOnly && (
+                          <th>إجراءات</th>
+                        )}
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {section.data.map(
+                        (item) => (
+                          <tr key={item.id}>
+                            <td>
+                              <strong>
+                                {item.title ||
+                                  item.name ||
+                                  item.code ||
+                                  item.text ||
+                                  item.message ||
+                                  item.description ||
+                                  item.email ||
+                                  item.id}
+                              </strong>
+
+                              {item.message &&
+                                item.title && (
+                                  <small
+                                    style={{
+                                      display:
+                                        "block",
+                                    }}
+                                  >
+                                    {
+                                      item.message
+                                    }
+                                  </small>
+                                )}
+                            </td>
+
+                            <td>
+                              {formatDate(
+                                item.createdAt
+                              )}
+                            </td>
+
+                            {!section.readOnly && (
+                              <td>
+                                <div className="table-actions">
+                                  <button
+                                    type="button"
+                                    className="edit-btn"
+                                    onClick={() => {
+                                      setGenericType(
+                                        section.collectionType
+                                      );
+                                      setGenericEditingId(
+                                        item.id
+                                      );
+                                      setGenericForm({
+                                        ...item,
+                                      });
+                                      setShowGenericForm(
+                                        true
+                                      );
+                                    }}
+                                  >
+                                    ✏️ تعديل
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="delete-btn"
+                                    onClick={() =>
+                                      deleteGenericItem(
+                                        section.collectionType,
+                                        item
+                                      )
+                                    }
+                                  >
+                                    🗑️ حذف
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : null
+        )}
+
+        {/* ====================================================
+            SETTINGS
+        ==================================================== */}
+
+        {tab === "settings" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>⚙️ إعدادات المتجر</h2>
+
+                <p>
+                  إدارة إعدادات المتجر العامة.
+                </p>
+              </div>
+            </div>
+
+            <form
+              className="admin-form"
+              onSubmit={saveStoreSettings}
+            >
+              <div className="form-grid">
+                {[
+                  ["storeName", "اسم المتجر"],
+                  ["logo", "رابط الشعار"],
+                  ["phone", "الهاتف"],
+                  ["whatsapp", "واتساب"],
+                  ["email", "البريد الإلكتروني"],
+                  ["address", "العنوان"],
+                  ["facebook", "Facebook"],
+                  ["instagram", "Instagram"],
+                  ["telegram", "Telegram"],
+                  [
+                    "announcement",
+                    "الإعلان العلوي",
+                  ],
+                ].map(([name, label]) => (
+                  <label key={name}>
+                    <span>{label}</span>
+
+                    <input
+                      name={name}
+                      dir={
+                        [
+                          "logo",
+                          "email",
+                          "facebook",
+                          "instagram",
+                          "telegram",
+                        ].includes(name)
+                          ? "ltr"
+                          : "rtl"
+                      }
+                      value={
+                        storeSettings[name] ||
+                        ""
+                      }
+                      onChange={(event) =>
+                        setStoreSettings(
+                          (previous) => ({
+                            ...previous,
+                            [name]:
+                              event.target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="save-btn"
+                >
+                  💾 حفظ الإعدادات
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* ====================================================
+            CONTACT
+        ==================================================== */}
+
+        {tab === "contact" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>📱 بيانات التواصل</h2>
+
+                <p>
+                  تعديل بيانات التواصل الخاصة بالمتجر.
+                </p>
+              </div>
+            </div>
+
+            <form
+              className="admin-form"
+              onSubmit={saveStoreSettings}
+            >
+              <div className="form-grid">
+                {[
+                  ["phone", "الهاتف", "ltr"],
+                  ["whatsapp", "واتساب", "ltr"],
+                  ["facebook", "Facebook", "ltr"],
+                  ["instagram", "Instagram", "ltr"],
+                  ["telegram", "Telegram", "ltr"],
+                  [
+                    "email",
+                    "البريد الإلكتروني",
+                    "ltr",
+                  ],
+                ].map(
+                  ([name, label, dir]) => (
+                    <label key={name}>
+                      <span>{label}</span>
+
+                      <input
+                        name={name}
+                        dir={dir}
+                        value={
+                          storeSettings[name] ||
+                          ""
+                        }
+                        onChange={(event) =>
+                          setStoreSettings(
+                            (previous) => ({
+                              ...previous,
+                              [name]:
+                                event.target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+                    </label>
+                  )
+                )}
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="save-btn"
+                >
+                  💾 حفظ بيانات التواصل
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* ====================================================
+            SECURITY
+        ==================================================== */}
+
+        {tab === "security" && (
+          <div className="table-container">
+            <div className="section-header">
+              <div>
+                <h2>🔑 الأمان</h2>
+
+                <p>
+                  أدوات التحكم في أمان لوحة الإدارة.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-form-card">
+              <div className="product-flags">
+                <label className="flag-checkbox">
+                  <input
+                    type="checkbox"
+                    defaultChecked
+                  />
+
+                  <span>
+                    🛡️ حماية لوحة الإدارة
+                  </span>
+                </label>
+
+                <label className="flag-checkbox">
+                  <input type="checkbox" />
+
+                  <span>
+                    🔐 التحقق الإضافي
+                  </span>
+                </label>
+
+                <label className="flag-checkbox">
+                  <input
+                    type="checkbox"
+                    defaultChecked
+                  />
+
+                  <span>
+                    🚨 تسجيل محاولات الدخول
+                  </span>
+                </label>
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="save-btn"
+                  onClick={() =>
+                    alert(
+                      "إعدادات الأمان الأساسية جاهزة. تفعيل MFA يتم من Firebase Authentication."
+                    )
+                  }
+                >
+                  💾 حفظ
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================
+            FALLBACK
+        ==================================================== */}
+
+        {![
+          "dashboard",
+          "products",
+          "categories",
+          "orders",
+          "users",
+          "offers",
+          "bestsellers",
+          "new-arrivals",
+          "reports",
+          "sales",
+          "customers",
+          "banners",
+          "coupons",
+          "favorites",
+          "blocked-users",
+          "support",
+          "notifications",
+          "announcements",
+          "settings",
+          "shipping",
+          "payments",
+          "contact",
+          "admins",
+          "activity-log",
+          "security",
+        ].includes(tab) && (
+          <div className="table-container">
+            <div className="empty-state">
+              <div>📋</div>
+
+              <h3>
+                اختر قسمًا من لوحة الإدارة
+              </h3>
+
+              <p>
+                اختر أحد الأقسام من القائمة الجانبية لعرض وإدارة بياناته.
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
-
 
 export default Admin;
