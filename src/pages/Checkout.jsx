@@ -6,6 +6,7 @@ import React, {
 } from "react";
 
 import {
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 
@@ -37,6 +38,8 @@ import "./Checkout.css";
 function Checkout() {
 
   const navigate = useNavigate();
+
+  const location = useLocation();
 
 
   // ==================================================
@@ -153,6 +156,85 @@ function Checkout() {
 
   const [couponMessage, setCouponMessage] =
     useState("");
+
+
+  // ==================================================
+  // WHEEL PRIZE
+  // ==================================================
+
+  const [wheelPrize, setWheelPrize] =
+    useState(null);
+
+
+  // ==================================================
+  // LOAD WHEEL PRIZE
+  // ==================================================
+
+  useEffect(() => {
+
+    try {
+
+      let savedPrize = null;
+
+      const statePrize =
+        location?.state?.discountData;
+
+      if (
+        statePrize &&
+        typeof statePrize === "object"
+      ) {
+
+        savedPrize =
+          statePrize;
+
+      } else {
+
+        const localPrize =
+          localStorage.getItem(
+            "elsafty_wheel_prize"
+          );
+
+        if (localPrize) {
+
+          const parsedPrize =
+            JSON.parse(
+              localPrize
+            );
+
+          if (
+            parsedPrize &&
+            typeof parsedPrize === "object"
+          ) {
+
+            savedPrize =
+              parsedPrize;
+
+          }
+
+        }
+
+      }
+
+      if (savedPrize) {
+
+        setWheelPrize(
+          savedPrize
+        );
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Wheel Prize Load Error:",
+        error
+      );
+
+      setWheelPrize(null);
+
+    }
+
+  }, [location]);
 
 
   // ==================================================
@@ -845,6 +927,102 @@ function Checkout() {
 
 
   // ==================================================
+  // WHEEL PRIZE TYPE
+  // ==================================================
+
+  const wheelPrizeType =
+    String(
+      wheelPrize?.type ||
+      ""
+    )
+      .toLowerCase()
+      .trim();
+
+
+  // ==================================================
+  // WHEEL DISCOUNT
+  // ==================================================
+
+  const wheelDiscount =
+    useMemo(() => {
+
+      if (
+        !wheelPrize
+      ) {
+
+        return 0;
+
+      }
+
+
+      if (
+        wheelPrizeType ===
+          "discount" ||
+        wheelPrizeType ===
+          "percentage"
+      ) {
+
+        const percentage =
+          Number(
+            wheelPrize.value || 0
+          );
+
+        if (
+          percentage <= 0
+        ) {
+
+          return 0;
+
+        }
+
+        return Math.min(
+          subtotal,
+          (
+            subtotal *
+            percentage
+          ) /
+            100
+        );
+
+      }
+
+
+      if (
+        wheelPrizeType ===
+        "fixed"
+      ) {
+
+        const fixedAmount =
+          Number(
+            wheelPrize.value || 0
+          );
+
+        if (
+          fixedAmount <= 0
+        ) {
+
+          return 0;
+
+        }
+
+        return Math.min(
+          subtotal,
+          fixedAmount
+        );
+
+      }
+
+
+      return 0;
+
+    }, [
+      wheelPrize,
+      wheelPrizeType,
+      subtotal,
+    ]);
+
+
+  // ==================================================
   // SELECTED SHIPPING ZONE
   // ==================================================
 
@@ -859,10 +1037,10 @@ function Checkout() {
 
 
   // ==================================================
-  // SHIPPING COST
+  // NORMAL SHIPPING COST
   // ==================================================
 
-  const shippingCost =
+  const normalShippingCost =
     selectedZone
       ? Math.max(
           Number(
@@ -875,6 +1053,25 @@ function Checkout() {
           0
         )
       : 0;
+
+
+  // ==================================================
+  // FREE SHIPPING FROM WHEEL
+  // ==================================================
+
+  const hasFreeShippingPrize =
+    wheelPrizeType ===
+    "free-shipping";
+
+
+  // ==================================================
+  // FINAL SHIPPING COST
+  // ==================================================
+
+  const shippingCost =
+    hasFreeShippingPrize
+      ? 0
+      : normalShippingCost;
 
 
   // ==================================================
@@ -925,13 +1122,25 @@ function Checkout() {
 
 
   // ==================================================
+  // TOTAL DISCOUNTS
+  // ==================================================
+
+  const totalDiscount =
+    Math.min(
+      subtotal,
+      couponDiscount +
+        wheelDiscount
+    );
+
+
+  // ==================================================
   // TOTAL BEFORE SHIPPING
   // ==================================================
 
   const totalBeforeShipping =
     Math.max(
       subtotal -
-        couponDiscount,
+        totalDiscount,
       0
     );
 
@@ -1029,10 +1238,6 @@ function Checkout() {
         };
 
 
-        // --------------------------------------------
-        // ACTIVE
-        // --------------------------------------------
-
         if (
           coupon.active === false
         ) {
@@ -1045,10 +1250,6 @@ function Checkout() {
 
         }
 
-
-        // --------------------------------------------
-        // MINIMUM ORDER
-        // --------------------------------------------
 
         const minOrder =
           Number(
@@ -1074,10 +1275,6 @@ function Checkout() {
         }
 
 
-        // --------------------------------------------
-        // VALUE
-        // --------------------------------------------
-
         const value =
           Number(
             coupon.value || 0
@@ -1096,10 +1293,6 @@ function Checkout() {
 
         }
 
-
-        // --------------------------------------------
-        // TYPE
-        // --------------------------------------------
 
         const type =
           String(
@@ -1123,10 +1316,6 @@ function Checkout() {
 
         }
 
-
-        // --------------------------------------------
-        // PERCENTAGE VALIDATION
-        // --------------------------------------------
 
         if (
           type === "percentage" &&
@@ -1206,6 +1395,35 @@ function Checkout() {
 
 
   // ==================================================
+  // REMOVE WHEEL PRIZE
+  // ==================================================
+
+  const removeWheelPrize =
+    () => {
+
+      setWheelPrize(
+        null
+      );
+
+      try {
+
+        localStorage.removeItem(
+          "elsafty_wheel_prize"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Wheel Prize Remove Error:",
+          error
+        );
+
+      }
+
+    };
+
+
+  // ==================================================
   // CREATE ORDER NUMBER
   // ==================================================
 
@@ -1271,6 +1489,92 @@ function Checkout() {
 
       }
 
+
+      // ==================================================
+      // WHEEL PRIZE
+      // ==================================================
+
+      if (
+        wheelPrize
+      ) {
+
+        message +=
+          "🎡 *جائزة عجلة الحظ:*\n";
+
+
+        message +=
+          `${wheelPrize.title || "جائزة"}\n`;
+
+
+        if (
+          wheelPrize.code
+        ) {
+
+          message +=
+            `🎟️ كود الجائزة: ${wheelPrize.code}\n`;
+
+        }
+
+
+        if (
+          wheelPrizeType ===
+            "discount" ||
+          wheelPrizeType ===
+            "percentage"
+        ) {
+
+          message +=
+            `🏷️ خصم العجلة: ${Number(
+              wheelPrize.value || 0
+            )}%\n`;
+
+        }
+
+
+        if (
+          wheelPrizeType ===
+          "fixed"
+        ) {
+
+          message +=
+            `🏷️ خصم العجلة: ${Number(
+              wheelPrize.value || 0
+            )} جنيه\n`;
+
+        }
+
+
+        if (
+          wheelPrizeType ===
+          "free-shipping"
+        ) {
+
+          message +=
+            "🚚 الجائزة: شحن مجاني\n";
+
+        }
+
+
+        if (
+          wheelPrizeType ===
+          "gift"
+        ) {
+
+          message +=
+            "🎁 الجائزة: هدية مجانية\n";
+
+        }
+
+
+        message +=
+          "\n";
+
+      }
+
+
+      // ==================================================
+      // PRODUCTS
+      // ==================================================
 
       message +=
         "📦 *المنتجات:*\n\n";
@@ -1354,12 +1658,26 @@ function Checkout() {
       );
 
 
+      // ==================================================
+      // TOTALS
+      // ==================================================
+
       message +=
         "━━━━━━━━━━━━━━━━\n";
 
 
       message +=
         `💰 إجمالي المنتجات: ${subtotal} جنيه\n`;
+
+
+      if (
+        wheelDiscount > 0
+      ) {
+
+        message +=
+          `🎡 خصم عجلة الحظ: -${wheelDiscount} جنيه\n`;
+
+      }
 
 
       if (
@@ -1373,17 +1691,38 @@ function Checkout() {
           }\n`;
 
         message +=
-          `💸 الخصم: ${couponDiscount} جنيه\n`;
+          `💸 خصم الكوبون: -${couponDiscount} جنيه\n`;
 
       }
 
 
       if (
+        hasFreeShippingPrize
+      ) {
+
+        message +=
+          "🚚 الشحن: مجاني 🎉\n";
+
+      } else if (
         shippingCost > 0
       ) {
 
         message +=
           `🚚 الشحن: ${shippingCost} جنيه\n`;
+
+      }
+
+
+      if (
+        wheelPrizeType ===
+        "gift"
+      ) {
+
+        message +=
+          `🎁 الهدية: ${
+            wheelPrize?.title ||
+            "هدية مجانية"
+          }\n`;
 
       }
 
@@ -1833,6 +2172,45 @@ function Checkout() {
 
 
         // ==================================================
+        // WHEEL PRIZE DATA
+        // ==================================================
+
+        const wheelPrizeData =
+          wheelPrize
+            ? {
+                title:
+                  wheelPrize.title ||
+                  "جائزة",
+
+                code:
+                  wheelPrize.code ||
+                  "",
+
+                type:
+                  wheelPrize.type ||
+                  "",
+
+                value:
+                  Number(
+                    wheelPrize.value || 0
+                  ),
+
+                discount:
+                  Number(
+                    wheelDiscount.toFixed(2)
+                  ),
+
+                freeShipping:
+                  hasFreeShippingPrize,
+
+                gift:
+                  wheelPrizeType ===
+                  "gift",
+              }
+            : null;
+
+
+        // ==================================================
         // ORDER DATA
         // ==================================================
 
@@ -1842,6 +2220,7 @@ function Checkout() {
 
           orderNumberText:
             `#${orderNumber}`,
+
 
           userId:
             user.uid,
@@ -1855,11 +2234,13 @@ function Checkout() {
           userUID:
             user.uid,
 
+
           customerName:
             cleanName,
 
           name:
             cleanName,
+
 
           email:
             user.email ||
@@ -1869,27 +2250,34 @@ function Checkout() {
             user.email ||
             "",
 
+
           phone:
             cleanPhone,
 
           customerPhone:
             cleanPhone,
 
+
           address:
             cleanAddress,
+
 
           products:
             orderProducts,
 
+
           departments,
+
 
           departmentId:
             firstDepartment?.id ||
             "",
 
+
           departmentNumber:
             firstDepartment?.categoryNumber ||
             "",
+
 
           departmentName:
             departments
@@ -1899,63 +2287,106 @@ function Checkout() {
               )
               .join("، "),
 
+
           departmentWhatsapp:
             departmentWhatsapp,
+
 
           whatsappPhone:
             departmentWhatsapp,
 
+
           whatsappSent:
             false,
+
+
+          // ==================================================
+          // SHIPPING
+          // ==================================================
 
           shippingZoneId:
             selectedZone?.id ||
             "",
 
+
           shippingZoneName:
             shippingZoneName,
+
 
           shippingCost:
             Number(
               shippingCost.toFixed(2)
             ),
 
-          subtotal:
-            Number(
-              subtotal.toFixed(2)
-            ),
-
-          discount:
-            Number(
-              couponDiscount.toFixed(2)
-            ),
 
           shipping:
             Number(
               shippingCost.toFixed(2)
             ),
 
+
+          freeShipping:
+            hasFreeShippingPrize,
+
+
+          // ==================================================
+          // TOTALS
+          // ==================================================
+
+          subtotal:
+            Number(
+              subtotal.toFixed(2)
+            ),
+
+
+          discount:
+            Number(
+              totalDiscount.toFixed(2)
+            ),
+
+
+          couponDiscount:
+            Number(
+              couponDiscount.toFixed(2)
+            ),
+
+
+          wheelDiscount:
+            Number(
+              wheelDiscount.toFixed(2)
+            ),
+
+
           total:
             Number(
               finalTotal.toFixed(2)
             ),
+
 
           totalPrice:
             Number(
               finalTotal.toFixed(2)
             ),
 
+
+          // ==================================================
+          // COUPON
+          // ==================================================
+
           couponId:
             appliedCoupon?.id ||
             "",
+
 
           couponCode:
             appliedCoupon?.code ||
             "",
 
+
           couponType:
             appliedCoupon?.type ||
             "",
+
 
           couponValue:
             Number(
@@ -1963,29 +2394,90 @@ function Checkout() {
               0
             ),
 
+
+          // ==================================================
+          // WHEEL
+          // ==================================================
+
+          wheelPrize:
+            wheelPrizeData,
+
+
+          wheelPrizeCode:
+            wheelPrize?.code ||
+            "",
+
+
+          wheelPrizeTitle:
+            wheelPrize?.title ||
+            "",
+
+
+          wheelPrizeType:
+            wheelPrize?.type ||
+            "",
+
+
+          wheelPrizeValue:
+            Number(
+              wheelPrize?.value ||
+              0
+            ),
+
+
+          // ==================================================
+          // GIFT
+          // ==================================================
+
+          giftPrize:
+            wheelPrizeType ===
+            "gift"
+              ? (
+                  wheelPrize?.title ||
+                  "هدية مجانية"
+                )
+              : "",
+
+
+          // ==================================================
+          // PAYMENT
+          // ==================================================
+
           paymentMethod:
             paymentMethod,
+
 
           paymentMethodName:
             paymentTitle,
 
+
           paymentNumber:
             paymentNumber,
+
 
           paymentStatus:
             "pending",
 
+
           status:
             "pending",
+
 
           orderStatus:
             "pending",
 
+
+          // ==================================================
+          // DATES
+          // ==================================================
+
           createdAt:
             serverTimestamp(),
 
+
           updatedAt:
             serverTimestamp(),
+
         };
 
 
@@ -2037,6 +2529,26 @@ function Checkout() {
         // ==================================================
 
         setCart([]);
+
+
+        // ==================================================
+        // REMOVE WHEEL PRIZE
+        // ==================================================
+
+        try {
+
+          localStorage.removeItem(
+            "elsafty_wheel_prize"
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Wheel Prize Clear Error:",
+            error
+          );
+
+        }
 
 
         // ==================================================
@@ -2280,9 +2792,225 @@ function Checkout() {
 
               </select>
 
+
+              {hasFreeShippingPrize && (
+
+                <div
+                  style={{
+                    marginTop:
+                      "8px",
+                    padding:
+                      "10px",
+                    borderRadius:
+                      "8px",
+                    background:
+                      "#F0FDF4",
+                    color:
+                      "#166534",
+                    fontWeight:
+                      "700",
+                  }}
+                >
+                  🎉 لديك جائزة شحن مجاني من عجلة الحظ
+                </div>
+
+              )}
+
             </div>
 
           )}
+
+
+        {/* ==================================================
+            WHEEL PRIZE
+        ================================================== */}
+
+        {wheelPrize && (
+
+          <div
+            className="wheel-prize-checkout"
+            style={{
+              margin:
+                "20px 0",
+              padding:
+                "18px",
+              borderRadius:
+                "14px",
+              background:
+                "linear-gradient(135deg, #fff8e1, #fff)",
+              border:
+                "2px solid #D4AF37",
+              textAlign:
+                "center",
+            }}
+          >
+
+            <div
+              style={{
+                fontSize:
+                  "30px",
+                marginBottom:
+                  "8px",
+              }}
+            >
+              🎡🎉
+            </div>
+
+
+            <h3
+              style={{
+                margin:
+                  "0 0 8px",
+                color:
+                  "#0B1F3A",
+              }}
+            >
+              جائزة عجلة الحظ
+            </h3>
+
+
+            <strong
+              style={{
+                display:
+                  "block",
+                fontSize:
+                  "20px",
+                marginBottom:
+                  "8px",
+              }}
+            >
+              {
+                wheelPrize.title ||
+                "جائزة"
+              }
+            </strong>
+
+
+            {wheelPrize.code && (
+
+              <div
+                style={{
+                  marginTop:
+                    "8px",
+                  fontWeight:
+                    "800",
+                }}
+              >
+
+                🎟️ كود الجائزة:{" "}
+
+                <span
+                  style={{
+                    letterSpacing:
+                      "2px",
+                  }}
+                >
+                  {
+                    wheelPrize.code
+                  }
+                </span>
+
+              </div>
+
+            )}
+
+
+            {(
+              wheelPrizeType ===
+                "discount" ||
+              wheelPrizeType ===
+                "percentage"
+            ) && (
+
+              <p>
+                🏷️ خصم{" "}
+                {
+                  Number(
+                    wheelPrize.value ||
+                    0
+                  )
+                }
+                %
+                {" "}
+                ={" "}
+                {
+                  wheelDiscount.toLocaleString(
+                    "ar-EG"
+                  )
+                }
+                {" "}
+                جنيه
+              </p>
+
+            )}
+
+
+            {wheelPrizeType ===
+              "fixed" && (
+
+              <p>
+                🏷️ خصم{" "}
+                {
+                  Number(
+                    wheelPrize.value ||
+                    0
+                  ).toLocaleString(
+                    "ar-EG"
+                  )
+                }
+                {" "}
+                جنيه
+              </p>
+
+            )}
+
+
+            {hasFreeShippingPrize && (
+
+              <p>
+                🚚 شحن مجاني
+              </p>
+
+            )}
+
+
+            {wheelPrizeType ===
+              "gift" && (
+
+              <p>
+                🎁 هدية مجانية
+              </p>
+
+            )}
+
+
+            <button
+              type="button"
+              onClick={
+                removeWheelPrize
+              }
+              disabled={
+                loading
+              }
+              style={{
+                marginTop:
+                  "8px",
+                border:
+                  "none",
+                background:
+                  "transparent",
+                color:
+                  "#d32f2f",
+                cursor:
+                  "pointer",
+              }}
+            >
+              إزالة الجائزة
+            </button>
+
+          </div>
+
+        )}
 
 
         {/* ==================================================
@@ -2883,14 +3611,51 @@ function Checkout() {
           </div>
 
 
+          {/* WHEEL DISCOUNT */}
+
+          {wheelDiscount > 0 && (
+
+            <div
+              className="checkout-total"
+              style={{
+                color:
+                  "#198754",
+              }}
+            >
+
+              <strong>
+                🎡 خصم عجلة الحظ:
+              </strong>
+
+              <strong>
+                -{" "}
+                {
+                  wheelDiscount.toLocaleString(
+                    "ar-EG"
+                  )
+                }{" "}
+                جنيه
+              </strong>
+
+            </div>
+
+          )}
+
+
+          {/* COUPON DISCOUNT */}
+
           {couponDiscount > 0 && (
 
             <div
               className="checkout-total"
+              style={{
+                color:
+                  "#198754",
+              }}
             >
 
               <strong>
-                🎟️ الخصم:
+                🎟️ خصم الكوبون:
               </strong>
 
               <strong>
@@ -2908,10 +3673,16 @@ function Checkout() {
           )}
 
 
-          {shippingCost > 0 && (
+          {/* FREE SHIPPING */}
+
+          {hasFreeShippingPrize ? (
 
             <div
               className="checkout-total"
+              style={{
+                color:
+                  "#198754",
+              }}
             >
 
               <strong>
@@ -2919,18 +3690,69 @@ function Checkout() {
               </strong>
 
               <strong>
+                مجاني 🎉
+              </strong>
+
+            </div>
+
+          ) : (
+
+            shippingCost > 0 && (
+
+              <div
+                className="checkout-total"
+              >
+
+                <strong>
+                  🚚 الشحن:
+                </strong>
+
+                <strong>
+                  {
+                    shippingCost.toLocaleString(
+                      "ar-EG"
+                    )
+                  }{" "}
+                  جنيه
+                </strong>
+
+              </div>
+
+            )
+
+          )}
+
+
+          {/* GIFT */}
+
+          {wheelPrizeType ===
+            "gift" && (
+
+            <div
+              className="checkout-total"
+              style={{
+                color:
+                  "#198754",
+              }}
+            >
+
+              <strong>
+                🎁 الهدية:
+              </strong>
+
+              <strong>
                 {
-                  shippingCost.toLocaleString(
-                    "ar-EG"
-                  )
-                }{" "}
-                جنيه
+                  wheelPrize?.title ||
+                  "هدية مجانية"
+                }
               </strong>
 
             </div>
 
           )}
 
+
+          {/* FINAL TOTAL */}
 
           <div
             className="checkout-total"

@@ -259,7 +259,18 @@ const { replaceCart } = useContext(CartContext);
   // ==========================================================
   // MAIN STATE
   // ==========================================================
+const [wheelSettings, setWheelSettings] =
+ useState({
+  enabled: false,
 
+  title: "🎡 جرب حظك!",
+
+  description: "لف العجلة واكسب عرضك",
+
+  attemptsPerUser: 1,
+
+  prizes: [],
+});
   const [tab, setTab] =
     useState("dashboard");
 
@@ -1979,6 +1990,70 @@ const handleEditCategory =
 
       </div>
     );
+      const saveWheelSettings = async () => {
+    try {
+      await setDoc(
+        doc(db, "settings", "wheel"),
+        {
+          ...wheelSettings,
+          updatedAt: new Date(),
+        },
+        {
+          merge: true,
+        }
+      );
+
+      alert("تم حفظ إعدادات عجلة الحظ بنجاح 🎡");
+
+    } catch (error) {
+      console.error(
+        "Wheel Settings Error:",
+        error
+      );
+
+      alert(
+        "حدث خطأ أثناء حفظ إعدادات عجلة الحظ"
+      );
+    }
+  };
+
+
+  useEffect(() => {
+    const wheelRef = doc(
+      db,
+      "settings",
+      "wheel"
+    );
+
+    const unsubscribe = onSnapshot(
+      wheelRef,
+      (snapshot) => {
+
+        if (!snapshot.exists()) {
+          return;
+        }
+
+        const data = snapshot.data();
+
+        setWheelSettings((previous) => ({
+          ...previous,
+          ...data,
+          prizes: Array.isArray(data.prizes)
+            ? data.prizes
+            : [],
+        }));
+
+      },
+      (error) => {
+        console.error(
+          "Wheel Settings Error:",
+          error
+        );
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
       // ==========================================================
   // ACTIVITY / ORDERS
   // ==========================================================
@@ -3019,7 +3094,11 @@ const startEditOrder = (order) => {
           count:
             coupons.length,
         },
-
+{
+  id: "wheel",
+  icon: "🎡",
+  title: "عجلة الحظ",
+},
         {
           id: "announcements",
           icon: "📢",
@@ -3306,220 +3385,101 @@ const startEditOrder = (order) => {
 
         </header>
 
-
         {/* ====================================================
             DASHBOARD
         ==================================================== */}
 
         {tab === "dashboard" && (
 
-          <div
-            className="admin-dashboard"
-          >
+          <div className="admin-dashboard">
 
-            <div
-              className="admin-stats"
-            >
+            <div className="admin-stats">
 
               <button
                 type="button"
                 className="stat-card"
-                onClick={() =>
-                  setTab("users")
-                }
+                onClick={() => setTab("users")}
               >
-
-                <h3>
-                  👥 المستخدمون
-                </h3>
-
-                <p>
-                  {
-                    users.length
-                  }
-                </p>
-
+                <h3>👥 المستخدمون</h3>
+                <p>{users.length}</p>
               </button>
-
 
               <button
                 type="button"
                 className="stat-card"
-                onClick={() =>
-                  setTab("products")
-                }
+                onClick={() => setTab("products")}
               >
-
-                <h3>
-                  📦 المنتجات
-                </h3>
-
-                <p>
-                  {
-                    products.length
-                  }
-                </p>
-
+                <h3>📦 المنتجات</h3>
+                <p>{products.length}</p>
               </button>
-
 
               <button
                 type="button"
                 className="stat-card"
-                onClick={() =>
-                  setTab("categories")
-                }
+                onClick={() => setTab("categories")}
               >
-
-                <h3>
-                  📂 الأقسام
-                </h3>
-
-                <p>
-                  {
-                    categories.length
-                  }
-                </p>
-
+                <h3>📂 الأقسام</h3>
+                <p>{categories.length}</p>
               </button>
-
 
               <button
                 type="button"
                 className="stat-card"
-                onClick={() =>
-                  setTab("orders")
-                }
+                onClick={() => setTab("orders")}
               >
-
-                <h3>
-                  🛒 الطلبات
-                </h3>
-
-                <p>
-                  {
-                    orders.length
-                  }
-                </p>
-
+                <h3>🛒 الطلبات</h3>
+                <p>{orders.length}</p>
               </button>
 
-
-              <div
-                className="stat-card"
-              >
-
-                <h3>
-                  ⏳ طلبات معلقة
-                </h3>
-
-                <p>
-                  {
-                    pendingOrders
-                  }
-                </p>
-
+              <div className="stat-card">
+                <h3>⏳ طلبات معلقة</h3>
+                <p>{pendingOrders}</p>
               </div>
 
-
-              <div
-                className="stat-card"
-              >
-
-                <h3>
-                  ✅ طلبات مكتملة
-                </h3>
-
-                <p>
-                  {
-                    deliveredOrders
-                  }
-                </p>
-
+              <div className="stat-card">
+                <h3>✅ طلبات مكتملة</h3>
+                <p>{deliveredOrders}</p>
               </div>
 
-
-              <div
-                className="stat-card"
-              >
-
-                <h3>
-                  💰 إجمالي المبيعات
-                </h3>
-
+              <div className="stat-card">
+                <h3>💰 إجمالي المبيعات</h3>
                 <p>
-
-                  {
-                    totalSales.toLocaleString(
-                      "ar-EG"
-                    )
-                  }
-
-                  {" "}
-                  ج.م
-
+                  {totalSales.toLocaleString("ar-EG")} ج.م
                 </p>
-
               </div>
 
-
-              <div
-                className="stat-card"
-              >
-
-                <h3>
-                  💳 مدفوع إلكترونيًا
-                </h3>
-
+              <div className="stat-card">
+                <h3>💳 مدفوع إلكترونيًا</h3>
                 <p>
-
-                  {
-                    paidSales.toLocaleString(
-                      "ar-EG"
-                    )
-                  }
-
-                  {" "}
-                  ج.م
-
+                  {paidSales.toLocaleString("ar-EG")} ج.م
                 </p>
-
               </div>
 
             </div>
 
 
-            <div
-              className="admin-dashboard-grid"
-            >
+            <div className="admin-dashboard-grid">
 
-              <div
-                className="table-container"
-              >
+              {/* =========================
+                  LATEST ORDERS
+              ========================= */}
 
-                <div
-                  className="section-header"
-                >
+              <div className="table-container">
+
+                <div className="section-header">
 
                   <div>
-
-                    <h2>
-                      🛒 آخر الطلبات
-                    </h2>
+                    <h2>🛒 آخر الطلبات</h2>
 
                     <p>
                       أحدث الطلبات المسجلة
                     </p>
-
                   </div>
-
 
                   <button
                     type="button"
                     className="save-btn"
-                    onClick={() =>
-                      setTab("orders")
-                    }
+                    onClick={() => setTab("orders")}
                   >
                     عرض كل الطلبات
                   </button>
@@ -3527,13 +3487,9 @@ const startEditOrder = (order) => {
                 </div>
 
 
-                <div
-                  className="table-scroll"
-                >
+                <div className="table-scroll">
 
-                  <table
-                    className="admin-table"
-                  >
+                  <table className="admin-table">
 
                     <thead>
                       <tr>
@@ -3549,101 +3505,63 @@ const startEditOrder = (order) => {
 
                       {orders
                         .slice(0, 8)
-                        .map(
-                          (order) => {
+                        .map((order) => {
 
-                            const status =
-                              order?.status ||
-                              order?.orderStatus ||
-                              "pending";
+                          const status =
+                            order?.status ||
+                            order?.orderStatus ||
+                            "pending";
 
-                            return (
+                          return (
+                            <tr key={order.id}>
 
-                              <tr
-                                key={
-                                  order.id
-                                }
-                              >
+                              <td dir="ltr">
+                                #
+                                {order.orderNumber ||
+                                  order.id?.slice(0, 8)}
+                              </td>
 
-                                <td dir="ltr">
+                              <td>
+                                {order?.customerName ||
+                                  order?.name ||
+                                  "عميل"}
+                              </td>
 
-                                  #
-                                  {
-                                    order.orderNumber ||
-                                    order.id?.slice(
-                                      0,
-                                      8
-                                    )
-                                  }
+                              <td>
+                                {Number(
+                                  order?.total || 0
+                                ).toLocaleString("ar-EG")}
+                                {" "}
+                                ج.م
+                              </td>
 
-                                </td>
+                              <td>
+                                <span
+                                  className={`order-status status-${status}`}
+                                >
+                                  {getOrderStatusText(
+                                    status
+                                  )}
+                                </span>
+                              </td>
 
-                                <td>
+                              <td>
+                                {formatDate(
+                                  order?.createdAt
+                                )}
+                              </td>
 
-                                  {
-                                    order?.customerName ||
-                                    order?.name ||
-                                    "عميل"
-                                  }
-
-                                </td>
-
-                                <td>
-
-                                  {
-                                    Number(
-                                      order?.total ||
-                                      0
-                                    ).toLocaleString(
-                                      "ar-EG"
-                                    )
-                                  }
-
-                                  {" "}
-                                  ج.م
-
-                                </td>
-
-                                <td>
-
-                                  <span
-                                    className={`order-status status-${status}`}
-                                  >
-                                    {
-                                      getOrderStatusText(
-                                        status
-                                      )
-                                    }
-                                  </span>
-
-                                </td>
-
-                                <td>
-
-                                  {
-                                    formatDate(
-                                      order?.createdAt
-                                    )
-                                  }
-
-                                </td>
-
-                              </tr>
-
-                            );
-                          }
-                        )}
+                            </tr>
+                          );
+                        })}
 
 
-                      {orders.length ===
-                        0 && (
+                      {orders.length === 0 && (
 
                         <tr>
-
                           <td colSpan="5">
                             لا توجد طلبات حتى الآن.
                           </td>
-
                         </tr>
 
                       )}
@@ -3657,33 +3575,26 @@ const startEditOrder = (order) => {
               </div>
 
 
-              <div
-                className="table-container"
-              >
+              {/* =========================
+                  LATEST USERS
+              ========================= */}
 
-                <div
-                  className="section-header"
-                >
+              <div className="table-container">
+
+                <div className="section-header">
 
                   <div>
-
-                    <h2>
-                      👥 أحدث العملاء
-                    </h2>
+                    <h2>👥 أحدث العملاء</h2>
 
                     <p>
                       آخر الحسابات المسجلة
                     </p>
-
                   </div>
-
 
                   <button
                     type="button"
                     className="save-btn"
-                    onClick={() =>
-                      setTab("users")
-                    }
+                    onClick={() => setTab("users")}
                   >
                     عرض العملاء
                   </button>
@@ -3691,75 +3602,49 @@ const startEditOrder = (order) => {
                 </div>
 
 
-                <div
-                  className="dashboard-users-list"
-                >
+                <div className="dashboard-users-list">
 
-                  {
-                    sortedUsers
-                      .slice(0, 8)
-                      .map(
-                        (user) => (
+                  {sortedUsers
+                    .slice(0, 8)
+                    .map((user) => (
 
-                          <button
-                            type="button"
-                            className="dashboard-user-item"
-                            key={user.id}
+                      <button
+                        type="button"
+                        className="dashboard-user-item"
+                        key={user.id}
+                        onClick={() => {
 
-                            onClick={() => {
+                          setTab("users");
 
-                              setTab(
-                                "users"
-                              );
+                          openUserDetails(user);
 
-                              openUserDetails(
-                                user
-                              );
+                        }}
+                      >
 
-                            }}
-                          >
+                        <span>👤</span>
 
-                            <span>
-                              👤
-                            </span>
+                        <div>
 
-                            <div>
+                          <strong>
+                            {getUserName(user)}
+                          </strong>
 
-                              <strong>
-                                {
-                                  getUserName(
-                                    user
-                                  )
-                                }
-                              </strong>
+                          <small>
+                            {getUserEmail(user)}
+                          </small>
 
-                              <small>
-                                {
-                                  getUserEmail(
-                                    user
-                                  )
-                                }
-                              </small>
+                        </div>
 
-                            </div>
+                      </button>
 
-                          </button>
-
-                        )
-                      )
-                  }
+                    ))}
 
 
-                  {users.length ===
-                    0 && (
+                  {users.length === 0 && (
 
-                    <div
-                      className="empty-state"
-                    >
+                    <div className="empty-state">
 
-                      <div>
-                        👥
-                      </div>
+                      <div>👥</div>
 
                       <p>
                         لا يوجد عملاء حتى الآن.
@@ -3778,7 +3663,550 @@ const startEditOrder = (order) => {
           </div>
 
         )}
+        {/* ====================================================
+            WHEEL OF LUCK
+        ==================================================== */}
 
+        {tab === "wheel" && (
+
+          <div className="admin-dashboard">
+
+            <div className="table-container">
+
+              <div className="section-header">
+
+                <div>
+                  <h2>
+                    🎡 عجلة الحظ
+                  </h2>
+
+                  <p>
+                    إدارة الجوائز والعروض التي تظهر للعملاء في عجلة الحظ
+                  </p>
+                </div>
+
+              </div>
+
+
+              <div className="admin-form-grid">
+
+                {/* تفعيل العجلة */}
+
+                <div className="form-group">
+
+                  <label>
+                    حالة عجلة الحظ
+                  </label>
+
+                  <label className="admin-checkbox">
+
+                    <input
+                      type="checkbox"
+                      checked={
+                        wheelSettings?.enabled || false
+                      }
+                      onChange={(event) =>
+                        setWheelSettings(
+                          (previous) => ({
+                            ...previous,
+                            enabled:
+                              event.target.checked,
+                          })
+                        )
+                      }
+                    />
+
+                    <span>
+                      تفعيل عجلة الحظ للعملاء
+                    </span>
+
+                  </label>
+
+                </div>
+
+
+                {/* عنوان العجلة */}
+
+                <div className="form-group">
+
+                  <label>
+                    عنوان العجلة
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      wheelSettings?.title ||
+                      "🎡 جرب حظك!"
+                    }
+                    onChange={(event) =>
+                      setWheelSettings(
+                        (previous) => ({
+                          ...previous,
+                          title:
+                            event.target.value,
+                        })
+                      )
+                    }
+                    placeholder="مثال: جرب حظك واكسب!"
+                  />
+
+                </div>
+
+
+                {/* الوصف */}
+
+                <div className="form-group">
+
+                  <label>
+                    وصف العجلة
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      wheelSettings?.description ||
+                      "لف العجلة واكسب عرضك"
+                    }
+                    onChange={(event) =>
+                      setWheelSettings(
+                        (previous) => ({
+                          ...previous,
+                          description:
+                            event.target.value,
+                        })
+                      )
+                    }
+                    placeholder="وصف يظهر أسفل العنوان"
+                  />
+
+                </div>
+
+
+                {/* عدد المحاولات */}
+
+                <div className="form-group">
+
+                  <label>
+                    عدد المحاولات لكل عميل
+                  </label>
+
+                  <input
+                    type="number"
+                    min="1"
+                    value={
+                      wheelSettings?.attemptsPerUser ||
+                      1
+                    }
+                    onChange={(event) =>
+                      setWheelSettings(
+                        (previous) => ({
+                          ...previous,
+                          attemptsPerUser:
+                            Number(
+                              event.target.value
+                            ),
+                        })
+                      )
+                    }
+                  />
+
+                </div>
+
+              </div>
+
+
+              {/* ====================================================
+                  PRIZES
+              ==================================================== */}
+
+              <div className="section-header">
+
+                <div>
+                  <h2>
+                    🎁 جوائز عجلة الحظ
+                  </h2>
+
+                  <p>
+                    أضف العروض التي تريد أن يفوز بها العميل
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="save-btn"
+                  onClick={() =>
+                    setWheelSettings(
+                      (previous) => ({
+                        ...previous,
+
+                        prizes: [
+                          ...(previous?.prizes || []),
+                          {
+                            id:
+                              Date.now().toString(),
+                            title: "خصم 10%",
+                            type: "discount",
+                            value: 10,
+                            color: "#F68B1E",
+                            enabled: true,
+                          },
+                        ],
+                      })
+                    )
+                  }
+                >
+                  ➕ إضافة جائزة
+                </button>
+
+              </div>
+
+
+              <div className="wheel-prizes-list">
+
+                {(wheelSettings?.prizes || [])
+                  .map(
+                    (prize, index) => (
+
+                      <div
+                        className="wheel-prize-card"
+                        key={
+                          prize?.id ||
+                          index
+                        }
+                      >
+
+                        {/* اسم الجائزة */}
+
+                        <div className="form-group">
+
+                          <label>
+                            اسم العرض
+                          </label>
+
+                          <input
+                            type="text"
+                            value={
+                              prize?.title ||
+                              ""
+                            }
+                            onChange={(event) => {
+
+                              const prizes = [
+                                ...(
+                                  wheelSettings?.prizes ||
+                                  []
+                                ),
+                              ];
+
+                              prizes[index] = {
+                                ...prizes[index],
+                                title:
+                                  event.target.value,
+                              };
+
+                              setWheelSettings(
+                                (previous) => ({
+                                  ...previous,
+                                  prizes,
+                                })
+                              );
+
+                            }}
+                            placeholder="مثال: خصم 20%"
+                          />
+
+                        </div>
+
+
+                        {/* نوع العرض */}
+
+                        <div className="form-group">
+
+                          <label>
+                            نوع العرض
+                          </label>
+
+                          <select
+                            value={
+                              prize?.type ||
+                              "discount"
+                            }
+                            onChange={(event) => {
+
+                              const prizes = [
+                                ...(
+                                  wheelSettings?.prizes ||
+                                  []
+                                ),
+                              ];
+
+                              prizes[index] = {
+                                ...prizes[index],
+                                type:
+                                  event.target.value,
+                              };
+
+                              setWheelSettings(
+                                (previous) => ({
+                                  ...previous,
+                                  prizes,
+                                })
+                              );
+
+                            }}
+                          >
+
+                            <option value="discount">
+                              نسبة خصم
+                            </option>
+
+                            <option value="fixed">
+                              خصم مبلغ
+                            </option>
+
+                            <option value="free-shipping">
+                              شحن مجاني
+                            </option>
+
+                            <option value="gift">
+                              هدية
+                            </option>
+
+                            <option value="nothing">
+                              حظ أوفر
+                            </option>
+
+                          </select>
+
+                        </div>
+
+
+                        {/* قيمة العرض */}
+
+                        {prize?.type !==
+                          "free-shipping" &&
+                          prize?.type !==
+                            "nothing" && (
+
+                          <div className="form-group">
+
+                            <label>
+                              قيمة العرض
+                            </label>
+
+                            <input
+                              type="number"
+                              min="0"
+                              value={
+                                prize?.value ??
+                                ""
+                              }
+                              onChange={(event) => {
+
+                                const prizes = [
+                                  ...(
+                                    wheelSettings?.prizes ||
+                                    []
+                                  ),
+                                ];
+
+                                prizes[index] = {
+                                  ...prizes[index],
+                                  value:
+                                    Number(
+                                      event.target.value
+                                    ),
+                                };
+
+                                setWheelSettings(
+                                  (previous) => ({
+                                    ...previous,
+                                    prizes,
+                                  })
+                                );
+
+                              }}
+                            />
+
+                          </div>
+
+                        )}
+
+
+                        {/* اللون */}
+
+                        <div className="form-group">
+
+                          <label>
+                            لون الجزء
+                          </label>
+
+                          <input
+                            type="color"
+                            value={
+                              prize?.color ||
+                              "#F68B1E"
+                            }
+                            onChange={(event) => {
+
+                              const prizes = [
+                                ...(
+                                  wheelSettings?.prizes ||
+                                  []
+                                ),
+                              ];
+
+                              prizes[index] = {
+                                ...prizes[index],
+                                color:
+                                  event.target.value,
+                              };
+
+                              setWheelSettings(
+                                (previous) => ({
+                                  ...previous,
+                                  prizes,
+                                })
+                              );
+
+                            }}
+                          />
+
+                        </div>
+
+
+                        {/* تفعيل */}
+
+                        <div className="form-group">
+
+                          <label>
+                            حالة العرض
+                          </label>
+
+                          <label className="admin-checkbox">
+
+                            <input
+                              type="checkbox"
+                              checked={
+                                prize?.enabled !==
+                                false
+                              }
+                              onChange={(event) => {
+
+                                const prizes = [
+                                  ...(
+                                    wheelSettings?.prizes ||
+                                    []
+                                  ),
+                                ];
+
+                                prizes[index] = {
+                                  ...prizes[index],
+                                  enabled:
+                                    event.target
+                                      .checked,
+                                };
+
+                                setWheelSettings(
+                                  (previous) => ({
+                                    ...previous,
+                                    prizes,
+                                  })
+                                );
+
+                              }}
+                            />
+
+                            <span>
+                              العرض متاح
+                            </span>
+
+                          </label>
+
+                        </div>
+
+
+                        {/* حذف */}
+
+                        <button
+                          type="button"
+                          className="delete-btn"
+                          onClick={() => {
+
+                            const prizes =
+                              (
+                                wheelSettings?.prizes ||
+                                []
+                              ).filter(
+                                (_, prizeIndex) =>
+                                  prizeIndex !==
+                                  index
+                              );
+
+                            setWheelSettings(
+                              (previous) => ({
+                                ...previous,
+                                prizes,
+                              })
+                            );
+
+                          }}
+                        >
+                          🗑️ حذف
+                        </button>
+
+                      </div>
+
+                    )
+                  )}
+
+
+                {(wheelSettings?.prizes || [])
+                  .length === 0 && (
+
+                  <div className="empty-state">
+
+                    <div>
+                      🎁
+                    </div>
+
+                    <h3>
+                      لا توجد جوائز
+                    </h3>
+
+                    <p>
+                      أضف العروض التي تريد ظهورها في عجلة الحظ
+                    </p>
+
+                  </div>
+
+                )}
+
+              </div>
+
+
+              {/* ====================================================
+                  SAVE
+              ==================================================== */}
+
+              <div className="admin-form-actions">
+
+                <button
+                  type="button"
+                  className="save-btn"
+                  onClick={saveWheelSettings}
+                >
+                  💾 حفظ إعدادات عجلة الحظ
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
 
         {/* ====================================================
             PRODUCTS
