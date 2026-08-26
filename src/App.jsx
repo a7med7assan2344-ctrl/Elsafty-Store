@@ -3,7 +3,7 @@ import React, {
   useState,
   useContext,
 } from "react";
-import UserLogin from "./pages/UserLogin";
+
 import {
   BrowserRouter,
   Routes,
@@ -11,6 +11,7 @@ import {
   Navigate,
   useParams,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 
 import {
@@ -22,34 +23,36 @@ import {
   getDoc,
 } from "firebase/firestore";
 
-// =======================
+// ======================================================
 // FIREBASE
-// =======================
+// ======================================================
 
 import {
   auth,
   db,
 } from "./firebase";
 
-// =======================
+// ======================================================
 // SERVICES
-// =======================
+// ======================================================
 
 import {
   getProducts,
 } from "./services/productService";
 
-// =======================
+// ======================================================
 // CONTEXT
-// =======================
+// ======================================================
 
 import {
   CartContext,
 } from "./context/CartContext";
 
-// =======================
+import AuthProvider from "./context/AuthContext";
+
+// ======================================================
 // COMPONENTS / PAGES
-// =======================
+// ======================================================
 
 import Admin from "./components/Admin/Admin.jsx";
 
@@ -77,7 +80,26 @@ import Account from "./pages/Account";
 
 import Wishlist from "./pages/Wishlist";
 
+import UserLogin from "./pages/UserLogin";
+
 import ProtectedRoute from "./components/ProtectedRoute";
+
+// ======================================================
+// JUMIA THEME
+// ======================================================
+
+const JUMIA_THEME = {
+  orange: "#f68b1e",
+  orangeDark: "#e87912",
+  orangeLight: "#fff3e6",
+  white: "#ffffff",
+  background: "#f5f5f5",
+  text: "#313133",
+  muted: "#75757a",
+  border: "#e5e5e5",
+  success: "#2e7d32",
+  danger: "#e53935",
+};
 
 // ======================================================
 // APP
@@ -85,9 +107,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
@@ -96,6 +120,7 @@ function App() {
 // ======================================================
 
 function AppContent() {
+
   // ======================================================
   // STATES
   // ======================================================
@@ -119,31 +144,43 @@ function AppContent() {
   // LOAD PRODUCTS
   // ======================================================
 
-  const loadProducts = async () => {
-    try {
-      const data =
-        await getProducts();
+  const loadProducts =
+    async () => {
 
-      setProducts(
-        data || []
-      );
-    } catch (error) {
-      console.error(
-        "Products Error:",
-        error
-      );
+      try {
 
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setLoading(true);
+
+        const data =
+          await getProducts();
+
+        setProducts(
+          data || []
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Products Error:",
+          error
+        );
+
+        setProducts([]);
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
 
   // ======================================================
   // AUTH + ADMIN CHECK
   // ======================================================
 
   useEffect(() => {
+
     loadProducts();
 
     const unsubscribe =
@@ -156,8 +193,11 @@ function AppContent() {
           // ==============================================
 
           if (!user) {
+
             setAdmin(false);
+
             return;
+
           }
 
           // ==============================================
@@ -165,6 +205,7 @@ function AppContent() {
           // ==============================================
 
           try {
+
             const adminRef =
               doc(
                 db,
@@ -180,64 +221,237 @@ function AppContent() {
             if (
               adminSnap.exists()
             ) {
+
               const userData =
                 adminSnap.data();
 
               setAdmin(
                 userData.role ===
-                  "admin"
+                "admin"
               );
+
             } else {
+
               setAdmin(false);
+
             }
+
           } catch (error) {
+
             console.error(
               "Admin Check Error:",
               error
             );
 
             setAdmin(false);
+
           }
+
         }
       );
 
     return () => {
+
       unsubscribe();
+
     };
+
   }, []);
 
   // ======================================================
-  // LOADING
+  // GLOBAL LOADING
   // ======================================================
 
   if (loading) {
+
     return (
+
       <div
         style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
+          minHeight:
+            "100vh",
+
+          display:
+            "flex",
+
+          alignItems:
+            "center",
+
+          justifyContent:
+            "center",
+
+          flexDirection:
+            "column",
+
+          gap:
+            "14px",
+
+          direction:
+            "rtl",
+
+          textAlign:
+            "center",
+
           fontFamily:
-            "Cairo, Tahoma, sans-serif",
-          fontSize: "20px",
-          fontWeight: "700",
-          direction: "rtl",
-          background: "#f0f4f8",
-          color: "#071a36",
+            "Tajawal, Cairo, Arial, sans-serif",
+
+          background:
+            JUMIA_THEME.background,
+
+          color:
+            JUMIA_THEME.text,
         }}
       >
-        جاري تحميل المتجر... ⏳
+
+        <div
+          style={{
+            width:
+              "42px",
+
+            height:
+              "42px",
+
+            borderRadius:
+              "50%",
+
+            border:
+              `4px solid ${JUMIA_THEME.orangeLight}`,
+
+            borderTopColor:
+              JUMIA_THEME.orange,
+
+            animation:
+              "elsAftyAppLoader 0.8s linear infinite",
+          }}
+        />
+
+        <strong
+          style={{
+            fontSize:
+              "18px",
+          }}
+        >
+          جاري تحميل المتجر...
+        </strong>
+
+        <style>
+          {`
+            @keyframes elsAftyAppLoader {
+
+              from {
+                transform: rotate(0deg);
+              }
+
+              to {
+                transform: rotate(360deg);
+              }
+
+            }
+          `}
+        </style>
+
       </div>
+
     );
+
   }
+
+  // ======================================================
+  // NAVIGATION HANDLER
+  // ======================================================
+
+  const handleNavigation =
+    (view) => {
+
+      switch (view) {
+
+        case "admin":
+
+          navigate("/admin");
+
+          break;
+
+        case "cart":
+
+          navigate("/cart");
+
+          break;
+
+        case "account":
+
+          navigate("/account");
+
+          break;
+
+        case "orders":
+
+          navigate("/orders");
+
+          break;
+
+        case "wishlist":
+
+          navigate("/wishlist");
+
+          break;
+
+        case "checkout":
+
+          navigate("/checkout");
+
+          break;
+
+        case "login":
+
+          navigate("/login");
+
+          break;
+
+        case "register":
+
+          navigate("/register");
+
+          break;
+
+        case "store":
+
+        case "home":
+
+        default:
+
+          navigate("/");
+
+          break;
+
+      }
+
+    };
+
+  // ======================================================
+  // COMMON PAGE PROPS
+  // ======================================================
+
+  const commonProps = {
+
+    products,
+
+    admin,
+
+    searchTerm,
+
+    setSearchTerm,
+
+    setCurrentView:
+      handleNavigation,
+
+  };
 
   // ======================================================
   // ROUTES
   // ======================================================
 
   return (
+
     <Routes>
 
       {/* ==================================================
@@ -263,15 +477,30 @@ function AppContent() {
       />
 
       {/* ==================================================
+          USER LOGIN
+      ================================================== */}
+
+      <Route
+        path="/user-login"
+        element={
+          <UserLogin />
+        }
+      />
+
+      {/* ==================================================
           ACCOUNT
       ================================================== */}
 
       <Route
         path="/account"
         element={
+
           <ProtectedRoute>
+
             <Account />
+
           </ProtectedRoute>
+
         }
       />
 
@@ -282,9 +511,13 @@ function AppContent() {
       <Route
         path="/orders"
         element={
+
           <ProtectedRoute>
+
             <Orders />
+
           </ProtectedRoute>
+
         }
       />
 
@@ -295,62 +528,11 @@ function AppContent() {
       <Route
         path="/"
         element={
+
           <Home
-            products={
-              products
-            }
-
-            admin={
-              admin
-            }
-
-            searchTerm={
-              searchTerm
-            }
-
-            setSearchTerm={
-              setSearchTerm
-            }
-
-            setCurrentView={
-              (view) => {
-
-                switch (view) {
-
-                  case "admin":
-                    navigate(
-                      "/admin"
-                    );
-                    break;
-
-                  case "cart":
-                    navigate(
-                      "/cart"
-                    );
-                    break;
-
-                  case "account":
-                    navigate(
-                      "/account"
-                    );
-                    break;
-
-                  case "orders":
-                    navigate(
-                      "/orders"
-                    );
-                    break;
-
-                  case "store":
-                  default:
-                    navigate(
-                      "/"
-                    );
-                    break;
-                }
-              }
-            }
+            {...commonProps}
           />
+
         }
       />
 
@@ -361,145 +543,26 @@ function AppContent() {
       <Route
         path="/search"
         element={
+
           <SearchResults
-            products={
-              products
-            }
-
-            admin={
-              admin
-            }
-
-            searchTerm={
-              searchTerm
-            }
-
-            setSearchTerm={
-              setSearchTerm
-            }
-
-            setCurrentView={
-              (view) => {
-
-                switch (view) {
-
-                  case "admin":
-                    navigate(
-                      "/admin"
-                    );
-                    break;
-
-                  case "cart":
-                    navigate(
-                      "/cart"
-                    );
-                    break;
-
-                  case "account":
-                    navigate(
-                      "/account"
-                    );
-                    break;
-
-                  case "orders":
-                    navigate(
-                      "/orders"
-                    );
-                    break;
-
-                  case "store":
-                    navigate(
-                      "/"
-                    );
-                    break;
-
-                  default:
-
-                    window.dispatchEvent(
-                      new CustomEvent(
-                        "filterCategory",
-                        {
-                          detail:
-                            view,
-                        }
-                      )
-                    );
-
-                    navigate(
-                      "/"
-                    );
-
-                    break;
-                }
-              }
-            }
+            {...commonProps}
           />
+
         }
       />
 
       {/* ==================================================
-          CATEGORY PAGE
+          CATEGORY
       ================================================== */}
 
       <Route
-        path="/category/:categoryName"
+        path="/category/:id"
         element={
+
           <CategoryPage
-            products={
-              products
-            }
-
-            admin={
-              admin
-            }
-
-            searchTerm={
-              searchTerm
-            }
-
-            setSearchTerm={
-              setSearchTerm
-            }
-
-            setCurrentView={
-              (view) => {
-
-                switch (view) {
-
-                  case "admin":
-                    navigate(
-                      "/admin"
-                    );
-                    break;
-
-                  case "cart":
-                    navigate(
-                      "/cart"
-                    );
-                    break;
-
-                  case "account":
-                    navigate(
-                      "/account"
-                    );
-                    break;
-
-                  case "orders":
-                    navigate(
-                      "/orders"
-                    );
-                    break;
-
-                  case "store":
-                  default:
-                    navigate(
-                      "/"
-                    );
-                    break;
-                }
-              }
-            }
+            {...commonProps}
           />
+
         }
       />
 
@@ -510,11 +573,13 @@ function AppContent() {
       <Route
         path="/product/:id"
         element={
+
           <ProductDetailsWrapper
             products={
               products
             }
           />
+
         }
       />
 
@@ -528,10 +593,7 @@ function AppContent() {
           <CartWrapper />
         }
       />
-<Route
-  path="/user-login"
-  element={<UserLogin />}
-/>
+
       {/* ==================================================
           WISHLIST
       ================================================== */}
@@ -547,14 +609,19 @@ function AppContent() {
           CHECKOUT
       ================================================== */}
 
-<Route
-  path="/checkout"
-  element={
-    <ProtectedRoute>
-      <CheckoutWrapper />
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/checkout"
+        element={
+
+          <ProtectedRoute>
+
+            <CheckoutWrapper />
+
+          </ProtectedRoute>
+
+        }
+      />
+
       {/* ==================================================
           ADMIN LOGIN
       ================================================== */}
@@ -562,18 +629,24 @@ function AppContent() {
       <Route
         path="/admin-login"
         element={
+
           admin ? (
+
             <Navigate
               to="/admin"
               replace
             />
+
           ) : (
+
             <AdminLogin
               setAdmin={
                 setAdmin
               }
             />
+
           )
+
         }
       />
 
@@ -584,7 +657,9 @@ function AppContent() {
       <Route
         path="/admin"
         element={
+
           admin ? (
+
             <Admin
               products={
                 products
@@ -594,12 +669,16 @@ function AppContent() {
                 loadProducts
               }
             />
+
           ) : (
+
             <Navigate
               to="/admin-login"
               replace
             />
+
           )
+
         }
       />
 
@@ -610,15 +689,19 @@ function AppContent() {
       <Route
         path="*"
         element={
+
           <Navigate
             to="/"
             replace
           />
+
         }
       />
 
     </Routes>
+
   );
+
 }
 
 // ======================================================
@@ -628,20 +711,20 @@ function AppContent() {
 function ProductDetailsWrapper({
   products,
 }) {
-  const {
-    id,
-  } = useParams();
+
+  const { id } =
+    useParams();
+
+  const navigate =
+    useNavigate();
 
   const product =
     (products || []).find(
       (item) =>
-        String(
-          item.id
-        ) ===
+        String(item.id) ===
           String(id) ||
-        String(
-          item._id
-        ) ===
+
+        String(item._id) ===
           String(id)
     );
 
@@ -650,61 +733,157 @@ function ProductDetailsWrapper({
   // ======================================================
 
   if (!product) {
+
     return (
+
       <div
         style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          direction: "rtl",
-          textAlign: "center",
+          minHeight:
+            "100vh",
+
+          display:
+            "flex",
+
+          flexDirection:
+            "column",
+
+          alignItems:
+            "center",
+
+          justifyContent:
+            "center",
+
+          direction:
+            "rtl",
+
+          textAlign:
+            "center",
+
           fontFamily:
-            "Cairo, Tahoma, sans-serif",
-          background: "#f0f4f8",
+            "Tajawal, Cairo, Arial, sans-serif",
+
+          background:
+            JUMIA_THEME.background,
+
+          color:
+            JUMIA_THEME.text,
+
+          padding:
+            "30px",
         }}
       >
 
-        <h2>
+        <div
+          style={{
+            width:
+              "90px",
+
+            height:
+              "90px",
+
+            display:
+              "flex",
+
+            alignItems:
+              "center",
+
+            justifyContent:
+              "center",
+
+            marginBottom:
+              "20px",
+
+            borderRadius:
+              "50%",
+
+            background:
+              JUMIA_THEME.orangeLight,
+
+            fontSize:
+              "42px",
+          }}
+        >
+          🛍️
+        </div>
+
+        <h2
+          style={{
+            marginBottom:
+              "10px",
+
+            fontSize:
+              "25px",
+          }}
+        >
           المنتج غير موجود
         </h2>
+
+        <p
+          style={{
+            color:
+              JUMIA_THEME.muted,
+
+            marginBottom:
+              "20px",
+          }}
+        >
+          عذرًا، المنتج الذي تبحث عنه
+          غير متوفر حاليًا.
+        </p>
 
         <button
           type="button"
           onClick={() =>
-            window.history.back()
+            navigate("/")
           }
           style={{
-            marginTop: "20px",
-            padding:
-              "10px 20px",
-            border: "none",
+            border:
+              "none",
+
             borderRadius:
-              "8px",
-            cursor: "pointer",
+              "4px",
+
+            padding:
+              "12px 28px",
+
+            cursor:
+              "pointer",
+
             background:
-              "#071a36",
-            color: "#fff",
+              JUMIA_THEME.orange,
+
+            color:
+              "#fff",
+
             fontFamily:
-              "Cairo, Tahoma, sans-serif",
-            fontWeight: "700",
+              "Tajawal, Cairo, Arial, sans-serif",
+
+            fontWeight:
+              "800",
+
+            fontSize:
+              "15px",
           }}
         >
-          ← رجوع
+          العودة للتسوق
         </button>
 
       </div>
+
     );
+
   }
 
   return (
+
     <ProductDetails
       product={
         product
       }
     />
+
   );
+
 }
 
 // ======================================================
@@ -712,6 +891,7 @@ function ProductDetailsWrapper({
 // ======================================================
 
 function CartWrapper() {
+
   const {
     cart,
     updateQuantity,
@@ -724,7 +904,9 @@ function CartWrapper() {
     useNavigate();
 
   return (
+
     <Cart
+
       cart={
         cart
       }
@@ -743,37 +925,62 @@ function CartWrapper() {
           switch (page) {
 
             case "store":
-              navigate(
-                "/"
-              );
+
+            case "home":
+
+              navigate("/");
+
               break;
 
             case "checkout":
+
               navigate(
                 "/checkout"
               );
+
               break;
 
             case "account":
+
               navigate(
                 "/account"
               );
+
               break;
 
             case "orders":
+
               navigate(
                 "/orders"
               );
+
+              break;
+
+            case "wishlist":
+
+              navigate(
+                "/wishlist"
+              );
+
               break;
 
             default:
+
+              navigate("/");
+
               break;
+
           }
+
         }
       }
+
     />
+
   );
+
 }
+
 // ======================================================
 // CHECKOUT WRAPPER
 // ======================================================
@@ -790,9 +997,217 @@ function CheckoutWrapper() {
   const navigate =
     useNavigate();
 
+  const location =
+    useLocation();
+
+  // ======================================================
+  // LOAD EDIT ORDER FROM NAVIGATION STATE
+  // ======================================================
+
+  useEffect(() => {
+
+    const editOrder =
+      location.state?.editOrder;
+
+    // ----------------------------------------------------
+    // No edit order
+    // ----------------------------------------------------
+
+    if (!editOrder) {
+      return;
+    }
+
+    // ----------------------------------------------------
+    // Get products from order
+    // Supports common order field names
+    // ----------------------------------------------------
+
+    const orderItems =
+      editOrder.items ||
+      editOrder.products ||
+      editOrder.orderItems ||
+      [];
+
+    if (
+      !Array.isArray(orderItems) ||
+      orderItems.length === 0
+    ) {
+
+      console.warn(
+        "Edit Order: no products found",
+        editOrder
+      );
+
+      return;
+
+    }
+
+    // ----------------------------------------------------
+    // Normalize products for CartContext
+    // ----------------------------------------------------
+
+    const restoredCart =
+      orderItems.map(
+        (item) => {
+
+          const product =
+            item.product ||
+            item;
+
+          const productId =
+            product.id ??
+            product._id ??
+            item.productId ??
+            item.id ??
+            item._id;
+
+          const quantity =
+            Number(
+              item.quantity ??
+              item.qty ??
+              product.quantity ??
+              1
+            );
+
+          return {
+
+            ...product,
+
+            id:
+              productId,
+
+            _id:
+              product._id ??
+              productId,
+
+            quantity:
+              quantity > 0
+                ? quantity
+                : 1,
+
+          };
+
+        }
+      ).filter(
+        (item) =>
+          item.id !==
+            undefined &&
+          item.id !==
+            null
+      );
+
+    // ----------------------------------------------------
+    // Put edited order products into cart
+    // ----------------------------------------------------
+
+    if (
+      restoredCart.length > 0
+    ) {
+
+      setCart(
+        restoredCart
+      );
+
+    }
+
+  }, [
+    location.state,
+    setCart,
+  ]);
+
+  // ======================================================
+  // CLEAR EDIT STATE AFTER LOADING
+  // ======================================================
+
+  useEffect(() => {
+
+    if (
+      location.state?.editOrder
+    ) {
+
+      navigate(
+        location.pathname,
+        {
+          replace: true,
+          state: {},
+        }
+      );
+
+    }
+
+  }, [
+    location.pathname,
+    location.state,
+    navigate,
+  ]);
+
+  // ======================================================
+  // NAVIGATION
+  // ======================================================
+
+  const handleCheckoutNavigation =
+    (page) => {
+
+      switch (page) {
+
+        case "store":
+
+        case "home":
+
+          navigate("/");
+
+          break;
+
+        case "cart":
+
+          navigate(
+            "/cart"
+          );
+
+          break;
+
+        case "account":
+
+          navigate(
+            "/account"
+          );
+
+          break;
+
+        case "orders":
+
+          navigate(
+            "/orders"
+          );
+
+          break;
+
+        case "wishlist":
+
+          navigate(
+            "/wishlist"
+          );
+
+          break;
+
+        default:
+
+          navigate("/");
+
+          break;
+
+      }
+
+    };
+
+  // ======================================================
+  // CHECKOUT
+  // ======================================================
 
   return (
+
     <Checkout
+
       cart={
         cart
       }
@@ -802,46 +1217,19 @@ function CheckoutWrapper() {
       }
 
       setCurrentView={
-        (page) => {
-
-          switch (page) {
-
-            case "store":
-              navigate(
-                "/"
-              );
-              break;
-
-            case "cart":
-              navigate(
-                "/cart"
-              );
-              break;
-
-            case "account":
-              navigate(
-                "/account"
-              );
-              break;
-
-            case "orders":
-              navigate(
-                "/orders"
-              );
-              break;
-
-            default:
-              navigate(
-                "/"
-              );
-              break;
-          }
-
-        }
+        handleCheckoutNavigation
       }
+
+      editOrder={
+        location.state?.editOrder
+      }
+
     />
+
   );
+
 }
+
 // ======================================================
 // EXPORT
 // ======================================================

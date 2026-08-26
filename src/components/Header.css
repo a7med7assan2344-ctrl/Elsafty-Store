@@ -1,106 +1,349 @@
-.main-header{
+/* =========================================================
+   ELSAFTY STORE
+   HEADER - JUMIA COLORS
+   RTL / RESPONSIVE
+   ========================================================= */
 
-height:70px;
+.main-header {
+  width: 100%;
+  height: 68px;
 
-background:#0B1F3A;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-display:flex;
+  padding: 0 32px;
 
-align-items:center;
+  background: #f68b1e;
+  color: #ffffff;
 
-justify-content:space-between;
+  direction: rtl;
 
-padding:0 40px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 
-direction:rtl;
-
-position:sticky;
-
-top:0;
-
-z-index:1000;
-
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 
-.header-logo{
+/* =========================================================
+   LOGO
+   ========================================================= */
 
-color:#F4D06F;
+.header-logo {
+  flex-shrink: 0;
 
-font-size:28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-font-weight:bold;
+  color: #ffffff;
 
-cursor:pointer;
+  font-size: 27px;
+  font-weight: 900;
 
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.header-logo:hover {
+  transform: scale(1.03);
+  opacity: 0.92;
 }
 
 
+/* =========================================================
+   HEADER LINKS
+   ========================================================= */
 
-.header-links{
+.header-links {
+  display: flex;
+  align-items: center;
 
-display:flex;
+  gap: 7px;
 
-gap:15px;
-
+  margin-right: auto;
+  margin-left: 20px;
 }
 
 
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
-.header-links button{
+.header-links button {
+  min-height: 42px;
 
-background:#D4AF37;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-color:#071A36;
+  padding: 9px 17px;
 
-border:none;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 5px;
 
-padding:12px 20px;
+  background: transparent;
 
-border-radius:10px;
+  color: #ffffff;
 
-font-weight:bold;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
 
-cursor:pointer;
+  cursor: pointer;
 
+  white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 
+/* =========================================================
+   PRIMARY BUTTON
+   ========================================================= */
 
-.header-links button:hover{
+.header-links button:first-child {
+  background: #ffffff;
+  color: #f68b1e;
 
-background:white;
+  border-color: #ffffff;
+}
 
+.header-links button:first-child:hover {
+  background: #282828;
+  color: #ffffff;
+  border-color: #282828;
+
+  transform: translateY(-1px);
 }
 
 
+/* =========================================================
+   OTHER BUTTONS
+   ========================================================= */
 
+.header-links button:not(:first-child):hover {
+  background: #ffffff;
 
+  color: #f68b1e;
 
-@media(max-width:600px){
+  border-color: #ffffff;
 
-
-.main-header{
-
-padding:0 15px;
-
+  transform: translateY(-1px);
 }
 
 
+/* =========================================================
+   ACTIVE BUTTON
+   ========================================================= */
 
-.header-logo{
+.header-links button.active {
+  background: #ffffff;
 
-font-size:20px;
+  color: #f68b1e;
 
+  border-color: #ffffff;
 }
 
 
+/* =========================================================
+   ICONS
+   ========================================================= */
 
-.header-links button{
-
-padding:10px;
-
+.header-links button span,
+.header-links button svg {
+  margin-left: 6px;
 }
 
 
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+.header-links button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .main-header {
+    height: 64px;
+    padding: 0 20px;
+    gap: 12px;
+  }
+
+  .header-logo {
+    font-size: 23px;
+  }
+
+  .header-links {
+    gap: 5px;
+    margin-left: 0;
+  }
+
+  .header-links button {
+    min-height: 39px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .main-header {
+    height: 60px;
+
+    padding: 0 9px;
+
+    gap: 7px;
+  }
+
+
+  /* LOGO */
+
+  .header-logo {
+    font-size: 19px;
+
+    max-width: 40%;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+  }
+
+
+  /* LINKS */
+
+  .header-links {
+    flex: 1;
+
+    display: flex;
+
+    justify-content: flex-start;
+
+    gap: 4px;
+
+    margin: 0;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+  }
+
+  .header-links::-webkit-scrollbar {
+    display: none;
+  }
+
+
+  /* BUTTONS */
+
+  .header-links button {
+    flex-shrink: 0;
+
+    min-height: 36px;
+
+    padding: 7px 9px;
+
+    border-radius: 5px;
+
+    font-size: 10px;
+  }
+
+
+  .header-links button span,
+  .header-links button svg {
+    margin-left: 3px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+  .main-header {
+    height: 56px;
+
+    padding: 0 6px;
+
+    gap: 4px;
+  }
+
+  .header-logo {
+    font-size: 16px;
+
+    max-width: 37%;
+  }
+
+  .header-links {
+    gap: 3px;
+  }
+
+  .header-links button {
+    min-height: 33px;
+
+    padding: 6px 7px;
+
+    font-size: 9px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 320px) {
+
+  .main-header {
+    padding: 0 4px;
+  }
+
+  .header-logo {
+    font-size: 14px;
+  }
+
+  .header-links button {
+    padding: 5px 6px;
+    font-size: 8px;
+  }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .main-header *,
+  .main-header *::before,
+  .main-header *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

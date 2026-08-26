@@ -1,340 +1,573 @@
+/* =====================================================
+   CHECKOUT PAGE
+   JUMIA STYLE - ELSAFTY STORE
+===================================================== */
+
 .checkout-page {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
 
-  padding:40px 20px;
+  padding: 30px 20px 50px;
 
-  direction:rtl;
+  direction: rtl;
 
-  max-width:750px;
+  background: #f1f1f2;
 
-  margin:auto;
+  font-family: Cairo, Tahoma, Arial, sans-serif;
 
-  min-height:100vh;
-
-  font-family:Cairo, sans-serif;
-
+  box-sizing: border-box;
 }
 
+.checkout-page *,
+.checkout-page *::before,
+.checkout-page *::after {
+  box-sizing: border-box;
+}
 
-/* العنوان */
+/* =====================================================
+   TITLE
+===================================================== */
 
 .checkout-page h2 {
+  color: #313131;
 
-  color:#071A36;
+  text-align: center;
 
-  text-align:center;
+  font-size: 28px;
+  font-weight: 700;
 
-  font-size:32px;
+  margin: 0 auto 22px;
 
-  font-weight:800;
-
-  margin-bottom:30px;
-
+  line-height: 1.5;
 }
 
-
-/* الفورم */
+/* =====================================================
+   FORM
+===================================================== */
 
 .checkout-form {
+  width: min(750px, 100%);
 
-  display:flex;
+  margin: 0 auto;
 
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
 
-  gap:16px;
+  gap: 14px;
 
-  background:#fff;
+  background: #ffffff;
 
-  padding:35px;
+  padding: 25px;
 
-  border-radius:20px;
+  border-radius: 4px;
+
+  border: 1px solid #e5e5e5;
 
   box-shadow:
-  0 10px 30px rgba(11,31,58,.12);
-
-  border:1px solid #D4AF37;
-
+    0 3px 10px rgba(0, 0, 0, 0.06);
 }
 
-
+/* =====================================================
+   INPUTS
+===================================================== */
 
 .checkout-form input,
 .checkout-form textarea {
+  width: 100%;
 
-  padding:15px;
+  padding: 13px 14px;
 
-  border:1px solid #d5dce5;
+  border: 1px solid #cccccc;
 
-  border-radius:12px;
+  border-radius: 3px;
 
-  font-size:16px;
+  background: #ffffff;
 
-  font-family:Cairo,sans-serif;
+  color: #313131;
 
-  outline:none;
+  font-size: 14px;
 
-  transition:.3s;
+  font-family: Cairo, Tahoma, Arial, sans-serif;
 
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-
+.checkout-form input::placeholder,
+.checkout-form textarea::placeholder {
+  color: #999999;
+}
 
 .checkout-form input:focus,
 .checkout-form textarea:focus {
-
-  border-color:#D4AF37;
+  border-color: #f68b1e;
 
   box-shadow:
-  0 0 0 3px rgba(212,175,55,.18);
-
+    0 0 0 2px rgba(246, 139, 30, 0.12);
 }
-
-
 
 .checkout-form textarea {
+  min-height: 120px;
 
-  height:120px;
+  resize: vertical;
 
-  resize:none;
-
+  line-height: 1.7;
 }
 
-
-/* ملخص الطلب */
+/* =====================================================
+   ORDER SUMMARY
+===================================================== */
 
 .checkout-summary {
+  background: #fafafa;
 
-  background:#F8FAFD;
+  padding: 18px;
 
-  padding:20px;
+  border-radius: 4px;
 
-  border-radius:15px;
-
-  border:1px solid #D4AF37;
-
+  border: 1px solid #e5e5e5;
 }
-
-
 
 .checkout-summary h3 {
+  color: #313131;
 
-  color:#071A36;
+  margin: 0 0 14px;
 
-  margin-bottom:15px;
+  font-size: 19px;
 
-  font-size:22px;
-
+  font-weight: 700;
 }
 
-
+/* =====================================================
+   CHECKOUT ITEM
+===================================================== */
 
 .checkout-item {
+  display: flex;
 
-  display:flex;
+  justify-content: space-between;
 
-  justify-content:space-between;
+  align-items: center;
 
-  align-items:center;
+  gap: 12px;
 
-  gap:10px;
+  padding: 11px 0;
 
-  padding:12px 0;
+  border-bottom: 1px solid #e5e5e5;
 
-  border-bottom:1px solid #ddd;
+  color: #555555;
 
-  color:#555;
+  font-size: 13px;
 
+  line-height: 1.6;
 }
 
-
-
-.checkout-item:last-child{
-
-  border-bottom:none;
-
+.checkout-item:last-child {
+  border-bottom: none;
 }
 
+.checkout-item span {
+  color: #313131;
 
+  font-weight: 700;
 
-.checkout-summary span {
-
-  color:#D4AF37;
-
-  font-weight:800;
-
+  white-space: nowrap;
 }
 
+/* =====================================================
+   TOTAL
+===================================================== */
 
-/* السعر الإجمالي */
+.checkout-total {
+  margin-top: 14px;
 
-.checkout-total{
+  padding: 14px;
 
-  margin-top:15px;
+  background: #f68b1e;
 
-  padding:15px;
+  color: #ffffff;
 
-  background:#071A36;
+  border-radius: 3px;
 
-  color:#F4D06F;
+  font-size: 20px;
 
-  border-radius:12px;
+  font-weight: 700;
 
-  font-size:22px;
-
-  font-weight:bold;
-
-  text-align:center;
-
+  text-align: center;
 }
 
-
-/* زر الطلب */
+/* =====================================================
+   COMPLETE ORDER BUTTON
+===================================================== */
 
 .checkout-btn {
+  width: 100%;
 
-  background:#0B1F3A;
+  background: #f68b1e;
 
-  color:white;
+  color: #ffffff;
 
-  border:1px solid #D4AF37;
+  border: 1px solid #f68b1e;
 
-  padding:16px;
+  padding: 14px 16px;
 
-  border-radius:12px;
+  border-radius: 3px;
 
-  font-size:18px;
+  font-family: Cairo, Tahoma, Arial, sans-serif;
 
-  font-weight:bold;
+  font-size: 16px;
 
-  cursor:pointer;
+  font-weight: 700;
 
-  transition:.3s;
+  cursor: pointer;
 
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
-
-
 
 .checkout-btn:hover {
+  background: #e57b0b;
 
-  background:#D4AF37;
+  border-color: #e57b0b;
 
-  color:#071A36;
+  transform: translateY(-1px);
 
-  transform:translateY(-2px);
-
+  box-shadow:
+    0 4px 10px rgba(246, 139, 30, 0.22);
 }
 
+.checkout-btn:active {
+  transform: translateY(0);
+}
 
-
-/* زر الرجوع */
+/* =====================================================
+   BACK BUTTON
+===================================================== */
 
 .back-btn {
+  width: 100%;
 
-  background:#fff;
+  background: #ffffff;
 
-  color:#071A36;
+  color: #313131;
 
-  border:1px solid #071A36;
+  border: 1px solid #cccccc;
 
-  padding:14px;
+  padding: 13px 15px;
 
-  border-radius:12px;
+  border-radius: 3px;
 
-  font-size:17px;
+  font-family: Cairo, Tahoma, Arial, sans-serif;
 
-  font-weight:bold;
+  font-size: 14px;
 
-  cursor:pointer;
+  font-weight: 700;
 
-  transition:.3s;
+  cursor: pointer;
 
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
-
-
 
 .back-btn:hover {
+  background: #f68b1e;
 
-  background:#071A36;
+  border-color: #f68b1e;
 
-  color:#F4D06F;
-
+  color: #ffffff;
 }
 
-
-
-/* السلة فارغة */
+/* =====================================================
+   EMPTY CART
+===================================================== */
 
 .checkout-empty {
+  width: 100%;
 
-  text-align:center;
+  min-height: 70vh;
 
-  padding:100px 20px;
+  display: flex;
 
-  direction:rtl;
+  flex-direction: column;
 
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+  padding: 60px 20px;
+
+  direction: rtl;
+
+  background: #f1f1f2;
 }
-
-
 
 .checkout-empty h2 {
+  color: #313131;
 
-  color:#071A36;
+  margin: 0 0 20px;
 
-  margin-bottom:25px;
+  font-size: 24px;
 
+  font-weight: 700;
 }
 
+.checkout-empty button {
+  background: #f68b1e;
 
+  color: #ffffff;
 
-/* الموبايل */
+  border: 1px solid #f68b1e;
 
-@media(max-width:700px){
+  padding: 11px 25px;
 
+  border-radius: 3px;
 
-.checkout-page{
+  font-family: inherit;
 
-  padding:20px 12px;
+  font-size: 14px;
 
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
 }
 
+.checkout-empty button:hover {
+  background: #e57b0b;
 
-.checkout-page h2{
-
-  font-size:25px;
-
+  border-color: #e57b0b;
 }
 
+/* =====================================================
+   LABELS
+===================================================== */
 
-.checkout-form{
+.checkout-form label {
+  color: #313131;
 
-  padding:20px;
+  font-size: 13px;
 
-  border-radius:15px;
+  font-weight: 600;
 
+  margin-bottom: -7px;
 }
 
+/* =====================================================
+   DISABLED BUTTON
+===================================================== */
 
-.checkout-form input,
-.checkout-form textarea{
+.checkout-btn:disabled {
+  background: #cccccc;
 
-  font-size:15px;
+  border-color: #cccccc;
 
+  color: #ffffff;
+
+  cursor: not-allowed;
+
+  transform: none;
+
+  box-shadow: none;
 }
 
+/* =====================================================
+   FOCUS ACCESSIBILITY
+===================================================== */
 
-.checkout-item{
+.checkout-page button:focus-visible,
+.checkout-page input:focus-visible,
+.checkout-page textarea:focus-visible {
+  outline: 2px solid #f68b1e;
 
-  flex-direction:column;
-
-  align-items:flex-start;
-
+  outline-offset: 2px;
 }
 
+/* =====================================================
+   TABLET
+===================================================== */
 
-.checkout-btn{
+@media (max-width: 900px) {
 
-  font-size:16px;
+  .checkout-page {
+    padding: 25px 15px 40px;
+  }
 
+  .checkout-form {
+    padding: 22px;
+  }
+
+  .checkout-page h2 {
+    font-size: 25px;
+  }
 }
 
+/* =====================================================
+   MOBILE
+===================================================== */
 
+@media (max-width: 700px) {
+
+  .checkout-page {
+    padding: 15px 8px 30px;
+  }
+
+  .checkout-page h2 {
+    font-size: 21px;
+
+    margin-bottom: 14px;
+  }
+
+  .checkout-form {
+    width: 100%;
+
+    padding: 14px;
+
+    gap: 11px;
+
+    border-radius: 3px;
+  }
+
+  .checkout-form input,
+  .checkout-form textarea {
+    padding: 11px;
+
+    font-size: 13px;
+
+    border-radius: 3px;
+  }
+
+  .checkout-form textarea {
+    min-height: 100px;
+  }
+
+  .checkout-summary {
+    padding: 13px;
+  }
+
+  .checkout-summary h3 {
+    font-size: 17px;
+
+    margin-bottom: 10px;
+  }
+
+  .checkout-item {
+    flex-direction: row;
+
+    align-items: center;
+
+    font-size: 11px;
+
+    padding: 9px 0;
+
+    gap: 6px;
+  }
+
+  .checkout-item span {
+    font-size: 11px;
+  }
+
+  .checkout-total {
+    padding: 12px;
+
+    font-size: 17px;
+  }
+
+  .checkout-btn {
+    padding: 12px;
+
+    font-size: 14px;
+  }
+
+  .back-btn {
+    padding: 11px;
+
+    font-size: 13px;
+  }
+
+  .checkout-empty {
+    min-height: 65vh;
+
+    padding: 40px 15px;
+  }
+
+  .checkout-empty h2 {
+    font-size: 19px;
+  }
+}
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 380px) {
+
+  .checkout-page {
+    padding: 10px 6px 25px;
+  }
+
+  .checkout-form {
+    padding: 11px;
+  }
+
+  .checkout-page h2 {
+    font-size: 19px;
+  }
+
+  .checkout-form input,
+  .checkout-form textarea {
+    font-size: 12px;
+
+    padding: 10px;
+  }
+
+  .checkout-summary {
+    padding: 10px;
+  }
+
+  .checkout-summary h3 {
+    font-size: 15px;
+  }
+
+  .checkout-item {
+    font-size: 10px;
+  }
+
+  .checkout-total {
+    font-size: 16px;
+  }
+
+  .checkout-btn {
+    font-size: 13px;
+
+    padding: 11px 8px;
+  }
+
+  .back-btn {
+    font-size: 12px;
+
+    padding: 10px;
+  }
+}
+
+/* =====================================================
+   PREVENT HORIZONTAL OVERFLOW
+===================================================== */
+
+html,
+body {
+  max-width: 100%;
+
+  overflow-x: hidden;
 }

@@ -111,13 +111,6 @@ export function CartProvider({
     // CART ID
     // =====================
 
-    // لو فيه Variant:
-    // المنتج + Variant ID
-    //
-    // مثال:
-    // product123-red
-    // product123-blue
-
     const cartId =
       product.cartId ||
       (
@@ -227,7 +220,7 @@ export function CartProvider({
                 newQuantity,
 
               price:
-                product.price ??
+                product.price ?? 
                 item.price,
 
               oldPrice:
@@ -287,6 +280,124 @@ export function CartProvider({
       ];
 
     });
+
+  }
+
+
+  // =====================
+  // استبدال السلة بالكامل
+  // =====================
+  //
+  // تستخدم عند الضغط على
+  // "تعديل الطلب"
+  //
+  // بحيث يتم تحميل منتجات
+  // الطلب القديم إلى السلة
+  // بدون دمجها مع السلة الحالية.
+  // =====================
+
+  function replaceCart(products) {
+
+    if (!Array.isArray(products)) {
+
+      console.error(
+        "replaceCart: المنتجات غير صحيحة"
+      );
+
+      setCart([]);
+
+      return;
+
+    }
+
+
+    const normalizedProducts =
+      products.map(
+        (item, index) => {
+
+          const productId =
+            item?.productId ||
+            item?.id ||
+            item?._id ||
+            `order-product-${index}`;
+
+
+          const variantId =
+            item?.variantId ||
+            item?.selectedVariant?.id ||
+            null;
+
+
+          const cartId =
+            item?.cartId ||
+            (
+              variantId
+                ? `${productId}-${variantId}`
+                : String(productId)
+            );
+
+
+          const quantity =
+            Math.max(
+              1,
+              Number(
+                item?.quantity || 1
+              )
+            );
+
+
+          const price =
+            Number(
+              item?.price || 0
+            );
+
+
+          return {
+
+            ...item,
+
+            id:
+              productId,
+
+            productId,
+
+            cartId,
+
+            quantity,
+
+            price,
+
+            variantId,
+
+            variantName:
+              item?.variantName ||
+              item?.selectedVariant?.name ||
+              "",
+
+            selectedVariant:
+              item?.selectedVariant ||
+              (
+                variantId ||
+                item?.variantName
+                  ? {
+                      id:
+                        variantId,
+                      name:
+                        item?.variantName ||
+                        ""
+                    }
+                  : null
+              )
+
+          };
+
+        }
+      );
+
+
+    setCart(
+      normalizedProducts
+    );
 
   }
 
@@ -430,6 +541,8 @@ export function CartProvider({
         setCart,
 
         addToCart,
+
+        replaceCart,
 
         removeFromCart,
 

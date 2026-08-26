@@ -2,8 +2,9 @@
 // Admin.jsx - PART 1 / 3
 // Elsafty Store - Full Admin Panel
 // ============================================================
-
+import { CartContext } from "../../context/CartContext";
 import React, {
+  useContext,
   useEffect,
   useMemo,
   useState,
@@ -254,6 +255,7 @@ const getOrderStatusText = (status) => {
 
 function Admin() {
 const navigate = useNavigate();
+const { replaceCart } = useContext(CartContext);
   // ==========================================================
   // MAIN STATE
   // ==========================================================
@@ -473,18 +475,43 @@ const navigate = useNavigate();
   const [editingCategory, setEditingCategory] =
     useState(null);
 
-  const [categoryForm, setCategoryForm] =
+const [categoryForm, setCategoryForm] = useState({
+  name: "",
+  description: "",
+  image: "",
+  categoryNumber: "",
+  whatsapp: "",
+  parentId: "",
+  active: true,
+
+  // 🎨 تخصيص شكل القسم
+  color: "#071a36",
+  cardSize: "medium",
+  sortOrder: 0,
+});
+  // ==========================================================
+  // STORE MENU / CUSTOMER INTERFACE
+  // ==========================================================
+
+  const [storeMenuItems, setStoreMenuItems] =
+    useState([]);
+
+  const [showStoreMenuForm, setShowStoreMenuForm] =
+    useState(false);
+
+  const [editingStoreMenuItem, setEditingStoreMenuItem] =
+    useState(null);
+
+  const [storeMenuForm, setStoreMenuForm] =
     useState({
       name: "",
-      description: "",
       image: "",
-      categoryNumber: "",
-      whatsapp: "",
+      icon: "📂",
       parentId: "",
+      categoryId: "",
+      order: 0,
       active: true,
     });
-
-
   // ==========================================================
   // USER DETAILS
   // ==========================================================
@@ -508,7 +535,17 @@ const navigate = useNavigate();
 
   const [selectedOrder, setSelectedOrder] =
     useState(null);
+const [editingOrder, setEditingOrder] = useState(false);
 
+const [editOrderData, setEditOrderData] = useState({
+  customerName: "",
+  phone: "",
+  address: "",
+  paymentMethod: "",
+  paymentStatus: "pending",
+  status: "pending",
+  shippingCost: 0,
+});
 
   // ==========================================================
   // SEARCH / FILTER
@@ -1501,8 +1538,67 @@ const navigate = useNavigate();
       setShowProductForm(true);
       setTab("products");
     };
+const handleEditOrder = (order) => {
 
+  if (!order) {
+    return;
+  }
 
+  console.log("📝 Order being edited:", order);
+
+  setSelectedOrder(order);
+
+  const addressValue =
+    typeof order.address === "object" &&
+    order.address !== null
+      ? getUserAddress({
+          address: order.address,
+        })
+      : (
+          order.address ||
+          order.customerAddress ||
+          ""
+        );
+
+  setEditOrderData({
+
+    customerName:
+      order.customerName ||
+      order.name ||
+      "",
+
+    phone:
+      order.phone ||
+      order.customerPhone ||
+      "",
+
+    address:
+      addressValue,
+
+    paymentMethod:
+      order.paymentMethod ||
+      "",
+
+    status:
+      order.status ||
+      order.orderStatus ||
+      "pending",
+
+    paymentStatus:
+      order.paymentStatus ||
+      "pending",
+
+    shippingCost:
+      order.shippingCost ??
+      order.shipping ??
+      0,
+
+  });
+
+  setEditingOrder(true);
+
+  setShowOrderDetails(true);
+};
   const handleCancelProduct =
     () => {
       resetProductForm();
@@ -1594,37 +1690,52 @@ const navigate = useNavigate();
 
       try {
 
-        const categoryData = {
+const categoryData = {
 
-          name:
-            categoryForm.name.trim(),
+  name:
+    categoryForm.name.trim(),
 
-          description:
-            categoryForm.description?.trim() ||
-            "",
+  description:
+    categoryForm.description?.trim() ||
+    "",
 
-          image:
-            categoryForm.image.trim(),
+  image:
+    categoryForm.image.trim(),
 
-          categoryNumber:
-            categoryForm.categoryNumber.trim(),
+  categoryNumber:
+    categoryForm.categoryNumber.trim(),
 
-          whatsapp:
-            categoryForm.whatsapp.trim(),
+  whatsapp:
+    categoryForm.whatsapp.trim(),
 
-          parentId:
-            categoryForm.parentId ||
-            null,
+  parentId:
+    categoryForm.parentId ||
+    null,
 
-          active:
-            Boolean(
-              categoryForm.active
-            ),
+  active:
+    Boolean(
+      categoryForm.active
+    ),
 
-          updatedAt:
-            serverTimestamp(),
-        };
+  // 🎨 شكل القسم
+  color:
+    categoryForm.color ||
+    "#071a36",
 
+  // 📏 حجم القسم
+  cardSize:
+    categoryForm.cardSize ||
+    "medium",
+
+  // 🔢 ترتيب القسم
+  sortOrder:
+    Number(
+      categoryForm.sortOrder || 0
+    ),
+
+  updatedAt:
+    serverTimestamp(),
+};
 
         if (editingCategory) {
 
@@ -1670,38 +1781,54 @@ const navigate = useNavigate();
       }
     };
 
+const handleEditCategory =
+  (category) => {
 
-  const handleEditCategory =
-    (category) => {
+    setEditingCategory(category);
 
-      setEditingCategory(category);
+    setCategoryForm({
 
-      setCategoryForm({
-        name:
-          category?.name || "",
+      name:
+        category?.name || "",
 
-        description:
-          category?.description || "",
+      description:
+        category?.description || "",
 
-        image:
-          category?.image || "",
+      image:
+        category?.image || "",
 
-        categoryNumber:
-          category?.categoryNumber || "",
+      categoryNumber:
+        category?.categoryNumber || "",
 
-        whatsapp:
-          category?.whatsapp || "",
+      whatsapp:
+        category?.whatsapp || "",
 
-        parentId:
-          category?.parentId || "",
+      parentId:
+        category?.parentId || "",
 
-        active:
-          category?.active !== false,
-      });
+      active:
+        category?.active !== false,
 
-      setShowCategoryForm(true);
-      setTab("categories");
-    };
+      // 🎨 لون القسم
+      color:
+        category?.color || "#071a36",
+
+      // 📏 حجم القسم
+      cardSize:
+        category?.cardSize || "medium",
+
+      // 🔢 ترتيب القسم
+      sortOrder:
+        Number(
+          category?.sortOrder || 0
+        ),
+
+    });
+
+    setShowCategoryForm(true);
+
+    setTab("categories");
+  };
 
 
   const handleDeleteCategory =
@@ -1931,7 +2058,143 @@ const navigate = useNavigate();
       }
     };
 
+const saveOrderEdit = async () => {
+  if (!selectedOrder?.id) {
+    return;
+  }
 
+  const cleanName =
+    editOrderData.customerName.trim();
+
+  const cleanPhone =
+    editOrderData.phone.trim();
+
+  const cleanAddress =
+    editOrderData.address.trim();
+
+  if (
+    !cleanName ||
+    !cleanPhone ||
+    !cleanAddress
+  ) {
+    alert(
+      "من فضلك أكمل اسم العميل والهاتف والعنوان."
+    );
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const shipping =
+      Number(
+        editOrderData.shippingCost || 0
+      );
+
+    const subtotal =
+      Number(
+        selectedOrder.subtotal ||
+        0
+      );
+
+    const discount =
+      Number(
+        selectedOrder.discount ||
+        0
+      );
+
+    const total =
+      Math.max(
+        subtotal -
+          discount +
+          shipping,
+        0
+      );
+
+    await updateDoc(
+      doc(
+        db,
+        "orders",
+        selectedOrder.id
+      ),
+      {
+        customerName: cleanName,
+        name: cleanName,
+
+        phone: cleanPhone,
+        customerPhone: cleanPhone,
+
+        address: cleanAddress,
+
+        paymentMethod:
+          editOrderData.paymentMethod,
+
+        paymentStatus:
+          editOrderData.paymentStatus,
+
+        status:
+          editOrderData.status,
+
+        orderStatus:
+          editOrderData.status,
+
+        shippingCost: shipping,
+        shipping: shipping,
+
+        total,
+        totalPrice: total,
+
+        updatedAt:
+          serverTimestamp(),
+      }
+    );
+
+    setSelectedOrder({
+      ...selectedOrder,
+      customerName: cleanName,
+      name: cleanName,
+      phone: cleanPhone,
+      customerPhone: cleanPhone,
+      address: cleanAddress,
+      paymentMethod:
+        editOrderData.paymentMethod,
+      paymentStatus:
+        editOrderData.paymentStatus,
+      status:
+        editOrderData.status,
+      orderStatus:
+        editOrderData.status,
+      shippingCost: shipping,
+      shipping,
+      total,
+      totalPrice: total,
+    });
+
+    setEditingOrder(false);
+
+    await addActivityLog(
+      "تعديل طلب",
+      `تم تعديل الطلب: ${selectedOrder.id}`
+    );
+
+    alert(
+      "تم حفظ تعديل الطلب بنجاح ✅"
+    );
+
+  } catch (error) {
+    console.error(
+      "❌ Save Order Edit Error:",
+      error
+    );
+
+    alert(
+      "حدث خطأ أثناء حفظ تعديل الطلب."
+    );
+
+  } finally {
+    setLoading(false);
+  }
+};
   const handleOrderStatusChange =
     async (
       orderId,
@@ -1961,51 +2224,104 @@ const navigate = useNavigate();
       setSelectedOrder(order);
       setShowOrderDetails(true);
     };
+const startEditOrder = (order) => {
+  if (!order) {
+    return;
+  }
 
+  // ==========================================
+  // PRODUCTS
+  // ==========================================
 
-  const closeOrderDetails =
-    () => {
+  const products = Array.isArray(order.products)
+    ? order.products
+    : [];
 
-      setSelectedOrder(null);
-      setShowOrderDetails(false);
-    };
+  if (products.length === 0) {
+    alert("لا توجد منتجات في هذا الطلب لتعديلها.");
+    return;
+  }
 
+  // ==========================================
+  // LOAD OLD ORDER INTO CART
+  // ==========================================
 
-  const deleteOrder =
-    async (order) => {
+  replaceCart(products);
 
-      if (
-        !window.confirm(
-          "هل أنت متأكد من حذف هذا الطلب؟"
-        )
-      ) {
-        return;
-      }
+  // ==========================================
+  // SAVE CUSTOMER DATA FOR CHECKOUT
+  // ==========================================
 
-      try {
+  const editData = {
+    customerName:
+      order?.customerName ||
+      order?.name ||
+      "",
 
-        await deleteDoc(
-          doc(
-            db,
-            "orders",
-            order.id
-          )
-        );
+    phone:
+      order?.phone ||
+      order?.customerPhone ||
+      "",
 
-        await addActivityLog(
-          "حذف طلب",
-          `تم حذف الطلب: ${order.id}`
-        );
+    address:
+      typeof order?.address === "object"
+        ? getUserAddress({
+            address: order.address,
+          })
+        : order?.address ||
+          order?.customerAddress ||
+          "",
 
-      } catch (error) {
+    paymentMethod:
+      order?.paymentMethod ||
+      "",
 
-        console.error(error);
+    paymentStatus:
+      order?.paymentStatus ||
+      "pending",
 
-        alert(
-          "حدث خطأ أثناء حذف الطلب."
-        );
-      }
-    };
+    status:
+      order?.status ||
+      order?.orderStatus ||
+      "pending",
+
+    shippingCost:
+      Number(
+        order?.shippingCost ||
+        order?.shipping ||
+        0
+      ),
+  };
+
+  setEditOrderData(editData);
+
+  // ==========================================
+  // SAVE FOR CHECKOUT
+  // ==========================================
+
+  sessionStorage.setItem(
+    "editingOrder",
+    JSON.stringify({
+      ...editData,
+      orderId: order?.id || "",
+      orderNumber:
+        order?.orderNumber ||
+        "",
+      shippingZoneId:
+        order?.shippingZoneId ||
+        "",
+      shippingZoneName:
+        order?.shippingZoneName ||
+        "",
+    })
+  );
+
+  // ==========================================
+  // OPEN CHECKOUT
+  // ==========================================
+
+  navigate("/checkout");
+};
 
 
   // ==========================================================
@@ -2676,6 +2992,11 @@ const navigate = useNavigate();
           count:
             supportMessages.length,
         },
+        {
+  id: "store-menu",
+  icon: "🏪",
+  title: "واجهة المتجر",
+},
       ],
     },
 
@@ -4079,32 +4400,38 @@ const navigate = useNavigate();
                             <div
                               className="table-actions"
                             >
+<button
+  type="button"
+  className="edit-btn"
+  onClick={() =>
+    openOrderDetails(order)
+  }
+>
+  👁️ التفاصيل / تعديل
+</button>
 
-                              <button
-                                type="button"
-                                className="edit-btn"
-                                onClick={() =>
-                                  handleEdit(
-                                    product
-                                  )
-                                }
-                              >
-                                ✏️ تعديل
-                              </button>
+<button
+  type="button"
+  className="cancel-btn"
+  onClick={() =>
+    handleOrderStatusChange(
+      order.id,
+      "cancelled"
+    )
+  }
+>
+  ❌ إلغاء
+</button>
 
-
-                              <button
-                                type="button"
-                                className="delete-btn"
-                                onClick={() =>
-                                  handleDeleteProduct(
-                                    product
-                                  )
-                                }
-                              >
-                                🗑️ حذف
-                              </button>
-
+<button
+  type="button"
+  className="delete-btn"
+  onClick={() =>
+    deleteOrder(order)
+  }
+>
+  🗑️ حذف
+</button>
                             </div>
 
                           </td>
@@ -4125,551 +4452,945 @@ const navigate = useNavigate();
           </div>
 
         )}
-
 
 // ==========================================================
 // CATEGORIES
 // ==========================================================
 
-        {tab === "categories" && (
+{tab === "categories" && (
 
-          <div
-            className="table-container"
-          >
+  <div className="table-container">
 
-            <div
-              className="section-header"
+    {/* ======================================================
+        HEADER
+    ====================================================== */}
+
+    <div className="section-header">
+
+      <div>
+
+        <h2>
+          📂 إدارة الأقسام
+        </h2>
+
+        <p>
+          إجمالي الأقسام:
+          {" "}
+          <strong>
+            {categories.length}
+          </strong>
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        className="save-btn"
+        onClick={() => {
+
+          setEditingCategory(null);
+
+          setCategoryForm({
+            name: "",
+            description: "",
+            image: "",
+            categoryNumber: "",
+            whatsapp: "",
+            parentId: "",
+            active: true,
+
+            // 🎨 القيم الافتراضية
+            color: "#071a36",
+            cardSize: "medium",
+            sortOrder: 0,
+          });
+
+          setShowCategoryForm(true);
+          setTab("categories");
+
+        }}
+      >
+        ➕ إضافة قسم
+      </button>
+
+    </div>
+
+
+    {/* ======================================================
+        SEARCH
+    ====================================================== */}
+
+    <div className="accounts-search">
+
+      <input
+        type="search"
+        placeholder="🔎 ابحث عن قسم..."
+        value={categorySearch}
+        onChange={(event) =>
+          setCategorySearch(
+            event.target.value
+          )
+        }
+      />
+
+
+      {categorySearch && (
+
+        <button
+          type="button"
+          onClick={() =>
+            setCategorySearch("")
+          }
+        >
+          ✕
+        </button>
+
+      )}
+
+    </div>
+
+
+    {/* ======================================================
+        CATEGORY FORM
+    ====================================================== */}
+
+    {showCategoryForm && (
+
+      <form
+        className="admin-form"
+        onSubmit={
+          handleCategorySubmit
+        }
+      >
+
+        <h3>
+
+          {
+            editingCategory
+              ? "✏️ تعديل القسم"
+              : "➕ إضافة قسم جديد"
+          }
+
+        </h3>
+
+
+        <div className="form-grid">
+
+          {/* ==================================================
+              NAME
+          ================================================== */}
+
+          <label>
+
+            <span>
+              اسم القسم
+            </span>
+
+            <input
+              name="name"
+              value={
+                categoryForm.name
+              }
+              onChange={
+                handleCategoryChange
+              }
+              required
+            />
+
+          </label>
+
+
+          {/* ==================================================
+              CATEGORY NUMBER
+          ================================================== */}
+
+          <label>
+
+            <span>
+              رقم القسم
+            </span>
+
+            <input
+              name="categoryNumber"
+              value={
+                categoryForm.categoryNumber
+              }
+              onChange={
+                handleCategoryChange
+              }
+            />
+
+          </label>
+
+
+          {/* ==================================================
+              WHATSAPP
+          ================================================== */}
+
+          <label>
+
+            <span>
+              رقم واتساب القسم
+            </span>
+
+            <input
+              name="whatsapp"
+              value={
+                categoryForm.whatsapp
+              }
+              onChange={
+                handleCategoryChange
+              }
+              dir="ltr"
+            />
+
+          </label>
+
+
+          {/* ==================================================
+              PARENT CATEGORY
+          ================================================== */}
+
+          <label>
+
+            <span>
+              القسم الأب
+            </span>
+
+            <select
+              name="parentId"
+              value={
+                categoryForm.parentId
+              }
+              onChange={
+                handleCategoryChange
+              }
             >
 
-              <div>
-
-                <h2>
-                  📂 إدارة الأقسام
-                </h2>
-
-                <p>
-                  إجمالي الأقسام:
-                  {" "}
-                  <strong>
-                    {categories.length}
-                  </strong>
-                </p>
-
-              </div>
+              <option value="">
+                قسم رئيسي
+              </option>
 
 
-              <button
-                type="button"
-                className="save-btn"
-                onClick={() => {
+              {categories
+                .filter(
+                  (category) =>
+                    category.id !==
+                    editingCategory?.id
+                )
+                .map(
+                  (category) => (
 
-                  setEditingCategory(null);
-
-                  setCategoryForm({
-                    name: "",
-                    description: "",
-                    image: "",
-                    categoryNumber: "",
-                    whatsapp: "",
-                    parentId: "",
-                    active: true,
-                  });
-
-                  setShowCategoryForm(true);
-                  setTab("categories");
-                }}
-              >
-                ➕ إضافة قسم
-              </button>
-
-            </div>
-
-
-            <div
-              className="accounts-search"
-            >
-
-              <input
-                type="search"
-                placeholder="🔎 ابحث عن قسم..."
-                value={
-                  categorySearch
-                }
-                onChange={(event) =>
-                  setCategorySearch(
-                    event.target.value
-                  )
-                }
-              />
-
-
-              {categorySearch && (
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCategorySearch("")
-                  }
-                >
-                  ✕
-                </button>
-
-              )}
-
-            </div>
-
-
-            {showCategoryForm && (
-
-              <form
-                className="admin-form"
-                onSubmit={
-                  handleCategorySubmit
-                }
-              >
-
-                <h3>
-
-                  {
-                    editingCategory
-                      ? "✏️ تعديل القسم"
-                      : "➕ إضافة قسم جديد"
-                  }
-
-                </h3>
-
-
-                <div
-                  className="form-grid"
-                >
-
-                  <label>
-
-                    <span>
-                      اسم القسم
-                    </span>
-
-                    <input
-                      name="name"
+                    <option
+                      key={
+                        category.id
+                      }
                       value={
-                        categoryForm.name
-                      }
-                      onChange={
-                        handleCategoryChange
-                      }
-                      required
-                    />
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      رقم القسم
-                    </span>
-
-                    <input
-                      name="categoryNumber"
-                      value={
-                        categoryForm.categoryNumber
-                      }
-                      onChange={
-                        handleCategoryChange
-                      }
-                    />
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      رقم واتساب القسم
-                    </span>
-
-                    <input
-                      name="whatsapp"
-                      value={
-                        categoryForm.whatsapp
-                      }
-                      onChange={
-                        handleCategoryChange
-                      }
-                      dir="ltr"
-                    />
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      القسم الأب
-                    </span>
-
-
-                    <select
-                      name="parentId"
-                      value={
-                        categoryForm.parentId
-                      }
-                      onChange={
-                        handleCategoryChange
+                        category.id
                       }
                     >
 
-                      <option value="">
-                        قسم رئيسي
-                      </option>
-
-
-                      {categories
-                        .filter(
-                          (category) =>
-                            category.id !==
-                            editingCategory?.id
+                      {
+                        getCategoryFullName(
+                          category.id
                         )
-                        .map(
-                          (category) => (
-
-                            <option
-                              key={
-                                category.id
-                              }
-                              value={
-                                category.id
-                              }
-                            >
-
-                              {
-                                getCategoryFullName(
-                                  category.id
-                                )
-                              }
-
-                            </option>
-
-                          )
-                        )}
-
-                    </select>
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      رابط الصورة
-                    </span>
-
-                    <input
-                      name="image"
-                      value={
-                        categoryForm.image
                       }
-                      onChange={
-                        handleCategoryChange
-                      }
-                      dir="ltr"
-                    />
 
-                  </label>
+                    </option>
 
+                  )
+                )}
 
-                  <label
-                    className="form-group-full"
-                  >
+            </select>
 
-                    <span>
-                      وصف القسم
-                    </span>
-
-                    <textarea
-                      name="description"
-                      rows="3"
-                      value={
-                        categoryForm.description
-                      }
-                      onChange={
-                        handleCategoryChange
-                      }
-                    />
-
-                  </label>
-
-                </div>
+          </label>
 
 
-                <div
-                  className="admin-checkboxes"
-                >
+          {/* ==================================================
+              IMAGE
+          ================================================== */}
 
-                  <label>
+          <label>
 
-                    <input
-                      type="checkbox"
-                      name="active"
-                      checked={
-                        categoryForm.active
-                      }
-                      onChange={
-                        handleCategoryChange
-                      }
-                    />
+            <span>
+              رابط صورة القسم
+            </span>
 
-                    ✅ القسم نشط
+            <input
+              name="image"
+              value={
+                categoryForm.image
+              }
+              onChange={
+                handleCategoryChange
+              }
+              dir="ltr"
+              placeholder="https://..."
+            />
 
-                  </label>
-
-                </div>
-
-
-                <div
-                  className="form-actions"
-                >
-
-                  <button
-                    type="submit"
-                    className="save-btn"
-                    disabled={
-                      actionLoading
-                    }
-                  >
-                    {
-                      actionLoading
-                        ? "⏳ جاري الحفظ..."
-                        : "💾 حفظ القسم"
-                    }
-                  </button>
+          </label>
 
 
-                  <button
-                    type="button"
-                    className="cancel-btn"
-                    onClick={
-                      resetCategoryForm
-                    }
-                  >
-                    إلغاء
-                  </button>
+          {/* ==================================================
+              COLOR
+          ================================================== */}
 
-                </div>
+          <label>
 
-              </form>
-            )}
-
+            <span>
+              🎨 لون القسم
+            </span>
 
             <div
-              className="table-scroll"
+              style={{
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+              }}
             >
 
-              <table
-                className="admin-table"
-              >
-
-                <thead>
-
-                  <tr>
-                    <th>الصورة</th>
-                    <th>القسم</th>
-                    <th>الرقم</th>
-                    <th>القسم الأب</th>
-                    <th>واتساب</th>
-                    <th>الحالة</th>
-                    <th>إجراءات</th>
-                  </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                  {filteredCategories.length ===
-                    0 ? (
-
-                    <tr>
-
-                      <td colSpan="7">
-                        لا توجد أقسام.
-                      </td>
-
-                    </tr>
-
-                  ) : (
-
-                    filteredCategories.map(
-                      (category) => (
-
-                        <tr
-                          key={
-                            category.id
-                          }
-                        >
-
-                          <td>
-
-                            {category.image ? (
-
-                              <img
-                                src={
-                                  category.image
-                                }
-                                className="table-img"
-                                alt={
-                                  category.name
-                                }
-                              />
-
-                            ) : (
-
-                              <div className="table-img-placeholder">
-                                📂
-                              </div>
-
-                            )}
-
-                          </td>
+              <input
+                type="color"
+                name="color"
+                value={
+                  categoryForm.color ||
+                  "#071a36"
+                }
+                onChange={
+                  handleCategoryChange
+                }
+                style={{
+                  width: "55px",
+                  height: "42px",
+                  padding: "3px",
+                  cursor: "pointer",
+                }}
+              />
 
 
-                          <td>
-
-                            <strong>
-
-                              {
-                                category.parentId
-                                  ? "↳ "
-                                  : "📂 "
-                              }
-
-                              {
-                                category.name
-                              }
-
-                            </strong>
-
-                          </td>
-
-
-                          <td>
-
-                            {
-                              category.categoryNumber ||
-                              "—"
-                            }
-
-                          </td>
-
-
-                          <td>
-
-                            {
-                              categoryMap[
-                                category.parentId
-                              ]?.name ||
-                              "قسم رئيسي"
-                            }
-
-                          </td>
-
-
-                          <td dir="ltr">
-
-                            {
-                              category.whatsapp ||
-                              "—"
-                            }
-
-                          </td>
-
-
-                          <td>
-
-                            {
-                              category.active !==
-                              false
-
-                                ? "🟢 نشط"
-
-                                : "🔴 متوقف"
-                            }
-
-                          </td>
-
-
-                          <td>
-
-                            <div
-                              className="table-actions"
-                            >
-
-                              <button
-                                type="button"
-                                className="edit-btn"
-                                onClick={() =>
-                                  handleEditCategory(
-                                    category
-                                  )
-                                }
-                              >
-                                ✏️ تعديل
-                              </button>
-
-
-                              <button
-                                type="button"
-                                className="delete-btn"
-                                onClick={() =>
-                                  handleDeleteCategory(
-                                    category
-                                  )
-                                }
-                              >
-                                🗑️ حذف
-                              </button>
-
-                            </div>
-
-                          </td>
-
-                        </tr>
-
-                      )
-                    )
-
-                  )}
-
-                </tbody>
-
-              </table>
+              <input
+                type="text"
+                name="color"
+                value={
+                  categoryForm.color ||
+                  "#071a36"
+                }
+                onChange={
+                  handleCategoryChange
+                }
+                dir="ltr"
+                placeholder="#071a36"
+              />
 
             </div>
 
+          </label>
 
-            {categories.length >
-              0 && (
 
-              <div
-                className="category-tree"
-              >
+          {/* ==================================================
+              CARD SIZE
+          ================================================== */}
 
-                {
-                  renderCategoryTree(
-                    categories.filter(
-                      (category) =>
-                        !category.parentId
-                    )
-                  )
-                }
+          <label>
+
+            <span>
+              📏 حجم بطاقة القسم
+            </span>
+
+            <select
+              name="cardSize"
+              value={
+                categoryForm.cardSize ||
+                "medium"
+              }
+              onChange={
+                handleCategoryChange
+              }
+            >
+
+              <option value="small">
+                صغير
+              </option>
+
+              <option value="medium">
+                متوسط
+              </option>
+
+              <option value="large">
+                كبير
+              </option>
+
+            </select>
+
+          </label>
+
+
+          {/* ==================================================
+              SORT ORDER
+          ================================================== */}
+
+          <label>
+
+            <span>
+              🔢 ترتيب القسم
+            </span>
+
+            <input
+              type="number"
+              name="sortOrder"
+              min="0"
+              value={
+                categoryForm.sortOrder ??
+                0
+              }
+              onChange={
+                handleCategoryChange
+              }
+            />
+
+          </label>
+
+
+          {/* ==================================================
+              DESCRIPTION
+          ================================================== */}
+
+          <label className="form-group-full">
+
+            <span>
+              وصف القسم
+            </span>
+
+            <textarea
+              name="description"
+              rows="3"
+              value={
+                categoryForm.description
+              }
+              onChange={
+                handleCategoryChange
+              }
+            />
+
+          </label>
+
+        </div>
+
+
+        {/* ======================================================
+            ACTIVE
+        ====================================================== */}
+
+        <div className="admin-checkboxes">
+
+          <label>
+
+            <input
+              type="checkbox"
+              name="active"
+              checked={
+                categoryForm.active
+              }
+              onChange={
+                handleCategoryChange
+              }
+            />
+
+            ✅ القسم نشط
+
+          </label>
+
+        </div>
+
+
+        {/* ======================================================
+            LIVE PREVIEW
+        ====================================================== */}
+
+        <div
+          className="category-live-preview"
+        >
+
+          <h3>
+            👁️ معاينة القسم
+          </h3>
+
+
+          <div className="category-preview-area">
+
+            <div
+              className={
+                `category-preview-card ${
+                  categoryForm.cardSize ||
+                  "medium"
+                }`
+              }
+              style={{
+                "--category-color":
+                  categoryForm.color ||
+                  "#071a36",
+              }}
+            >
+
+              {/* IMAGE */}
+
+              <div className="category-preview-image">
+
+                {categoryForm.image ? (
+
+                  <img
+                    src={
+                      categoryForm.image
+                    }
+                    alt={
+                      categoryForm.name ||
+                      "معاينة القسم"
+                    }
+                    onError={(
+                      event
+                    ) => {
+                      event.currentTarget.style.display =
+                        "none";
+                    }}
+                  />
+
+                ) : (
+
+                  <div className="category-preview-icon">
+                    📂
+                  </div>
+
+                )}
 
               </div>
 
-            )}
+
+              {/* NAME */}
+
+              <div className="category-preview-content">
+
+                <h4>
+
+                  {
+                    categoryForm.name ||
+                    "اسم القسم"
+                  }
+
+                </h4>
+
+
+                {categoryForm.description && (
+
+                  <p>
+                    {
+                      categoryForm.description
+                    }
+                  </p>
+
+                )}
+
+              </div>
+
+            </div>
 
           </div>
 
-        )}
+        </div>
+
+
+        {/* ======================================================
+            ACTIONS
+        ====================================================== */}
+
+        <div className="form-actions">
+
+          <button
+            type="submit"
+            className="save-btn"
+            disabled={
+              actionLoading
+            }
+          >
+
+            {
+              actionLoading
+                ? "⏳ جاري الحفظ..."
+                : "💾 حفظ القسم"
+            }
+
+          </button>
+
+
+          <button
+            type="button"
+            className="cancel-btn"
+            onClick={
+              resetCategoryForm
+            }
+          >
+            إلغاء
+          </button>
+
+        </div>
+
+      </form>
+
+    )}
+
+
+    {/* ======================================================
+        CATEGORIES TABLE
+    ====================================================== */}
+
+    <div className="table-scroll">
+
+      <table className="admin-table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              الصورة
+            </th>
+
+            <th>
+              القسم
+            </th>
+
+            <th>
+              اللون
+            </th>
+
+            <th>
+              الحجم
+            </th>
+
+            <th>
+              الترتيب
+            </th>
+
+            <th>
+              الرقم
+            </th>
+
+            <th>
+              القسم الأب
+            </th>
+
+            <th>
+              واتساب
+            </th>
+
+            <th>
+              الحالة
+            </th>
+
+            <th>
+              إجراءات
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          {filteredCategories.length === 0 ? (
+
+            <tr>
+
+              <td colSpan="10">
+                لا توجد أقسام.
+              </td>
+
+            </tr>
+
+          ) : (
+
+            filteredCategories
+              .slice()
+              .sort(
+                (a, b) =>
+                  Number(
+                    a.sortOrder || 0
+                  ) -
+                  Number(
+                    b.sortOrder || 0
+                  )
+              )
+              .map(
+                (category) => (
+
+                  <tr
+                    key={
+                      category.id
+                    }
+                  >
+
+                    {/* IMAGE */}
+
+                    <td>
+
+                      {category.image ? (
+
+                        <img
+                          src={
+                            category.image
+                          }
+                          className="table-img"
+                          alt={
+                            category.name
+                          }
+                        />
+
+                      ) : (
+
+                        <div className="table-img-placeholder">
+                          📂
+                        </div>
+
+                      )}
+
+                    </td>
+
+
+                    {/* NAME */}
+
+                    <td>
+
+                      <strong>
+
+                        {
+                          category.parentId
+                            ? "↳ "
+                            : "📂 "
+                        }
+
+                        {
+                          category.name
+                        }
+
+                      </strong>
+
+                    </td>
+
+
+                    {/* COLOR */}
+
+                    <td>
+
+                      <div
+                        style={{
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          gap:
+                            "7px",
+                        }}
+                      >
+
+                        <span
+                          style={{
+                            width:
+                              "25px",
+                            height:
+                              "25px",
+                            borderRadius:
+                              "6px",
+                            background:
+                              category.color ||
+                              "#071a36",
+                            border:
+                              "1px solid #ddd",
+                            display:
+                              "inline-block",
+                          }}
+                        />
+
+                        <small
+                          dir="ltr"
+                        >
+                          {
+                            category.color ||
+                            "#071a36"
+                          }
+                        </small>
+
+                      </div>
+
+                    </td>
+
+
+                    {/* SIZE */}
+
+                    <td>
+
+                      {
+                        category.cardSize ===
+                        "small"
+                          ? "صغير"
+                          : category.cardSize ===
+                            "large"
+                          ? "كبير"
+                          : "متوسط"
+                      }
+
+                    </td>
+
+
+                    {/* SORT */}
+
+                    <td>
+
+                      {
+                        category.sortOrder ||
+                        0
+                      }
+
+                    </td>
+
+
+                    {/* NUMBER */}
+
+                    <td>
+
+                      {
+                        category.categoryNumber ||
+                        "—"
+                      }
+
+                    </td>
+
+
+                    {/* PARENT */}
+
+                    <td>
+
+                      {
+                        categoryMap[
+                          category.parentId
+                        ]?.name ||
+                        "قسم رئيسي"
+                      }
+
+                    </td>
+
+
+                    {/* WHATSAPP */}
+
+                    <td dir="ltr">
+
+                      {
+                        category.whatsapp ||
+                        "—"
+                      }
+
+                    </td>
+
+
+                    {/* STATUS */}
+
+                    <td>
+
+                      {
+                        category.active !==
+                        false
+
+                          ? "🟢 نشط"
+
+                          : "🔴 متوقف"
+                      }
+
+                    </td>
+
+
+                    {/* ACTIONS */}
+
+                    <td>
+
+                      <div className="table-actions">
+
+                        <button
+                          type="button"
+                          className="edit-btn"
+                          onClick={() =>
+                            handleEditCategory(
+                              category
+                            )
+                          }
+                        >
+                          ✏️ تعديل
+                        </button>
+
+
+                        <button
+                          type="button"
+                          className="delete-btn"
+                          onClick={() =>
+                            handleDeleteCategory(
+                              category
+                            )
+                          }
+                        >
+                          🗑️ حذف
+                        </button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                )
+              )
+
+          )}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    {/* ======================================================
+        CATEGORY TREE
+    ====================================================== */}
+
+    {categories.length > 0 && (
+
+      <div className="category-tree">
+
+        {
+          renderCategoryTree(
+            categories
+              .filter(
+                (category) =>
+                  !category.parentId
+              )
+              .sort(
+                (a, b) =>
+                  Number(
+                    a.sortOrder || 0
+                  ) -
+                  Number(
+                    b.sortOrder || 0
+                  )
+              )
+          )
+        }
+
+      </div>
+
+    )}
+
+  </div>
+
+)}
                 {/* ====================================================
             ORDERS
         ==================================================== */}
@@ -5100,291 +5821,766 @@ const navigate = useNavigate();
 
         )}
 
+{/* ====================================================
+    ORDER DETAILS
+==================================================== */}
 
-        {/* ====================================================
-            ORDER DETAILS
-        ==================================================== */}
+{showOrderDetails &&
+  selectedOrder && (
 
-        {showOrderDetails &&
-          selectedOrder && (
+  <div
+    className="order-details-overlay"
+    onClick={(event) => {
 
-          <div
-            className="order-details-overlay"
-            onClick={(event) => {
+      if (
+        event.target ===
+        event.currentTarget
+      ) {
+        closeOrderDetails();
+      }
 
-              if (
-                event.target ===
-                event.currentTarget
-              ) {
-                closeOrderDetails();
-              }
+    }}
+  >
 
-            }}
-          >
+    <div
+      className="order-details-modal"
+    >
 
-            <div
-              className="order-details-modal"
+      {/* ================================================
+          CLOSE
+      ================================================ */}
+
+      <button
+        type="button"
+        className="modal-close"
+        onClick={
+          closeOrderDetails
+        }
+      >
+        ✕
+      </button>
+
+
+      {/* ================================================
+          TITLE
+      ================================================ */}
+
+      <h2>
+        🧾 تفاصيل الطلب
+      </h2>
+
+
+      {/* ================================================
+          ORDER INFO
+      ================================================ */}
+<div
+  className="order-detail-grid"
+>
+
+  {/* رقم الطلب */}
+  <div>
+    <span>
+      رقم الطلب
+    </span>
+
+    <strong dir="ltr">
+      #
+      {
+        selectedOrder.orderNumber ||
+        selectedOrder.id ||
+        "—"
+      }
+    </strong>
+  </div>
+
+
+  {/* اسم العميل */}
+  <div>
+    <span>
+      اسم العميل
+    </span>
+
+    {editingOrder ? (
+
+      <input
+        type="text"
+        value={
+          editOrderData.customerName
+        }
+        onChange={(event) =>
+          setEditOrderData({
+            ...editOrderData,
+            customerName:
+              event.target.value,
+          })
+        }
+      />
+
+    ) : (
+
+      <strong>
+        {
+          selectedOrder.customerName ||
+          selectedOrder.name ||
+          "—"
+        }
+      </strong>
+
+    )}
+  </div>
+
+
+  {/* الهاتف */}
+  <div>
+    <span>
+      الهاتف
+    </span>
+
+    {editingOrder ? (
+
+      <input
+        type="tel"
+        dir="ltr"
+        value={
+          editOrderData.phone
+        }
+        onChange={(event) =>
+          setEditOrderData({
+            ...editOrderData,
+            phone:
+              event.target.value,
+          })
+        }
+      />
+
+    ) : (
+
+      <strong dir="ltr">
+        {
+          selectedOrder.phone ||
+          selectedOrder.customerPhone ||
+          "—"
+        }
+      </strong>
+
+    )}
+  </div>
+
+
+  {/* البريد الإلكتروني */}
+  <div>
+    <span>
+      البريد الإلكتروني
+    </span>
+
+    <strong>
+      {
+        selectedOrder.email ||
+        selectedOrder.customerEmail ||
+        "—"
+      }
+    </strong>
+  </div>
+
+
+  {/* العنوان */}
+  <div>
+    <span>
+      العنوان
+    </span>
+
+    {editingOrder ? (
+
+      <textarea
+        rows="3"
+        value={
+          editOrderData.address
+        }
+        onChange={(event) =>
+          setEditOrderData({
+            ...editOrderData,
+            address:
+              event.target.value,
+          })
+        }
+      />
+
+    ) : (
+
+      <strong>
+        {
+          typeof selectedOrder.address ===
+          "object"
+
+            ? getUserAddress({
+                address:
+                  selectedOrder.address,
+              })
+
+            : selectedOrder.address ||
+              selectedOrder.customerAddress ||
+              "—"
+        }
+      </strong>
+
+    )}
+  </div>
+
+
+  {/* التاريخ */}
+  <div>
+    <span>
+      التاريخ
+    </span>
+
+    <strong>
+      {
+        formatDate(
+          selectedOrder.createdAt
+        )
+      }
+    </strong>
+  </div>
+
+
+  {/* طريقة الدفع */}
+  <div>
+    <span>
+      طريقة الدفع
+    </span>
+
+    {editingOrder ? (
+
+      <select
+        value={
+          editOrderData.paymentMethod
+        }
+        onChange={(event) =>
+          setEditOrderData({
+            ...editOrderData,
+            paymentMethod:
+              event.target.value,
+          })
+        }
+      >
+
+        <option value="">
+          اختر طريقة الدفع
+        </option>
+
+        {paymentMethods.map(
+          (method) => (
+
+            <option
+              key={method.id}
+              value={method.id}
             >
+              {
+                method.title ||
+                method.name ||
+                "طريقة دفع"
+              }
+            </option>
 
-              <button
-                type="button"
-                className="modal-close"
-                onClick={
-                  closeOrderDetails
-                }
-              >
-                ✕
-              </button>
+          )
+        )}
 
+      </select>
 
-              <h2>
-                🧾 تفاصيل الطلب
-              </h2>
+    ) : (
 
+      <strong>
+        {
+          getPaymentMethodText(
+            selectedOrder.paymentMethod
+          )
+        }
+      </strong>
 
-              <div
-                className="order-detail-grid"
-              >
-
-                <div>
-                  <span>
-                    رقم الطلب
-                  </span>
-
-                  <strong dir="ltr">
-                    {
-                      selectedOrder.orderNumber ||
-                      selectedOrder.id ||
-                      "—"
-                    }
-                  </strong>
-                </div>
+    )}
+  </div>
 
 
-                <div>
-                  <span>
-                    اسم العميل
-                  </span>
+  {/* حالة الطلب */}
+  <div>
+    <span>
+      حالة الطلب
+    </span>
 
-                  <strong>
-                    {
-                      selectedOrder.customerName ||
-                      selectedOrder.name ||
-                      "—"
-                    }
-                  </strong>
-                </div>
+    {editingOrder ? (
 
+      <select
+        value={
+          editOrderData.status
+        }
+        onChange={(event) =>
+          setEditOrderData({
+            ...editOrderData,
+            status:
+              event.target.value,
+          })
+        }
+      >
 
-                <div>
-                  <span>
-                    الهاتف
-                  </span>
+        <option value="pending">
+          قيد الانتظار
+        </option>
 
-                  <strong dir="ltr">
-                    {
-                      selectedOrder.phone ||
-                      selectedOrder.customerPhone ||
-                      "—"
-                    }
-                  </strong>
-                </div>
+        <option value="confirmed">
+          تم التأكيد
+        </option>
 
+        <option value="processing">
+          جاري التجهيز
+        </option>
 
-                <div>
-                  <span>
-                    العنوان
-                  </span>
+        <option value="shipped">
+          تم الشحن
+        </option>
 
-                  <strong>
-                    {
-                      typeof selectedOrder.address ===
-                      "object"
+        <option value="delivered">
+          تم التسليم
+        </option>
 
-                        ? getUserAddress({
-                            address:
-                              selectedOrder.address,
-                          })
+        <option value="completed">
+          مكتمل
+        </option>
 
-                        : selectedOrder.address ||
-                          selectedOrder.customerAddress ||
-                          "—"
-                    }
-                  </strong>
-                </div>
+        <option value="cancelled">
+          ملغي
+        </option>
 
+      </select>
 
-                <div>
-                  <span>
-                    التاريخ
-                  </span>
+    ) : (
 
-                  <strong>
-                    {
-                      formatDate(
-                        selectedOrder.createdAt
-                      )
-                    }
-                  </strong>
-                </div>
+      <strong>
+        {
+          getOrderStatusText(
+            selectedOrder.status ||
+            selectedOrder.orderStatus ||
+            "pending"
+          )
+        }
+      </strong>
 
-
-                <div>
-                  <span>
-                    طريقة الدفع
-                  </span>
-
-                  <strong>
-                    {
-                      getPaymentMethodText(
-                        selectedOrder.paymentMethod
-                      )
-                    }
-                  </strong>
-                </div>
+    )}
+  </div>
 
 
-                <div>
-                  <span>
-                    حالة الطلب
-                  </span>
+  {/* حالة الدفع */}
+  <div>
+    <span>
+      حالة الدفع
+    </span>
 
-                  <strong>
-                    {
-                      getOrderStatusText(
-                        selectedOrder.status ||
-                        selectedOrder.orderStatus ||
-                        "pending"
-                      )
-                    }
-                  </strong>
-                </div>
+    {editingOrder ? (
+
+      <select
+        value={
+          editOrderData.paymentStatus
+        }
+        onChange={(event) =>
+          setEditOrderData({
+            ...editOrderData,
+            paymentStatus:
+              event.target.value,
+          })
+        }
+      >
+
+        <option value="pending">
+          قيد الانتظار
+        </option>
+
+        <option value="paid">
+          مدفوع
+        </option>
+
+        <option value="failed">
+          فشل الدفع
+        </option>
+
+        <option value="refunded">
+          مسترد
+        </option>
+
+      </select>
+
+    ) : (
+
+      <strong
+        className={getPaymentStatusClass(
+          selectedOrder.paymentStatus ||
+          "pending"
+        )}
+      >
+        {
+          getPaymentStatusText(
+            selectedOrder.paymentStatus ||
+            "pending"
+          )
+        }
+      </strong>
+
+    )}
+  </div>
 
 
-                <div>
-                  <span>
-                    حالة الدفع
-                  </span>
+  {/* تكلفة الشحن */}
+  <div>
+    <span>
+      تكلفة الشحن
+    </span>
 
-                  <strong
-                    className={getPaymentStatusClass(
-                      selectedOrder.paymentStatus ||
-                      "pending"
-                    )}
-                  >
-                    {
-                      getPaymentStatusText(
-                        selectedOrder.paymentStatus ||
-                        "pending"
-                      )
-                    }
-                  </strong>
-                </div>
+    {editingOrder ? (
 
-              </div>
+      <input
+        type="number"
+        min="0"
+        value={
+          editOrderData.shippingCost
+        }
+        onChange={(event) =>
+          setEditOrderData({
+            ...editOrderData,
+            shippingCost:
+              event.target.value,
+          })
+        }
+      />
+
+    ) : (
+
+      <strong>
+        {
+          Number(
+            selectedOrder.shippingCost ||
+            selectedOrder.shipping ||
+            0
+          ).toLocaleString(
+            "ar-EG"
+          )
+        }{" "}
+        ج.م
+      </strong>
+
+    )}
+  </div>
+
+</div>
+
+      {/* ================================================
+          PRODUCTS
+      ================================================ */}
+
+      <div
+        className="order-products-details"
+      >
+
+        <h3>
+          📦 المنتجات
+        </h3>
 
 
-              <div
-                className="order-products-details"
-              >
+        {Array.isArray(
+          selectedOrder.products
+        ) &&
+        selectedOrder.products.length ? (
 
-                <h3>
-                  📦 المنتجات
-                </h3>
-
-
-                {Array.isArray(
-                  selectedOrder.products
-                ) &&
-                selectedOrder.products.length ? (
-
-                  selectedOrder.products.map(
-                    (item, index) => (
-
-                      <div
-                        className="order-product-row"
-                        key={index}
-                      >
-
-                        <span>
-                          {
-                            item?.title ||
-                            item?.name ||
-                            item?.productName ||
-                            "منتج"
-                          }
-                        </span>
-
-                        <span>
-                          ×{" "}
-                          {
-                            Number(
-                              item?.quantity ||
-                              item?.qty ||
-                              1
-                            )
-                          }
-                        </span>
-
-                        <strong>
-                          {
-                            Number(
-                              item?.price ||
-                              0
-                            ).toLocaleString(
-                              "ar-EG"
-                            )
-                          }
-                          {" "}
-                          ج.م
-                        </strong>
-
-                      </div>
-
-                    )
-                  )
-
-                ) : (
-
-                  <p>
-                    لا توجد منتجات مسجلة.
-                  </p>
-
-                )}
-
-              </div>
-
+          selectedOrder.products.map(
+            (item, index) => (
 
               <div
-                className="order-total-box"
+                className="order-product-row"
+                key={index}
               >
+
+                <div>
+
+                  <strong>
+                    {
+                      item?.title ||
+                      item?.name ||
+                      item?.productName ||
+                      "منتج"
+                    }
+                  </strong>
+
+
+                  {(item?.variantName ||
+                    item?.selectedVariant?.name) && (
+
+                    <small
+                      style={{
+                        display:
+                          "block",
+                        marginTop:
+                          "4px",
+                      }}
+                    >
+
+                      المتغير:{" "}
+
+                      {
+                        item?.variantName ||
+                        item?.selectedVariant?.name
+                      }
+
+                    </small>
+
+                  )}
+
+                </div>
+
 
                 <span>
-                  الإجمالي
-                </span>
-
-                <strong>
+                  ×{" "}
                   {
                     Number(
-                      selectedOrder.total ||
-                      selectedOrder.grandTotal ||
-                      selectedOrder.amount ||
+                      item?.quantity ||
+                      item?.qty ||
+                      1
+                    )
+                  }
+                </span>
+
+
+                <strong>
+
+                  {
+                    Number(
+                      item?.price ||
                       0
                     ).toLocaleString(
                       "ar-EG"
                     )
                   }
+
                   {" "}
                   ج.م
+
                 </strong>
 
               </div>
 
-            </div>
+            )
 
-          </div>
+          )
+
+        ) : (
+
+          <p>
+            لا توجد منتجات مسجلة.
+          </p>
+
         )}
 
+      </div>
+
+
+      {/* ================================================
+          TOTALS
+      ================================================ */}
+
+      <div
+        className="order-total-box"
+      >
+
+        <div>
+
+          <span>
+            إجمالي المنتجات
+          </span>
+
+          <strong>
+            {
+              Number(
+                selectedOrder.subtotal ||
+                0
+              ).toLocaleString(
+                "ar-EG"
+              )
+            }
+
+            {" "}
+            ج.م
+          </strong>
+
+        </div>
+
+
+        {Number(
+          selectedOrder.discount ||
+          0
+        ) > 0 && (
+
+          <div>
+
+            <span>
+              الخصم
+            </span>
+
+            <strong>
+              -
+              {" "}
+              {
+                Number(
+                  selectedOrder.discount ||
+                  0
+                ).toLocaleString(
+                  "ar-EG"
+                )
+              }
+
+              {" "}
+              ج.م
+            </strong>
+
+          </div>
+
+        )}
+
+
+        {Number(
+          selectedOrder.shipping ||
+          selectedOrder.shippingCost ||
+          0
+        ) > 0 && (
+
+          <div>
+
+            <span>
+              الشحن
+            </span>
+
+            <strong>
+              {
+                Number(
+                  selectedOrder.shipping ||
+                  selectedOrder.shippingCost ||
+                  0
+                ).toLocaleString(
+                  "ar-EG"
+                )
+              }
+
+              {" "}
+              ج.م
+            </strong>
+
+          </div>
+
+        )}
+
+
+        <div>
+
+          <span>
+            الإجمالي النهائي
+          </span>
+
+          <strong>
+
+            {
+              Number(
+                selectedOrder.total ||
+                selectedOrder.grandTotal ||
+                selectedOrder.amount ||
+                0
+              ).toLocaleString(
+                "ar-EG"
+              )
+            }
+
+            {" "}
+            ج.م
+
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      {/* ================================================
+          ACTIONS
+      ================================================ */}
+
+      <div
+        className="order-details-actions"
+      >
+{/* ==========================================
+    EDIT
+========================================== */}
+
+<button
+  type="button"
+  className="edit-btn"
+  onClick={() =>
+    startEditOrder(selectedOrder)
+  }
+>
+  ✏️ تعديل الطلب
+</button>
+
+        {/* ==========================================
+            CANCEL
+        ========================================== */}
+
+        <button
+          type="button"
+          className="cancel-btn"
+          onClick={async () => {
+
+            if (
+              !window.confirm(
+                "هل أنت متأكد من إلغاء هذا الطلب؟"
+              )
+            ) {
+              return;
+            }
+
+            await handleOrderStatusChange(
+              selectedOrder.id,
+              "cancelled"
+            );
+
+            setSelectedOrder({
+              ...selectedOrder,
+              status:
+                "cancelled",
+              orderStatus:
+                "cancelled",
+            });
+
+          }}
+        >
+          ❌ إلغاء الطلب
+        </button>
+
+
+        {/* ==========================================
+            BACK
+        ========================================== */}
+
+        <button
+          type="button"
+          className="back-btn"
+          onClick={
+            closeOrderDetails
+          }
+        >
+          🔙 العودة للطلبات
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
 
         {/* ====================================================
             USERS
@@ -7166,25 +8362,55 @@ const navigate = useNavigate();
 
                             </td>
 
+<td>
 
-                            <td>
+  <strong>
+    {
+      Number(
+        order.total ||
+        order.grandTotal ||
+        order.amount ||
+        0
+      ).toLocaleString(
+        "ar-EG"
+      )
+    }{" "}
+    ج.م
+  </strong>
 
-                              <strong>
-                                {
-                                  Number(
-                                    order.total ||
-                                    order.grandTotal ||
-                                    order.amount ||
-                                    0
-                                  ).toLocaleString(
-                                    "ar-EG"
-                                  )
-                                }{" "}
-                                ج.م
-                              </strong>
+</td>
 
-                            </td>
+{/* ==============================================
+    ACTIONS
+================================================ */}
 
+<td>
+
+  <div className="order-actions">
+
+    <button
+      type="button"
+      className="edit-order-btn"
+      onClick={() =>
+        handleEditOrder(order)
+      }
+    >
+      ✏️ تعديل
+    </button>
+
+    <button
+      type="button"
+      className="cancel-order-btn"
+      onClick={() =>
+        handleCancelOrder(order)
+      }
+    >
+      ❌ إلغاء
+    </button>
+
+  </div>
+
+</td>
                           </tr>
 
                         );

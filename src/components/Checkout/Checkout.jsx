@@ -34,14 +34,9 @@ function Checkout({
   // STATES
   // ==================================================
 
-  const [name, setName] =
-    useState("");
-
-  const [phone, setPhone] =
-    useState("");
-
-  const [address, setAddress] =
-    useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
 
   const [paymentMethod, setPaymentMethod] =
     useState("");
@@ -91,9 +86,94 @@ function Checkout({
   const [couponMessage, setCouponMessage] =
     useState("");
 
+  // ==================================================
+  // REVIEW
+  // ==================================================
+
+  const [showReview, setShowReview] =
+    useState(false);
+
+  const [reviewData, setReviewData] =
+    useState(null);
+
 
   // ==================================================
-  // GET CURRENT USER
+  // RESTORE CART
+  // ==================================================
+
+  useEffect(() => {
+
+    if (
+      Array.isArray(cart) &&
+      cart.length > 0
+    ) {
+      return;
+    }
+
+    try {
+
+      const savedCart =
+        localStorage.getItem("cart");
+
+      if (!savedCart) {
+        return;
+      }
+
+      const parsedCart =
+        JSON.parse(savedCart);
+
+      if (
+        !Array.isArray(parsedCart) ||
+        parsedCart.length === 0
+      ) {
+        return;
+      }
+
+      const preparedCart =
+        parsedCart.map((item) => ({
+
+          ...item,
+
+          id:
+            item.id ||
+            item.productId ||
+            item._id,
+
+          productId:
+            item.productId ||
+            item.id ||
+            item._id,
+
+          quantity:
+            Math.max(
+              1,
+              Number(item.quantity || 1)
+            ),
+
+          cartId:
+            item.cartId ||
+            item.id ||
+            item.productId ||
+            item._id,
+
+        }));
+
+      setCart(preparedCart);
+
+    } catch (error) {
+
+      console.error(
+        "❌ Restore Cart Error:",
+        error
+      );
+
+    }
+
+  }, [cart, setCart]);
+
+
+  // ==================================================
+  // CURRENT USER
   // ==================================================
 
   useEffect(() => {
@@ -123,53 +203,49 @@ function Checkout({
 
   useEffect(() => {
 
-    const loadCategories = async () => {
+    const loadCategories =
+      async () => {
 
-      try {
+        try {
 
-        setCategoriesLoading(true);
+          setCategoriesLoading(true);
 
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              "categories"
-            )
+          const snapshot =
+            await getDocs(
+              collection(
+                db,
+                "categories"
+              )
+            );
+
+          const loadedCategories =
+            snapshot.docs.map(
+              (item) => ({
+                id: item.id,
+                ...item.data(),
+              })
+            );
+
+          setCategories(
+            loadedCategories
           );
 
-        const loadedCategories =
-          snapshot.docs.map(
-            (item) => ({
-              id: item.id,
-              ...item.data(),
-            })
+        } catch (error) {
+
+          console.error(
+            "❌ خطأ تحميل الأقسام:",
+            error
           );
 
-        console.log(
-          "✅ تم تحميل الأقسام:",
-          loadedCategories
-        );
+          setCategories([]);
 
-        setCategories(
-          loadedCategories
-        );
+        } finally {
 
-      } catch (error) {
+          setCategoriesLoading(false);
 
-        console.error(
-          "❌ خطأ تحميل الأقسام:",
-          error
-        );
+        }
 
-        setCategories([]);
-
-      } finally {
-
-        setCategoriesLoading(false);
-
-      }
-
-    };
+      };
 
     loadCategories();
 
@@ -187,9 +263,7 @@ function Checkout({
 
         try {
 
-          setPaymentMethodsLoading(
-            true
-          );
+          setPaymentMethodsLoading(true);
 
           const snapshot =
             await getDocs(
@@ -223,8 +297,6 @@ function Checkout({
             error
           );
 
-          // طريقة احتياطية في حالة عدم
-          // وجود بيانات طرق الدفع
           setPaymentMethods([
             {
               id: "cash_on_delivery",
@@ -239,9 +311,7 @@ function Checkout({
 
         } finally {
 
-          setPaymentMethodsLoading(
-            false
-          );
+          setPaymentMethodsLoading(false);
 
         }
 
@@ -253,42 +323,42 @@ function Checkout({
 
 
   // ==================================================
-  // SET DEFAULT PAYMENT METHOD
+  // DEFAULT PAYMENT METHOD
   // ==================================================
 
   useEffect(() => {
 
     if (
-      paymentMethods.length > 0
+      paymentMethods.length === 0
+    ) {
+      return;
+    }
+
+    const selectedStillExists =
+      paymentMethods.some(
+        (method) =>
+          String(method.id) ===
+          String(paymentMethod)
+      );
+
+    if (
+      !paymentMethod ||
+      !selectedStillExists
     ) {
 
-      const selectedStillExists =
-        paymentMethods.some(
+      const cashMethod =
+        paymentMethods.find(
           (method) =>
             method.id ===
-            paymentMethod
-        );
-
-      if (
-        !paymentMethod ||
-        !selectedStillExists
-      ) {
-
-        const cashMethod =
-          paymentMethods.find(
-            (method) =>
-              method.id ===
               "cash_on_delivery" ||
-              method.id === "cash" ||
-              method.id === "cod"
-          );
-
-        setPaymentMethod(
-          cashMethod?.id ||
-          paymentMethods[0].id
+            method.id === "cash" ||
+            method.id === "cod"
         );
 
-      }
+      setPaymentMethod(
+        cashMethod?.id ||
+        paymentMethods[0].id
+      );
 
     }
 
@@ -309,9 +379,7 @@ function Checkout({
 
         try {
 
-          setShippingZonesLoading(
-            true
-          );
+          setShippingZonesLoading(true);
 
           const snapshot =
             await getDocs(
@@ -349,9 +417,7 @@ function Checkout({
 
         } finally {
 
-          setShippingZonesLoading(
-            false
-          );
+          setShippingZonesLoading(false);
 
         }
 
@@ -363,29 +429,27 @@ function Checkout({
 
 
   // ==================================================
-  // SET SHIPPING COST
+  // SELECTED SHIPPING ZONE
+  // ==================================================
+
+  const selectedZone =
+    shippingZones.find(
+      (zone) =>
+        String(zone.id) ===
+        String(selectedShippingZone)
+    ) || null;
+
+
+  // ==================================================
+  // SHIPPING COST
   // ==================================================
 
   useEffect(() => {
 
     if (
-      !selectedShippingZone
+      !selectedShippingZone ||
+      !selectedZone
     ) {
-
-      setShippingCost(0);
-
-      return;
-
-    }
-
-    const selectedZone =
-      shippingZones.find(
-        (zone) =>
-          String(zone.id) ===
-          String(selectedShippingZone)
-      );
-
-    if (!selectedZone) {
 
       setShippingCost(0);
 
@@ -410,7 +474,7 @@ function Checkout({
 
   }, [
     selectedShippingZone,
-    shippingZones,
+    selectedZone,
   ]);
 
 
@@ -418,47 +482,44 @@ function Checkout({
   // NORMALIZE PHONE
   // ==================================================
 
-  const normalizePhone = (
-    value
-  ) => {
+  const normalizePhone = (value) => {
 
     if (!value) {
       return "";
     }
 
-    let phone =
+    let cleanPhone =
       String(value)
-        .replace(
-          /\D/g,
-          ""
-        );
+        .replace(/\D/g, "");
 
     if (
-      phone.startsWith("01") &&
-      phone.length === 11
+      cleanPhone.startsWith("01") &&
+      cleanPhone.length === 11
     ) {
 
-      return phone;
+      return cleanPhone;
 
     }
 
     if (
-      phone.startsWith("20") &&
-      phone.length === 12
+      cleanPhone.startsWith("20") &&
+      cleanPhone.length === 12
     ) {
 
-      return "0" +
-        phone.slice(2);
+      return (
+        "0" +
+        cleanPhone.slice(2)
+      );
 
     }
 
-    return phone;
+    return cleanPhone;
 
   };
 
 
   // ==================================================
-  // FIND CATEGORY FOR PRODUCT
+  // FIND CATEGORY
   // ==================================================
 
   const findCategoryForProduct = (
@@ -483,15 +544,11 @@ function Checkout({
         categories.find(
           (cat) =>
             String(cat.id) ===
-            String(
-              productCategoryId
-            )
+            String(productCategoryId)
         );
 
       if (directCategory) {
-
         return directCategory;
-
       }
 
     }
@@ -525,10 +582,8 @@ function Checkout({
       null;
 
     if (
-      productCategoryNumber !==
-        null &&
-      productCategoryNumber !==
-        undefined &&
+      productCategoryNumber !== null &&
+      productCategoryNumber !== undefined &&
       productCategoryNumber !== ""
     ) {
 
@@ -572,9 +627,7 @@ function Checkout({
 
     while (
       category &&
-      !visited.has(
-        category.id
-      )
+      !visited.has(category.id)
     ) {
 
       visited.add(
@@ -625,7 +678,7 @@ function Checkout({
 
 
   // ==================================================
-  // PAYMENT METHOD TEXT
+  // PAYMENT TEXT
   // ==================================================
 
   const getPaymentMethodText = (
@@ -643,12 +696,8 @@ function Checkout({
           String(method)
       );
 
-    if (
-      foundMethod?.title
-    ) {
-
+    if (foundMethod?.title) {
       return foundMethod.title;
-
     }
 
     const value =
@@ -657,6 +706,7 @@ function Checkout({
         .toLowerCase();
 
     const fallbackMap = {
+
       cash_on_delivery:
         "الدفع عند الاستلام",
 
@@ -680,6 +730,7 @@ function Checkout({
 
       online:
         "الدفع الإلكتروني",
+
     };
 
     return (
@@ -692,7 +743,7 @@ function Checkout({
 
 
   // ==================================================
-  // GET PAYMENT NUMBER
+  // PAYMENT NUMBER
   // ==================================================
 
   const getPaymentNumber = (
@@ -728,7 +779,7 @@ function Checkout({
 
 
   // ==================================================
-  // TOTAL PRICE
+  // SUBTOTAL
   // ==================================================
 
   const subtotal =
@@ -786,7 +837,7 @@ function Checkout({
 
 
   // ==================================================
-  // TOTAL BEFORE SHIPPING
+  // TOTALS
   // ==================================================
 
   const totalBeforeShipping =
@@ -795,11 +846,6 @@ function Checkout({
         couponDiscount,
       0
     );
-
-
-  // ==================================================
-  // FINAL TOTAL
-  // ==================================================
 
   const finalTotal =
     Math.max(
@@ -833,10 +879,7 @@ function Checkout({
 
       }
 
-      setCouponLoading(
-        true
-      );
-
+      setCouponLoading(true);
       setCouponError("");
       setCouponMessage("");
       setAppliedCoupon(null);
@@ -966,9 +1009,7 @@ function Checkout({
 
       } finally {
 
-        setCouponLoading(
-          false
-        );
+        setCouponLoading(false);
 
       }
 
@@ -991,14 +1032,10 @@ function Checkout({
 
 
   // ==================================================
-  // SUBMIT ORDER
+  // PREPARE ORDER
   // ==================================================
 
-  const handleOrder = async (
-    e
-  ) => {
-
-    e.preventDefault();
+  const prepareOrder = () => {
 
     if (loading) {
       return;
@@ -1050,12 +1087,20 @@ function Checkout({
 
     }
 
-    if (
-      paymentMethodsLoading
-    ) {
+    if (paymentMethodsLoading) {
 
       alert(
         "جاري تحميل طرق الدفع، حاول مرة أخرى بعد لحظات."
+      );
+
+      return;
+
+    }
+
+    if (shippingZonesLoading) {
+
+      alert(
+        "جاري تحميل مناطق الشحن، حاول مرة أخرى بعد لحظات."
       );
 
       return;
@@ -1066,7 +1111,7 @@ function Checkout({
       name.trim();
 
     const cleanPhone =
-      phone.trim();
+      normalizePhone(phone);
 
     const cleanAddress =
       address.trim();
@@ -1095,15 +1140,9 @@ function Checkout({
 
     }
 
-    const phoneDigits =
-      cleanPhone.replace(
-        /\D/g,
-        ""
-      );
-
     if (
-      phoneDigits.length < 10 ||
-      phoneDigits.length > 15
+      cleanPhone.length < 10 ||
+      cleanPhone.length > 15
     ) {
 
       alert(
@@ -1114,585 +1153,759 @@ function Checkout({
 
     }
 
+
+    // ==================================================
+    // FIND DEPARTMENT
+    // ==================================================
+
+    let departmentWhatsapp =
+      "";
+
+    let departmentCategory =
+      null;
+
+    for (
+      const item of cart
+    ) {
+
+      const result =
+        getDepartmentWhatsapp(
+          item
+        );
+
+      if (
+        result.phone
+      ) {
+
+        departmentWhatsapp =
+          result.phone;
+
+        departmentCategory =
+          result.category;
+
+        break;
+
+      }
+
+    }
+
     if (
-      shippingZonesLoading
+      !departmentWhatsapp
     ) {
 
       alert(
-        "جاري تحميل مناطق الشحن، حاول مرة أخرى بعد لحظات."
+        "لا يوجد رقم واتساب صالح للقسم.\n\n" +
+        "تأكد أن المنتج مرتبط بقسم، وأن القسم أو القسم الأب يحتوي على رقم واتساب في Firebase."
       );
 
       return;
 
     }
 
-    setLoading(true);
 
-    try {
+    // ==================================================
+    // PREPARE PRODUCTS
+    // ==================================================
 
-      // ==================================================
-      // FIND DEPARTMENT
-      // ==================================================
+    const orderProducts =
+      cart.map(
+        (item) => {
 
-      let departmentWhatsapp =
-        "";
+          const quantity =
+            Math.max(
+              1,
+              Number(
+                item?.quantity || 1
+              )
+            );
 
-      let departmentCategory =
-        null;
+          const price =
+            Number(
+              item?.price || 0
+            );
 
-      for (
-        const item of cart
-      ) {
+          const productId =
+            item?.id ||
+            item?.productId ||
+            item?._id ||
+            null;
 
-        const result =
-          getDepartmentWhatsapp(
-            item
-          );
+          const productTitle =
+            item?.title ||
+            item?.name ||
+            "منتج";
 
-        if (
-          result.phone
-        ) {
+          const variantName =
+            item?.variantName ||
+            item?.selectedVariant?.name ||
+            item?.selectedVariant?.title ||
+            item?.selectedVariant?.label ||
+            "";
 
-          departmentWhatsapp =
-            result.phone;
+          const variantId =
+            item?.variantId ||
+            item?.selectedVariant?.id ||
+            null;
 
-          departmentCategory =
-            result.category;
+          const category =
+            findCategoryForProduct(
+              item
+            );
 
-          break;
+          return {
+
+            productId,
+
+            title:
+              productTitle,
+
+            name:
+              productTitle,
+
+            quantity,
+
+            price,
+
+            total:
+              price * quantity,
+
+            variantName,
+
+            variantId,
+
+            categoryId:
+              category?.id ||
+              item?.categoryId ||
+              null,
+
+            categoryNumber:
+              category?.categoryNumber ||
+              item?.categoryNumber ||
+              "",
+
+            categoryName:
+              category?.name ||
+              "",
+
+          };
 
         }
+      );
+
+
+    // ==================================================
+    // PAYMENT
+    // ==================================================
+
+    const selectedPayment =
+      paymentMethods.find(
+        (item) =>
+          String(item.id) ===
+          String(paymentMethod)
+      );
+
+    const paymentNumber =
+      getPaymentNumber(
+        paymentMethod
+      );
+
+    const paymentTitle =
+      selectedPayment?.title ||
+      selectedPayment?.name ||
+      getPaymentMethodText(
+        paymentMethod
+      );
+
+
+    // ==================================================
+    // SHIPPING
+    // ==================================================
+
+    const shippingZoneName =
+      selectedZone?.name ||
+      selectedZone?.title ||
+      "";
+
+
+    // ==================================================
+    // REVIEW DATA
+    // ==================================================
+
+    const data = {
+
+      cleanName,
+
+      cleanPhone,
+
+      cleanAddress,
+
+      orderProducts,
+
+      departmentWhatsapp,
+
+      departmentCategory,
+
+      paymentMethod,
+
+      paymentNumber,
+
+      paymentTitle,
+
+      shippingZoneId:
+        selectedShippingZone ||
+        "",
+
+      shippingZoneName,
+
+      subtotal,
+
+      couponDiscount,
+
+      shippingCost,
+
+      finalTotal,
+
+      appliedCoupon:
+        appliedCoupon
+          ? {
+              id:
+                appliedCoupon.id ||
+                "",
+              code:
+                appliedCoupon.code ||
+                cleanCodeForStorage(
+                  appliedCoupon.code
+                ),
+              type:
+                appliedCoupon.type ||
+                "",
+              value:
+                Number(
+                  appliedCoupon.value ||
+                  0
+                ),
+            }
+          : null,
+
+    };
+
+    setReviewData(data);
+    setShowReview(true);
+
+  };
+
+
+  // ==================================================
+  // CLEAN COUPON CODE
+  // ==================================================
+
+  const cleanCodeForStorage = (
+    value
+  ) => {
+
+    return String(
+      value || ""
+    )
+      .trim()
+      .toUpperCase();
+
+  };
+
+
+  // ==================================================
+  // EDIT REVIEW
+  // ==================================================
+
+  const handleEditOrder =
+    () => {
+
+      if (loading) {
+        return;
+      }
+
+      setShowReview(false);
+      setReviewData(null);
+
+    };
+
+
+  // ==================================================
+  // CANCEL REVIEW
+  // ==================================================
+
+  const handleCancelReview =
+    () => {
+
+      if (loading) {
+        return;
+      }
+
+      setShowReview(false);
+      setReviewData(null);
+
+    };
+
+
+  // ==================================================
+  // CONFIRM FINAL ORDER
+  // ==================================================
+
+  const handleConfirmOrder =
+    async () => {
+
+      if (
+        loading ||
+        !reviewData
+      ) {
+
+        return;
 
       }
 
-      if (
-        !departmentWhatsapp
-      ) {
-
-        console.error(
-          "❌ لم يتم العثور على واتساب للقسم",
-          {
-            cart,
-            categories,
-          }
-        );
+      if (!currentUser?.uid) {
 
         alert(
-          "لا يوجد رقم واتساب صالح للقسم.\n\n" +
-          "تأكد أن المنتج مرتبط بقسم، وأن القسم أو القسم الأب يحتوي على رقم واتساب في Firebase."
+          "يجب تسجيل الدخول أولًا."
         );
 
         return;
 
       }
 
-      // ==================================================
-      // PREPARE PRODUCTS
-      // ==================================================
+      setLoading(true);
 
-      const orderProducts =
-        cart.map(
-          (item) => {
+      try {
 
-            const quantity =
-              Number(
-                item?.quantity || 1
-              );
-
-            const price =
-              Number(
-                item?.price || 0
-              );
-
-            const productId =
-              item?.id ||
-              item?.productId ||
-              null;
-
-            const productTitle =
-              item?.title ||
-              item?.name ||
-              "منتج";
-
-            const variantName =
-              item?.variantName ||
-              item?.selectedVariant?.name ||
-              "";
-
-            const variantId =
-              item?.variantId ||
-              item?.selectedVariant?.id ||
-              null;
-
-            const category =
-              findCategoryForProduct(
-                item
-              );
-
-            return {
-
-              productId,
-
-              title:
-                productTitle,
-
-              name:
-                productTitle,
-
-              quantity,
-
-              price,
-
-              total:
-                price *
-                quantity,
-
-              variantName,
-
-              variantId,
-
-              categoryId:
-                category?.id ||
-                item?.categoryId ||
-                null,
-
-              categoryNumber:
-                category?.categoryNumber ||
-                item?.categoryNumber ||
-                "",
-
-              categoryName:
-                category?.name ||
-                "",
-
-            };
-
-          }
-        );
-
-
-      // ==================================================
-      // PAYMENT
-      // ==================================================
-
-      const selectedPayment =
-        paymentMethods.find(
-          (item) =>
-            String(item.id) ===
-            String(paymentMethod)
-        );
-
-      const paymentNumber =
-        getPaymentNumber(
-          paymentMethod
-        );
-
-      const paymentTitle =
-        selectedPayment?.title ||
-        getPaymentMethodText(
-          paymentMethod
-        );
-
-
-      // ==================================================
-      // SHIPPING
-      // ==================================================
-
-      const selectedZone =
-        shippingZones.find(
-          (zone) =>
-            String(zone.id) ===
-            String(
-              selectedShippingZone
-            )
-        );
-
-      const shippingZoneName =
-        selectedZone?.name ||
-        selectedZone?.title ||
-        "";
-
-      // ==================================================
-      // CREATE ORDER DATA
-      // ==================================================
-
-      const orderData = {
-
-        // ==============================================
-        // CUSTOMER ID
-        // ==============================================
-
-        userId:
-          currentUser.uid,
-
-        uid:
-          currentUser.uid,
-
-        customerId:
-          currentUser.uid,
-
-        userUID:
-          currentUser.uid,
-
-
-        // ==============================================
-        // CUSTOMER DATA
-        // ==============================================
-
-        customerName:
+        const {
           cleanName,
-
-        name:
-          cleanName,
-
-        customerEmail:
-          currentUser.email ||
-          "",
-
-        email:
-          currentUser.email ||
-          "",
-
-        customerPhone:
           cleanPhone,
-
-        phone:
-          cleanPhone,
-
-        address:
           cleanAddress,
-
-
-        // ==============================================
-        // PRODUCTS
-        // ==============================================
-
-        products:
           orderProducts,
-
-
-        // ==============================================
-        // DEPARTMENT
-        // ==============================================
-
-        departmentId:
-          departmentCategory?.id ||
-          "",
-
-        departmentNumber:
-          departmentCategory?.categoryNumber ||
-          "",
-
-        departmentName:
-          departmentCategory?.name ||
-          "",
-
-        departmentWhatsapp:
           departmentWhatsapp,
-
-
-        // ==============================================
-        // SHIPPING
-        // ==============================================
-
-        shippingZoneId:
-          selectedShippingZone ||
-          "",
-
-        shippingZoneName:
-          shippingZoneName,
-
-        shippingCost:
-          shippingCost,
-
-
-        // ==============================================
-        // TOTALS
-        // ==============================================
-
-        subtotal:
-          subtotal,
-
-        discount:
-          couponDiscount,
-
-        shipping:
-          shippingCost,
-
-        total:
-          finalTotal,
-
-        totalPrice:
-          finalTotal,
-
-
-        // ==============================================
-        // COUPON
-        // ==============================================
-
-        couponId:
-          appliedCoupon?.id ||
-          "",
-
-        couponCode:
-          appliedCoupon?.code ||
-          "",
-
-        couponType:
-          appliedCoupon?.type ||
-          "",
-
-        couponValue:
-          Number(
-            appliedCoupon?.value ||
-            0
-          ),
-
-
-        // ==============================================
-        // PAYMENT
-        // ==============================================
-
-        paymentMethod:
+          departmentCategory,
           paymentMethod,
-
-        paymentMethodName:
-          paymentTitle,
-
-        paymentNumber:
           paymentNumber,
-
-        paymentStatus:
-          "pending",
-
-
-        // ==============================================
-        // ORDER STATUS
-        // ==============================================
-
-        status:
-          "pending",
-
-        orderStatus:
-          "pending",
+          paymentTitle,
+          shippingZoneId,
+          shippingZoneName,
+          subtotal,
+          couponDiscount,
+          shippingCost,
+          finalTotal,
+          appliedCoupon: confirmedCoupon,
+        } = reviewData;
 
 
-        // ==============================================
-        // DATES
-        // ==============================================
+        // ==================================================
+        // ORDER DATA
+        // ==================================================
 
-        createdAt:
-          serverTimestamp(),
+        const orderData = {
 
-        updatedAt:
-          serverTimestamp(),
+          // ==================================================
+          // CUSTOMER ID
+          // ==================================================
 
-      };
+          userId:
+            currentUser.uid,
+
+          uid:
+            currentUser.uid,
+
+          customerId:
+            currentUser.uid,
+
+          userUID:
+            currentUser.uid,
 
 
-      // ==================================================
-      // SAVE ORDER
-      // ==================================================
+          // ==================================================
+          // CUSTOMER DATA
+          // ==================================================
 
-      const orderRef =
-        await addDoc(
-          collection(
-            db,
-            "orders"
-          ),
-          orderData
+          customerName:
+            cleanName,
+
+          name:
+            cleanName,
+
+          customerEmail:
+            currentUser.email ||
+            "",
+
+          email:
+            currentUser.email ||
+            "",
+
+          customerPhone:
+            cleanPhone,
+
+          phone:
+            cleanPhone,
+
+          address:
+            cleanAddress,
+
+
+          // ==================================================
+          // PRODUCTS
+          // ==================================================
+
+          products:
+            orderProducts,
+
+
+          // ==================================================
+          // DEPARTMENT
+          // ==================================================
+
+          departmentId:
+            departmentCategory?.id ||
+            "",
+
+          departmentNumber:
+            departmentCategory?.categoryNumber ||
+            "",
+
+          departmentName:
+            departmentCategory?.name ||
+            "",
+
+          departmentWhatsapp:
+            departmentWhatsapp,
+
+
+          // ==================================================
+          // SHIPPING
+          // ==================================================
+
+          shippingZoneId:
+            shippingZoneId ||
+            "",
+
+          shippingZoneName:
+            shippingZoneName ||
+            "",
+
+          shippingCost:
+            Number(
+              shippingCost || 0
+            ),
+
+
+          // ==================================================
+          // TOTALS
+          // ==================================================
+
+          subtotal:
+            Number(
+              subtotal || 0
+            ),
+
+          discount:
+            Number(
+              couponDiscount || 0
+            ),
+
+          shipping:
+            Number(
+              shippingCost || 0
+            ),
+
+          total:
+            Number(
+              finalTotal || 0
+            ),
+
+          totalPrice:
+            Number(
+              finalTotal || 0
+            ),
+
+
+          // ==================================================
+          // COUPON
+          // ==================================================
+
+          couponId:
+            confirmedCoupon?.id ||
+            "",
+
+          couponCode:
+            confirmedCoupon?.code ||
+            "",
+
+          couponType:
+            confirmedCoupon?.type ||
+            "",
+
+          couponValue:
+            Number(
+              confirmedCoupon?.value ||
+              0
+            ),
+
+
+          // ==================================================
+          // PAYMENT
+          // ==================================================
+
+          paymentMethod:
+            paymentMethod ||
+            "",
+
+          paymentMethodName:
+            paymentTitle ||
+            "",
+
+          paymentNumber:
+            paymentNumber ||
+            "",
+
+          paymentStatus:
+            "pending",
+
+
+          // ==================================================
+          // STATUS
+          // ==================================================
+
+          status:
+            "pending",
+
+          orderStatus:
+            "pending",
+
+
+          // ==================================================
+          // DATES
+          // ==================================================
+
+          createdAt:
+            serverTimestamp(),
+
+          updatedAt:
+            serverTimestamp(),
+
+        };
+
+
+        // ==================================================
+        // SAVE ORDER TO FIRESTORE
+        // ==================================================
+
+        const orderRef =
+          await addDoc(
+            collection(
+              db,
+              "orders"
+            ),
+            orderData
+          );
+
+
+        console.log(
+          "✅ تم إنشاء الطلب:",
+          orderRef.id
         );
 
 
-      console.log(
-        "✅ تم إنشاء الطلب:",
-        orderRef.id
-      );
+        // ==================================================
+        // SUCCESS MESSAGE
+        // ==================================================
 
+        let successMessage =
+          "تم تسجيل طلبك بنجاح ✅\n\n" +
+          "رقم الطلب: " +
+          orderRef.id.slice(0, 8);
 
-      // ==================================================
-      // SUCCESS MESSAGE
-      // ==================================================
-
-      let successMessage =
-        "تم تسجيل طلبك بنجاح ✅\n\n" +
-        "رقم الطلب: " +
-        orderRef.id.slice(
-          0,
-          8
-        );
-
-
-      // ==================================================
-      // DEPARTMENT INFO
-      // ==================================================
-
-      successMessage +=
-        "\n🏷️ القسم: " +
-        (
-          departmentCategory?.name ||
-          "غير محدد"
-        );
-
-
-      if (
-        departmentCategory?.categoryNumber
-      ) {
 
         successMessage +=
-          "\n🔢 رقم القسم: " +
-          departmentCategory.categoryNumber;
-
-      }
-
-
-      successMessage +=
-        "\n📱 واتساب القسم: " +
-        departmentWhatsapp;
+          "\n🏷️ القسم: " +
+          (
+            departmentCategory?.name ||
+            "غير محدد"
+          );
 
 
-      // ==================================================
-      // SHIPPING INFO
-      // ==================================================
+        if (
+          departmentCategory?.categoryNumber
+        ) {
 
-      if (
-        shippingZoneName
-      ) {
+          successMessage +=
+            "\n🔢 رقم القسم: " +
+            departmentCategory.categoryNumber;
 
-        successMessage +=
-          "\n🚚 منطقة الشحن: " +
-          shippingZoneName;
+        }
 
-      }
-
-      if (
-        shippingCost > 0
-      ) {
 
         successMessage +=
-          "\n💵 تكلفة الشحن: " +
-          shippingCost.toLocaleString(
+          "\n📱 واتساب القسم: " +
+          (
+            departmentWhatsapp ||
+            "غير متوفر"
+          );
+
+
+        if (
+          shippingZoneName
+        ) {
+
+          successMessage +=
+            "\n🚚 منطقة الشحن: " +
+            shippingZoneName;
+
+        }
+
+
+        if (
+          Number(shippingCost) > 0
+        ) {
+
+          successMessage +=
+            "\n💵 تكلفة الشحن: " +
+            Number(
+              shippingCost
+            ).toLocaleString(
+              "ar-EG"
+            ) +
+            " جنيه";
+
+        }
+
+
+        if (
+          confirmedCoupon &&
+          Number(couponDiscount) > 0
+        ) {
+
+          successMessage +=
+            "\n🎟️ كود الخصم: " +
+            confirmedCoupon.code;
+
+          successMessage +=
+            "\n💸 قيمة الخصم: " +
+            Number(
+              couponDiscount
+            ).toLocaleString(
+              "ar-EG"
+            ) +
+            " جنيه";
+
+        }
+
+
+        successMessage +=
+          "\n\n💳 طريقة الدفع: " +
+          paymentTitle;
+
+
+        if (
+          paymentNumber
+        ) {
+
+          successMessage +=
+            "\n📱 رقم التحويل: " +
+            paymentNumber;
+
+        }
+
+
+        const isCashPayment =
+          paymentMethod ===
+            "cash_on_delivery" ||
+          paymentMethod ===
+            "cash" ||
+          paymentMethod ===
+            "cod";
+
+
+        if (
+          !isCashPayment
+        ) {
+
+          successMessage +=
+            "\n\nيرجى تحويل قيمة الطلب والاحتفاظ بإثبات الدفع.";
+
+        }
+
+
+        successMessage +=
+          "\n\n💰 إجمالي الطلب النهائي: " +
+          Number(
+            finalTotal
+          ).toLocaleString(
             "ar-EG"
           ) +
           " جنيه";
 
+
+        // ==================================================
+        // CLEAR CART
+        // ==================================================
+
+        setCart([]);
+
+        try {
+
+          localStorage.removeItem(
+            "cart"
+          );
+
+        } catch (error) {
+
+          console.error(
+            "❌ Clear Local Cart Error:",
+            error
+          );
+
+        }
+
+
+        // ==================================================
+        // CLEAR REVIEW
+        // ==================================================
+
+        setShowReview(false);
+        setReviewData(null);
+
+
+        // ==================================================
+        // SUCCESS
+        // ==================================================
+
+        alert(
+          successMessage
+        );
+
+
+        // ==================================================
+        // RETURN STORE
+        // ==================================================
+
+        setCurrentView(
+          "store"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "❌ Create Order Error:",
+          error
+        );
+
+        alert(
+          error?.message ||
+          "حدث خطأ أثناء تسجيل الطلب، حاول مرة أخرى."
+        );
+
+      } finally {
+
+        setLoading(false);
+
       }
 
-
-      // ==================================================
-      // COUPON INFO
-      // ==================================================
-
-      if (
-        appliedCoupon &&
-        couponDiscount > 0
-      ) {
-
-        successMessage +=
-          "\n🎟️ كود الخصم: " +
-          appliedCoupon.code;
-
-        successMessage +=
-          "\n💸 قيمة الخصم: " +
-          couponDiscount.toLocaleString(
-            "ar-EG"
-          ) +
-          " جنيه";
-
-      }
-
-
-      // ==================================================
-      // PAYMENT INFO
-      // ==================================================
-
-      successMessage +=
-        "\n\n💳 طريقة الدفع: " +
-        paymentTitle;
-
-
-      if (
-        paymentNumber
-      ) {
-
-        successMessage +=
-          "\n📱 رقم التحويل: " +
-          paymentNumber;
-
-      }
-
-
-      if (
-        paymentMethod !==
-        "cash_on_delivery" &&
-        paymentMethod !==
-        "cash" &&
-        paymentMethod !==
-        "cod"
-      ) {
-
-        successMessage +=
-          "\n\nيرجى تحويل قيمة الطلب والاحتفاظ بإثبات الدفع.";
-
-      }
-
-
-      // ==================================================
-      // FINAL TOTAL
-      // ==================================================
-
-      successMessage +=
-        "\n\n💰 إجمالي الطلب النهائي: " +
-        finalTotal.toLocaleString(
-          "ar-EG"
-        ) +
-        " جنيه";
-
-
-      // ==================================================
-      // CLEAR CART
-      // ==================================================
-
-      setCart([]);
-
-
-      // ==================================================
-      // SHOW SUCCESS
-      // ==================================================
-
-      alert(
-        successMessage
-      );
-
-
-      // ==================================================
-      // RETURN STORE
-      // ==================================================
-
-      setCurrentView(
-        "store"
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "❌ Create Order Error:",
-        error
-      );
-
-      alert(
-        error?.message ||
-        "حدث خطأ أثناء تسجيل الطلب، حاول مرة أخرى."
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
-
-  };
+    };
 
 
   // ==================================================
@@ -1711,22 +1924,44 @@ function Checkout({
         dir="rtl"
       >
 
+        <div className="checkout-navigation">
+
+          <button
+            type="button"
+            className="checkout-nav-btn back-store-btn"
+            onClick={() =>
+              setCurrentView("store")
+            }
+          >
+            🏠 العودة للمتجر
+          </button>
+
+          <button
+            type="button"
+            className="checkout-nav-btn back-cart-btn"
+            onClick={() =>
+              setCurrentView("cart")
+            }
+          >
+            🛒 العودة للسلة
+          </button>
+
+        </div>
+
+
         <h2>
           🛒 السلة فارغة
         </h2>
+
 
         <button
           type="button"
           className="submit-order-btn"
           onClick={() =>
-            setCurrentView(
-              "store"
-            )
+            setCurrentView("store")
           }
         >
-
           العودة للمتجر 🛍️
-
         </button>
 
       </div>
@@ -1737,7 +1972,390 @@ function Checkout({
 
 
   // ==================================================
-  // RETURN
+  // REVIEW SCREEN
+  // ==================================================
+
+  if (
+    showReview &&
+    reviewData
+  ) {
+
+    return (
+
+      <div
+        className="checkout-container checkout-review-container"
+        dir="rtl"
+      >
+
+        <div className="checkout-navigation">
+
+          <button
+            type="button"
+            className="checkout-nav-btn back-store-btn"
+            onClick={() =>
+              setCurrentView("store")
+            }
+            disabled={loading}
+          >
+            🏠 العودة للمتجر
+          </button>
+
+
+          <button
+            type="button"
+            className="checkout-nav-btn back-cart-btn"
+            onClick={() =>
+              setCurrentView("cart")
+            }
+            disabled={loading}
+          >
+            🛒 العودة للسلة
+          </button>
+
+        </div>
+
+
+        <h2>
+          📝 مراجعة الطلب
+        </h2>
+
+
+        <p className="checkout-subtitle">
+          راجع بياناتك والطلب قبل التأكيد النهائي
+        </p>
+
+
+        {/* CUSTOMER */}
+
+        <div className="review-section">
+
+          <h3>
+            👤 بيانات العميل
+          </h3>
+
+
+          <div className="review-row">
+
+            <span>
+              الاسم
+            </span>
+
+            <strong>
+              {reviewData.cleanName}
+            </strong>
+
+          </div>
+
+
+          <div className="review-row">
+
+            <span>
+              الهاتف
+            </span>
+
+            <strong dir="ltr">
+              {reviewData.cleanPhone}
+            </strong>
+
+          </div>
+
+
+          <div className="review-row review-address">
+
+            <span>
+              العنوان
+            </span>
+
+            <strong>
+              {reviewData.cleanAddress}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        {/* PRODUCTS */}
+
+        <div className="review-section">
+
+          <h3>
+            📦 المنتجات
+          </h3>
+
+
+          {reviewData.orderProducts.map(
+            (item, index) => (
+
+              <div
+                className="review-product-row"
+                key={
+                  item.productId ||
+                  item.variantId ||
+                  index
+                }
+              >
+
+                <div>
+
+                  <strong>
+                    {item.title}
+                  </strong>
+
+
+                  {item.variantName && (
+
+                    <small>
+                      المتغير:{" "}
+                      {item.variantName}
+                    </small>
+
+                  )}
+
+                </div>
+
+
+                <span>
+                  × {item.quantity}
+                </span>
+
+
+                <strong>
+                  {Number(
+                    item.total || 0
+                  ).toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </strong>
+
+              </div>
+
+            )
+          )}
+
+        </div>
+
+
+        {/* PAYMENT & SHIPPING */}
+
+        <div className="review-section">
+
+          <h3>
+            💳 الدفع والشحن
+          </h3>
+
+
+          <div className="review-row">
+
+            <span>
+              طريقة الدفع
+            </span>
+
+            <strong>
+              {reviewData.paymentTitle}
+            </strong>
+
+          </div>
+
+
+          {reviewData.paymentNumber && (
+
+            <div className="review-row">
+
+              <span>
+                رقم التحويل
+              </span>
+
+              <strong dir="ltr">
+                {reviewData.paymentNumber}
+              </strong>
+
+            </div>
+
+          )}
+
+
+          {reviewData.shippingZoneName && (
+
+            <div className="review-row">
+
+              <span>
+                منطقة الشحن
+              </span>
+
+              <strong>
+                {reviewData.shippingZoneName}
+              </strong>
+
+            </div>
+
+          )}
+
+
+          {Number(
+            reviewData.shippingCost || 0
+          ) > 0 && (
+
+            <div className="review-row">
+
+              <span>
+                تكلفة الشحن
+              </span>
+
+              <strong>
+                {Number(
+                  reviewData.shippingCost
+                ).toLocaleString(
+                  "ar-EG"
+                )}{" "}
+                ج.م
+              </strong>
+
+            </div>
+
+          )}
+
+        </div>
+
+
+        {/* TOTAL */}
+
+        <div className="review-total-box">
+
+          <div>
+
+            <span>
+              إجمالي المنتجات
+            </span>
+
+            <strong>
+              {Number(
+                reviewData.subtotal || 0
+              ).toLocaleString(
+                "ar-EG"
+              )}{" "}
+              ج.م
+            </strong>
+
+          </div>
+
+
+          {Number(
+            reviewData.couponDiscount || 0
+          ) > 0 && (
+
+            <div>
+
+              <span>
+                الخصم
+              </span>
+
+              <strong>
+                -{" "}
+                {Number(
+                  reviewData.couponDiscount
+                ).toLocaleString(
+                  "ar-EG"
+                )}{" "}
+                ج.م
+              </strong>
+
+            </div>
+
+          )}
+
+
+          {Number(
+            reviewData.shippingCost || 0
+          ) > 0 && (
+
+            <div>
+
+              <span>
+                الشحن
+              </span>
+
+              <strong>
+                {Number(
+                  reviewData.shippingCost
+                ).toLocaleString(
+                  "ar-EG"
+                )}{" "}
+                ج.م
+              </strong>
+
+            </div>
+
+          )}
+
+
+          <div className="review-final-total">
+
+            <span>
+              الإجمالي النهائي
+            </span>
+
+            <strong>
+              {Number(
+                reviewData.finalTotal || 0
+              ).toLocaleString(
+                "ar-EG"
+              )}{" "}
+              ج.م
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        {/* ACTIONS */}
+
+        <div className="checkout-review-actions">
+
+          <button
+            type="button"
+            className="review-edit-btn"
+            onClick={handleEditOrder}
+            disabled={loading}
+          >
+            ✏️ تعديل الطلب
+          </button>
+
+
+          <button
+            type="button"
+            className="review-cancel-btn"
+            onClick={handleCancelReview}
+            disabled={loading}
+          >
+            ❌ إلغاء
+          </button>
+
+
+          <button
+            type="button"
+            className="review-confirm-btn"
+            onClick={handleConfirmOrder}
+            disabled={loading}
+          >
+            {loading
+              ? "⏳ جاري تسجيل الطلب..."
+              : "✅ تأكيد الطلب النهائي"}
+          </button>
+
+        </div>
+
+      </div>
+
+    );
+
+  }
+
+
+  // ==================================================
+  // MAIN CHECKOUT
   // ==================================================
 
   return (
@@ -1746,6 +2364,36 @@ function Checkout({
       className="checkout-container"
       dir="rtl"
     >
+
+      {/* NAVIGATION */}
+
+      <div className="checkout-navigation">
+
+        <button
+          type="button"
+          className="checkout-nav-btn back-store-btn"
+          onClick={() =>
+            setCurrentView("store")
+          }
+          disabled={loading}
+        >
+          🏠 العودة للمتجر
+        </button>
+
+
+        <button
+          type="button"
+          className="checkout-nav-btn back-cart-btn"
+          onClick={() =>
+            setCurrentView("cart")
+          }
+          disabled={loading}
+        >
+          🛒 العودة للسلة
+        </button>
+
+      </div>
+
 
       <h2>
         إتمام الطلب 🛒
@@ -1758,13 +2406,17 @@ function Checkout({
 
 
       <form
-        onSubmit={handleOrder}
         className="checkout-form"
+        onSubmit={(e) => {
+
+          e.preventDefault();
+
+          prepareOrder();
+
+        }}
       >
 
-        {/* ============================================
-            NAME
-        ============================================ */}
+        {/* NAME */}
 
         <div className="form-group">
 
@@ -1788,9 +2440,7 @@ function Checkout({
         </div>
 
 
-        {/* ============================================
-            PHONE
-        ============================================ */}
+        {/* PHONE */}
 
         <div className="form-group">
 
@@ -1815,9 +2465,7 @@ function Checkout({
         </div>
 
 
-        {/* ============================================
-            ADDRESS
-        ============================================ */}
+        {/* ADDRESS */}
 
         <div className="form-group">
 
@@ -1841,9 +2489,7 @@ function Checkout({
         </div>
 
 
-        {/* ============================================
-            SHIPPING
-        ============================================ */}
+        {/* SHIPPING */}
 
         {shippingZones.length > 0 && (
 
@@ -1871,6 +2517,7 @@ function Checkout({
               <option value="">
                 اختر منطقة الشحن
               </option>
+
 
               {shippingZones.map(
                 (zone) => {
@@ -1916,9 +2563,7 @@ function Checkout({
         )}
 
 
-        {/* ============================================
-            PAYMENT METHODS
-        ============================================ */}
+        {/* PAYMENT */}
 
         <div className="payment-method-section">
 
@@ -1933,8 +2578,7 @@ function Checkout({
               ⏳ جاري تحميل طرق الدفع...
             </div>
 
-          ) : paymentMethods.length ===
-            0 ? (
+          ) : paymentMethods.length === 0 ? (
 
             <div className="empty-state">
               لا توجد طرق دفع متاحة حاليًا.
@@ -1948,8 +2592,8 @@ function Checkout({
                 (method) => {
 
                   const isSelected =
-                    paymentMethod ===
-                    method.id;
+                    String(paymentMethod) ===
+                    String(method.id);
 
                   const methodNumber =
                     method.number ||
@@ -1963,33 +2607,27 @@ function Checkout({
                   return (
 
                     <label
-                      key={
-                        method.id
+                      key={method.id}
+                      className={
+                        `payment-method-card ${
+                          isSelected
+                            ? "selected"
+                            : ""
+                        }`
                       }
-                      className={`payment-method-card ${
-                        isSelected
-                          ? "selected"
-                          : ""
-                      }`}
                     >
 
                       <input
                         type="radio"
                         name="paymentMethod"
-                        value={
-                          method.id
-                        }
-                        checked={
-                          isSelected
-                        }
+                        value={method.id}
+                        checked={isSelected}
                         onChange={() =>
                           setPaymentMethod(
                             method.id
                           )
                         }
-                        disabled={
-                          loading
-                        }
+                        disabled={loading}
                       />
 
 
@@ -2004,6 +2642,7 @@ function Checkout({
                             }
                           </span>
 
+
                           <strong>
                             {
                               method.title ||
@@ -2016,9 +2655,7 @@ function Checkout({
 
 
                         <p>
-                          {
-                            methodDescription
-                          }
+                          {methodDescription}
                         </p>
 
 
@@ -2029,9 +2666,7 @@ function Checkout({
                             📱{" "}
 
                             <strong>
-                              {
-                                methodNumber
-                              }
+                              {methodNumber}
                             </strong>
 
                           </div>
@@ -2080,9 +2715,7 @@ function Checkout({
         </div>
 
 
-        {/* ============================================
-            COUPON
-        ============================================ */}
+        {/* COUPON */}
 
         <div className="coupon-section">
 
@@ -2096,9 +2729,7 @@ function Checkout({
             <input
               type="text"
               placeholder="أدخل كود الخصم"
-              value={
-                couponCode
-              }
+              value={couponCode}
               onChange={(e) => {
 
                 setCouponCode(
@@ -2145,9 +2776,7 @@ function Checkout({
                 onClick={
                   handleRemoveCoupon
                 }
-                disabled={
-                  loading
-                }
+                disabled={loading}
               >
 
                 إزالة الكوبون
@@ -2184,9 +2813,7 @@ function Checkout({
         </div>
 
 
-        {/* ============================================
-            PRODUCTS
-        ============================================ */}
+        {/* PRODUCTS */}
 
         <div className="order-products-preview">
 
@@ -2199,8 +2826,11 @@ function Checkout({
             (item, index) => {
 
               const quantity =
-                Number(
-                  item?.quantity || 1
+                Math.max(
+                  1,
+                  Number(
+                    item?.quantity || 1
+                  )
                 );
 
               const price =
@@ -2212,11 +2842,13 @@ function Checkout({
                 price *
                 quantity;
 
+
               return (
 
                 <div
                   className="checkout-product-row"
                   key={
+                    item?.cartId ||
                     item?.id ||
                     item?.productId ||
                     index
@@ -2235,7 +2867,9 @@ function Checkout({
 
 
                     {(item?.variantName ||
-                      item?.selectedVariant?.name) && (
+                      item?.selectedVariant?.name ||
+                      item?.selectedVariant?.title ||
+                      item?.selectedVariant?.label) && (
 
                       <small>
 
@@ -2243,7 +2877,9 @@ function Checkout({
 
                         {
                           item?.variantName ||
-                          item?.selectedVariant?.name
+                          item?.selectedVariant?.name ||
+                          item?.selectedVariant?.title ||
+                          item?.selectedVariant?.label
                         }
 
                       </small>
@@ -2254,8 +2890,7 @@ function Checkout({
 
 
                   <span>
-                    ×{" "}
-                    {quantity}
+                    × {quantity}
                   </span>
 
 
@@ -2280,9 +2915,7 @@ function Checkout({
         </div>
 
 
-        {/* ============================================
-            TOTAL
-        ============================================ */}
+        {/* TOTAL */}
 
         <div className="order-summary-box">
 
@@ -2304,8 +2937,7 @@ function Checkout({
           </h4>
 
 
-          {couponDiscount >
-            0 && (
+          {couponDiscount > 0 && (
 
             <h4>
 
@@ -2328,8 +2960,7 @@ function Checkout({
           )}
 
 
-          {shippingCost >
-            0 && (
+          {shippingCost > 0 && (
 
             <h4>
 
@@ -2371,9 +3002,7 @@ function Checkout({
         </div>
 
 
-        {/* ============================================
-            SUBMIT
-        ============================================ */}
+        {/* SUBMIT */}
 
         <button
           type="submit"
@@ -2387,17 +3016,32 @@ function Checkout({
         >
 
           {loading
-            ? "⏳ جاري تسجيل الطلب..."
+            ? "⏳ جاري التجهيز..."
             : categoriesLoading
               ? "⏳ جاري تحميل الأقسام..."
               : paymentMethodsLoading
                 ? "⏳ جاري تحميل طرق الدفع..."
                 : shippingZonesLoading
                   ? "⏳ جاري تحميل الشحن..."
-                  : "تأكيد الطلب الآن ✅"}
+                  : "مراجعة الطلب وتأكيده ✅"}
 
         </button>
 
+
+        {/* CANCEL */}
+
+        <button
+          type="button"
+          className="checkout-cancel-main-btn"
+          onClick={() =>
+            setCurrentView("cart")
+          }
+          disabled={loading}
+        >
+
+          ❌ إلغاء والعودة للسلة
+
+        </button>
 
       </form>
 

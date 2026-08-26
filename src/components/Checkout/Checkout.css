@@ -33,6 +33,57 @@
   color: #64748b;
   font-size: 15px;
   margin: 0 0 30px;
+  line-height: 1.7;
+}
+
+/* ==========================================================
+   NAVIGATION
+   ========================================================== */
+
+.checkout-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.checkout-nav-btn {
+  flex: 1;
+  min-height: 46px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.back-store-btn {
+  border: 1px solid #0b1f3a;
+  background: #0b1f3a;
+  color: #ffffff;
+}
+
+.back-cart-btn {
+  border: 1px solid #d4af37;
+  background: #ffffff;
+  color: #0b1f3a;
+}
+
+.checkout-nav-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(11, 31, 58, 0.15);
+}
+
+.checkout-nav-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ==========================================================
@@ -75,6 +126,11 @@
     border-color 0.25s ease,
     box-shadow 0.25s ease,
     background 0.25s ease;
+}
+
+.form-group textarea {
+  min-height: 110px;
+  line-height: 1.7;
 }
 
 .form-group select {
@@ -287,7 +343,8 @@
   transition:
     transform 0.2s ease,
     opacity 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .save-btn {
@@ -386,6 +443,7 @@
   margin-top: 5px;
   color: #64748b;
   font-size: 12px;
+  line-height: 1.6;
 }
 
 .checkout-product-row > span {
@@ -504,6 +562,39 @@
 }
 
 /* ==========================================================
+   MAIN CANCEL BUTTON
+   ========================================================== */
+
+.checkout-cancel-main-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: 1px solid #dc2626;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #b91c1c;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.checkout-cancel-main-btn:hover:not(:disabled) {
+  background: #fef2f2;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(220, 38, 38, 0.12);
+}
+
+.checkout-cancel-main-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ==========================================================
    EMPTY STATE
    ========================================================== */
 
@@ -516,6 +607,231 @@
   border: 1px dashed #cbd5e1;
   color: #64748b;
   box-sizing: border-box;
+}
+
+/* ==========================================================
+   REVIEW SCREEN
+   ========================================================== */
+
+.checkout-review-container {
+  max-width: 800px;
+}
+
+.review-section {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 18px;
+  box-sizing: border-box;
+  background: #f8fafc;
+  border: 1px solid #d9dfe8;
+  border-radius: 15px;
+}
+
+.review-section h3 {
+  margin: 0 0 14px;
+  color: #0b1f3a;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 11px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.review-row:last-child {
+  border-bottom: none;
+}
+
+.review-row span {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.review-row strong {
+  color: #071a36;
+  font-size: 15px;
+  text-align: left;
+  word-break: break-word;
+}
+
+.review-address {
+  align-items: flex-start;
+}
+
+.review-address strong {
+  max-width: 70%;
+  line-height: 1.7;
+}
+
+/* ==========================================================
+   REVIEW PRODUCTS
+   ========================================================== */
+
+.review-product-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.review-product-row:last-child {
+  border-bottom: none;
+}
+
+.review-product-row > div {
+  min-width: 0;
+}
+
+.review-product-row strong {
+  display: block;
+  color: #071a36;
+}
+
+.review-product-row small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.review-product-row > span {
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.review-product-row > strong:last-child {
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   REVIEW TOTAL
+   ========================================================== */
+
+.review-total-box {
+  padding: 18px;
+  margin-bottom: 20px;
+  border-radius: 15px;
+  background: #0b1f3a;
+  color: #ffffff;
+  border: 1px solid #d4af37;
+}
+
+.review-total-box > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 9px 0;
+}
+
+.review-total-box span {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.review-total-box strong {
+  color: #d4af37;
+  font-size: 17px;
+}
+
+.review-final-total {
+  margin-top: 8px;
+  padding-top: 16px !important;
+  border-top: 1px solid #d4af37;
+}
+
+.review-final-total span {
+  font-size: 19px;
+}
+
+.review-final-total strong {
+  color: #f4d06f;
+  font-size: 24px;
+}
+
+/* ==========================================================
+   REVIEW ACTIONS
+   ========================================================== */
+
+.checkout-review-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.review-edit-btn,
+.review-cancel-btn,
+.review-confirm-btn {
+  min-height: 52px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.review-edit-btn {
+  border: 1px solid #0b1f3a;
+  background: #ffffff;
+  color: #0b1f3a;
+}
+
+.review-cancel-btn {
+  border: 1px solid #dc2626;
+  background: #ffffff;
+  color: #b91c1c;
+}
+
+.review-confirm-btn {
+  grid-column: 1 / -1;
+  border: 1px solid #d4af37;
+  background: #0b1f3a;
+  color: #f4d06f;
+}
+
+.review-edit-btn:hover:not(:disabled),
+.review-cancel-btn:hover:not(:disabled),
+.review-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.review-edit-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  box-shadow: 0 6px 15px rgba(11, 31, 58, 0.12);
+}
+
+.review-cancel-btn:hover:not(:disabled) {
+  background: #fef2f2;
+  box-shadow: 0 6px 15px rgba(220, 38, 38, 0.12);
+}
+
+.review-confirm-btn:hover:not(:disabled) {
+  background: #071a36;
+  box-shadow: 0 8px 18px rgba(11, 31, 58, 0.22);
+}
+
+.review-edit-btn:disabled,
+.review-cancel-btn:disabled,
+.review-confirm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ==========================================================
@@ -536,6 +852,14 @@
   .checkout-subtitle {
     font-size: 14px;
     margin-bottom: 22px;
+  }
+
+  .checkout-navigation {
+    flex-direction: column;
+  }
+
+  .checkout-nav-btn {
+    width: 100%;
   }
 
   .payment-methods {
@@ -562,14 +886,20 @@
     gap: 8px 12px;
   }
 
-  .checkout-product-row > strong {
+  .checkout-product-row > div {
     grid-column: 1 / -1;
-    text-align: left;
   }
 
   .checkout-product-row > span {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .checkout-product-row > strong {
     grid-column: 2;
-    grid-row: 1;
+    grid-row: 2;
+    text-align: left;
+    white-space: nowrap;
   }
 
   .order-summary-box {
@@ -591,12 +921,72 @@
   .whatsapp-submit-btn {
     font-size: 16px;
   }
+
+  /* REVIEW */
+
+  .review-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .review-row strong {
+    text-align: right;
+    width: 100%;
+  }
+
+  .review-address strong {
+    max-width: 100%;
+  }
+
+  .review-product-row {
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+  }
+
+  .review-product-row > div {
+    grid-column: 1 / -1;
+  }
+
+  .review-product-row > span {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .review-product-row > strong:last-child {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: left;
+  }
+
+  .checkout-review-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .review-confirm-btn {
+    grid-column: auto;
+    order: -1;
+  }
+
+  .review-final-total {
+    flex-direction: column;
+    align-items: center !important;
+    gap: 7px !important;
+  }
 }
+
+/* ==========================================================
+   SMALL MOBILE
+   ========================================================== */
 
 @media (max-width: 400px) {
   .checkout-container {
     margin: 12px auto;
     padding: 16px 12px;
+  }
+
+  .checkout-container h2 {
+    font-size: 21px;
   }
 
   .payment-method-title strong {
@@ -608,11 +998,21 @@
   }
 
   .coupon-section,
-  .order-products-preview {
+  .order-products-preview,
+  .review-section {
     padding: 14px;
   }
 
-  .checkout-product-row {
+  .checkout-product-row,
+  .review-product-row {
     font-size: 14px;
+  }
+
+  .review-final-total strong {
+    font-size: 21px;
+  }
+
+  .review-final-total span {
+    font-size: 17px;
   }
 }

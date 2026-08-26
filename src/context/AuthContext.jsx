@@ -1,46 +1,130 @@
-import { createContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useEffect,
+  useState,
+} from "react";
+
 import {
   onAuthStateChanged,
-  signOut
+  signOut,
 } from "firebase/auth";
 
 import { auth } from "../firebase";
 
-export const AuthContext = createContext();
+// ======================================================
+// AUTH CONTEXT
+// ======================================================
+
+export const AuthContext = createContext({
+  user: null,
+  logout: async () => {},
+  loading: true,
+});
+
+// ======================================================
+// AUTH PROVIDER
+// ======================================================
 
 function AuthProvider({ children }) {
 
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  // ====================================================
+  // مراقبة حالة تسجيل الدخول
+  // ====================================================
 
   useEffect(() => {
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    let mounted = true;
 
-      setUser(currentUser);
+    const unsubscribe =
+      onAuthStateChanged(
+        auth,
+        (currentUser) => {
 
-      setLoading(false);
+          if (!mounted) {
+            return;
+          }
 
-    });
+          setUser(currentUser);
 
-    return () => unsubscribe();
+          setLoading(false);
+
+        },
+        (error) => {
+
+          console.error(
+            "Auth State Error:",
+            error
+          );
+
+          if (!mounted) {
+            return;
+          }
+
+          setUser(null);
+
+          setLoading(false);
+
+        }
+      );
+
+    return () => {
+
+      mounted = false;
+
+      unsubscribe();
+
+    };
 
   }, []);
 
+  // ====================================================
+  // تسجيل الخروج
+  // ====================================================
+
   const logout = async () => {
 
-    await signOut(auth);
+    try {
+
+      await signOut(auth);
+
+      setUser(null);
+
+    } catch (error) {
+
+      console.error(
+        "Logout Error:",
+        error
+      );
+
+      throw error;
+
+    }
 
   };
+
+  // ====================================================
+  // CONTEXT VALUE
+  // ====================================================
+
+  const contextValue = {
+    user,
+    logout,
+    loading,
+  };
+
+  // ====================================================
+  // PROVIDER
+  // ====================================================
 
   return (
 
     <AuthContext.Provider
-      value={{
-        user,
-        logout,
-        loading
-      }}
+      value={contextValue}
     >
 
       {children}
@@ -50,5 +134,9 @@ function AuthProvider({ children }) {
   );
 
 }
+
+// ======================================================
+// EXPORT
+// ======================================================
 
 export default AuthProvider;

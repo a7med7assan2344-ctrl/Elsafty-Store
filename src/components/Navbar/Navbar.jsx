@@ -9,9 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 import offerText from "../../config/offerConfig";
 
-import {
-  WishlistContext,
-} from "../../context/WishlistContext";
+import { WishlistContext } from "../../context/WishlistContext";
 
 import {
   onAuthStateChanged,
@@ -29,57 +27,56 @@ import {
   db,
 } from "../../firebase";
 
-import {
-  getCategories,
-} from "../../services/categoryService";
+import { getCategories } from "../../services/categoryService";
 
 import "./Navbar.css";
 
-
 // =====================================================
-// DEFAULT STORE APPEARANCE
+// DEFAULT STORE SETTINGS
 // =====================================================
 
 const defaultStoreSettings = {
+  storeName: "Elsafty Store",
+
   theme: {
-    primary: "#071A36",
-    secondary: "#0B1F3A",
-    accent: "#D4AF37",
+    primary: "#f68b1e",
+    secondary: "#ff9900",
+    accent: "#f68b1e",
 
-    pageBackground: "#F0F4F8",
-    cardBackground: "#FFFFFF",
+    pageBackground: "#f5f5f5",
+    cardBackground: "#ffffff",
 
-    textPrimary: "#071A36",
-    textSecondary: "#64748B",
+    textPrimary: "#313133",
+    textSecondary: "#75757a",
 
-    border: "#D9DFE8",
+    border: "#e2e2e2",
 
-    buttonBackground: "#0B1F3A",
-    buttonText: "#FFFFFF",
+    buttonBackground: "#f68b1e",
+    buttonText: "#ffffff",
 
-    navbarBackground: "#071A36",
-    navbarText: "#FFFFFF",
+    navbarBackground: "#ffffff",
+    navbarText: "#313133",
 
-    categoryBarBackground: "#FFFFFF",
-    categoryBarText: "#071A36",
+    categoryBarBackground: "#ffffff",
+    categoryBarText: "#313133",
 
-    topStripBackground: "#071A36",
-    topStripText: "#FFFFFF",
+    topStripBackground: "#f68b1e",
+    topStripText: "#ffffff",
 
-    footerBackground: "#071A36",
-    footerText: "#FFFFFF",
+    footerBackground: "#313133",
+    footerText: "#ffffff",
   },
 
   topStrip: {
     enabled: true,
     direction: "rtl",
     speed: 40,
-    height: 42,
-    fontSize: 15,
+    height: 36,
+    fontSize: 13,
+    fontFamily: "Cairo",
     items: [],
   },
 };
-
 
 // =====================================================
 // COMPONENT
@@ -94,18 +91,10 @@ function Navbar({
   products = [],
   setSelectedCategory,
 }) {
+  const navigate = useNavigate();
 
-  const navigate =
-    useNavigate();
-
-
-  const {
-    wishlist = [],
-  } =
-    useContext(
-      WishlistContext
-    );
-
+  const { wishlist = [] } =
+    useContext(WishlistContext);
 
   // =====================================================
   // STATES
@@ -118,6 +107,9 @@ function Navbar({
     useState("");
 
   const [menuOpen, setMenuOpen] =
+    useState(false);
+
+  const [helpOpen, setHelpOpen] =
     useState(false);
 
   const [logoZoom, setLogoZoom] =
@@ -138,26 +130,21 @@ function Navbar({
   const [openSubCategories, setOpenSubCategories] =
     useState([]);
 
-
-  // =====================================================
-  // STORE SETTINGS
-  // =====================================================
+  const [mobileMenuOpen, setMobileMenuOpen] =
+    useState(false);
 
   const [storeSettings, setStoreSettings] =
-    useState(
-      defaultStoreSettings
-    );
-
+    useState(defaultStoreSettings);
 
   // =====================================================
   // REFS
   // =====================================================
 
-  const menuRef =
-    useRef(null);
+  const menuRef = useRef(null);
 
-  const searchRef =
-    useRef(null);
+  const helpRef = useRef(null);
+
+  const searchRef = useRef(null);
 
   const categoryMenuRef =
     useRef(null);
@@ -165,126 +152,92 @@ function Navbar({
   const categoryBarRef =
     useRef(null);
 
-
   // =====================================================
-  // THEME SHORTCUT
+  // THEME
   // =====================================================
 
   const theme =
     storeSettings.theme ||
     defaultStoreSettings.theme;
 
-
   const topStrip =
     storeSettings.topStrip ||
     defaultStoreSettings.topStrip;
-
 
   // =====================================================
   // LOAD STORE SETTINGS
   // =====================================================
 
   useEffect(() => {
-
-    const settingsRef =
-      doc(
-        db,
-        "settings",
-        "store"
-      );
-
+    const settingsRef = doc(
+      db,
+      "settings",
+      "store"
+    );
 
     const unsubscribe =
       onSnapshot(
         settingsRef,
-
         (snapshot) => {
-
-          if (
-            snapshot.exists()
-          ) {
-
-            const data =
-              snapshot.data();
-
-
-            setStoreSettings(
-              (previous) => ({
-
-                ...previous,
-
-                ...data,
-
-                theme: {
-                  ...previous.theme,
-                  ...(data.theme || {}),
-                },
-
-                topStrip: {
-                  ...previous.topStrip,
-                  ...(data.topStrip || {}),
-                },
-
-              })
-            );
-
+          if (!snapshot.exists()) {
+            return;
           }
 
+          const data =
+            snapshot.data();
+
+          setStoreSettings(
+            (previous) => ({
+              ...previous,
+
+              ...data,
+
+              theme: {
+                ...previous.theme,
+                ...(data.theme || {}),
+              },
+
+              topStrip: {
+                ...previous.topStrip,
+                ...(data.topStrip || {}),
+              },
+            })
+          );
         },
-
         (error) => {
-
           console.error(
             "Store Settings Error:",
             error
           );
-
         }
       );
-
 
     return () => {
       unsubscribe();
     };
-
   }, []);
-
 
   // =====================================================
   // FIREBASE USER
   // =====================================================
 
   useEffect(() => {
-
     const unsubscribe =
       onAuthStateChanged(
         auth,
-
         async (currentUser) => {
+          setUser(currentUser);
 
-          setUser(
-            currentUser
-          );
-
-
-          if (
-            !currentUser
-          ) {
-
+          if (!currentUser) {
             setAccountName("");
-
             return;
-
           }
-
 
           let name =
             currentUser.displayName ||
             "";
 
-
           try {
-
             const userRef =
               doc(
                 db,
@@ -292,69 +245,49 @@ function Navbar({
                 currentUser.uid
               );
 
-
             const userSnap =
               await getDoc(
                 userRef
               );
 
-
-            if (
-              userSnap.exists()
-            ) {
-
+            if (userSnap.exists()) {
               const data =
                 userSnap.data();
-
 
               name =
                 data.name ||
                 data.displayName ||
                 currentUser.displayName ||
                 "حسابي";
-
             }
-
           } catch (error) {
-
             console.error(
               "Error loading account name:",
               error
             );
-
           }
 
-
           setAccountName(
-            name ||
-            "حسابي"
+            name || "حسابي"
           );
-
         }
       );
-
 
     return () => {
       unsubscribe();
     };
-
   }, []);
-
 
   // =====================================================
   // LOAD CATEGORIES
   // =====================================================
 
   useEffect(() => {
-
     const fetchCategories =
       async () => {
-
         try {
-
           const data =
             await getCategories();
-
 
           const activeCategories =
             (data || []).filter(
@@ -362,299 +295,242 @@ function Navbar({
                 category?.active === true
             );
 
-
           setCategories(
             activeCategories
           );
-
         } catch (error) {
-
           console.error(
             "Categories Error:",
             error
           );
 
           setCategories([]);
-
         }
-
       };
 
-
     fetchCategories();
-
   }, []);
-
 
   // =====================================================
   // CLOSE SEARCH OUTSIDE
   // =====================================================
 
   useEffect(() => {
-
     const handleOutsideSearch =
       (event) => {
-
         if (
           searchRef.current &&
           !searchRef.current.contains(
             event.target
           )
         ) {
-
           setSuggestions([]);
-
         }
-
       };
-
 
     document.addEventListener(
       "mousedown",
       handleOutsideSearch
     );
 
-
     return () => {
-
       document.removeEventListener(
         "mousedown",
         handleOutsideSearch
       );
-
     };
-
   }, []);
 
-
   // =====================================================
-  // CLOSE ACCOUNT MENU OUTSIDE
+  // CLOSE ACCOUNT OUTSIDE
   // =====================================================
 
   useEffect(() => {
-
     const handleOutsideAccount =
       (event) => {
-
         if (
           menuRef.current &&
           !menuRef.current.contains(
             event.target
           )
         ) {
-
           setMenuOpen(false);
-
         }
-
       };
-
 
     document.addEventListener(
       "mousedown",
       handleOutsideAccount
     );
 
-
     return () => {
-
       document.removeEventListener(
         "mousedown",
         handleOutsideAccount
       );
-
     };
-
   }, []);
 
-
   // =====================================================
-  // CLOSE CATEGORY MENU OUTSIDE
+  // CLOSE HELP OUTSIDE
   // =====================================================
 
   useEffect(() => {
+    const handleOutsideHelp =
+      (event) => {
+        if (
+          helpRef.current &&
+          !helpRef.current.contains(
+            event.target
+          )
+        ) {
+          setHelpOpen(false);
+        }
+      };
 
+    document.addEventListener(
+      "mousedown",
+      handleOutsideHelp
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideHelp
+      );
+    };
+  }, []);
+
+  // =====================================================
+  // CLOSE CATEGORY OUTSIDE
+  // =====================================================
+
+  useEffect(() => {
     const handleOutsideCategory =
       (event) => {
-
         if (
           categoryMenuRef.current &&
           !categoryMenuRef.current.contains(
             event.target
           )
         ) {
-
           setOpenCategory(null);
           setMobileCategory(null);
           setOpenSubCategories([]);
-
         }
-
       };
-
 
     document.addEventListener(
       "mousedown",
       handleOutsideCategory
     );
 
-
     return () => {
-
       document.removeEventListener(
         "mousedown",
         handleOutsideCategory
       );
-
     };
-
   }, []);
 
-
   // =====================================================
-  // ESC KEY
+  // ESC
   // =====================================================
 
   useEffect(() => {
-
     const handleEscape =
       (event) => {
-
         if (
           event.key !==
           "Escape"
         ) {
-
           return;
-
         }
 
-
         setMenuOpen(false);
-
+        setHelpOpen(false);
         setSuggestions([]);
-
         setOpenCategory(null);
-
         setMobileCategory(null);
-
         setOpenSubCategories([]);
-
         setLogoZoom(false);
-
+        setMobileMenuOpen(false);
       };
-
 
     document.addEventListener(
       "keydown",
       handleEscape
     );
 
-
     return () => {
-
       document.removeEventListener(
         "keydown",
         handleEscape
       );
-
     };
-
   }, []);
-
 
   // =====================================================
   // LOGOUT
   // =====================================================
 
-  const logout =
-    async () => {
+  const logout = async () => {
+    try {
+      await signOut(auth);
 
-      try {
+      setMenuOpen(false);
 
-        await signOut(
-          auth
-        );
-
-
-        setMenuOpen(
-          false
-        );
-
-
-        navigate("/");
-
-      } catch (error) {
-
-        console.error(
-          "Logout Error:",
-          error
-        );
-
-      }
-
-    };
-
+      navigate("/");
+    } catch (error) {
+      console.error(
+        "Logout Error:",
+        error
+      );
+    }
+  };
 
   // =====================================================
-  // SCROLL TO SECTION
+  // SCROLL
   // =====================================================
 
-  const scrollToSection =
-    (selector) => {
+  const scrollToSection = (
+    selector
+  ) => {
+    const element =
+      document.querySelector(
+        selector
+      );
 
-      const element =
-        document.querySelector(
-          selector
-        );
+    if (!element) {
+      navigate("/");
+      return;
+    }
 
-
-      if (!element) {
-
-        return;
-
-      }
-
-
-      element.scrollIntoView({
-        behavior:
-          "smooth",
-
-        block:
-          "start",
-      });
-
-    };
-
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   // =====================================================
-  // MOVE CATEGORY BAR
+  // CATEGORY BAR SCROLL
   // =====================================================
 
-  const moveCategories =
-    (direction) => {
+  const moveCategories = (
+    direction
+  ) => {
+    const bar =
+      categoryBarRef.current;
 
-      const bar =
-        categoryBarRef.current;
+    if (!bar) {
+      return;
+    }
 
-
-      if (!bar) {
-
-        return;
-
-      }
-
-
-      bar.scrollBy({
-        left:
-          direction,
-
-        behavior:
-          "smooth",
-      });
-
-    };
-
+    bar.scrollBy({
+      left: direction,
+      behavior: "smooth",
+    });
+  };
 
   // =====================================================
   // SEARCH CHANGE
@@ -662,97 +538,63 @@ function Navbar({
 
   const handleSearchChange =
     (event) => {
-
       const value =
         event.target.value;
 
-
-      setSearchTerm(
-        value
-      );
-
+      setSearchTerm(value);
 
       const trimmedValue =
         value.trim();
 
-
       if (!trimmedValue) {
-
         setSuggestions([]);
-
         return;
-
       }
-
 
       const searchValue =
         trimmedValue.toLowerCase();
 
-
       const results =
         (products || [])
-          .filter(
-            (product) => {
+          .filter((product) => {
+            const name =
+              product?.title ||
+              product?.name ||
+              product?.productName ||
+              "";
 
-              const name =
-                product?.title ||
-                product?.name ||
-                product?.productName ||
-                "";
+            return String(name)
+              .toLowerCase()
+              .includes(
+                searchValue
+              );
+          })
+          .slice(0, 6);
 
-
-              return String(
-                name
-              )
-                .toLowerCase()
-                .includes(
-                  searchValue
-                );
-
-            }
-          )
-          .slice(
-            0,
-            5
-          );
-
-
-      setSuggestions(
-        results
-      );
-
+      setSuggestions(results);
     };
 
-
   // =====================================================
-  // EXECUTE SEARCH
+  // SEARCH
   // =====================================================
 
-  const handleSearch =
-    () => {
+  const handleSearch = () => {
+    const value =
+      searchTerm?.trim();
 
-      const value =
-        searchTerm?.trim();
+    if (!value) {
+      return;
+    }
 
+    navigate(
+      `/search?q=${encodeURIComponent(
+        value
+      )}`
+    );
 
-      if (!value) {
-
-        return;
-
-      }
-
-
-      navigate(
-        `/search?q=${encodeURIComponent(
-          value
-        )}`
-      );
-
-
-      setSuggestions([]);
-
-    };
-
+    setSuggestions([]);
+    setMobileMenuOpen(false);
+  };
 
   // =====================================================
   // SEARCH SUGGESTION
@@ -760,284 +602,178 @@ function Navbar({
 
   const handleSuggestionClick =
     (product) => {
-
       const id =
         product?.id ||
         product?._id;
 
-
       setSearchTerm("");
-
       setSuggestions([]);
 
-
       if (id) {
-
         navigate(
           `/product/${id}`
         );
-
       }
-
     };
-
 
   // =====================================================
   // CATEGORY HELPERS
   // =====================================================
 
-  const normalizeId =
-    (value) => {
+  const normalizeId = (
+    value
+  ) => {
+    if (
+      value === undefined ||
+      value === null
+    ) {
+      return "";
+    }
 
-      if (
-        value ===
-          undefined ||
-        value ===
-          null
-      ) {
+    return String(value);
+  };
 
-        return "";
-
-      }
-
-
-      return String(
-        value
-      );
-
-    };
-
-
-  const getParentId =
-    (category) => {
-
-      return normalizeId(
-        category?.parentId
-      );
-
-    };
-
-
-  // =====================================================
-  // MAIN CATEGORIES
-  // =====================================================
+  const getParentId = (
+    category
+  ) => {
+    return normalizeId(
+      category?.parentId
+    );
+  };
 
   const mainCategories =
     categories.filter(
       (category) =>
-        !getParentId(
-          category
-        )
+        !getParentId(category)
     );
 
+  const getChildren = (
+    parentId
+  ) => {
+    const normalizedParent =
+      normalizeId(parentId);
+
+    return categories.filter(
+      (category) =>
+        getParentId(category) ===
+        normalizedParent
+    );
+  };
+
+  const hasChildren = (
+    category
+  ) => {
+    if (!category?.id) {
+      return false;
+    }
+
+    return (
+      getChildren(
+        category.id
+      ).length > 0
+    );
+  };
+
+  const isSubCategoryOpen = (
+    categoryId
+  ) => {
+    return openSubCategories.includes(
+      normalizeId(categoryId)
+    );
+  };
 
   // =====================================================
-  // GET DIRECT CHILDREN
+  // DESCENDANTS
   // =====================================================
 
-  const getChildren =
-    (parentId) => {
+  const getDescendantIds = (
+    parentId
+  ) => {
+    const result = [];
 
-      const normalizedParent =
-        normalizeId(
-          parentId
-        );
+    const walk = (id) => {
+      const children =
+        getChildren(id);
 
+      children.forEach(
+        (child) => {
+          const childId =
+            normalizeId(child.id);
 
-      return categories.filter(
-        (category) =>
-          getParentId(
-            category
-          ) ===
-          normalizedParent
-      );
+          result.push(childId);
 
-    };
-
-
-  // =====================================================
-  // HAS CHILDREN
-  // =====================================================
-
-  const hasChildren =
-    (category) => {
-
-      if (!category?.id) {
-
-        return false;
-
-      }
-
-
-      return (
-        getChildren(
-          category.id
-        ).length > 0
-      );
-
-    };
-
-
-  // =====================================================
-  // IS SUB CATEGORY OPEN
-  // =====================================================
-
-  const isSubCategoryOpen =
-    (categoryId) => {
-
-      return openSubCategories.includes(
-        normalizeId(
-          categoryId
-        )
-      );
-
-    };
-
-
-  // =====================================================
-  // GET ALL DESCENDANTS
-  // =====================================================
-
-  const getDescendantIds =
-    (parentId) => {
-
-      const result = [];
-
-
-      const walk =
-        (id) => {
-
-          const children =
-            getChildren(
-              id
-            );
-
-
-          children.forEach(
-            (child) => {
-
-              const childId =
-                normalizeId(
-                  child.id
-                );
-
-
-              result.push(
-                childId
-              );
-
-
-              walk(
-                child.id
-              );
-
-            }
-          );
-
-        };
-
-
-      walk(
-        parentId
-      );
-
-
-      return result;
-
-    };
-
-
-  // =====================================================
-  // OPEN SUB CATEGORY
-  // =====================================================
-
-  const openSubCategory =
-    (categoryId) => {
-
-      const id =
-        normalizeId(
-          categoryId
-        );
-
-
-      setOpenSubCategories(
-        (previous) => {
-
-          if (
-            previous.includes(
-              id
-            )
-          ) {
-
-            return previous;
-
-          }
-
-
-          return [
-            ...previous,
-            id,
-          ];
-
+          walk(child.id);
         }
       );
-
     };
 
+    walk(parentId);
+
+    return result;
+  };
 
   // =====================================================
-  // TOGGLE SUB CATEGORY
+  // OPEN SUBCATEGORY
+  // =====================================================
+
+  const openSubCategory = (
+    categoryId
+  ) => {
+    const id =
+      normalizeId(categoryId);
+
+    setOpenSubCategories(
+      (previous) => {
+        if (
+          previous.includes(id)
+        ) {
+          return previous;
+        }
+
+        return [
+          ...previous,
+          id,
+        ];
+      }
+    );
+  };
+
+  // =====================================================
+  // TOGGLE SUBCATEGORY
   // =====================================================
 
   const toggleSubCategory =
     (category) => {
-
       if (!category) {
-
         return;
-
       }
-
 
       const id =
         normalizeId(
           category.id
         );
-
 
       const children =
         getChildren(
           category.id
         );
 
-
-      if (
-        !children.length
-      ) {
-
+      if (!children.length) {
         selectCategory(
           category
         );
-
         return;
-
       }
-
 
       setOpenSubCategories(
         (previous) => {
-
           if (
-            previous.includes(
-              id
-            )
+            previous.includes(id)
           ) {
-
             const descendants =
               getDescendantIds(
                 category.id
               );
-
 
             return previous.filter(
               (itemId) =>
@@ -1046,20 +782,15 @@ function Navbar({
                   itemId
                 )
             );
-
           }
-
 
           return [
             ...previous,
             id,
           ];
-
         }
       );
-
     };
-
 
   // =====================================================
   // SELECT CATEGORY
@@ -1067,28 +798,20 @@ function Navbar({
 
   const selectCategory =
     (category) => {
-
       if (!category) {
-
         return;
-
       }
-
 
       const categoryName =
         category.name;
 
-
       if (
         setSelectedCategory
       ) {
-
         setSelectedCategory(
           categoryName
         );
-
       }
-
 
       window.dispatchEvent(
         new CustomEvent(
@@ -1100,26 +823,17 @@ function Navbar({
         )
       );
 
+      setOpenCategory(null);
+      setMobileCategory(null);
+      setOpenSubCategories([]);
+      setMobileMenuOpen(false);
 
-      setOpenCategory(
-        null
-      );
-
-      setMobileCategory(
-        null
-      );
-
-      setOpenSubCategories(
-        []
-      );
-
-
-      scrollToSection(
-        ".products-section"
-      );
-
+      setTimeout(() => {
+        scrollToSection(
+          ".products-section"
+        );
+      }, 50);
     };
-
 
   // =====================================================
   // CATEGORY CLICK
@@ -1127,380 +841,245 @@ function Navbar({
 
   const handleCategoryClick =
     (category) => {
-
       if (!category) {
-
         return;
-
       }
-
 
       const children =
         getChildren(
           category.id
         );
 
-
-      if (
-        !children.length
-      ) {
-
+      if (!children.length) {
         selectCategory(
           category
         );
-
         return;
-
       }
-
 
       const id =
         normalizeId(
           category.id
         );
 
-
       if (
         window.innerWidth <=
         700
       ) {
-
         if (
           mobileCategory ===
             id &&
-          openCategory ===
-            id
+          openCategory === id
         ) {
-
           selectCategory(
             category
           );
 
           return;
-
         }
 
-
-        setMobileCategory(
-          id
-        );
-
-        setOpenCategory(
-          id
-        );
-
-        setOpenSubCategories(
-          [id]
-        );
-
+        setMobileCategory(id);
+        setOpenCategory(id);
+        setOpenSubCategories([
+          id,
+        ]);
 
         return;
-
       }
 
-
       if (
-        openCategory ===
-        id
+        openCategory === id
       ) {
-
         selectCategory(
           category
         );
 
         return;
-
       }
 
+      setOpenCategory(id);
 
-      setOpenCategory(
-        id
-      );
-
-      setOpenSubCategories(
-        [id]
-      );
-
+      setOpenSubCategories([
+        id,
+      ]);
     };
 
-
   // =====================================================
-  // DESKTOP HOVER MAIN CATEGORY
+  // DESKTOP HOVER
   // =====================================================
 
   const handleCategoryMouseEnter =
     (category) => {
-
       if (
         window.innerWidth <=
         700
       ) {
-
         return;
-
       }
-
 
       const id =
         normalizeId(
           category.id
         );
 
-
       if (
-        hasChildren(
-          category
-        )
+        hasChildren(category)
       ) {
+        setOpenCategory(id);
 
-        setOpenCategory(
-          id
-        );
-
-        setOpenSubCategories(
-          [id]
-        );
-
+        setOpenSubCategories([
+          id,
+        ]);
       } else {
-
-        setOpenCategory(
-          null
-        );
-
-        setOpenSubCategories(
-          []
-        );
-
+        setOpenCategory(null);
+        setOpenSubCategories([]);
       }
-
     };
-
-
-  // =====================================================
-  // DESKTOP HOVER SUB CATEGORY
-  // =====================================================
 
   const handleSubCategoryMouseEnter =
     (category) => {
-
       if (
         window.innerWidth <=
         700
       ) {
-
         return;
-
       }
 
-
       if (
-        hasChildren(
-          category
-        )
+        hasChildren(category)
       ) {
-
         openSubCategory(
           category.id
         );
-
       }
-
     };
-
-
-  // =====================================================
-  // LEAVE CATEGORY AREA
-  // =====================================================
 
   const handleCategoryAreaLeave =
     () => {
-
       if (
         window.innerWidth <=
         700
       ) {
-
         return;
-
       }
 
-
-      setOpenCategory(
-        null
-      );
-
-      setOpenSubCategories(
-        []
-      );
-
+      setOpenCategory(null);
+      setOpenSubCategories([]);
     };
 
-
   // =====================================================
-  // RENDER DEEP LEVELS
+  // DEEP MENU
   // =====================================================
 
-  const renderDeepChildren =
-    (
-      parentId,
-      level = 0
-    ) => {
+  const renderDeepChildren = (
+    parentId,
+    level = 0
+  ) => {
+    const children =
+      getChildren(parentId);
 
-      const children =
-        getChildren(
-          parentId
-        );
+    if (!children.length) {
+      return null;
+    }
 
-
-      if (!children.length) {
-
-        return null;
-
-      }
-
-
-      return (
-
-        <div
-          className={`mega-deep-children level-${level}`}
-        >
-
-          {children.map(
-            (child) => {
-
-              const childId =
-                normalizeId(
-                  child.id
-                );
-
-
-              const childHasChildren =
-                hasChildren(
-                  child
-                );
-
-
-              const childIsOpen =
-                isSubCategoryOpen(
-                  childId
-                );
-
-
-              return (
-
-                <div
-                  key={childId}
-                  className={`mega-deep-item ${
-                    childIsOpen
-                      ? "mega-link-open"
-                      : ""
-                  }`}
-                  onMouseEnter={() =>
-                    handleSubCategoryMouseEnter(
-                      child
-                    )
-                  }
-                >
-
-                  <button
-                    type="button"
-                    className={`mega-link ${
-                      childIsOpen
-                        ? "active-subcategory"
-                        : ""
-                    }`}
-                    onClick={() => {
-
-                      if (
-                        childHasChildren
-                      ) {
-
-                        toggleSubCategory(
-                          child
-                        );
-
-                      } else {
-
-                        selectCategory(
-                          child
-                        );
-
-                      }
-
-                    }}
-                  >
-
-                    {child.image ? (
-
-                      <img
-                        src={
-                          child.image
-                        }
-                        alt={
-                          child.name
-                        }
-                        loading="lazy"
-                      />
-
-                    ) : (
-
-                      <span className="mega-link-icon">
-
-                        {
-                          child.icon ||
-                          "•"
-                        }
-
-                      </span>
-
-                    )}
-
-
-                    <span>
-                      {
-                        child.name
-                      }
-                    </span>
-
-
-                    {childHasChildren && (
-
-                      <b className="mega-arrow">
-                        ‹
-                      </b>
-
-                    )}
-
-                  </button>
-
-
-                  {childHasChildren &&
-                    childIsOpen && (
-
-                      <div className="mega-deep-level">
-
-                        {renderDeepChildren(
-                          child.id,
-                          level + 1
-                        )}
-
-                      </div>
-
-                    )}
-
-                </div>
-
+    return (
+      <div
+        className={`mega-deep-children level-${level}`}
+      >
+        {children.map(
+          (child) => {
+            const childId =
+              normalizeId(
+                child.id
               );
 
-            }
-          )}
+            const childHasChildren =
+              hasChildren(child);
 
-        </div>
+            const childIsOpen =
+              isSubCategoryOpen(
+                childId
+              );
 
-      );
+            return (
+              <div
+                key={childId}
+                className={`mega-deep-item ${
+                  childIsOpen
+                    ? "mega-link-open"
+                    : ""
+                }`}
+                onMouseEnter={() =>
+                  handleSubCategoryMouseEnter(
+                    child
+                  )
+                }
+              >
+                <button
+                  type="button"
+                  className={`mega-link ${
+                    childIsOpen
+                      ? "active-subcategory"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    if (
+                      childHasChildren
+                    ) {
+                      toggleSubCategory(
+                        child
+                      );
+                    } else {
+                      selectCategory(
+                        child
+                      );
+                    }
+                  }}
+                >
+                  {child.image ? (
+                    <img
+                      src={
+                        child.image
+                      }
+                      alt={
+                        child.name
+                      }
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="mega-link-icon">
+                      {child.icon ||
+                        "•"}
+                    </span>
+                  )}
 
-    };
+                  <span>
+                    {child.name}
+                  </span>
 
+                  {childHasChildren && (
+                    <b className="mega-arrow">
+                      ‹
+                    </b>
+                  )}
+                </button>
+
+                {childHasChildren &&
+                  childIsOpen && (
+                    <div className="mega-deep-level">
+                      {renderDeepChildren(
+                        child.id,
+                        level + 1
+                      )}
+                    </div>
+                  )}
+              </div>
+            );
+          }
+        )}
+      </div>
+    );
+  };
 
   // =====================================================
   // MEGA MENU
@@ -1508,35 +1087,25 @@ function Navbar({
 
   const renderMegaMenu =
     (category) => {
-
       if (!category) {
-
         return null;
-
       }
-
 
       const children =
         getChildren(
           category.id
         );
 
-
       if (!children.length) {
-
         return null;
-
       }
-
 
       const categoryId =
         normalizeId(
           category.id
         );
 
-
       return (
-
         <div
           className={`mega-menu ${
             mobileCategory ===
@@ -1545,33 +1114,21 @@ function Navbar({
               : ""
           }`}
           onMouseEnter={() => {
-
             if (
               window.innerWidth >
               700
             ) {
-
               setOpenCategory(
                 categoryId
               );
-
             }
-
           }}
         >
-
           <div className="mega-menu-inner">
 
-            {/* ================================================
-                TITLE
-            ================================================= */}
-
             <div className="mega-menu-title">
-
               <div className="mega-menu-title-icon">
-
                 {category.image ? (
-
                   <img
                     src={
                       category.image
@@ -1581,75 +1138,49 @@ function Navbar({
                     }
                     loading="lazy"
                   />
-
                 ) : (
-
                   <span>
-                    {
-                      category.icon ||
-                      "📦"
-                    }
+                    {category.icon ||
+                      "📦"}
                   </span>
-
                 )}
-
               </div>
 
-
               <div className="mega-menu-title-content">
-
                 <strong>
-                  {
-                    category.name
-                  }
+                  {category.name}
                 </strong>
 
                 <small>
                   تصفح أقسام{" "}
-                  {
-                    category.name
-                  }
+                  {category.name}
                 </small>
-
               </div>
-
             </div>
 
-
-            {/* ================================================
-                MAIN CHILDREN
-            ================================================= */}
-
             <div className="mega-columns">
-
               {children.map(
                 (child) => {
-
                   const childId =
                     normalizeId(
                       child.id
                     );
-
 
                   const grandchildren =
                     getChildren(
                       child.id
                     );
 
-
                   const childHasChildren =
                     grandchildren.length >
                     0;
-
 
                   const childIsOpen =
                     isSubCategoryOpen(
                       childId
                     );
 
-
                   return (
-
                     <div
                       className={`mega-column ${
                         childIsOpen
@@ -1665,11 +1196,6 @@ function Navbar({
                         )
                       }
                     >
-
-                      {/* ====================================
-                          COLUMN TITLE
-                      ==================================== */}
-
                       <button
                         type="button"
                         className={`mega-column-title ${
@@ -1678,28 +1204,20 @@ function Navbar({
                             : ""
                         }`}
                         onClick={() => {
-
                           if (
                             childHasChildren
                           ) {
-
                             toggleSubCategory(
                               child
                             );
-
                           } else {
-
                             selectCategory(
                               child
                             );
-
                           }
-
                         }}
                       >
-
                         {child.image ? (
-
                           <img
                             src={
                               child.image
@@ -1709,18 +1227,12 @@ function Navbar({
                             }
                             loading="lazy"
                           />
-
                         ) : (
-
                           <span>
-                            {
-                              child.icon ||
-                              "📦"
-                            }
+                            {child.icon ||
+                              "📦"}
                           </span>
-
                         )}
-
 
                         <span>
                           {
@@ -1728,172 +1240,119 @@ function Navbar({
                           }
                         </span>
 
-
                         {childHasChildren && (
-
                           <b className="mega-arrow">
                             ‹
                           </b>
-
                         )}
-
                       </button>
-
-
-                      {/* ====================================
-                          CHILDREN
-                      ==================================== */}
 
                       {childHasChildren &&
                         childIsOpen && (
+                          <div className="mega-column-items">
+                            {grandchildren.map(
+                              (
+                                grandChild
+                              ) => {
+                                const grandId =
+                                  normalizeId(
+                                    grandChild.id
+                                  );
 
-                        <div className="mega-column-items">
+                                const grandHasChildren =
+                                  hasChildren(
+                                    grandChild
+                                  );
 
-                          {grandchildren.map(
-                            (grandChild) => {
-
-                              const grandId =
-                                normalizeId(
-                                  grandChild.id
-                                );
-
-
-                              const grandHasChildren =
-                                hasChildren(
-                                  grandChild
-                                );
-
-
-                              const grandIsOpen =
-                                isSubCategoryOpen(
-                                  grandId
-                                );
-
-
-                              return (
-
-                                <div
-                                  key={
+                                const grandIsOpen =
+                                  isSubCategoryOpen(
                                     grandId
-                                  }
-                                  className={`mega-link-wrapper ${
-                                    grandIsOpen
-                                      ? "mega-link-open"
-                                      : ""
-                                  }`}
-                                  onMouseEnter={() =>
-                                    handleSubCategoryMouseEnter(
-                                      grandChild
-                                    )
-                                  }
-                                >
+                                  );
 
-                                  <button
-                                    type="button"
-                                    className={`mega-link ${
+                                return (
+                                  <div
+                                    key={
+                                      grandId
+                                    }
+                                    className={`mega-link-wrapper ${
                                       grandIsOpen
-                                        ? "active-subcategory"
+                                        ? "mega-link-open"
                                         : ""
                                     }`}
-                                    onClick={() => {
-
-                                      if (
-                                        grandHasChildren
-                                      ) {
-
-                                        toggleSubCategory(
-                                          grandChild
-                                        );
-
-                                      } else {
-
-                                        selectCategory(
-                                          grandChild
-                                        );
-
-                                      }
-
-                                    }}
+                                    onMouseEnter={() =>
+                                      handleSubCategoryMouseEnter(
+                                        grandChild
+                                      )
+                                    }
                                   >
-
-                                    {grandChild.image ? (
-
-                                      <img
-                                        src={
-                                          grandChild.image
+                                    <button
+                                      type="button"
+                                      className={`mega-link ${
+                                        grandIsOpen
+                                          ? "active-subcategory"
+                                          : ""
+                                      }`}
+                                      onClick={() => {
+                                        if (
+                                          grandHasChildren
+                                        ) {
+                                          toggleSubCategory(
+                                            grandChild
+                                          );
+                                        } else {
+                                          selectCategory(
+                                            grandChild
+                                          );
                                         }
-                                        alt={
-                                          grandChild.name
-                                        }
-                                        loading="lazy"
-                                      />
-
-                                    ) : (
-
-                                      <span className="mega-link-icon">
-
-                                        {
-                                          grandChild.icon ||
-                                          "•"
-                                        }
-
-                                      </span>
-
-                                    )}
-
-
-                                    <span>
-                                      {
-                                        grandChild.name
-                                      }
-                                    </span>
-
-
-                                    {grandHasChildren && (
-
-                                      <b className="mega-arrow">
-                                        ‹
-                                      </b>
-
-                                    )}
-
-                                  </button>
-
-
-                                  {/* LEVEL 3+ */}
-
-                                  {grandHasChildren &&
-                                    grandIsOpen && (
-
-                                    <div className="mega-deep-level">
-
-                                      {renderDeepChildren(
-                                        grandChild.id,
-                                        0
+                                      }}
+                                    >
+                                      {grandChild.image ? (
+                                        <img
+                                          src={
+                                            grandChild.image
+                                          }
+                                          alt={
+                                            grandChild.name
+                                          }
+                                          loading="lazy"
+                                        />
+                                      ) : (
+                                        <span className="mega-link-icon">
+                                          {grandChild.icon ||
+                                            "•"}
+                                        </span>
                                       )}
 
-                                    </div>
+                                      <span>
+                                        {
+                                          grandChild.name
+                                        }
+                                      </span>
 
-                                  )}
+                                      {grandHasChildren && (
+                                        <b className="mega-arrow">
+                                          ‹
+                                        </b>
+                                      )}
+                                    </button>
 
-                                </div>
-
-                              );
-
-                            }
-                          )}
-
-                        </div>
-
-                      )}
-
-
-                      {/* ====================================
-                          NO CHILDREN
-                      ==================================== */}
+                                    {grandHasChildren &&
+                                      grandIsOpen && (
+                                        <div className="mega-deep-level">
+                                          {renderDeepChildren(
+                                            grandChild.id,
+                                            0
+                                          )}
+                                        </div>
+                                      )}
+                                  </div>
+                                );
+                              }
+                            )}
+                          </div>
+                        )}
 
                       {!childHasChildren && (
-
                         <button
                           type="button"
                           className="mega-link mega-single-link"
@@ -1903,35 +1362,23 @@ function Navbar({
                             )
                           }
                         >
-
                           <span>
                             عرض المنتجات
                           </span>
-
                         </button>
-
                       )}
-
                     </div>
-
                   );
-
                 }
               )}
-
             </div>
-
           </div>
-
         </div>
-
       );
-
     };
 
-
   // =====================================================
-  // TOP STRIP ITEMS
+  // TOP STRIP
   // =====================================================
 
   const configuredTopStripItems =
@@ -1940,25 +1387,26 @@ function Navbar({
     )
       ? topStrip.items.filter(
           (item) =>
-            item?.active !== false &&
+            item?.active !==
+              false &&
             item?.text
         )
       : [];
-
 
   const activeTopStripItems =
     configuredTopStripItems.length >
     0
       ? configuredTopStripItems.map(
           (item) =>
-            `${item.icon || ""} ${item.text}`.trim()
+            `${item.icon || ""} ${
+              item.text
+            }`.trim()
         )
       : Array.isArray(
           offerText
         )
         ? offerText
         : [];
-
 
   const repeatedTopStripItems = [
     ...activeTopStripItems,
@@ -1967,57 +1415,55 @@ function Navbar({
     ...activeTopStripItems,
   ];
 
-
   // =====================================================
-  // DYNAMIC STYLES
+  // DYNAMIC STYLE
   // =====================================================
 
   const navbarStyle = {
-
     "--navbar-bg":
       theme.navbarBackground ||
-      "#071A36",
+      "#ffffff",
 
     "--navbar-text":
       theme.navbarText ||
-      "#FFFFFF",
+      "#313133",
 
     "--category-bg":
       theme.categoryBarBackground ||
-      "#FFFFFF",
+      "#ffffff",
 
     "--category-text":
       theme.categoryBarText ||
-      "#071A36",
+      "#313133",
 
     "--accent":
       theme.accent ||
-      "#D4AF37",
+      "#f68b1e",
 
     "--primary":
       theme.primary ||
-      "#071A36",
+      "#f68b1e",
 
     "--secondary":
       theme.secondary ||
-      "#0B1F3A",
+      "#ff9900",
 
     "--top-strip-bg":
       theme.topStripBackground ||
-      "#071A36",
+      "#f68b1e",
 
     "--top-strip-text":
       theme.topStripText ||
-      "#FFFFFF",
+      "#ffffff",
 
     "--top-strip-height":
       `${Number(
-        topStrip.height || 42
+        topStrip.height || 36
       )}px`,
 
     "--top-strip-font-size":
       `${Number(
-        topStrip.fontSize || 15
+        topStrip.fontSize || 13
       )}px`,
 
     "--top-strip-duration":
@@ -2028,53 +1474,58 @@ function Navbar({
         )
       )}s`,
 
+    "--top-strip-font-family":
+      topStrip.fontFamily ||
+      "Cairo",
   };
 
-
   // =====================================================
-  // JSX
+  // RENDER
   // =====================================================
 
   return (
-
     <div
-      className="store-navbar-theme"
+      className="store-navbar-theme jumia-navbar"
       style={navbarStyle}
+      dir="rtl"
     >
 
-      {/* ===================================================
-          TOP OFFER BAR
-      =================================================== */}
+      {/* =================================================
+          TOP STRIP
+      ================================================= */}
 
-      {topStrip.enabled !== false && (
-
+      {topStrip.enabled !==
+        false && (
         <div
           className="top-offer-bar"
           style={{
-            height:
-              `${Number(
-                topStrip.height || 42
-              )}px`,
+            height: `${Number(
+              topStrip.height ||
+                36
+            )}px`,
 
             background:
               theme.topStripBackground ||
-              "#071A36",
+              "#f68b1e",
 
             color:
               theme.topStripText ||
-              "#FFFFFF",
+              "#ffffff",
 
             direction:
               topStrip.direction ||
               "rtl",
 
-            fontSize:
-              `${Number(
-                topStrip.fontSize || 15
-              )}px`,
+            fontSize: `${Number(
+              topStrip.fontSize ||
+                13
+            )}px`,
+
+            fontFamily:
+              topStrip.fontFamily ||
+              "Cairo",
           }}
         >
-
           <div
             className="offer-track"
             style={{
@@ -2086,7 +1537,8 @@ function Navbar({
                 `${Math.max(
                   5,
                   Number(
-                    topStrip.speed || 40
+                    topStrip.speed ||
+                      40
                   )
                 )}s`,
 
@@ -2098,126 +1550,119 @@ function Navbar({
 
               color:
                 theme.topStripText ||
-                "#FFFFFF",
+                "#ffffff",
+
+              fontFamily:
+                topStrip.fontFamily ||
+                "Cairo",
             }}
           >
-
             {repeatedTopStripItems.map(
               (
                 text,
                 index
               ) => (
-
                 <span
-                  key={
-                    `${text}-${index}`
-                  }
+                  key={`${text}-${index}`}
                 >
-                  {
-                    text
-                  }
+                  {text}
                 </span>
-
               )
             )}
-
           </div>
-
         </div>
-
       )}
 
-
-      {/* ===================================================
+      {/* =================================================
           MAIN HEADER
-      =================================================== */}
+      ================================================= */}
 
       <header
         className="store-header"
         style={{
           background:
             theme.navbarBackground ||
-            "#071A36",
+            "#ffffff",
 
           color:
             theme.navbarText ||
-            "#FFFFFF",
+            "#313133",
         }}
       >
 
-        {/* =================================================
-            LOGO
-        ================================================= */}
+        {/* MOBILE MENU */}
+
+        <button
+          type="button"
+          className="mobile-menu-button"
+          aria-label="القائمة"
+          onClick={() =>
+            setMobileMenuOpen(
+              (previous) =>
+                !previous
+            )
+          }
+        >
+          ☰
+        </button>
+
+        {/* LOGO */}
 
         <div className="nav-logo">
-
           <img
             src="/logo/logo.png"
             alt={
               storeSettings.storeName ||
               "Elsafty Store"
             }
-            onClick={(event) => {
-
+            onClick={(
+              event
+            ) => {
               event.stopPropagation();
-
               setLogoZoom(true);
-
             }}
           />
-
         </div>
 
-
-        {/* =================================================
-            SEARCH
-        ================================================= */}
+        {/* SEARCH */}
 
         <div
           className="search-box"
           ref={searchRef}
         >
-
           <input
             type="text"
-            placeholder="ابحث عن أي منتج..."
+            placeholder="البحث عن منتجات، والعلامات التجارية والأقسام"
             value={
               searchTerm || ""
             }
             onChange={
               handleSearchChange
             }
-            onKeyDown={(event) => {
-
+            onKeyDown={(
+              event
+            ) => {
               if (
                 event.key ===
                 "Enter"
               ) {
-
                 event.preventDefault();
-
                 handleSearch();
-
               }
-
 
               if (
                 event.key ===
                 "Escape"
               ) {
-
                 setSuggestions([]);
-
               }
-
             }}
           />
-
 
           <button
             type="button"
             className="search-button"
-            aria-label="بحث"
+            aria-label="البحث"
             onClick={
               handleSearch
             }
@@ -2225,25 +1670,20 @@ function Navbar({
             🔍
           </button>
 
-
-          {/* SEARCH RESULTS */}
+          {/* SEARCH SUGGESTIONS */}
 
           {suggestions.length >
             0 && (
-
             <div className="search-suggestions">
-
               {suggestions.map(
                 (
                   item,
                   index
                 ) => {
-
                   const id =
                     item?.id ||
                     item?._id ||
                     `suggestion-${index}`;
-
 
                   const title =
                     item?.title ||
@@ -2251,14 +1691,11 @@ function Navbar({
                     item?.productName ||
                     "منتج";
 
-
                   const image =
                     item?.image ||
                     item?.images?.[0];
 
-
                   return (
-
                     <button
                       key={id}
                       type="button"
@@ -2269,109 +1706,47 @@ function Navbar({
                         )
                       }
                     >
-
                       {image ? (
-
                         <img
-                          src={
-                            image
-                          }
-                          alt={
-                            title
-                          }
+                          src={image}
+                          alt={title}
                           className="suggestion-image"
                           loading="lazy"
                         />
-
                       ) : (
-
                         <span className="suggestion-image-placeholder">
                           📦
                         </span>
-
                       )}
 
-
                       <span>
-                        {
-                          title
-                        }
+                        {title}
                       </span>
-
                     </button>
-
                   );
-
                 }
               )}
-
             </div>
-
           )}
-
 
           {/* NO RESULT */}
 
           {searchTerm?.trim() &&
             suggestions.length ===
               0 && (
-
-            <div className="search-suggestions">
-
-              <div className="search-no-result">
-                لا توجد منتجات مطابقة للبحث
+              <div className="search-suggestions">
+                <div className="search-no-result">
+                  لا توجد منتجات مطابقة للبحث
+                </div>
               </div>
-
-            </div>
-
-          )}
-
+            )}
         </div>
 
-
         {/* =================================================
-            NAV ACTIONS
+            HEADER ACTIONS
         ================================================= */}
 
         <div className="nav-actions">
-
-          {/* WISHLIST */}
-
-          <button
-            type="button"
-            className="nav-icon wishlist-icon"
-            aria-label="المفضلة"
-            onClick={() =>
-              navigate(
-                "/wishlist"
-              )
-            }
-          >
-
-            <span>
-              ❤️
-            </span>
-
-
-            {wishlist.length >
-              0 && (
-
-              <span className="wishlist-badge">
-                {wishlist.length >
-                99
-                  ? "99+"
-                  : wishlist.length}
-              </span>
-
-            )}
-
-
-            <small>
-              المفضلة
-            </small>
-
-          </button>
-
 
           {/* ACCOUNT */}
 
@@ -2379,66 +1754,66 @@ function Navbar({
             className="account-menu"
             ref={menuRef}
           >
-
             <button
               type="button"
-              className="nav-icon"
-              aria-label="حسابي"
+              className="nav-action-button"
+              aria-label="تسجيل الدخول"
               aria-expanded={
                 menuOpen
               }
               onClick={() =>
                 setMenuOpen(
-                  (prev) =>
-                    !prev
+                  (previous) =>
+                    !previous
                 )
               }
             >
-
-              <span>
+              <span className="action-icon">
                 👤
               </span>
 
+              <span className="action-content">
+                <small>
+                  {user
+                    ? "أهلاً"
+                    : "تسجيل الدخول"}
+                </small>
 
-              <small>
+                <strong>
+                  {user
+                    ? accountName ||
+                      "حسابي"
+                    : "حسابي"}
+                </strong>
+              </span>
 
-                {user
-                  ? accountName ||
-                    "حسابي"
-                  : "حسابي"}
-
-              </small>
-
+              <span className="action-arrow">
+                ▾
+              </span>
             </button>
 
-
             {menuOpen && (
-
               <div
                 className="account-dropdown"
                 style={{
                   background:
                     theme.cardBackground ||
-                    "#FFFFFF",
+                    "#ffffff",
 
                   color:
                     theme.textPrimary ||
-                    "#071A36",
+                    "#313133",
 
                   borderColor:
                     theme.accent ||
-                    "#D4AF37",
+                    "#f68b1e",
                 }}
               >
-
                 {!user ? (
-
                   <>
-
                     <button
                       type="button"
                       onClick={() => {
-
                         setMenuOpen(
                           false
                         );
@@ -2446,10 +1821,8 @@ function Navbar({
                         navigate(
                           "/login"
                         );
-
                       }}
                     >
-
                       <span>
                         🔑
                       </span>
@@ -2457,14 +1830,11 @@ function Navbar({
                       <span>
                         تسجيل الدخول
                       </span>
-
                     </button>
-
 
                     <button
                       type="button"
                       onClick={() => {
-
                         setMenuOpen(
                           false
                         );
@@ -2472,10 +1842,8 @@ function Navbar({
                         navigate(
                           "/register"
                         );
-
                       }}
                     >
-
                       <span>
                         ➕
                       </span>
@@ -2483,37 +1851,24 @@ function Navbar({
                       <span>
                         إنشاء حساب
                       </span>
-
                     </button>
-
                   </>
-
                 ) : (
-
                   <>
-
                     <div className="account-user-info">
-
                       <strong>
-                        {
-                          accountName ||
-                          "المستخدم"
-                        }
+                        {accountName ||
+                          "المستخدم"}
                       </strong>
 
                       <span>
-                        {
-                          user.email
-                        }
+                        {user.email}
                       </span>
-
                     </div>
-
 
                     <button
                       type="button"
                       onClick={() => {
-
                         setMenuOpen(
                           false
                         );
@@ -2521,10 +1876,8 @@ function Navbar({
                         navigate(
                           "/account"
                         );
-
                       }}
                     >
-
                       <span>
                         👤
                       </span>
@@ -2532,14 +1885,11 @@ function Navbar({
                       <span>
                         حسابي
                       </span>
-
                     </button>
-
 
                     <button
                       type="button"
                       onClick={() => {
-
                         setMenuOpen(
                           false
                         );
@@ -2547,10 +1897,8 @@ function Navbar({
                         navigate(
                           "/orders"
                         );
-
                       }}
                     >
-
                       <span>
                         📦
                       </span>
@@ -2558,9 +1906,7 @@ function Navbar({
                       <span>
                         طلباتي
                       </span>
-
                     </button>
-
 
                     <button
                       type="button"
@@ -2568,7 +1914,6 @@ function Navbar({
                         logout
                       }
                     >
-
                       <span>
                         🚪
                       </span>
@@ -2576,24 +1921,135 @@ function Navbar({
                       <span>
                         تسجيل الخروج
                       </span>
-
                     </button>
-
                   </>
-
                 )}
-
               </div>
-
             )}
-
           </div>
 
+          {/* HELP */}
+
+          <div
+            className="help-menu"
+            ref={helpRef}
+          >
+            <button
+              type="button"
+              className="nav-action-button"
+              aria-label="المساعدة"
+              onClick={() =>
+                setHelpOpen(
+                  (previous) =>
+                    !previous
+                )
+              }
+            >
+              <span className="action-icon">
+                ❓
+              </span>
+
+              <span className="action-content">
+                <small>
+                  محتاج مساعدة؟
+                </small>
+
+                <strong>
+                  المساعدة
+                </strong>
+              </span>
+
+              <span className="action-arrow">
+                ▾
+              </span>
+            </button>
+
+            {helpOpen && (
+              <div className="help-dropdown">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHelpOpen(
+                      false
+                    );
+
+                    navigate(
+                      "/contact"
+                    );
+                  }}
+                >
+                  💬 تواصل معنا
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHelpOpen(
+                      false
+                    );
+
+                    navigate(
+                      "/orders"
+                    );
+                  }}
+                >
+                  📦 متابعة طلباتي
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setHelpOpen(
+                      false
+                    )
+                  }
+                >
+                  ℹ️ مركز المساعدة
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* WISHLIST */}
+
+          <button
+            type="button"
+            className="nav-action-button wishlist-action"
+            aria-label="المفضلة"
+            onClick={() =>
+              navigate(
+                "/wishlist"
+              )
+            }
+          >
+            <span className="action-icon">
+              ❤️
+            </span>
+
+            <span className="action-content">
+              <small>
+                منتجاتي
+              </small>
+
+              <strong>
+                المفضلة
+              </strong>
+            </span>
+
+            {wishlist.length >
+              0 && (
+              <span className="wishlist-badge">
+                {wishlist.length >
+                99
+                  ? "99+"
+                  : wishlist.length}
+              </span>
+            )}
+          </button>
 
           {/* ADMIN */}
 
           {admin && (
-
             <button
               type="button"
               className="admin-btn"
@@ -2604,7 +2060,6 @@ function Navbar({
                 )
               }
             >
-
               <span>
                 ⚙️
               </span>
@@ -2612,60 +2067,52 @@ function Navbar({
               <small>
                 الإدارة
               </small>
-
             </button>
-
           )}
-
 
           {/* CART */}
 
           <button
             type="button"
             className="cart-icon"
-            aria-label="السلة"
+            aria-label="سلة التسوق"
             onClick={() =>
               navigate(
                 "/cart"
               )
             }
           >
-
             <span className="cart-symbol">
               🛒
             </span>
 
-
-            {cartCount > 0 && (
-
+            {cartCount >
+              0 && (
               <span className="cart-badge">
-
-                {cartCount > 99
+                {cartCount >
+                99
                   ? "99+"
                   : cartCount}
-
               </span>
-
             )}
 
-
-            <small>
-              السلة
-            </small>
-
+            <span className="cart-text">
+              سلة التسوق
+            </span>
           </button>
-
         </div>
-
       </header>
 
-
-      {/* =====================================================
-          CATEGORY BAR
-      ===================================================== */}
+      {/* =================================================
+          CATEGORY NAVIGATION
+      ================================================= */}
 
       <div
-        className="navbar-bottom-wrapper"
+        className={`navbar-bottom-wrapper ${
+          mobileMenuOpen
+            ? "mobile-navigation-open"
+            : ""
+        }`}
         ref={categoryMenuRef}
         onMouseLeave={
           handleCategoryAreaLeave
@@ -2673,17 +2120,31 @@ function Navbar({
         style={{
           background:
             theme.categoryBarBackground ||
-            "#FFFFFF",
+            "#ffffff",
 
           color:
             theme.categoryBarText ||
-            "#071A36",
+            "#313133",
 
           borderColor:
-            theme.accent ||
-            "#D4AF37",
+            theme.border ||
+            "#e2e2e2",
         }}
       >
+
+        {/* MOBILE CLOSE */}
+
+        <button
+          type="button"
+          className="mobile-navigation-close"
+          onClick={() =>
+            setMobileMenuOpen(
+              false
+            )
+          }
+        >
+          ✕ إغلاق
+        </button>
 
         {/* LEFT ARROW */}
 
@@ -2694,17 +2155,11 @@ function Navbar({
           onClick={() =>
             moveCategories(-300)
           }
-          style={{
-            color:
-              theme.categoryBarText ||
-              "#071A36",
-          }}
         >
           ❮
         </button>
 
-
-        {/* CATEGORY NAV */}
+        {/* NAV */}
 
         <nav
           className="navbar-bottom"
@@ -2717,23 +2172,25 @@ function Navbar({
             type="button"
             className="nav-category-item home-item"
             onClick={() => {
+              setOpenCategory(
+                null
+              );
 
-              setOpenCategory(null);
+              setMobileCategory(
+                null
+              );
 
-              setMobileCategory(null);
+              setOpenSubCategories(
+                []
+              );
 
-              setOpenSubCategories([]);
+              setMobileMenuOpen(
+                false
+              );
 
               navigate("/");
-
-            }}
-            style={{
-              color:
-                theme.categoryBarText ||
-                "#071A36",
             }}
           >
-
             <span>
               🏠
             </span>
@@ -2741,9 +2198,7 @@ function Navbar({
             <strong>
               الرئيسية
             </strong>
-
           </button>
-
 
           {/* ALL CATEGORIES */}
 
@@ -2751,25 +2206,27 @@ function Navbar({
             type="button"
             className="nav-category-item"
             onClick={() => {
+              setOpenCategory(
+                null
+              );
 
-              setOpenCategory(null);
+              setMobileCategory(
+                null
+              );
 
-              setMobileCategory(null);
+              setOpenSubCategories(
+                []
+              );
 
-              setOpenSubCategories([]);
+              setMobileMenuOpen(
+                false
+              );
 
               scrollToSection(
                 ".categories"
               );
-
-            }}
-            style={{
-              color:
-                theme.categoryBarText ||
-                "#071A36",
             }}
           >
-
             <span>
               📱
             </span>
@@ -2777,34 +2234,27 @@ function Navbar({
             <strong>
               الأقسام
             </strong>
-
           </button>
-
 
           {/* MAIN CATEGORIES */}
 
           {mainCategories.map(
             (category) => {
-
               const categoryId =
                 normalizeId(
                   category.id
                 );
-
 
               const children =
                 getChildren(
                   category.id
                 );
 
-
               const isOpen =
                 openCategory ===
                 categoryId;
 
-
               return (
-
                 <div
                   key={
                     categoryId
@@ -2820,7 +2270,6 @@ function Navbar({
                     )
                   }
                 >
-
                   <button
                     type="button"
                     className={`nav-category-item main-category-item ${
@@ -2833,15 +2282,8 @@ function Navbar({
                         category
                       )
                     }
-                    style={{
-                      color:
-                        theme.categoryBarText ||
-                        "#071A36",
-                    }}
                   >
-
                     {category.image ? (
-
                       <img
                         src={
                           category.image
@@ -2851,18 +2293,12 @@ function Navbar({
                         }
                         loading="lazy"
                       />
-
                     ) : (
-
                       <span>
-                        {
-                          category.icon ||
-                          "📦"
-                        }
+                        {category.icon ||
+                          "📦"}
                       </span>
-
                     )}
-
 
                     <strong>
                       {
@@ -2870,33 +2306,22 @@ function Navbar({
                       }
                     </strong>
 
-
                     {children.length >
                       0 && (
-
                       <span className="category-down-arrow">
                         ▾
                       </span>
-
                     )}
-
                   </button>
-
-
-                  {/* MEGA MENU */}
 
                   {isOpen &&
                     renderMegaMenu(
                       category
                     )}
-
                 </div>
-
               );
-
             }
           )}
-
 
           {/* OFFERS */}
 
@@ -2908,13 +2333,7 @@ function Navbar({
                 ".offer-banner"
               )
             }
-            style={{
-              color:
-                theme.categoryBarText ||
-                "#071A36",
-            }}
           >
-
             <span>
               🔥
             </span>
@@ -2922,9 +2341,7 @@ function Navbar({
             <strong>
               العروض
             </strong>
-
           </button>
-
 
           {/* BEST SELLERS */}
 
@@ -2936,13 +2353,7 @@ function Navbar({
                 ".best-selling-section"
               )
             }
-            style={{
-              color:
-                theme.categoryBarText ||
-                "#071A36",
-            }}
           >
-
             <span>
               ⭐
             </span>
@@ -2950,11 +2361,9 @@ function Navbar({
             <strong>
               الأكثر مبيعًا
             </strong>
-
           </button>
 
-
-          {/* NEW ARRIVALS */}
+          {/* NEW */}
 
           <button
             type="button"
@@ -2964,13 +2373,7 @@ function Navbar({
                 ".new-arrivals-section"
               )
             }
-            style={{
-              color:
-                theme.categoryBarText ||
-                "#071A36",
-            }}
           >
-
             <span>
               🆕
             </span>
@@ -2978,11 +2381,8 @@ function Navbar({
             <strong>
               وصل حديثًا
             </strong>
-
           </button>
-
         </nav>
-
 
         {/* RIGHT ARROW */}
 
@@ -2993,24 +2393,16 @@ function Navbar({
           onClick={() =>
             moveCategories(300)
           }
-          style={{
-            color:
-              theme.categoryBarText ||
-              "#071A36",
-          }}
         >
           ❯
         </button>
-
       </div>
 
-
-      {/* =====================================================
+      {/* =================================================
           LOGO MODAL
-      ===================================================== */}
+      ================================================= */}
 
       {logoZoom && (
-
         <div
           className="logo-modal"
           role="dialog"
@@ -3020,7 +2412,6 @@ function Navbar({
             setLogoZoom(false)
           }
         >
-
           <button
             type="button"
             className="close-logo"
@@ -3032,27 +2423,22 @@ function Navbar({
             ✕
           </button>
 
-
           <img
             src="/logo/logo.png"
             alt={
               storeSettings.storeName ||
               "Elsafty Store"
             }
-            onClick={(event) =>
+            onClick={(
+              event
+            ) =>
               event.stopPropagation()
             }
           />
-
         </div>
-
       )}
-
     </div>
-
   );
-
 }
-
 
 export default Navbar;
