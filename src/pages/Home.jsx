@@ -128,6 +128,89 @@ const defaultWheelSettings = {
 };
 
 // =====================================================
+// LOCAL DATE HELPER
+// =====================================================
+
+const getLocalDateKey = () => {
+  const now = new Date();
+
+  const year = now.getFullYear();
+
+  const month = String(
+    now.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    now.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+// =====================================================
+// COLOR HELPERS
+// =====================================================
+
+const normalizeHexColor = (color) => {
+  if (!color) {
+    return "#F68B1E";
+  }
+
+  let value = String(color).trim();
+
+  if (!value.startsWith("#")) {
+    return "#F68B1E";
+  }
+
+  value = value.replace("#", "");
+
+  if (value.length === 3) {
+    value = value
+      .split("")
+      .map((char) => char + char)
+      .join("");
+  }
+
+  if (!/^[0-9a-fA-F]{6}$/.test(value)) {
+    return "#F68B1E";
+  }
+
+  return `#${value}`;
+};
+
+const getContrastTextColor = (color) => {
+  const hex = normalizeHexColor(color).replace(
+    "#",
+    ""
+  );
+
+  const r = parseInt(
+    hex.substring(0, 2),
+    16
+  );
+
+  const g = parseInt(
+    hex.substring(2, 4),
+    16
+  );
+
+  const b = parseInt(
+    hex.substring(4, 6),
+    16
+  );
+
+  const luminance =
+    (0.299 * r +
+      0.587 * g +
+      0.114 * b) /
+    255;
+
+  return luminance > 0.62
+    ? "#171717"
+    : "#FFFFFF";
+};
+
+// =====================================================
 // HOME
 // =====================================================
 
@@ -211,7 +294,14 @@ function Home({
       seconds: "00",
     });
 
-  const DAILY_WHEEL_ATTEMPTS = 2;
+  const DAILY_WHEEL_ATTEMPTS =
+    Math.max(
+      1,
+      Number(
+        wheelSettings?.attemptsPerUser ||
+          defaultWheelSettings.attemptsPerUser
+      )
+    );
 
   const SPIN_DURATION = 5;
 
@@ -324,9 +414,12 @@ function Home({
             ...data,
 
             attemptsPerUser:
-              Number(
-                data.attemptsPerUser ||
-                  DAILY_WHEEL_ATTEMPTS
+              Math.max(
+                1,
+                Number(
+                  data.attemptsPerUser ||
+                    defaultWheelSettings.attemptsPerUser
+                )
               ),
 
             prizes: Array.isArray(
@@ -365,9 +458,7 @@ function Home({
 
         try {
           const today =
-            new Date()
-              .toISOString()
-              .slice(0, 10);
+            getLocalDateKey();
 
           const attemptRef =
             doc(
@@ -408,7 +499,10 @@ function Home({
       };
 
     loadWheelAttempts();
-  }, [currentUser]);
+  }, [
+    currentUser,
+    DAILY_WHEEL_ATTEMPTS,
+  ]);
 
   // ===================================================
   // DAILY RESET TIMER
@@ -468,10 +562,12 @@ function Home({
               2,
               "0"
             ),
+
             String(minutes).padStart(
               2,
               "0"
             ),
+
             String(seconds).padStart(
               2,
               "0"
@@ -481,11 +577,6 @@ function Home({
         setTimeUntilReset(
           formatted
         );
-
-        // =================================================
-        // FLASH SALES TIMER
-        // نفس العد التنازلي حتى منتصف الليل
-        // =================================================
 
         setFlashTimeLeft({
           hours: String(
@@ -1294,6 +1385,106 @@ function Home({
     ]);
 
   // ===================================================
+  // WHEEL PRIZE COLOR
+  // ===================================================
+
+  const getWheelPrizeColor =
+    (prize, index) => {
+      return normalizeHexColor(
+        prize?.color ||
+          defaultWheelColors[
+            index %
+              defaultWheelColors.length
+          ]
+      );
+    };
+
+  // ===================================================
+  // WHEEL LABEL STYLE
+  // ===================================================
+
+  const getWheelLabelStyle =
+    (prize, index) => {
+      const count =
+        activeWheelPrizes.length;
+
+      if (!count) {
+        return {};
+      }
+
+      const segment =
+        360 / count;
+
+      /*
+       * العجلة تبدأ من الأعلى.
+       * كل قطاع له زاوية مركزية.
+       */
+      const angle =
+        index * segment +
+        segment / 2;
+
+      /*
+       * كلما زاد عدد الجوائز
+       * نقرب النص من المركز قليلًا
+       * حتى لا يخرج من القطاع.
+       */
+      const radius =
+        count <= 4
+          ? 103
+          : count <= 6
+            ? 101
+            : count <= 8
+              ? 96
+              : 89;
+
+      /*
+       * النص يكون بمحاذاة اتجاه القطاع.
+       *
+       * لو الزاوية في النصف السفلي
+       * نقلب النص 180 درجة حتى يظل مقروءًا.
+       */
+      const readableAngle =
+        angle > 90 &&
+        angle < 270
+          ? 180
+          : 0;
+
+      const backgroundColor =
+        getWheelPrizeColor(
+          prize,
+          index
+        );
+
+      const textColor =
+        getContrastTextColor(
+          backgroundColor
+        );
+
+      return {
+        transform: `rotate(${angle}deg) translateY(-${radius}px) rotate(${readableAngle}deg)`,
+
+        color:
+          textColor,
+
+        /*
+         * لون القطاع يستخدم أيضًا
+         * كحد خفيف للنص.
+         */
+        textShadow:
+          textColor === "#FFFFFF"
+            ? "0 1px 2px rgba(0,0,0,.55)"
+            : "0 1px 1px rgba(255,255,255,.65)",
+
+        /*
+         * متغيرات CSS إضافية
+         * لو حبينا نطور التصميم لاحقًا.
+         */
+        "--wheel-prize-color":
+          backgroundColor,
+      };
+    };
+
+  // ===================================================
   // SPIN WHEEL
   // ===================================================
 
@@ -1318,9 +1509,7 @@ function Home({
       }
 
       const today =
-        new Date()
-          .toISOString()
-          .slice(0, 10);
+        getLocalDateKey();
 
       const attemptRef =
         doc(
@@ -1364,9 +1553,12 @@ function Home({
               attemptRef,
               {
                 uid: currentUser.uid,
+
                 attempts:
                   newAttempts,
+
                 date: today,
+
                 updatedAt:
                   new Date().toISOString(),
               },
@@ -1390,7 +1582,7 @@ function Home({
           );
 
           alert(
-            "لقد استخدمت اللفتين المسموح بهما اليوم. ارجع بكرة وجرب حظك من جديد ❤️"
+            `لقد استخدمت ${DAILY_WHEEL_ATTEMPTS} محاولاتك المسموح بها اليوم. ارجع بكرة وجرب حظك من جديد ❤️`
           );
 
           return;
@@ -1431,6 +1623,11 @@ function Home({
         360 /
         activeWheelPrizes.length;
 
+      /*
+       * المؤشر ثابت في الأعلى.
+       * نحسب مركز القطاع الفائز
+       * ونجعله يصل إلى المؤشر.
+       */
       const targetAngle =
         -(
           randomIndex *
@@ -1451,7 +1648,9 @@ function Home({
       // ================================================
 
       setIsSpinning(true);
+
       setWheelResult(null);
+
       setSpinCountdown(
         SPIN_DURATION
       );
@@ -1467,36 +1666,13 @@ function Home({
       spinTimerRef.current =
         setTimeout(() => {
           setIsSpinning(false);
+
           setSpinCountdown(0);
+
           setWheelResult(
             selectedPrize
           );
         }, SPIN_DURATION * 1000);
-    };
-
-  // ===================================================
-  // WHEEL LABEL STYLE
-  // ===================================================
-
-  const getWheelLabelStyle =
-    (index) => {
-      const count =
-        activeWheelPrizes.length;
-
-      if (!count) {
-        return {};
-      }
-
-      const segment =
-        360 / count;
-
-      const angle =
-        index * segment +
-        segment / 2;
-
-      return {
-        transform: `rotate(${angle}deg) translateY(-94px) rotate(${-angle}deg)`,
-      };
     };
 
   // ===================================================
@@ -1660,6 +1836,8 @@ function Home({
                 }}
               >
 
+                {/* TOP GOLD STRIP */}
+
                 <div
                   style={{
                     position:
@@ -1673,6 +1851,8 @@ function Home({
                       "linear-gradient(90deg, #F68B1E, #FFD166, #E94F37, #F68B1E)",
                   }}
                 />
+
+                {/* HEADER */}
 
                 <div
                   className="wheel-header"
@@ -1760,7 +1940,9 @@ function Home({
                   }}
                 >
 
-                  {/* POINTER */}
+                  {/* =================================================
+                      POINTER
+                  ================================================= */}
 
                   <div
                     className="wheel-pointer"
@@ -1815,7 +1997,9 @@ function Home({
                     }}
                   />
 
-                  {/* WHEEL */}
+                  {/* =================================================
+                      WHEEL STAND AREA
+                  ================================================= */}
 
                   <div
                     className="wheel-stand-area"
@@ -1835,7 +2019,9 @@ function Home({
                     }}
                   >
 
-                    {/* OUTER BLACK RIM */}
+                    {/* =================================================
+                        OUTER BLACK RIM
+                    ================================================= */}
 
                     <div
                       className="wheel-outer-rim"
@@ -1861,7 +2047,9 @@ function Home({
                       }}
                     >
 
-                      {/* GOLD RING */}
+                      {/* =================================================
+                          GOLD RING
+                      ================================================= */}
 
                       <div
                         style={{
@@ -1880,15 +2068,16 @@ function Home({
                         }}
                       >
 
-                        {/* BULBS */}
+                        {/* =================================================
+                            BULBS
+                        ================================================= */}
 
                         {Array.from({
                           length: 24,
                         }).map(
                           (_, index) => {
                             const angle =
-                              (360 /
-                                24) *
+                              (360 / 24) *
                               index;
 
                             return (
@@ -1896,35 +2085,52 @@ function Home({
                                 key={
                                   index
                                 }
+                                className="wheel-bulb"
                                 style={{
                                   position:
                                     "absolute",
+
                                   left:
                                     "50%",
+
                                   top:
                                     "50%",
+
                                   width:
                                     "9px",
+
                                   height:
                                     "9px",
+
                                   borderRadius:
                                     "50%",
+
                                   background:
                                     isSpinning
-                                      ? "#fff"
+                                      ? "#ffffff"
                                       : "#FFE7A0",
+
                                   boxShadow:
-                                    "0 0 8px rgba(255,220,100,.95)",
+                                    isSpinning
+                                      ? "0 0 12px rgba(255,255,255,1), 0 0 20px rgba(255,220,100,.95)"
+                                      : "0 0 8px rgba(255,220,100,.95)",
+
                                   transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-137px)`,
+
                                   zIndex:
-                                    10,
+                                    20,
+
+                                  transition:
+                                    "background .2s ease, box-shadow .2s ease",
                                 }}
                               />
                             );
                           }
                         )}
 
-                        {/* ROTATING WHEEL */}
+                        {/* =================================================
+                            ROTATING WHEEL
+                        ================================================= */}
 
                         <div
                           className="wheel-circle"
@@ -1942,16 +2148,20 @@ function Home({
                             overflow:
                               "hidden",
                             transform: `rotate(${wheelRotation}deg)`,
+
                             transition:
                               isSpinning
                                 ? `transform ${SPIN_DURATION}s cubic-bezier(.17,.67,.12,.99)`
                                 : "none",
+
                             boxShadow:
                               "inset 0 0 0 3px rgba(255,255,255,.35), inset 0 0 25px rgba(0,0,0,.35)",
                           }}
                         >
 
-                          {/* SEGMENT SEPARATORS */}
+                          {/* =================================================
+                              SEGMENT SEPARATORS
+                          ================================================= */}
 
                           {activeWheelPrizes.map(
                             (
@@ -1971,116 +2181,201 @@ function Home({
                                   style={{
                                     position:
                                       "absolute",
+
                                     width:
                                       "2px",
+
                                     height:
                                       "50%",
+
                                     background:
-                                      "rgba(255,255,255,.8)",
+                                      "rgba(255,255,255,.82)",
+
                                     left:
                                       "50%",
+
                                     top:
                                       "0",
+
                                     transformOrigin:
                                       "bottom center",
+
                                     transform: `translateX(-50%) rotate(${angle}deg)`,
+
                                     zIndex:
                                       2,
+
+                                    boxShadow:
+                                      "0 0 2px rgba(0,0,0,.25)",
                                   }}
                                 />
                               );
                             }
                           )}
 
-                          {/* PRIZE LABELS */}
+                          {/* =================================================
+                              PRIZE LABELS
+                          ================================================= */}
 
                           {activeWheelPrizes.map(
                             (
                               prize,
                               index
-                            ) => (
-                              <div
-                                key={
-                                  prize?.id ||
+                            ) => {
+                              const count =
+                                activeWheelPrizes.length;
+
+                              const prizeColor =
+                                getWheelPrizeColor(
+                                  prize,
                                   index
-                                }
-                                style={{
-                                  position:
-                                    "absolute",
-                                  left:
-                                    "50%",
-                                  top:
-                                    "50%",
-                                  width:
-                                    "105px",
-                                  marginLeft:
-                                    "-52.5px",
-                                  marginTop:
-                                    "-13px",
-                                  textAlign:
-                                    "center",
-                                  color:
-                                    "#313133",
-                                  fontSize:
-                                    activeWheelPrizes.length >
-                                    8
-                                      ? "10px"
-                                      : "12px",
-                                  fontWeight:
-                                    "900",
-                                  lineHeight:
-                                    "1.15",
-                                  textShadow:
-                                    "0 1px 0 rgba(255,255,255,.5)",
-                                  zIndex:
-                                    5,
-                                  pointerEvents:
-                                    "none",
-                                  ...getWheelLabelStyle(
+                                );
+
+                              const textColor =
+                                getContrastTextColor(
+                                  prizeColor
+                                );
+
+                              return (
+                                <div
+                                  key={
+                                    prize?.id ||
                                     index
-                                  ),
-                                }}
-                              >
-                                {prize?.title ||
-                                  "جائزة"}
+                                  }
+                                  style={{
+                                    position:
+                                      "absolute",
+
+                                    left:
+                                      "50%",
+
+                                    top:
+                                      "50%",
+
+                                    width:
+                                      count <= 6
+                                        ? "105px"
+                                        : "92px",
+
+                                    marginLeft:
+                                      count <= 6
+                                        ? "-52.5px"
+                                        : "-46px",
+
+                                    marginTop:
+                                      count <= 6
+                                        ? "-14px"
+                                        : "-12px",
+
+                                    textAlign:
+                                      "center",
+
+                                    color:
+                                      textColor,
+
+                                    fontSize:
+                                      count >
+                                      10
+                                        ? "9px"
+                                        : count >
+                                            8
+                                          ? "10px"
+                                          : count >
+                                              6
+                                            ? "11px"
+                                            : "12px",
+
+                                    fontWeight:
+                                      "900",
+
+                                    lineHeight:
+                                      "1.12",
+
+                                    letterSpacing:
+                                      "-0.1px",
+
+                                    whiteSpace:
+                                      "normal",
+
+                                    wordBreak:
+                                      "break-word",
+
+                                    zIndex:
+                                      5,
+
+                                    pointerEvents:
+                                      "none",
+
+                                    transformOrigin:
+                                      "center center",
+
+                                    transition:
+                                      "none",
+
+                                    ...getWheelLabelStyle(
+                                      prize,
+                                      index
+                                    ),
+                                  }}
+                                >
+                                  {prize?.title ||
+                                    "جائزة"}
                               </div>
-                            )
+                              );
+                            }
                           )}
 
-                          {/* CENTER DISC */}
+                          {/* =================================================
+                              CENTER DISC
+                          ================================================= */}
 
                           <div
                             style={{
                               position:
                                 "absolute",
+
                               left:
                                 "50%",
+
                               top:
                                 "50%",
+
                               transform:
                                 "translate(-50%, -50%)",
+
                               width:
                                 "76px",
+
                               height:
                                 "76px",
+
                               borderRadius:
                                 "50%",
+
                               background:
                                 "radial-gradient(circle at 35% 30%, #555, #171717 60%, #050505)",
+
                               border:
                                 "5px solid #F68B1E",
+
                               boxShadow:
-                                "0 3px 12px rgba(0,0,0,.5)",
+                                "0 3px 12px rgba(0,0,0,.5), inset 0 0 10px rgba(255,255,255,.08)",
+
                               display:
                                 "flex",
+
                               alignItems:
                                 "center",
+
                               justifyContent:
                                 "center",
+
                               flexDirection:
                                 "column",
+
                               color:
                                 "#fff",
+
                               zIndex:
                                 15,
                             }}
@@ -2089,8 +2384,10 @@ function Home({
                               style={{
                                 fontSize:
                                   "17px",
+
                                 lineHeight:
                                   "17px",
+
                                 letterSpacing:
                                   ".5px",
                               }}
@@ -2102,8 +2399,10 @@ function Home({
                               style={{
                                 fontSize:
                                   "12px",
+
                                 fontWeight:
                                   "900",
+
                                 color:
                                   "#F68B1E",
                               }}
@@ -2115,28 +2414,39 @@ function Home({
                       </div>
                     </div>
 
-                    {/* STAND */}
+                    {/* =================================================
+                        STAND
+                    ================================================= */}
 
                     <div
                       style={{
                         position:
                           "absolute",
+
                         bottom:
                           "0",
+
                         left:
                           "50%",
+
                         transform:
                           "translateX(-50%)",
+
                         width:
                           "125px",
+
                         height:
                           "55px",
+
                         background:
                           "linear-gradient(180deg, #333, #111)",
+
                         clipPath:
                           "polygon(28% 0, 72% 0, 100% 100%, 0 100%)",
+
                         zIndex:
                           2,
+
                         filter:
                           "drop-shadow(0 6px 5px rgba(0,0,0,.25))",
                       }}
@@ -2146,22 +2456,31 @@ function Home({
                       style={{
                         position:
                           "absolute",
+
                         bottom:
                           "-2px",
+
                         left:
                           "50%",
+
                         transform:
                           "translateX(-50%)",
+
                         width:
                           "180px",
+
                         height:
                           "14px",
+
                         borderRadius:
                           "7px",
+
                         background:
                           "#151515",
+
                         boxShadow:
                           "0 5px 12px rgba(0,0,0,.3)",
+
                         zIndex:
                           3,
                       }}
@@ -2188,38 +2507,49 @@ function Home({
                         style={{
                           marginTop:
                             "8px",
+
                           minWidth:
                             "210px",
+
                           padding:
                             "13px 25px",
+
                           border:
                             "none",
+
                           borderRadius:
                             "8px",
+
                           background:
                             isSpinning ||
                             wheelAttempts >=
                               DAILY_WHEEL_ATTEMPTS
                               ? "#999"
                               : "#F68B1E",
+
                           color:
                             "#fff",
+
                           fontSize:
                             "17px",
+
                           fontWeight:
                             "900",
+
                           cursor:
                             isSpinning ||
                             wheelAttempts >=
                               DAILY_WHEEL_ATTEMPTS
                               ? "not-allowed"
                               : "pointer",
+
                           boxShadow:
                             isSpinning ||
                             wheelAttempts >=
                               DAILY_WHEEL_ATTEMPTS
                               ? "none"
                               : "0 5px 14px rgba(246,139,30,.35)",
+
                           transition:
                             "all .2s ease",
                         }}
@@ -2239,20 +2569,28 @@ function Home({
                         style={{
                           marginTop:
                             "12px",
+
                           display:
                             "flex",
+
                           alignItems:
                             "center",
+
                           justifyContent:
                             "center",
+
                           gap:
                             "8px",
+
                           flexWrap:
                             "wrap",
+
                           fontSize:
                             "14px",
+
                           fontWeight:
                             "800",
+
                           color:
                             "#313133",
                         }}
@@ -2289,10 +2627,13 @@ function Home({
                         style={{
                           marginTop:
                             "7px",
+
                           fontSize:
                             "12px",
+
                           color:
                             "#75757A",
+
                           textAlign:
                             "center",
                         }}
@@ -2302,12 +2643,15 @@ function Home({
                           <>
                             ⏰ المحاولات
                             هتتجدد بعد{" "}
+
                             <strong
                               style={{
                                 color:
                                   "#F68B1E",
+
                                 direction:
                                   "ltr",
+
                                 display:
                                   "inline-block",
                               }}
@@ -2338,20 +2682,28 @@ function Home({
                       style={{
                         marginTop:
                           "18px",
+
                         width:
                           "min(420px, 92%)",
+
                         textAlign:
                           "center",
+
                         background:
                           "#fff",
+
                         border:
                           "2px solid #F68B1E",
+
                         borderRadius:
                           "14px",
+
                         padding:
                           "20px",
+
                         boxShadow:
                           "0 8px 25px rgba(0,0,0,.12)",
+
                         animation:
                           "wheelResultPop .45s ease",
                       }}
@@ -2360,6 +2712,7 @@ function Home({
                         style={{
                           fontSize:
                             "45px",
+
                           marginBottom:
                             "5px",
                         }}
@@ -2371,10 +2724,13 @@ function Home({
                         style={{
                           margin:
                             "0 0 6px",
+
                           color:
                             "#313133",
+
                           fontSize:
                             "24px",
+
                           fontWeight:
                             "900",
                         }}
@@ -2386,6 +2742,7 @@ function Home({
                         style={{
                           margin:
                             "0 0 5px",
+
                           color:
                             "#75757A",
                         }}
@@ -2397,10 +2754,13 @@ function Home({
                         style={{
                           display:
                             "block",
+
                           fontSize:
                             "21px",
+
                           color:
                             "#F68B1E",
+
                           marginBottom:
                             "8px",
                         }}
@@ -2415,6 +2775,7 @@ function Home({
                           style={{
                             display:
                               "block",
+
                             fontWeight:
                               "800",
                           }}
@@ -2434,6 +2795,7 @@ function Home({
                           style={{
                             display:
                               "block",
+
                             fontWeight:
                               "800",
                           }}
@@ -2453,6 +2815,7 @@ function Home({
                           style={{
                             display:
                               "block",
+
                             fontWeight:
                               "800",
                           }}
@@ -2467,6 +2830,7 @@ function Home({
                           style={{
                             display:
                               "block",
+
                             fontWeight:
                               "800",
                           }}
@@ -2481,6 +2845,7 @@ function Home({
                           style={{
                             display:
                               "block",
+
                             fontWeight:
                               "800",
                           }}
@@ -2501,18 +2866,25 @@ function Home({
                         style={{
                           marginTop:
                             "15px",
+
                           border:
                             "none",
+
                           borderRadius:
                             "7px",
+
                           padding:
                             "10px 35px",
+
                           background:
                             "#313133",
+
                           color:
                             "#fff",
+
                           fontWeight:
                             "800",
+
                           cursor:
                             "pointer",
                         }}
@@ -2893,9 +3265,7 @@ function Home({
                 </div>
               </div>
 
-              {/* ==========================================
-                  FLASH SALES COUNTDOWN TIMER
-              ========================================== */}
+              {/* FLASH COUNTDOWN */}
 
               <div
                 className="flash-countdown"
@@ -3196,6 +3566,7 @@ function Home({
         }}
       >
         <div className="footer-container">
+
           <div className="footer-column">
             <h2>
               {storeSettings?.storeName ||
@@ -3374,6 +3745,7 @@ function Home({
             </h3>
 
             <div className="footer-social">
+
               {storeSettings?.facebook && (
                 <button
                   type="button"
@@ -3430,6 +3802,7 @@ function Home({
                     من لوحة الأدمن
                   </span>
                 )}
+
             </div>
           </div>
         </div>
@@ -3541,6 +3914,22 @@ function Home({
             color: #F68B1E;
           }
 
+          /* ===============================================
+             WHEEL BULBS
+          =============================================== */
+
+          .wheel-bulb {
+            transform-origin: center center;
+          }
+
+          /* ===============================================
+             WHEEL LABELS
+          =============================================== */
+
+          .wheel-circle > div {
+            box-sizing: border-box;
+          }
+
           @media (max-width: 900px) {
             .flash-countdown {
               margin-right: 0;
@@ -3590,7 +3979,26 @@ function Home({
               overflow: hidden;
             }
 
-            /* FLASH TIMER MOBILE */
+            /* =============================================
+               MOBILE BULBS
+            ============================================= */
+
+            .wheel-bulb {
+              width: 8px !important;
+              height: 8px !important;
+            }
+
+            /* =============================================
+               MOBILE WHEEL LABELS
+            ============================================= */
+
+            .wheel-circle > div {
+              font-size: 10px;
+            }
+
+            /* =============================================
+               FLASH TIMER MOBILE
+            ============================================= */
 
             .jumia-flash-header {
               flex-wrap: wrap;

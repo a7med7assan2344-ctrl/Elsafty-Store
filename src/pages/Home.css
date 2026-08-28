@@ -1,6 +1,6 @@
 /* =====================================================
    ELSAFTY STORE - HOME PAGE
-   Jumia Style / RTL / Responsive
+   Jumia Style / RTL / Fully Responsive
 ===================================================== */
 
 .home-page {
@@ -11,6 +11,7 @@
   direction: rtl;
   font-family: "Cairo", "Tahoma", sans-serif;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 .home-page *,
@@ -27,7 +28,7 @@
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
-  padding-bottom: 40px;
+  padding: 0 0 40px;
 }
 
 .jumia-section {
@@ -60,11 +61,13 @@
   margin: 4px 0 0;
   color: var(--store-text-secondary, #75757a);
   font-size: 14px;
+  line-height: 1.6;
 }
 
 .jumia-section-title button,
 .jumia-flash-header button {
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  min-height: 36px;
   border: 0;
   background: transparent;
   color: var(--store-primary, #f68b1e);
@@ -73,6 +76,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: 0.2s ease;
+  white-space: nowrap;
 }
 
 .jumia-section-title button:hover,
@@ -87,8 +91,14 @@
 
 .jumia-hero {
   width: 100%;
-  margin-bottom: 26px;
+  margin: 0 0 26px;
   overflow: hidden;
+}
+
+.jumia-hero img,
+.jumia-hero video {
+  display: block;
+  max-width: 100%;
 }
 
 /* =====================================================
@@ -103,6 +113,7 @@
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 14px;
+  width: 100%;
 }
 
 .store-choice-card {
@@ -134,6 +145,8 @@
     transform 0.22s ease,
     box-shadow 0.22s ease,
     border-color 0.22s ease;
+
+  -webkit-tap-highlight-color: transparent;
 }
 
 .store-choice-card:hover {
@@ -142,20 +155,30 @@
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.09);
 }
 
+.store-choice-card:active {
+  transform: scale(0.98);
+}
+
 .store-choice-image {
   width: 105px;
   height: 105px;
+  flex: 0 0 auto;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   overflow: hidden;
   border-radius: 50%;
+
   background: #fff;
   border: 3px solid var(--category-color, #f68b1e);
+
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .store-choice-image img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -168,17 +191,27 @@
 
 .store-choice-card strong {
   width: 100%;
+  max-width: 100%;
   overflow: hidden;
+
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+
   font-size: 15px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
 .store-choice-card small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
   color: var(--store-text-secondary, #75757a);
   font-size: 12px;
+  line-height: 1.4;
 }
 
 /* =====================================================
@@ -187,21 +220,28 @@
 
 .store-empty-choice {
   grid-column: 1 / -1;
+
   min-height: 220px;
+
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
+
   padding: 30px;
+
   border: 1px dashed var(--store-border, #e5e5e5);
   border-radius: 14px;
+
   background: var(--store-card-background, #fff);
+
   text-align: center;
 }
 
 .store-empty-choice > div {
-  font-size: 50px;
   margin-bottom: 10px;
+  font-size: 50px;
+  line-height: 1;
 }
 
 .store-empty-choice h3 {
@@ -222,12 +262,21 @@
 .jumia-section .swiper,
 .jumia-flash-section .swiper {
   width: 100%;
+  max-width: 100%;
   padding: 8px 3px 18px;
+  overflow: hidden;
 }
 
 .jumia-section .swiper-slide,
 .jumia-flash-section .swiper-slide {
   height: auto;
+  min-width: 0;
+}
+
+/* Prevent slider content from causing horizontal overflow */
+.jumia-section .swiper-wrapper,
+.jumia-flash-section .swiper-wrapper {
+  align-items: stretch;
 }
 
 /* =====================================================
@@ -237,6 +286,7 @@
 .jumia-promo-strip {
   width: calc(100% - 32px);
   min-height: 105px;
+
   margin: 28px auto;
 
   display: flex;
@@ -261,6 +311,8 @@
 }
 
 .promo-content {
+  min-width: 0;
+
   display: flex;
   align-items: center;
   gap: 18px;
@@ -269,6 +321,8 @@
 .promo-icon {
   width: 60px;
   height: 60px;
+  flex: 0 0 60px;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,20 +333,30 @@
   font-size: 30px;
 }
 
+.promo-content > div:last-child {
+  min-width: 0;
+}
+
 .promo-content h2 {
   margin: 0 0 3px;
   font-size: 22px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
 .promo-content p {
   margin: 0;
   opacity: 0.9;
   font-size: 14px;
+  line-height: 1.6;
 }
 
 .jumia-promo-strip > button {
+  flex: 0 0 auto;
+
   min-width: 130px;
+  min-height: 44px;
+
   padding: 12px 22px;
 
   border: 0;
@@ -326,10 +390,12 @@
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 15px;
+  width: 100%;
 }
 
 .jumia-category-tile {
   display: flex;
+  min-width: 0;
   min-height: 205px;
   padding: 15px 10px;
 
@@ -351,6 +417,8 @@
     transform 0.22s ease,
     box-shadow 0.22s ease,
     border-color 0.22s ease;
+
+  -webkit-tap-highlight-color: transparent;
 }
 
 .jumia-category-tile:hover {
@@ -359,9 +427,14 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
+.jumia-category-tile:active {
+  transform: scale(0.98);
+}
+
 .jumia-category-image {
   width: 120px;
   height: 120px;
+  flex: 0 0 auto;
 
   display: flex;
   align-items: center;
@@ -376,6 +449,7 @@
 }
 
 .jumia-category-image img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -383,10 +457,13 @@
 
 .jumia-category-image span {
   font-size: 50px;
+  line-height: 1;
 }
 
 .jumia-category-tile strong {
   width: 100%;
+  max-width: 100%;
+
   text-align: center;
 
   overflow: hidden;
@@ -395,12 +472,17 @@
 
   font-size: 15px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
 .jumia-category-tile small {
+  max-width: 100%;
   margin-top: 4px;
+
   color: var(--store-text-secondary, #75757a);
+
   font-size: 12px;
+  line-height: 1.4;
 }
 
 /* =====================================================
@@ -432,18 +514,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+
   margin-bottom: 12px;
 }
 
 .flash-title {
+  min-width: 0;
+
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
+.flash-title > div:last-child {
+  min-width: 0;
+}
+
 .flash-icon {
   width: 52px;
   height: 52px;
+  flex: 0 0 52px;
 
   display: flex;
   align-items: center;
@@ -461,14 +551,19 @@
 
 .flash-title h2 {
   margin: 0;
+
   font-size: 24px;
   font-weight: 900;
+  line-height: 1.5;
 }
 
 .flash-title p {
   margin: 2px 0 0;
+
   color: var(--store-text-secondary, #75757a);
+
   font-size: 13px;
+  line-height: 1.5;
 }
 
 /* =====================================================
@@ -492,6 +587,8 @@
 
   background: var(--store-card-background, #fff);
   border: 1px solid var(--store-border, #e5e5e5);
+
+  overflow: hidden;
 }
 
 .section-header {
@@ -499,23 +596,36 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+
   margin-bottom: 20px;
+}
+
+.section-header > div {
+  min-width: 0;
 }
 
 .section-header h2 {
   margin: 0;
+
   font-size: 24px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
 .section-header p {
   margin: 5px 0 0;
+
   color: var(--store-text-secondary, #75757a);
+
+  line-height: 1.6;
 }
 
 .section-header > span {
+  flex: 0 0 auto;
+
   color: var(--store-primary, #f68b1e);
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .products-filters {
@@ -527,7 +637,10 @@
 
 .products-filters select,
 .products-filters input[type="number"] {
+  width: auto;
+  max-width: 100%;
   height: 44px;
+
   padding: 0 12px;
 
   border: 1px solid var(--store-border, #e5e5e5);
@@ -546,7 +659,7 @@
 }
 
 .products-filters label {
-  height: 44px;
+  min-height: 44px;
 
   display: flex;
   align-items: center;
@@ -585,6 +698,7 @@
   background: rgba(0, 0, 0, 0.68);
 
   backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 
   animation: wheelFadeIn 0.25s ease;
 }
@@ -603,8 +717,10 @@
   position: relative;
 
   width: min(560px, 100%);
+  max-width: 100%;
   max-height: 94vh;
 
+  overflow-x: hidden;
   overflow-y: auto;
 
   padding: 30px 25px;
@@ -668,18 +784,24 @@
 
 .wheel-header {
   margin-bottom: 15px;
+  padding: 0 35px;
 }
 
 .wheel-header h2 {
   margin: 0 0 5px;
+
   font-size: 26px;
   font-weight: 900;
+  line-height: 1.5;
 }
 
 .wheel-header p {
   margin: 0;
+
   color: #75757a;
+
   font-size: 14px;
+  line-height: 1.6;
 }
 
 /* =====================================================
@@ -809,6 +931,7 @@
 
 .wheel-spin-btn {
   width: min(300px, 90%);
+  max-width: 100%;
 
   min-height: 52px;
 
@@ -885,8 +1008,9 @@
 }
 
 .wheel-result-icon {
-  font-size: 48px;
   margin-bottom: 5px;
+  font-size: 48px;
+  line-height: 1;
 }
 
 .wheel-result h3 {
@@ -896,11 +1020,14 @@
 
   font-size: 25px;
   font-weight: 900;
+  line-height: 1.5;
 }
 
 .wheel-result p {
   margin: 0 0 5px;
+
   color: #75757a;
+  line-height: 1.6;
 }
 
 .wheel-result strong {
@@ -911,6 +1038,7 @@
   color: #313133;
 
   font-size: 21px;
+  line-height: 1.5;
 }
 
 .wheel-result small {
@@ -920,6 +1048,7 @@
 
   font-size: 15px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
 .wheel-result-close {
@@ -955,6 +1084,7 @@
 .jumia-footer {
   width: 100%;
   margin-top: 50px;
+  overflow: hidden;
 }
 
 .footer-container {
@@ -985,6 +1115,7 @@
 
   font-size: 24px;
   font-weight: 900;
+  line-height: 1.5;
 }
 
 .footer-column h3 {
@@ -992,6 +1123,7 @@
 
   font-size: 17px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
 .footer-column p {
@@ -1047,6 +1179,7 @@
 .footer-social button {
   width: 42px;
   height: 42px;
+  flex: 0 0 42px;
 
   display: flex;
   align-items: center;
@@ -1086,10 +1219,12 @@
   font-size: 12px;
 
   opacity: 0.8;
+
+  line-height: 1.6;
 }
 
 /* =====================================================
-   TABLET
+   LARGE TABLET
 ===================================================== */
 
 @media (max-width: 1200px) {
@@ -1108,14 +1243,23 @@
 }
 
 /* =====================================================
-   TABLET SMALL
+   TABLET
 ===================================================== */
 
 @media (max-width: 768px) {
 
+  .jumia-main {
+    padding-bottom: 30px;
+  }
+
   .jumia-section {
     width: calc(100% - 20px);
     margin: 20px auto;
+  }
+
+  .jumia-section-title {
+    gap: 12px;
+    margin-bottom: 13px;
   }
 
   .jumia-section-title h2 {
@@ -1126,6 +1270,12 @@
     font-size: 12px;
   }
 
+  .jumia-section-title button,
+  .jumia-flash-header button {
+    font-size: 12px;
+  }
+
+  /* 4 cards on tablet */
   .jumia-categories {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 9px;
@@ -1140,6 +1290,7 @@
   .store-choice-image {
     width: 78px;
     height: 78px;
+    border-width: 2px;
   }
 
   .store-choice-image span {
@@ -1154,6 +1305,7 @@
     font-size: 10px;
   }
 
+  /* Promo */
   .jumia-promo-strip {
     width: calc(100% - 20px);
 
@@ -1169,6 +1321,7 @@
   .promo-icon {
     width: 48px;
     height: 48px;
+    flex-basis: 48px;
     font-size: 24px;
   }
 
@@ -1186,6 +1339,7 @@
     font-size: 12px;
   }
 
+  /* All categories */
   .jumia-all-categories {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 9px;
@@ -1194,11 +1348,13 @@
   .jumia-category-tile {
     min-height: 170px;
     padding: 10px 6px;
+    border-radius: 10px;
   }
 
   .jumia-category-image {
     width: 85px;
     height: 85px;
+    margin-bottom: 9px;
   }
 
   .jumia-category-image span {
@@ -1213,9 +1369,15 @@
     font-size: 10px;
   }
 
+  /* Flash */
   .jumia-flash-section {
     width: calc(100% - 20px);
     padding: 15px;
+    border-radius: 12px;
+  }
+
+  .flash-title {
+    gap: 10px;
   }
 
   .flash-title h2 {
@@ -1229,9 +1391,40 @@
   .flash-icon {
     width: 45px;
     height: 45px;
+    flex-basis: 45px;
     font-size: 23px;
   }
 
+  /* Products */
+  .products-section {
+    width: calc(100% - 20px);
+    padding: 18px;
+    margin: 24px auto;
+  }
+
+  .section-header {
+    gap: 12px;
+  }
+
+  .section-header h2 {
+    font-size: 20px;
+  }
+
+  .section-header p {
+    font-size: 12px;
+  }
+
+  .products-filters {
+    width: 100%;
+  }
+
+  .products-filters select,
+  .products-filters input[type="number"] {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+
+  /* Footer */
   .footer-container {
     width: calc(100% - 30px);
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1243,6 +1436,7 @@
     grid-column: 1 / -1;
   }
 
+  /* Wheel */
   .wheel-modal {
     padding: 25px 15px;
   }
@@ -1259,7 +1453,13 @@
 
 @media (max-width: 480px) {
 
+  .home-page {
+    width: 100%;
+    min-width: 0;
+  }
+
   .jumia-main {
+    width: 100%;
     padding-bottom: 25px;
   }
 
@@ -1269,39 +1469,65 @@
   }
 
   .jumia-section-title {
-    gap: 8px;
+    align-items: center;
+    gap: 7px;
     margin-bottom: 11px;
   }
 
   .jumia-section-title h2 {
     font-size: 17px;
+    line-height: 1.4;
+  }
+
+  .jumia-section-title p {
+    margin-top: 2px;
+    font-size: 10px;
   }
 
   .jumia-section-title button {
-    font-size: 11px;
+    min-height: 32px;
+    font-size: 10px;
   }
+
+  /* =================================================
+     MOBILE CATEGORIES
+  ================================================= */
 
   .jumia-categories {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
+    gap: 8px;
   }
 
   .store-choice-card {
-    min-height: 155px;
+    min-height: 145px;
+    padding: 9px 5px;
+    gap: 5px;
+    border-radius: 9px;
   }
 
   .store-choice-image {
-    width: 82px;
-    height: 82px;
+    width: 76px;
+    height: 76px;
+    border-width: 2px;
+  }
+
+  .store-choice-image span {
+    font-size: 32px;
   }
 
   .store-choice-card strong {
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .store-choice-card small {
-    font-size: 10px;
+    font-size: 9px;
+    line-height: 1.3;
   }
+
+  /* =================================================
+     PROMO MOBILE
+  ================================================= */
 
   .jumia-promo-strip {
     width: calc(100% - 14px);
@@ -1309,72 +1535,193 @@
     flex-direction: column;
     align-items: stretch;
 
-    gap: 15px;
+    gap: 13px;
 
-    padding: 16px;
+    padding: 15px;
+
+    margin: 20px auto;
+
+    border-radius: 10px;
   }
 
   .promo-content {
-    justify-content: flex-start;
+    width: 100%;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .promo-icon {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    font-size: 21px;
   }
 
   .promo-content h2 {
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.4;
   }
 
   .promo-content p {
-    font-size: 10px;
+    font-size: 9px;
+    line-height: 1.5;
   }
 
   .jumia-promo-strip > button {
     width: 100%;
+    min-height: 42px;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  /* =================================================
+     ALL CATEGORIES MOBILE
+  ================================================= */
+
+  .all-categories-section {
+    margin-top: 25px;
   }
 
   .jumia-all-categories {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-  }
-
-  .jumia-category-tile {
-    min-height: 165px;
-  }
-
-  .jumia-category-image {
-    width: 82px;
-    height: 82px;
-  }
-
-  .jumia-flash-section {
-    width: calc(100% - 14px);
-    padding: 12px;
-    margin: 20px auto;
-  }
-
-  .jumia-flash-header {
     gap: 8px;
   }
 
+  .jumia-category-tile {
+    min-height: 150px;
+    padding: 9px 5px;
+    border-radius: 9px;
+  }
+
+  .jumia-category-image {
+    width: 78px;
+    height: 78px;
+    margin-bottom: 8px;
+  }
+
+  .jumia-category-image span {
+    font-size: 33px;
+  }
+
+  .jumia-category-tile strong {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .jumia-category-tile small {
+    margin-top: 3px;
+    font-size: 9px;
+  }
+
+  /* =================================================
+     FLASH MOBILE
+  ================================================= */
+
+  .jumia-flash-section {
+    width: calc(100% - 14px);
+    padding: 11px;
+    margin: 20px auto;
+    border-radius: 10px;
+  }
+
+  .jumia-flash-header {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
   .flash-title {
-    gap: 9px;
+    gap: 8px;
   }
 
   .flash-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    font-size: 19px;
   }
 
   .flash-title h2 {
-    font-size: 17px;
+    font-size: 16px;
+    line-height: 1.4;
   }
 
   .flash-title p {
-    font-size: 10px;
+    font-size: 9px;
+    line-height: 1.4;
   }
 
   .jumia-flash-header button {
+    min-height: 30px;
+    font-size: 10px;
+  }
+
+  /* =================================================
+     PRODUCTS MOBILE
+  ================================================= */
+
+  .products-section {
+    width: calc(100% - 14px);
+    margin: 20px auto;
+    padding: 14px 10px;
+    border-radius: 10px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-bottom: 13px;
+  }
+
+  .section-header h2 {
+    font-size: 17px;
+  }
+
+  .section-header p {
+    font-size: 10px;
+  }
+
+  .section-header > span {
     font-size: 11px;
   }
+
+  .products-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .products-filters select,
+  .products-filters input[type="number"],
+  .products-filters label {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* =================================================
+     EMPTY CATEGORY MOBILE
+  ================================================= */
+
+  .store-empty-choice {
+    min-height: 180px;
+    padding: 20px 12px;
+  }
+
+  .store-empty-choice > div {
+    font-size: 40px;
+  }
+
+  .store-empty-choice h3 {
+    font-size: 16px;
+  }
+
+  .store-empty-choice p {
+    font-size: 11px;
+  }
+
+  /* =================================================
+     FOOTER MOBILE
+  ================================================= */
 
   .footer-container {
     width: calc(100% - 24px);
@@ -1403,33 +1750,54 @@
     font-size: 12px;
   }
 
+  .footer-bottom {
+    padding: 14px 12px;
+    font-size: 10px;
+  }
+
+  /* =================================================
+     WHEEL MOBILE
+  ================================================= */
+
   .wheel-modal-overlay {
-    padding: 10px;
+    padding: 8px;
   }
 
   .wheel-modal {
     width: 100%;
-    padding: 22px 10px;
-    border-radius: 16px;
+    max-height: 96vh;
+    padding: 20px 9px;
+    border-radius: 15px;
+  }
+
+  .wheel-header {
+    margin-bottom: 10px;
+    padding: 0 28px;
   }
 
   .wheel-header h2 {
-    font-size: 21px;
+    font-size: 20px;
   }
 
   .wheel-header p {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .wheel-wrapper {
     width: min(300px, 82vw);
     height: min(300px, 82vw);
+    margin: 10px auto 16px;
+  }
+
+  .wheel-circle {
+    border-width: 6px;
   }
 
   .wheel-center {
     width: 58px;
     height: 58px;
     font-size: 24px;
+    border-width: 5px;
   }
 
   .wheel-segment span {
@@ -1444,8 +1812,38 @@
   }
 
   .wheel-spin-btn {
+    width: 90%;
     min-height: 48px;
     font-size: 15px;
+  }
+
+  .wheel-attempts {
+    font-size: 11px;
+  }
+
+  .wheel-result {
+    margin-top: 13px;
+    padding: 15px 10px;
+  }
+
+  .wheel-result-icon {
+    font-size: 40px;
+  }
+
+  .wheel-result h3 {
+    font-size: 20px;
+  }
+
+  .wheel-result p {
+    font-size: 11px;
+  }
+
+  .wheel-result strong {
+    font-size: 17px;
+  }
+
+  .wheel-result small {
+    font-size: 12px;
   }
 }
 
@@ -1455,27 +1853,132 @@
 
 @media (max-width: 360px) {
 
+  .jumia-section {
+    width: calc(100% - 10px);
+  }
+
+  .jumia-categories,
+  .jumia-all-categories {
+    gap: 6px;
+  }
+
   .store-choice-card {
-    min-height: 145px;
+    min-height: 135px;
+    padding: 7px 4px;
   }
 
   .store-choice-image {
-    width: 70px;
-    height: 70px;
+    width: 68px;
+    height: 68px;
   }
 
-  .jumia-category-image {
-    width: 72px;
-    height: 72px;
+  .store-choice-card strong {
+    font-size: 11px;
+  }
+
+  .store-choice-card small {
+    font-size: 8px;
   }
 
   .jumia-category-tile {
-    min-height: 150px;
+    min-height: 140px;
+    padding: 7px 4px;
+  }
+
+  .jumia-category-image {
+    width: 68px;
+    height: 68px;
+  }
+
+  .jumia-category-image span {
+    font-size: 29px;
+  }
+
+  .jumia-category-tile strong {
+    font-size: 11px;
+  }
+
+  .jumia-category-tile small {
+    font-size: 8px;
   }
 
   .wheel-wrapper {
-    width: 260px;
-    height: 260px;
+    width: 255px;
+    height: 255px;
+  }
+
+  .wheel-center {
+    width: 52px;
+    height: 52px;
+    font-size: 21px;
+  }
+
+  .wheel-segment span {
+    width: 78px;
+    margin-left: 13px;
+    font-size: 9px;
+  }
+}
+
+/* =====================================================
+   EXTRA SMALL DEVICES
+===================================================== */
+
+@media (max-width: 320px) {
+
+  .jumia-section-title h2 {
+    font-size: 15px;
+  }
+
+  .jumia-section-title button {
+    font-size: 9px;
+  }
+
+  .store-choice-image {
+    width: 62px;
+    height: 62px;
+  }
+
+  .store-choice-card {
+    min-height: 128px;
+  }
+
+  .jumia-category-image {
+    width: 62px;
+    height: 62px;
+  }
+
+  .jumia-category-tile {
+    min-height: 132px;
+  }
+
+  .promo-content h2 {
+    font-size: 14px;
+  }
+
+  .promo-content p {
+    font-size: 8px;
+  }
+}
+
+/* =====================================================
+   TOUCH DEVICES
+===================================================== */
+
+@media (hover: none) and (pointer: coarse) {
+
+  .store-choice-card:hover,
+  .jumia-category-tile:hover,
+  .jumia-promo-strip > button:hover,
+  .wheel-spin-btn:hover,
+  .wheel-result-close:hover {
+    transform: none;
+  }
+
+  .store-choice-card,
+  .jumia-category-tile,
+  button {
+    touch-action: manipulation;
   }
 }
 

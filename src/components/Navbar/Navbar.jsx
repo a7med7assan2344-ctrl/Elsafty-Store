@@ -7,8 +7,6 @@ import React, {
 
 import { useNavigate } from "react-router-dom";
 
-import offerText from "../../config/offerConfig";
-
 import { WishlistContext } from "../../context/WishlistContext";
 
 import {
@@ -17,6 +15,7 @@ import {
 } from "firebase/auth";
 
 import {
+  collection,
   doc,
   getDoc,
   onSnapshot,
@@ -66,16 +65,40 @@ const defaultStoreSettings = {
     footerBackground: "#313133",
     footerText: "#ffffff",
   },
+};
 
-  topStrip: {
-    enabled: true,
-    direction: "rtl",
-    speed: 40,
-    height: 36,
-    fontSize: 13,
-    fontFamily: "Cairo",
-    items: [],
-  },
+// =====================================================
+// DEFAULT ANNOUNCEMENT BAR SETTINGS
+// =====================================================
+
+const defaultAnnouncementBar = {
+  enabled: true,
+
+  type: "offer",
+
+  text: "",
+
+  icon: "📢",
+
+  // NEW:
+  // Supports SVG stored directly in Firestore.
+  svg: "",
+
+  height: 36,
+
+  background: "#f68b1e",
+
+  textColor: "#ffffff",
+
+  fontSize: 13,
+
+  fontFamily: "Cairo",
+
+  speed: 40,
+
+  direction: "rtl",
+
+  sortOrder: 999999,
 };
 
 // =====================================================
@@ -100,8 +123,7 @@ function Navbar({
   // STATES
   // =====================================================
 
-  const [user, setUser] =
-    useState(null);
+  const [user, setUser] = useState(null);
 
   const [accountName, setAccountName] =
     useState("");
@@ -137,6 +159,18 @@ function Navbar({
     useState(defaultStoreSettings);
 
   // =====================================================
+  // ANNOUNCEMENT BARS
+  // =====================================================
+
+  const [announcementBars, setAnnouncementBars] =
+    useState([]);
+
+  const [
+    legacyAnnouncements,
+    setLegacyAnnouncements,
+  ] = useState([]);
+
+  // =====================================================
   // REFS
   // =====================================================
 
@@ -146,11 +180,9 @@ function Navbar({
 
   const searchRef = useRef(null);
 
-  const categoryMenuRef =
-    useRef(null);
+  const categoryMenuRef = useRef(null);
 
-  const categoryBarRef =
-    useRef(null);
+  const categoryBarRef = useRef(null);
 
   // =====================================================
   // THEME
@@ -159,10 +191,6 @@ function Navbar({
   const theme =
     storeSettings.theme ||
     defaultStoreSettings.theme;
-
-  const topStrip =
-    storeSettings.topStrip ||
-    defaultStoreSettings.topStrip;
 
   // =====================================================
   // LOAD STORE SETTINGS
@@ -175,46 +203,226 @@ function Navbar({
       "store"
     );
 
-    const unsubscribe =
-      onSnapshot(
-        settingsRef,
-        (snapshot) => {
-          if (!snapshot.exists()) {
-            return;
-          }
-
-          const data =
-            snapshot.data();
-
-          setStoreSettings(
-            (previous) => ({
-              ...previous,
-
-              ...data,
-
-              theme: {
-                ...previous.theme,
-                ...(data.theme || {}),
-              },
-
-              topStrip: {
-                ...previous.topStrip,
-                ...(data.topStrip || {}),
-              },
-            })
-          );
-        },
-        (error) => {
-          console.error(
-            "Store Settings Error:",
-            error
-          );
+    const unsubscribe = onSnapshot(
+      settingsRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          return;
         }
+
+        const data = snapshot.data();
+
+        setStoreSettings((previous) => ({
+          ...previous,
+
+          ...data,
+
+          theme: {
+            ...previous.theme,
+
+            ...(data.theme || {}),
+          },
+        }));
+      },
+      (error) => {
+        console.error(
+          "Store Settings Error:",
+          error
+        );
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // =====================================================
+  // LOAD ANNOUNCEMENT BARS
+  //
+  // FIRESTORE:
+  // /announcementBars/{barId}
+  //
+  // كل Document = شريط مستقل
+  // =====================================================
+
+  useEffect(() => {
+    const barsRef = collection(
+      db,
+      "announcementBars"
+    );
+
+    const unsubscribe = onSnapshot(
+      barsRef,
+      (snapshot) => {
+        const bars =
+          snapshot.docs
+            .map((barDoc) => {
+              const data =
+                barDoc.data() || {};
+
+              return {
+                ...defaultAnnouncementBar,
+
+                ...data,
+
+                id: barDoc.id,
+
+                // Support optional settings object
+                ...(data.settings || {}),
+
+                // Explicitly preserve SVG
+                svg:
+                  data.svg ||
+                  data.settings?.svg ||
+                  "",
+              };
+            })
+
+            // ENABLED ONLY
+            .filter(
+              (bar) =>
+                bar?.enabled === true
+            )
+
+            // MUST HAVE TEXT
+            .filter((bar) => {
+              const text =
+                bar?.text ||
+                bar?.message ||
+                bar?.content ||
+                bar?.title ||
+                "";
+
+              return (
+                String(text).trim() !== ""
+              );
+            })
+
+            // SORT ORDER
+            .sort((a, b) => {
+              const sortA =
+                Number(
+                  a?.sortOrder ??
+                    999999
+                );
+
+              const sortB =
+                Number(
+                  b?.sortOrder ??
+                    999999
+                );
+
+              if (sortA !== sortB) {
+                return sortA - sortB;
+              }
+
+              return String(
+                a?.createdAt || ""
+              ).localeCompare(
+                String(
+                  b?.createdAt || ""
+                )
+              );
+            });
+
+        setAnnouncementBars(bars);
+      },
+      (error) => {
+        console.error(
+          "Announcement Bars Error:",
+          error
+        );
+
+        setAnnouncementBars([]);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // =====================================================
+  // LEGACY ANNOUNCEMENTS FALLBACK
+  //
+  // لو announcementBars مفيهاش أي شريط فعال
+  // نستخدم announcements القديمة.
+  // =====================================================
+
+  useEffect(() => {
+    const announcementsRef =
+      collection(
+        db,
+        "announcements"
       );
 
-    return () => {
-      unsubscribe();
-    };
+    const unsubscribe = onSnapshot(
+      announcementsRef,
+      (snapshot) => {
+        const oldAnnouncements =
+          snapshot.docs
+            .map((announcementDoc) => ({
+              id: announcementDoc.id,
+
+              ...announcementDoc.data(),
+            }))
+
+            .filter(
+              (announcement) =>
+                announcement?.active === true
+            )
+
+            .filter((announcement) => {
+              const text =
+                announcement?.text ||
+                announcement?.message ||
+                announcement?.content ||
+                announcement?.title ||
+                "";
+
+              return (
+                String(text).trim() !== ""
+              );
+            })
+
+            .sort((a, b) => {
+              const sortA =
+                Number(
+                  a?.sortOrder ??
+                    999999
+                );
+
+              const sortB =
+                Number(
+                  b?.sortOrder ??
+                    999999
+                );
+
+              if (sortA !== sortB) {
+                return sortA - sortB;
+              }
+
+              return String(
+                a?.createdAt || ""
+              ).localeCompare(
+                String(
+                  b?.createdAt || ""
+                )
+              );
+            });
+
+        setLegacyAnnouncements(
+          oldAnnouncements
+        );
+      },
+      (error) => {
+        console.error(
+          "Announcements Error:",
+          error
+        );
+
+        setLegacyAnnouncements([]);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   // =====================================================
@@ -230,6 +438,7 @@ function Navbar({
 
           if (!currentUser) {
             setAccountName("");
+
             return;
           }
 
@@ -238,17 +447,14 @@ function Navbar({
             "";
 
           try {
-            const userRef =
-              doc(
-                db,
-                "users",
-                currentUser.uid
-              );
+            const userRef = doc(
+              db,
+              "users",
+              currentUser.uid
+            );
 
             const userSnap =
-              await getDoc(
-                userRef
-              );
+              await getDoc(userRef);
 
             if (userSnap.exists()) {
               const data =
@@ -273,9 +479,7 @@ function Navbar({
         }
       );
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   // =====================================================
@@ -283,11 +487,17 @@ function Navbar({
   // =====================================================
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchCategories =
       async () => {
         try {
           const data =
             await getCategories();
+
+          if (!mounted) {
+            return;
+          }
 
           const activeCategories =
             (data || []).filter(
@@ -304,11 +514,17 @@ function Navbar({
             error
           );
 
-          setCategories([]);
+          if (mounted) {
+            setCategories([]);
+          }
         }
       };
 
     fetchCategories();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // =====================================================
@@ -415,7 +631,9 @@ function Navbar({
           )
         ) {
           setOpenCategory(null);
+
           setMobileCategory(null);
+
           setOpenSubCategories([]);
         }
       };
@@ -434,26 +652,30 @@ function Navbar({
   }, []);
 
   // =====================================================
-  // ESC
+  // ESCAPE
   // =====================================================
 
   useEffect(() => {
     const handleEscape =
       (event) => {
-        if (
-          event.key !==
-          "Escape"
-        ) {
+        if (event.key !== "Escape") {
           return;
         }
 
         setMenuOpen(false);
+
         setHelpOpen(false);
+
         setSuggestions([]);
+
         setOpenCategory(null);
+
         setMobileCategory(null);
+
         setOpenSubCategories([]);
+
         setLogoZoom(false);
+
         setMobileMenuOpen(false);
       };
 
@@ -480,6 +702,8 @@ function Navbar({
 
       setMenuOpen(false);
 
+      setAccountName("");
+
       navigate("/");
     } catch (error) {
       console.error(
@@ -490,7 +714,7 @@ function Navbar({
   };
 
   // =====================================================
-  // SCROLL
+  // SCROLL TO SECTION
   // =====================================================
 
   const scrollToSection = (
@@ -503,11 +727,13 @@ function Navbar({
 
     if (!element) {
       navigate("/");
+
       return;
     }
 
     element.scrollIntoView({
       behavior: "smooth",
+
       block: "start",
     });
   };
@@ -528,6 +754,7 @@ function Navbar({
 
     bar.scrollBy({
       left: direction,
+
       behavior: "smooth",
     });
   };
@@ -548,6 +775,7 @@ function Navbar({
 
       if (!trimmedValue) {
         setSuggestions([]);
+
         return;
       }
 
@@ -565,9 +793,7 @@ function Navbar({
 
             return String(name)
               .toLowerCase()
-              .includes(
-                searchValue
-              );
+              .includes(searchValue);
           })
           .slice(0, 6);
 
@@ -593,6 +819,7 @@ function Navbar({
     );
 
     setSuggestions([]);
+
     setMobileMenuOpen(false);
   };
 
@@ -607,6 +834,7 @@ function Navbar({
         product?._id;
 
       setSearchTerm("");
+
       setSuggestions([]);
 
       if (id) {
@@ -759,9 +987,8 @@ function Navbar({
         );
 
       if (!children.length) {
-        selectCategory(
-          category
-        );
+        selectCategory(category);
+
         return;
       }
 
@@ -805,9 +1032,7 @@ function Navbar({
       const categoryName =
         category.name;
 
-      if (
-        setSelectedCategory
-      ) {
+      if (setSelectedCategory) {
         setSelectedCategory(
           categoryName
         );
@@ -819,13 +1044,16 @@ function Navbar({
           {
             detail:
               categoryName,
-          }
+          },
         )
       );
 
       setOpenCategory(null);
+
       setMobileCategory(null);
+
       setOpenSubCategories([]);
+
       setMobileMenuOpen(false);
 
       setTimeout(() => {
@@ -851,9 +1079,8 @@ function Navbar({
         );
 
       if (!children.length) {
-        selectCategory(
-          category
-        );
+        selectCategory(category);
+
         return;
       }
 
@@ -862,24 +1089,20 @@ function Navbar({
           category.id
         );
 
-      if (
-        window.innerWidth <=
-        700
-      ) {
+      if (window.innerWidth <= 700) {
         if (
-          mobileCategory ===
-            id &&
+          mobileCategory === id &&
           openCategory === id
         ) {
-          selectCategory(
-            category
-          );
+          selectCategory(category);
 
           return;
         }
 
         setMobileCategory(id);
+
         setOpenCategory(id);
+
         setOpenSubCategories([
           id,
         ]);
@@ -887,12 +1110,8 @@ function Navbar({
         return;
       }
 
-      if (
-        openCategory === id
-      ) {
-        selectCategory(
-          category
-        );
+      if (openCategory === id) {
+        selectCategory(category);
 
         return;
       }
@@ -911,8 +1130,7 @@ function Navbar({
   const handleCategoryMouseEnter =
     (category) => {
       if (
-        window.innerWidth <=
-        700
+        window.innerWidth <= 700
       ) {
         return;
       }
@@ -922,9 +1140,7 @@ function Navbar({
           category.id
         );
 
-      if (
-        hasChildren(category)
-      ) {
+      if (hasChildren(category)) {
         setOpenCategory(id);
 
         setOpenSubCategories([
@@ -932,6 +1148,7 @@ function Navbar({
         ]);
       } else {
         setOpenCategory(null);
+
         setOpenSubCategories([]);
       }
     };
@@ -939,15 +1156,12 @@ function Navbar({
   const handleSubCategoryMouseEnter =
     (category) => {
       if (
-        window.innerWidth <=
-        700
+        window.innerWidth <= 700
       ) {
         return;
       }
 
-      if (
-        hasChildren(category)
-      ) {
+      if (hasChildren(category)) {
         openSubCategory(
           category.id
         );
@@ -957,13 +1171,13 @@ function Navbar({
   const handleCategoryAreaLeave =
     () => {
       if (
-        window.innerWidth <=
-        700
+        window.innerWidth <= 700
       ) {
         return;
       }
 
       setOpenCategory(null);
+
       setOpenSubCategories([]);
     };
 
@@ -986,97 +1200,89 @@ function Navbar({
       <div
         className={`mega-deep-children level-${level}`}
       >
-        {children.map(
-          (child) => {
-            const childId =
-              normalizeId(
-                child.id
-              );
+        {children.map((child) => {
+          const childId =
+            normalizeId(child.id);
 
-            const childHasChildren =
-              hasChildren(child);
+          const childHasChildren =
+            hasChildren(child);
 
-            const childIsOpen =
-              isSubCategoryOpen(
-                childId
-              );
+          const childIsOpen =
+            isSubCategoryOpen(
+              childId
+            );
 
-            return (
-              <div
-                key={childId}
-                className={`mega-deep-item ${
+          return (
+            <div
+              key={childId}
+              className={`mega-deep-item ${
+                childIsOpen
+                  ? "mega-link-open"
+                  : ""
+              }`}
+              onMouseEnter={() =>
+                handleSubCategoryMouseEnter(
+                  child
+                )
+              }
+            >
+              <button
+                type="button"
+                className={`mega-link ${
                   childIsOpen
-                    ? "mega-link-open"
+                    ? "active-subcategory"
                     : ""
                 }`}
-                onMouseEnter={() =>
-                  handleSubCategoryMouseEnter(
-                    child
-                  )
-                }
+                onClick={() => {
+                  if (
+                    childHasChildren
+                  ) {
+                    toggleSubCategory(
+                      child
+                    );
+                  } else {
+                    selectCategory(
+                      child
+                    );
+                  }
+                }}
               >
-                <button
-                  type="button"
-                  className={`mega-link ${
-                    childIsOpen
-                      ? "active-subcategory"
-                      : ""
-                  }`}
-                  onClick={() => {
-                    if (
-                      childHasChildren
-                    ) {
-                      toggleSubCategory(
-                        child
-                      );
-                    } else {
-                      selectCategory(
-                        child
-                      );
-                    }
-                  }}
-                >
-                  {child.image ? (
-                    <img
-                      src={
-                        child.image
-                      }
-                      alt={
-                        child.name
-                      }
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span className="mega-link-icon">
-                      {child.icon ||
-                        "•"}
-                    </span>
-                  )}
-
-                  <span>
-                    {child.name}
+                {child.image ? (
+                  <img
+                    src={child.image}
+                    alt={child.name}
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="mega-link-icon">
+                    {child.icon ||
+                      "•"}
                   </span>
+                )}
 
-                  {childHasChildren && (
-                    <b className="mega-arrow">
-                      ‹
-                    </b>
-                  )}
-                </button>
+                <span>
+                  {child.name}
+                </span>
 
-                {childHasChildren &&
-                  childIsOpen && (
-                    <div className="mega-deep-level">
-                      {renderDeepChildren(
-                        child.id,
-                        level + 1
-                      )}
-                    </div>
-                  )}
-              </div>
-            );
-          }
-        )}
+                {childHasChildren && (
+                  <b className="mega-arrow">
+                    ‹
+                  </b>
+                )}
+              </button>
+
+              {childHasChildren &&
+                childIsOpen && (
+                  <div className="mega-deep-level">
+                    {renderDeepChildren(
+                      child.id,
+                      level + 1
+                    )}
+                  </div>
+                )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -1115,8 +1321,7 @@ function Navbar({
           }`}
           onMouseEnter={() => {
             if (
-              window.innerWidth >
-              700
+              window.innerWidth > 700
             ) {
               setOpenCategory(
                 categoryId
@@ -1187,15 +1392,14 @@ function Navbar({
                           ? "mega-column-open"
                           : ""
                       }`}
-                      key={
-                        childId
-                      }
+                      key={childId}
                       onMouseEnter={() =>
                         handleSubCategoryMouseEnter(
                           child
                         )
                       }
                     >
+
                       <button
                         type="button"
                         className={`mega-column-title ${
@@ -1235,9 +1439,7 @@ function Navbar({
                         )}
 
                         <span>
-                          {
-                            child.name
-                          }
+                          {child.name}
                         </span>
 
                         {childHasChildren && (
@@ -1378,45 +1580,130 @@ function Navbar({
     };
 
   // =====================================================
-  // TOP STRIP
+  // ANNOUNCEMENT TEXT
   // =====================================================
 
-  const configuredTopStripItems =
-    Array.isArray(
-      topStrip.items
-    )
-      ? topStrip.items.filter(
-          (item) =>
-            item?.active !==
-              false &&
-            item?.text
-        )
-      : [];
-
-  const activeTopStripItems =
-    configuredTopStripItems.length >
-    0
-      ? configuredTopStripItems.map(
-          (item) =>
-            `${item.icon || ""} ${
-              item.text
-            }`.trim()
-        )
-      : Array.isArray(
-          offerText
-        )
-        ? offerText
-        : [];
-
-  const repeatedTopStripItems = [
-    ...activeTopStripItems,
-    ...activeTopStripItems,
-    ...activeTopStripItems,
-    ...activeTopStripItems,
-  ];
+  const getAnnouncementText =
+    (announcement) => {
+      return (
+        announcement?.text ||
+        announcement?.message ||
+        announcement?.content ||
+        announcement?.title ||
+        ""
+      );
+    };
 
   // =====================================================
-  // DYNAMIC STYLE
+  // ANNOUNCEMENT SVG
+  //
+  // يدعم:
+  // svg
+  // icon
+  // =====================================================
+
+  const getBarSvg = (bar) => {
+    return (
+      bar?.svg ||
+      bar?.settings?.svg ||
+      ""
+    );
+  };
+
+  // =====================================================
+  // TYPE ICON
+  // =====================================================
+
+  const getBarIcon = (bar) => {
+    if (bar?.icon) {
+      return bar.icon;
+    }
+
+    switch (bar?.type) {
+      case "offer":
+        return "🔥";
+
+      case "alert":
+        return "⚠️";
+
+      case "discount":
+        return "🏷️";
+
+      case "shipping":
+        return "🚚";
+
+      case "text":
+        return "📢";
+
+      case "marquee":
+        return "📢";
+
+      default:
+        return "📢";
+    }
+  };
+
+  // =====================================================
+  // ACTIVE ANNOUNCEMENT BARS
+  // =====================================================
+
+  const activeBars =
+    announcementBars.length > 0
+      ? announcementBars
+      : legacyAnnouncements.map(
+          (announcement) => ({
+            ...defaultAnnouncementBar,
+
+            ...announcement,
+
+            id: announcement.id,
+
+            enabled: true,
+
+            background:
+              announcement?.background ||
+              theme.topStripBackground ||
+              "#f68b1e",
+
+            textColor:
+              announcement?.textColor ||
+              theme.topStripText ||
+              "#ffffff",
+
+            height:
+              Number(
+                announcement?.height ||
+                  36
+              ),
+
+            fontSize:
+              Number(
+                announcement?.fontSize ||
+                  13
+              ),
+
+            fontFamily:
+              announcement?.fontFamily ||
+              "Cairo",
+
+            speed:
+              Number(
+                announcement?.speed ||
+                  40
+              ),
+
+            direction:
+              announcement?.direction ||
+              "rtl",
+
+            svg:
+              announcement?.svg ||
+              "",
+          })
+        );
+
+  // =====================================================
+  // NAVBAR STYLE
   // =====================================================
 
   const navbarStyle = {
@@ -1447,36 +1734,6 @@ function Navbar({
     "--secondary":
       theme.secondary ||
       "#ff9900",
-
-    "--top-strip-bg":
-      theme.topStripBackground ||
-      "#f68b1e",
-
-    "--top-strip-text":
-      theme.topStripText ||
-      "#ffffff",
-
-    "--top-strip-height":
-      `${Number(
-        topStrip.height || 36
-      )}px`,
-
-    "--top-strip-font-size":
-      `${Number(
-        topStrip.fontSize || 13
-      )}px`,
-
-    "--top-strip-duration":
-      `${Math.max(
-        5,
-        Number(
-          topStrip.speed || 40
-        )
-      )}s`,
-
-    "--top-strip-font-family":
-      topStrip.fontFamily ||
-      "Cairo",
   };
 
   // =====================================================
@@ -1485,92 +1742,272 @@ function Navbar({
 
   return (
     <div
-      className="store-navbar-theme jumia-navbar"
+      className="navbar-root"
       style={navbarStyle}
-      dir="rtl"
     >
 
       {/* =================================================
-          TOP STRIP
+          INDEPENDENT ANNOUNCEMENT BARS
       ================================================= */}
 
-      {topStrip.enabled !==
-        false && (
-        <div
-          className="top-offer-bar"
-          style={{
-            height: `${Number(
-              topStrip.height ||
-                36
-            )}px`,
+      {activeBars.map(
+        (bar, index) => {
+          const text =
+            getAnnouncementText(
+              bar
+            );
 
-            background:
-              theme.topStripBackground ||
-              "#f68b1e",
+          const direction =
+            bar?.direction ||
+            "rtl";
 
-            color:
-              theme.topStripText ||
-              "#ffffff",
+          const height =
+            Number(
+              bar?.height || 36
+            );
 
-            direction:
-              topStrip.direction ||
-              "rtl",
+          const fontSize =
+            Number(
+              bar?.fontSize || 13
+            );
 
-            fontSize: `${Number(
-              topStrip.fontSize ||
-                13
-            )}px`,
-
-            fontFamily:
-              topStrip.fontFamily ||
-              "Cairo",
-          }}
-        >
-          <div
-            className="offer-track"
-            style={{
-              direction:
-                topStrip.direction ||
-                "rtl",
-
-              animationDuration:
-                `${Math.max(
-                  5,
-                  Number(
-                    topStrip.speed ||
-                      40
-                  )
-                )}s`,
-
-              animationDirection:
-                topStrip.direction ===
-                "ltr"
-                  ? "reverse"
-                  : "normal",
-
-              color:
-                theme.topStripText ||
-                "#ffffff",
-
-              fontFamily:
-                topStrip.fontFamily ||
-                "Cairo",
-            }}
-          >
-            {repeatedTopStripItems.map(
-              (
-                text,
-                index
-              ) => (
-                <span
-                  key={`${text}-${index}`}
-                >
-                  {text}
-                </span>
+          const speed =
+            Math.max(
+              8,
+              Number(
+                bar?.speed || 40
               )
-            )}
-          </div>
-        </div>
+            );
+
+          const background =
+            bar?.background ||
+            theme.topStripBackground ||
+            "#f68b1e";
+
+          const textColor =
+            bar?.textColor ||
+            theme.topStripText ||
+            "#ffffff";
+
+          const fontFamily =
+            bar?.fontFamily ||
+            "Cairo";
+
+          const svg =
+            getBarSvg(bar);
+
+          const icon =
+            getBarIcon(bar);
+
+          // لو فيه SVG نستخدمه.
+          // غير كده نستخدم الإيموجي القديم.
+          const renderBarIcon = () => {
+            if (
+              svg &&
+              typeof svg === "string"
+            ) {
+              return (
+                <span
+                  className="announcement-svg"
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{
+                    __html: svg,
+                  }}
+                />
+              );
+            }
+
+            return (
+              <span
+                className="announcement-icon"
+                aria-hidden="true"
+              >
+                {icon}
+              </span>
+            );
+          };
+
+          return (
+            <div
+              key={
+                bar?.id ||
+                `announcement-bar-${index}`
+              }
+              className={`top-offer-bar announcement-bar announcement-bar-${bar?.type || "text"}`}
+              style={{
+                height: `${height}px`,
+
+                minHeight: `${height}px`,
+
+                background,
+
+                color: textColor,
+
+                direction,
+
+                fontSize: `${fontSize}px`,
+
+                fontFamily,
+
+                overflow: "hidden",
+
+                width: "100%",
+
+                display: "flex",
+
+                alignItems: "center",
+
+                position: "relative",
+
+                flexShrink: 0,
+              }}
+            >
+              <div
+                className={`offer-track announcement-track announcement-bar-track ${
+                  bar?.type || "text"
+                } ${
+                  activeBars.length > 1
+                    ? "multiple-bars"
+                    : ""
+                }`}
+                style={{
+                  direction,
+
+                  color: textColor,
+
+                  fontFamily,
+
+                  fontSize: `${fontSize}px`,
+
+                  width:
+                    "max-content",
+
+                  display: "flex",
+
+                  alignItems: "center",
+
+                  justifyContent:
+                    "flex-start",
+
+                  gap: "80px",
+
+                  whiteSpace:
+                    "nowrap",
+
+                  animationDuration: `${speed}s`,
+
+                  animationDirection:
+                    direction ===
+                    "ltr"
+                      ? "reverse"
+                      : "normal",
+
+                  animationPlayState:
+                    "running",
+
+                  padding:
+                    "0 40px",
+                }}
+              >
+
+                {/* FIRST ITEM */}
+
+                <span
+                  className="announcement-item"
+                  style={{
+                    display:
+                      "inline-flex",
+
+                    alignItems:
+                      "center",
+
+                    gap: "8px",
+
+                    flexShrink: 0,
+                  }}
+                >
+                  {renderBarIcon()}
+
+                  <span>
+                    {text}
+                  </span>
+                </span>
+
+                {/* DUPLICATE */}
+
+                <span
+                  className="announcement-item"
+                  aria-hidden="true"
+                  style={{
+                    display:
+                      "inline-flex",
+
+                    alignItems:
+                      "center",
+
+                    gap: "8px",
+
+                    flexShrink: 0,
+                  }}
+                >
+                  {renderBarIcon()}
+
+                  <span>
+                    {text}
+                  </span>
+                </span>
+
+                {/* DUPLICATE */}
+
+                <span
+                  className="announcement-item"
+                  aria-hidden="true"
+                  style={{
+                    display:
+                      "inline-flex",
+
+                    alignItems:
+                      "center",
+
+                    gap: "8px",
+
+                    flexShrink: 0,
+                  }}
+                >
+                  {renderBarIcon()}
+
+                  <span>
+                    {text}
+                  </span>
+                </span>
+
+                {/* DUPLICATE */}
+
+                <span
+                  className="announcement-item"
+                  aria-hidden="true"
+                  style={{
+                    display:
+                      "inline-flex",
+
+                    alignItems:
+                      "center",
+
+                    gap: "8px",
+
+                    flexShrink: 0,
+                  }}
+                >
+                  {renderBarIcon()}
+
+                  <span>
+                    {text}
+                  </span>
+                </span>
+              </div>
+            </div>
+          );
+        }
       )}
 
       {/* =================================================
@@ -1596,6 +2033,9 @@ function Navbar({
           type="button"
           className="mobile-menu-button"
           aria-label="القائمة"
+          aria-expanded={
+            mobileMenuOpen
+          }
           onClick={() =>
             setMobileMenuOpen(
               (previous) =>
@@ -1615,10 +2055,9 @@ function Navbar({
               storeSettings.storeName ||
               "Elsafty Store"
             }
-            onClick={(
-              event
-            ) => {
+            onClick={(event) => {
               event.stopPropagation();
+
               setLogoZoom(true);
             }}
           />
@@ -1639,14 +2078,13 @@ function Navbar({
             onChange={
               handleSearchChange
             }
-            onKeyDown={(
-              event
-            ) => {
+            onKeyDown={(event) => {
               if (
                 event.key ===
                 "Enter"
               ) {
                 event.preventDefault();
+
                 handleSearch();
               }
 
@@ -1736,7 +2174,8 @@ function Navbar({
               0 && (
               <div className="search-suggestions">
                 <div className="search-no-result">
-                  لا توجد منتجات مطابقة للبحث
+                  لا توجد منتجات مطابقة
+                  للبحث
                 </div>
               </div>
             )}
@@ -1757,7 +2196,7 @@ function Navbar({
             <button
               type="button"
               className="nav-action-button"
-              aria-label="تسجيل الدخول"
+              aria-label="الحساب"
               aria-expanded={
                 menuOpen
               }
@@ -1823,9 +2262,7 @@ function Navbar({
                         );
                       }}
                     >
-                      <span>
-                        🔑
-                      </span>
+                      <span>🔑</span>
 
                       <span>
                         تسجيل الدخول
@@ -1844,9 +2281,7 @@ function Navbar({
                         );
                       }}
                     >
-                      <span>
-                        ➕
-                      </span>
+                      <span>➕</span>
 
                       <span>
                         إنشاء حساب
@@ -1878,9 +2313,7 @@ function Navbar({
                         );
                       }}
                     >
-                      <span>
-                        👤
-                      </span>
+                      <span>👤</span>
 
                       <span>
                         حسابي
@@ -1899,9 +2332,7 @@ function Navbar({
                         );
                       }}
                     >
-                      <span>
-                        📦
-                      </span>
+                      <span>📦</span>
 
                       <span>
                         طلباتي
@@ -1914,9 +2345,7 @@ function Navbar({
                         logout
                       }
                     >
-                      <span>
-                        🚪
-                      </span>
+                      <span>🚪</span>
 
                       <span>
                         تسجيل الخروج
@@ -1938,6 +2367,9 @@ function Navbar({
               type="button"
               className="nav-action-button"
               aria-label="المساعدة"
+              aria-expanded={
+                helpOpen
+              }
               onClick={() =>
                 setHelpOpen(
                   (previous) =>
@@ -2060,9 +2492,7 @@ function Navbar({
                 )
               }
             >
-              <span>
-                ⚙️
-              </span>
+              <span>⚙️</span>
 
               <small>
                 الإدارة
@@ -2077,20 +2507,16 @@ function Navbar({
             className="cart-icon"
             aria-label="سلة التسوق"
             onClick={() =>
-              navigate(
-                "/cart"
-              )
+              navigate("/cart")
             }
           >
             <span className="cart-symbol">
               🛒
             </span>
 
-            {cartCount >
-              0 && (
+            {cartCount > 0 && (
               <span className="cart-badge">
-                {cartCount >
-                99
+                {cartCount > 99
                   ? "99+"
                   : cartCount}
               </span>
@@ -2191,9 +2617,7 @@ function Navbar({
               navigate("/");
             }}
           >
-            <span>
-              🏠
-            </span>
+            <span>🏠</span>
 
             <strong>
               الرئيسية
@@ -2227,9 +2651,7 @@ function Navbar({
               );
             }}
           >
-            <span>
-              📱
-            </span>
+            <span>📱</span>
 
             <strong>
               الأقسام
@@ -2256,9 +2678,7 @@ function Navbar({
 
               return (
                 <div
-                  key={
-                    categoryId
-                  }
+                  key={categoryId}
                   className={`nav-category-wrapper ${
                     isOpen
                       ? "category-is-open"
@@ -2301,9 +2721,7 @@ function Navbar({
                     )}
 
                     <strong>
-                      {
-                        category.name
-                      }
+                      {category.name}
                     </strong>
 
                     {children.length >
@@ -2334,9 +2752,7 @@ function Navbar({
               )
             }
           >
-            <span>
-              🔥
-            </span>
+            <span>🔥</span>
 
             <strong>
               العروض
@@ -2354,9 +2770,7 @@ function Navbar({
               )
             }
           >
-            <span>
-              ⭐
-            </span>
+            <span>⭐</span>
 
             <strong>
               الأكثر مبيعًا
@@ -2374,9 +2788,7 @@ function Navbar({
               )
             }
           >
-            <span>
-              🆕
-            </span>
+            <span>🆕</span>
 
             <strong>
               وصل حديثًا
@@ -2429,9 +2841,7 @@ function Navbar({
               storeSettings.storeName ||
               "Elsafty Store"
             }
-            onClick={(
-              event
-            ) =>
+            onClick={(event) =>
               event.stopPropagation()
             }
           />

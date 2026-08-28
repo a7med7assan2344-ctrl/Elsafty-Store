@@ -2,7 +2,9 @@
 // Admin.jsx - PART 1 / 3
 // Elsafty Store - Full Admin Panel
 // ============================================================
+
 import { CartContext } from "../../context/CartContext";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import React, {
   useContext,
   useEffect,
@@ -13,18 +15,25 @@ import React, {
 import { useNavigate } from "react-router-dom";
 
 import {
-  addDoc,
   collection,
-  deleteDoc,
   doc,
-  onSnapshot,
-  serverTimestamp,
+  getDoc,
+  getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
+  addDoc,
+  onSnapshot,
+  where,
+  query,
 } from "firebase/firestore";
-
-import { db } from "../../firebase";
-
+import {
+  onAuthStateChanged,
+} from "firebase/auth";
+import {
+  db,
+  auth
+} from "../../firebase";
 import "./Admin.css";
 
 
@@ -247,77 +256,713 @@ const getOrderStatusText = (status) => {
     "قيد الانتظار"
   );
 };
+// ============================================================
+// ADMIN PERMISSIONS
+// ============================================================
+
+// الصلاحيات المتاحة للمشرفين
+// ============================================================
+
+const adminPermissions = [
+
+  // ==========================================================
+  // الرئيسية والتقارير
+  // ==========================================================
+
+  {
+    id: "dashboard",
+    title: "🏠 الرئيسية",
+  },
+
+  {
+    id: "reports",
+    title: "📈 الإحصائيات والتقارير",
+  },
 
 
+  // ==========================================================
+  // المنتجات
+  // ==========================================================
+
+  {
+    id: "products_view",
+    title: "📦 المنتجات - عرض",
+  },
+
+  {
+    id: "products_add",
+    title: "📦 المنتجات - إضافة",
+  },
+
+  {
+    id: "products_edit",
+    title: "📦 المنتجات - تعديل",
+  },
+
+  {
+    id: "products_delete",
+    title: "📦 المنتجات - حذف",
+  },
+
+
+  // ==========================================================
+  // الأقسام
+  // ==========================================================
+
+  {
+    id: "categories_view",
+    title: "📂 الأقسام - عرض",
+  },
+
+  {
+    id: "categories_add",
+    title: "📂 الأقسام - إضافة",
+  },
+
+  {
+    id: "categories_edit",
+    title: "📂 الأقسام - تعديل",
+  },
+
+  {
+    id: "categories_delete",
+    title: "📂 الأقسام - حذف",
+  },
+
+
+  // ==========================================================
+  // العروض
+  // ==========================================================
+
+  {
+    id: "offers_view",
+    title: "⭐ العروض - عرض",
+  },
+
+  {
+    id: "offers_add",
+    title: "⭐ العروض - إضافة",
+  },
+
+  {
+    id: "offers_edit",
+    title: "⭐ العروض - تعديل",
+  },
+
+  {
+    id: "offers_delete",
+    title: "⭐ العروض - حذف",
+  },
+
+
+  // ==========================================================
+  // الأكثر مبيعًا
+  // ==========================================================
+
+  {
+    id: "bestsellers",
+    title: "🔥 الأكثر مبيعًا",
+  },
+
+
+  // ==========================================================
+  // المنتجات الجديدة
+  // ==========================================================
+
+  {
+    id: "new-arrivals",
+    title: "🆕 المنتجات الجديدة",
+  },
+
+
+  // ==========================================================
+  // المنتجات المقترحة
+  // ==========================================================
+
+  {
+    id: "recommended",
+    title: "👍 المنتجات المقترحة",
+  },
+
+
+  // ==========================================================
+  // المستخدمون
+  // ==========================================================
+
+  {
+    id: "users_view",
+    title: "👥 المستخدمون - عرض",
+  },
+
+  {
+    id: "users_edit",
+    title: "👥 المستخدمون - تعديل",
+  },
+
+  {
+    id: "users_delete",
+    title: "👥 المستخدمون - حذف",
+  },
+
+
+  // ==========================================================
+  // العملاء
+  // ==========================================================
+
+  {
+    id: "customers_view",
+    title: "🧑‍💼 العملاء - عرض",
+  },
+
+  {
+    id: "customers_edit",
+    title: "🧑‍💼 العملاء - تعديل",
+  },
+
+
+  // ==========================================================
+  // الطلبات
+  // ==========================================================
+
+  {
+    id: "orders_view",
+    title: "🛒 الطلبات - عرض",
+  },
+
+  {
+    id: "orders_edit",
+    title: "🛒 الطلبات - تعديل",
+  },
+
+  {
+    id: "orders_delete",
+    title: "🛒 الطلبات - حذف",
+  },
+
+
+  // ==========================================================
+  // المبيعات
+  // ==========================================================
+
+  {
+    id: "sales_view",
+    title: "💰 المبيعات - عرض",
+  },
+
+
+  // ==========================================================
+  // المفضلة
+  // ==========================================================
+
+  {
+    id: "favorites_view",
+    title: "❤️ المفضلة - عرض",
+  },
+
+
+  // ==========================================================
+  // المحظورون
+  // ==========================================================
+
+  {
+    id: "blocked-users_view",
+    title: "🚫 المحظورون - عرض",
+  },
+
+  {
+    id: "blocked-users_edit",
+    title: "🚫 المحظورون - تعديل",
+  },
+
+
+  // ==========================================================
+  // خدمة العملاء
+  // ==========================================================
+
+  {
+    id: "support_view",
+    title: "💬 خدمة العملاء - عرض",
+  },
+
+  {
+    id: "support_reply",
+    title: "💬 خدمة العملاء - الرد",
+  },
+
+
+  // ==========================================================
+  // واجهة المتجر
+  // ==========================================================
+
+  {
+    id: "store-menu_view",
+    title: "🏪 واجهة المتجر - عرض",
+  },
+
+  {
+    id: "store-menu_edit",
+    title: "🏪 واجهة المتجر - تعديل",
+  },
+
+
+  // ==========================================================
+  // البانرات
+  // ==========================================================
+
+  {
+    id: "banners_view",
+    title: "🖼️ البانرات - عرض",
+  },
+
+  {
+    id: "banners_add",
+    title: "🖼️ البانرات - إضافة",
+  },
+
+  {
+    id: "banners_edit",
+    title: "🖼️ البانرات - تعديل",
+  },
+
+  {
+    id: "banners_delete",
+    title: "🖼️ البانرات - حذف",
+  },
+
+
+  // ==========================================================
+  // الكوبونات
+  // ==========================================================
+
+  {
+    id: "coupons_view",
+    title: "🏷️ الكوبونات - عرض",
+  },
+
+  {
+    id: "coupons_add",
+    title: "🏷️ الكوبونات - إضافة",
+  },
+
+  {
+    id: "coupons_edit",
+    title: "🏷️ الكوبونات - تعديل",
+  },
+
+  {
+    id: "coupons_delete",
+    title: "🏷️ الكوبونات - حذف",
+  },
+
+
+  // ==========================================================
+  // عجلة الحظ
+  // ==========================================================
+
+  {
+    id: "wheel_view",
+    title: "🎡 عجلة الحظ - عرض",
+  },
+
+  {
+    id: "wheel_edit",
+    title: "🎡 عجلة الحظ - تعديل",
+  },
+
+
+  // ==========================================================
+  // الإعلانات
+  // ==========================================================
+
+  {
+    id: "announcements_view",
+    title: "📢 الإعلانات - عرض",
+  },
+
+  {
+    id: "announcements_add",
+    title: "📢 الإعلانات - إضافة",
+  },
+
+  {
+    id: "announcements_edit",
+    title: "📢 الإعلانات - تعديل",
+  },
+
+  {
+    id: "announcements_delete",
+    title: "📢 الإعلانات - حذف",
+  },
+
+
+  // ==========================================================
+  // أشرطة الإعلانات
+  // ==========================================================
+
+  {
+    id: "announcement-bars_view",
+    title: "📢 أشرطة الإعلانات - عرض",
+  },
+
+  {
+    id: "announcement-bars_add",
+    title: "📢 أشرطة الإعلانات - إضافة",
+  },
+
+  {
+    id: "announcement-bars_edit",
+    title: "📢 أشرطة الإعلانات - تعديل",
+  },
+
+  {
+    id: "announcement-bars_delete",
+    title: "📢 أشرطة الإعلانات - حذف",
+  },
+
+
+  // ==========================================================
+  // الإشعارات
+  // ==========================================================
+
+  {
+    id: "notifications_view",
+    title: "🔔 الإشعارات - عرض",
+  },
+
+
+  // ==========================================================
+  // إعدادات المتجر
+  // ==========================================================
+
+  {
+    id: "settings_view",
+    title: "⚙️ إعدادات المتجر - عرض",
+  },
+
+  {
+    id: "settings_edit",
+    title: "⚙️ إعدادات المتجر - تعديل",
+  },
+
+
+  // ==========================================================
+  // الشحن
+  // ==========================================================
+
+  {
+    id: "shipping_view",
+    title: "🚚 الشحن والتوصيل - عرض",
+  },
+
+  {
+    id: "shipping_add",
+    title: "🚚 الشحن والتوصيل - إضافة",
+  },
+
+  {
+    id: "shipping_edit",
+    title: "🚚 الشحن والتوصيل - تعديل",
+  },
+
+  {
+    id: "shipping_delete",
+    title: "🚚 الشحن والتوصيل - حذف",
+  },
+
+
+  // ==========================================================
+  // الدفع
+  // ==========================================================
+
+  {
+    id: "payments_view",
+    title: "💳 طرق الدفع - عرض",
+  },
+
+  {
+    id: "payments_add",
+    title: "💳 طرق الدفع - إضافة",
+  },
+
+  {
+    id: "payments_edit",
+    title: "💳 طرق الدفع - تعديل",
+  },
+
+  {
+    id: "payments_delete",
+    title: "💳 طرق الدفع - حذف",
+  },
+
+
+  // ==========================================================
+  // بيانات التواصل
+  // ==========================================================
+
+  {
+    id: "contact_view",
+    title: "📱 بيانات التواصل - عرض",
+  },
+
+  {
+    id: "contact_edit",
+    title: "📱 بيانات التواصل - تعديل",
+  },
+
+
+  // ==========================================================
+  // المشرفون والصلاحيات
+  // ==========================================================
+
+  {
+    id: "admins_view",
+    title: "🔐 المشرفون - عرض",
+  },
+
+  {
+    id: "admins_add",
+    title: "🔐 المشرفون - إضافة",
+  },
+
+  {
+    id: "admins_edit",
+    title: "🔐 المشرفون - تعديل",
+  },
+
+  {
+    id: "admins_delete",
+    title: "🔐 المشرفون - حذف",
+  },
+
+  {
+    id: "admins_permissions",
+    title: "🔐 المشرفون - التحكم في الصلاحيات",
+  },
+
+
+  // ==========================================================
+  // سجل العمليات
+  // ==========================================================
+
+  {
+    id: "activity-log",
+    title: "📝 سجل العمليات",
+  },
+
+
+  // ==========================================================
+  // الأمان
+  // ==========================================================
+
+  {
+    id: "security",
+    title: "🔑 الأمان",
+  },
+
+  // ==========================================================
+  // ANNOUNCEMENT BARS
+  // ==========================================================
+
+  {
+    id: "announcement-bars",
+    title: "📢 أشرطة الإعلانات",
+  },
+
+  {
+    id: "notifications",
+    title: "🔔 الإشعارات",
+  },
+
+  {
+    id: "settings",
+    title: "⚙️ إعدادات المتجر",
+  },
+
+  {
+    id: "shipping",
+    title: "🚚 الشحن والتوصيل",
+  },
+
+  {
+    id: "payments",
+    title: "💳 طرق الدفع",
+  },
+
+  {
+    id: "contact",
+    title: "📱 بيانات التواصل",
+  },
+
+  {
+    id: "admins",
+    title: "🔐 المشرفون والصلاحيات",
+  },
+
+  {
+    id: "activity-log",
+    title: "📝 سجل العمليات",
+  },
+{
+  id: "security",
+  title: "🔑 الأمان",
+},
+
+];
 // ============================================================
 // ADMIN COMPONENT
 // ============================================================
 
 function Admin() {
-const navigate = useNavigate();
-const { replaceCart } = useContext(CartContext);
-  // ==========================================================
+
+  const navigate = useNavigate();
+
+  const { replaceCart } =
+    useContext(CartContext);
+const handleCategoryImageUpload = (event) => {
+
+  const file =
+    event.target.files?.[0];
+
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+
+    alert(
+      "من فضلك اختر ملف صورة فقط."
+    );
+
+    event.target.value = "";
+
+    return;
+  }
+
+  const maxSize =
+    5 * 1024 * 1024;
+
+  if (file.size > maxSize) {
+
+    alert(
+      "حجم الصورة يجب ألا يتجاوز 5 ميجابايت."
+    );
+
+    event.target.value = "";
+
+    return;
+  }
+
+  setCategoryForm(
+    (prev) => ({
+      ...prev,
+      image: file,
+    })
+  );
+
+};
   // MAIN STATE
   // ==========================================================
-const [wheelSettings, setWheelSettings] =
- useState({
-  enabled: false,
 
-  title: "🎡 جرب حظك!",
+  const [wheelSettings, setWheelSettings] =
+    useState({
+      enabled: false,
 
-  description: "لف العجلة واكسب عرضك",
+      title: "🎡 جرب حظك!",
 
-  attemptsPerUser: 1,
+      description:
+        "لف العجلة واكسب عرضك",
 
-  prizes: [],
-});
+      attemptsPerUser: 1,
+
+      prizes: [],
+    });
+
+
   const [tab, setTab] =
     useState("dashboard");
+
 
   const [products, setProducts] =
     useState([]);
 
+
   const [categories, setCategories] =
     useState([]);
+
 
   const [orders, setOrders] =
     useState([]);
 
+
   const [users, setUsers] =
     useState([]);
+
 
   const [banners, setBanners] =
     useState([]);
 
+
   const [coupons, setCoupons] =
     useState([]);
 
-  const [announcements, setAnnouncements] =
-    useState([]);
 
-  const [notifications, setNotifications] =
-    useState([]);
+const [announcements, setAnnouncements] =
+  useState([]);
+
+
+const [announcementBars, setAnnouncementBars] =
+  useState([]);
+
+
+const [notifications, setNotifications] =
+  useState([]);
 
   const [supportMessages, setSupportMessages] =
     useState([]);
 
+
   const [favorites, setFavorites] =
     useState([]);
+
 
   const [blockedUsers, setBlockedUsers] =
     useState([]);
 
+
   const [shippingZones, setShippingZones] =
     useState([]);
+
 
   const [paymentMethods, setPaymentMethods] =
     useState([]);
 
+
   const [admins, setAdmins] =
     useState([]);
 
+
   const [activityLogs, setActivityLogs] =
     useState([]);
+
+
+  // ==========================================================
+  // ADMINS MANAGEMENT
+  // ==========================================================
+
+  const [adminForm, setAdminForm] =
+    useState({
+      name: "",
+      email: "",
+      password: "",
+      permissions: [],
+      active: true,
+    });
+
+
+  const [editingAdmin, setEditingAdmin] =
+    useState(null);
+
+
+  const [showAdminForm, setShowAdminForm] =
+    useState(false);
 
 
   // ==========================================================
@@ -328,126 +973,294 @@ const [wheelSettings, setWheelSettings] =
     storeSettings,
     setStoreSettings,
   ] = useState({
-    storeName: "Elsafty Store",
-    logo: "",
-    phone: "",
-    whatsapp: "",
-    email: "",
-    address: "",
-    facebook: "",
-    instagram: "",
-    telegram: "",
-    announcement: "",
+
+    storeName:
+      "Elsafty Store",
+
+    logo:
+      "",
+
+    phone:
+      "",
+
+    whatsapp:
+      "",
+
+    email:
+      "",
+
+    address:
+      "",
+
+    facebook:
+      "",
+
+    instagram:
+      "",
+
+    telegram:
+      "",
+
+    announcement:
+      "",
+
+
+    // ========================================================
+    // THEME
+    // ========================================================
 
     theme: {
-      primary: "#071A36",
-      secondary: "#0B1F3A",
-      accent: "#D4AF37",
 
-      pageBackground: "#F0F4F8",
-      cardBackground: "#FFFFFF",
+      primary:
+        "#071A36",
 
-      textPrimary: "#071A36",
-      textSecondary: "#64748B",
+      secondary:
+        "#0B1F3A",
 
-      border: "#D9DFE8",
+      accent:
+        "#D4AF37",
 
-      buttonBackground: "#0B1F3A",
-      buttonText: "#FFFFFF",
+      pageBackground:
+        "#F0F4F8",
 
-      navbarBackground: "#071A36",
-      navbarText: "#FFFFFF",
+      cardBackground:
+        "#FFFFFF",
 
-      categoryBarBackground: "#FFFFFF",
-      categoryBarText: "#071A36",
+      textPrimary:
+        "#071A36",
 
-      topStripBackground: "#071A36",
-      topStripText: "#FFFFFF",
+      textSecondary:
+        "#64748B",
 
-      footerBackground: "#071A36",
-      footerText: "#FFFFFF",
+      border:
+        "#D9DFE8",
+
+      buttonBackground:
+        "#0B1F3A",
+
+      buttonText:
+        "#FFFFFF",
+
+      navbarBackground:
+        "#071A36",
+
+      navbarText:
+        "#FFFFFF",
+
+      categoryBarBackground:
+        "#FFFFFF",
+
+      categoryBarText:
+        "#071A36",
+
+      topStripBackground:
+        "#071A36",
+
+      topStripText:
+        "#FFFFFF",
+
+      footerBackground:
+        "#071A36",
+
+      footerText:
+        "#FFFFFF",
     },
+
+
+    // ========================================================
+    // BANNER SETTINGS
+    // ========================================================
 
     bannerSettings: {
-      heightDesktop: 420,
-      heightTablet: 350,
-      heightMobile: 240,
-      borderRadius: 0,
-      overlayOpacity: 0.35,
+
+      heightDesktop:
+        420,
+
+      heightTablet:
+        350,
+
+      heightMobile:
+        240,
+
+      borderRadius:
+        0,
+
+      overlayOpacity:
+        0.35,
     },
+
+
+    // ========================================================
+    // TOP STRIP
+    // ========================================================
 
     topStrip: {
-      enabled: true,
-      direction: "rtl",
-      speed: 40,
-      height: 42,
-      fontSize: 15,
+
+      enabled:
+        true,
+
+      direction:
+        "rtl",
+
+      speed:
+        40,
+
+      height:
+        42,
+
+      fontSize:
+        15,
+
 
       items: [
+
         {
-          icon: "🚚",
-          text: "شحن سريع لجميع المحافظات",
-          active: true,
+          icon:
+            "🚚",
+
+          text:
+            "شحن سريع لجميع المحافظات",
+
+          active:
+            true,
         },
+
         {
-          icon: "💰",
-          text: "أفضل الأسعار",
-          active: true,
+          icon:
+            "💰",
+
+          text:
+            "أفضل الأسعار",
+
+          active:
+            true,
         },
+
         {
-          icon: "🔥",
-          text: "عروض وخصومات مستمرة",
-          active: true,
+          icon:
+            "🔥",
+
+          text:
+            "عروض وخصومات مستمرة",
+
+          active:
+            true,
         },
+
         {
-          icon: "🎟️",
-          text: "استخدم أكواد الخصم عند إتمام الطلب",
-          active: true,
+          icon:
+            "🎟️",
+
+          text:
+            "استخدم أكواد الخصم عند إتمام الطلب",
+
+          active:
+            true,
         },
+
         {
-          icon: "🛍️",
-          text: "تسوق الآن من Elsafty Store",
-          active: true,
+          icon:
+            "🛍️",
+
+          text:
+            "تسوق الآن من Elsafty Store",
+
+          active:
+            true,
         },
+
       ],
     },
+
+
+    // ========================================================
+    // FEATURES BAR
+    // ========================================================
 
     featuresBar: {
-      enabled: true,
-      background: "#FFFFFF",
-      color: "#071A36",
-      accentColor: "#D4AF37",
-      height: 80,
-      fontSize: 16,
+
+      enabled:
+        true,
+
+      background:
+        "#FFFFFF",
+
+      color:
+        "#071A36",
+
+      accentColor:
+        "#D4AF37",
+
+      height:
+        80,
+
+      fontSize:
+        16,
+
 
       items: [
+
         {
-          icon: "🚚",
-          title: "شحن سريع",
-          text: "لجميع المحافظات",
-          active: true,
+          icon:
+            "🚚",
+
+          title:
+            "شحن سريع",
+
+          text:
+            "لجميع المحافظات",
+
+          active:
+            true,
         },
+
         {
-          icon: "💳",
-          title: "طرق دفع متعددة",
-          text: "دفع عند الاستلام وإلكتروني",
-          active: true,
+          icon:
+            "💳",
+
+          title:
+            "طرق دفع متعددة",
+
+          text:
+            "دفع عند الاستلام وإلكتروني",
+
+          active:
+            true,
         },
+
         {
-          icon: "🎟️",
-          title: "كوبونات خصم",
-          text: "وفر أكثر عند الشراء",
-          active: true,
+          icon:
+            "🎟️",
+
+          title:
+            "كوبونات خصم",
+
+          text:
+            "وفر أكثر عند الشراء",
+
+          active:
+            true,
         },
+
         {
-          icon: "⭐",
-          title: "منتجات مميزة",
-          text: "اختيارات تناسبك",
-          active: true,
+          icon:
+            "⭐",
+
+          title:
+            "منتجات مميزة",
+
+          text:
+            "اختيارات تناسبك",
+
+          active:
+            true,
         },
+
       ],
     },
+
   });
+
 
 
   // ==========================================================
@@ -594,7 +1407,211 @@ const [editOrderData, setEditOrderData] = useState({
   const [actionLoading, setActionLoading] =
     useState(false);
 
+  // ==========================================================
+  // CURRENT ADMIN / PERMISSIONS
+  // ==========================================================
 
+  const [currentAdmin, setCurrentAdmin] =
+    useState(null);
+
+  const [adminPermissionsList, setAdminPermissionsList] =
+    useState([]);
+
+  const [adminAccessLoading, setAdminAccessLoading] =
+    useState(true);
+
+
+  // ==========================================================
+  // CHECK ADMIN PERMISSION
+  // ==========================================================
+
+  const hasAdminPermission = (permissionId) => {
+
+    // المشرف الرئيسي له كل الصلاحيات
+    if (
+      currentAdmin?.isSuperAdmin === true ||
+      currentAdmin?.role === "superadmin"
+    ) {
+      return true;
+    }
+
+    // لو مفيش مشرف حالي
+    if (!currentAdmin) {
+      return false;
+    }
+
+    // الصلاحيات المحفوظة للمشرف
+    const permissions =
+      Array.isArray(
+        currentAdmin.permissions
+      )
+        ? currentAdmin.permissions
+        : adminPermissionsList;
+
+    return permissions.includes(
+      permissionId
+    );
+  };
+
+
+  // ==========================================================
+  // CHECK WRITE PERMISSION
+  // ==========================================================
+
+  const canEditAdminSection = (
+    permissionId
+  ) => {
+
+    return hasAdminPermission(
+      permissionId
+    );
+
+  };
+    // ==========================================================
+  // LOAD CURRENT ADMIN
+  // ==========================================================
+
+  useEffect(() => {
+
+    const loadCurrentAdmin = async () => {
+
+      setAdminAccessLoading(true);
+
+      try {
+
+        const user =
+          auth.currentUser;
+
+        if (!user) {
+
+          setCurrentAdmin(null);
+          setAdminPermissionsList([]);
+
+          return;
+        }
+
+
+        // البحث عن المشرف باستخدام UID
+        const adminQuery =
+          query(
+            collection(
+              db,
+              "admins"
+            ),
+            where(
+              "uid",
+              "==",
+              user.uid
+            )
+          );
+
+
+        const snapshot =
+          await getDocs(
+            adminQuery
+          );
+
+
+        if (
+          snapshot.empty
+        ) {
+
+          // لو الحساب الأساسي موجود في users
+          const userQuery =
+            query(
+              collection(
+                db,
+                "users"
+              ),
+              where(
+                "uid",
+                "==",
+                user.uid
+              )
+            );
+
+
+          const userSnapshot =
+            await getDocs(
+              userQuery
+            );
+
+
+          if (
+            !userSnapshot.empty
+          ) {
+
+            const userData =
+              userSnapshot.docs[0].data();
+
+            setCurrentAdmin({
+              id:
+                userSnapshot.docs[0].id,
+
+              ...userData,
+            });
+
+            setAdminPermissionsList(
+              Array.isArray(
+                userData.permissions
+              )
+                ? userData.permissions
+                : []
+            );
+
+          } else {
+
+            setCurrentAdmin(null);
+            setAdminPermissionsList([]);
+
+          }
+
+        } else {
+
+          const adminData =
+            snapshot.docs[0].data();
+
+          setCurrentAdmin({
+            id:
+              snapshot.docs[0].id,
+
+            ...adminData,
+          });
+
+          setAdminPermissionsList(
+            Array.isArray(
+              adminData.permissions
+            )
+              ? adminData.permissions
+              : []
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Load current admin error:",
+          error
+        );
+
+        setCurrentAdmin(null);
+        setAdminPermissionsList([]);
+
+      } finally {
+
+        setAdminAccessLoading(
+          false
+        );
+
+      }
+
+    };
+
+
+    loadCurrentAdmin();
+
+  }, []);
   // ==========================================================
   // REALTIME FIRESTORE
   // ==========================================================
@@ -690,7 +1707,10 @@ const [editOrderData, setEditOrderData] = useState({
       "announcements",
       setAnnouncements
     );
-
+watchCollection(
+  "announcementBars",
+  setAnnouncementBars
+);
     watchCollection(
       "notifications",
       setNotifications,
@@ -1692,107 +2712,228 @@ const handleEditOrder = (order) => {
     };
 
 
-  const handleCategorySubmit =
-    async (event) => {
+const handleCategorySubmit =
+  async (event) => {
 
-      event.preventDefault();
+    event.preventDefault();
 
-      setActionLoading(true);
+    setActionLoading(true);
 
-      try {
+    try {
 
-const categoryData = {
+      // ======================================================
+      // 🖼️ رفع صورة القسم إلى Cloudinary
+      // ======================================================
 
-  name:
-    categoryForm.name.trim(),
+      let imageUrl =
+        typeof categoryForm.image === "string"
+          ? categoryForm.image
+          : "";
 
-  description:
-    categoryForm.description?.trim() ||
-    "",
+      if (
+        categoryForm.image instanceof File
+      ) {
 
-  image:
-    categoryForm.image.trim(),
+        const formData =
+          new FormData();
 
-  categoryNumber:
-    categoryForm.categoryNumber.trim(),
-
-  whatsapp:
-    categoryForm.whatsapp.trim(),
-
-  parentId:
-    categoryForm.parentId ||
-    null,
-
-  active:
-    Boolean(
-      categoryForm.active
-    ),
-
-  // 🎨 شكل القسم
-  color:
-    categoryForm.color ||
-    "#071a36",
-
-  // 📏 حجم القسم
-  cardSize:
-    categoryForm.cardSize ||
-    "medium",
-
-  // 🔢 ترتيب القسم
-  sortOrder:
-    Number(
-      categoryForm.sortOrder || 0
-    ),
-
-  updatedAt:
-    serverTimestamp(),
-};
-
-        if (editingCategory) {
-
-          await updateDoc(
-            doc(
-              db,
-              "categories",
-              editingCategory.id
-            ),
-            categoryData
-          );
-
-        } else {
-
-          await setDoc(
-            doc(
-              collection(
-                db,
-                "categories"
-              )
-            ),
-            {
-              ...categoryData,
-              createdAt:
-                serverTimestamp(),
-            }
-          );
-        }
-
-        resetCategoryForm();
-
-      } catch (error) {
-
-        console.error(error);
-
-        alert(
-          "حدث خطأ أثناء حفظ القسم."
+        formData.append(
+          "file",
+          categoryForm.image
         );
 
-      } finally {
+        formData.append(
+          "upload_preset",
+          "elsafty_store"
+        );
 
-        setActionLoading(false);
+        const cloudinaryResponse =
+          await fetch(
+            "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+        if (
+          !cloudinaryResponse.ok
+        ) {
+
+          const errorText =
+            await cloudinaryResponse.text();
+
+          console.error(
+            "Cloudinary error:",
+            errorText
+          );
+
+          throw new Error(
+            "فشل رفع صورة القسم"
+          );
+
+        }
+
+        const cloudinaryData =
+          await cloudinaryResponse.json();
+
+        imageUrl =
+          cloudinaryData.secure_url ||
+          "";
+
+        if (!imageUrl) {
+
+          throw new Error(
+            "لم يتم الحصول على رابط الصورة من Cloudinary"
+          );
+
+        }
+
       }
-    };
 
-const handleEditCategory =
+
+      // ======================================================
+      // 📂 بيانات القسم
+      // ======================================================
+
+      const categoryData = {
+
+        name:
+          categoryForm.name
+            ?.trim() ||
+          "",
+
+        description:
+          categoryForm.description
+            ?.trim() ||
+          "",
+
+        image:
+          imageUrl,
+
+        categoryNumber:
+          categoryForm.categoryNumber
+            ?.trim() ||
+          "",
+
+        whatsapp:
+          categoryForm.whatsapp
+            ?.trim() ||
+          "",
+
+        parentId:
+          categoryForm.parentId ||
+          null,
+
+        active:
+          Boolean(
+            categoryForm.active
+          ),
+
+        // 🎨 لون القسم
+        color:
+          categoryForm.color ||
+          "#071a36",
+
+        // 📏 حجم بطاقة القسم
+        cardSize:
+          categoryForm.cardSize ||
+          "medium",
+
+        // 🔢 ترتيب القسم
+        sortOrder:
+          Number(
+            categoryForm.sortOrder || 0
+          ),
+
+        updatedAt:
+          serverTimestamp(),
+
+      };
+
+
+      // ======================================================
+      // ✏️ تعديل قسم موجود
+      // ======================================================
+
+      if (editingCategory) {
+
+        await updateDoc(
+
+          doc(
+            db,
+            "categories",
+            editingCategory.id
+          ),
+
+          categoryData
+
+        );
+
+      }
+
+
+      // ======================================================
+      // ➕ إضافة قسم جديد
+      // ======================================================
+
+      else {
+
+        await setDoc(
+
+          doc(
+            collection(
+              db,
+              "categories"
+            )
+          ),
+
+          {
+
+            ...categoryData,
+
+            createdAt:
+              serverTimestamp(),
+
+          }
+
+        );
+
+      }
+
+
+      // ======================================================
+      // ✅ نجاح الحفظ
+      // ======================================================
+
+      resetCategoryForm();
+
+      alert(
+        editingCategory
+          ? "✅ تم تعديل القسم بنجاح."
+          : "✅ تم إضافة القسم بنجاح."
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "handleCategorySubmit error:",
+        error
+      );
+
+      alert(
+        "❌ حدث خطأ أثناء حفظ القسم أو رفع الصورة."
+      );
+
+
+    } finally {
+
+      setActionLoading(false);
+
+    }
+
+  };
   (category) => {
 
     setEditingCategory(category);
@@ -2397,8 +3538,503 @@ const startEditOrder = (order) => {
 
   navigate("/checkout");
 };
+// ==========================================================
+// ADMINS MANAGEMENT ACTIONS
+// ==========================================================
+
+// فتح نموذج إضافة أدمن جديد
+const openAddAdminForm = () => {
+  setEditingAdmin(null);
+
+  setAdminForm({
+    name: "",
+    email: "",
+    password: "",
+    permissions: [],
+    active: true,
+  });
+
+  setShowAdminForm(true);
+};
 
 
+// ==========================================================
+// فتح نموذج تعديل أدمن
+// ==========================================================
+
+const openEditAdminForm = (admin) => {
+  setEditingAdmin(admin);
+
+  setAdminForm({
+    name:
+      admin?.name || "",
+
+    email:
+      admin?.email || "",
+
+    password:
+      "",
+
+    permissions:
+      Array.isArray(admin?.permissions)
+        ? admin.permissions
+        : [],
+
+    active:
+      admin?.active !== false,
+  });
+
+  setShowAdminForm(true);
+};
+
+
+// ==========================================================
+// إغلاق النموذج
+// ==========================================================
+
+const closeAdminForm = () => {
+  setShowAdminForm(false);
+
+  setEditingAdmin(null);
+
+  setAdminForm({
+    name: "",
+    email: "",
+    password: "",
+    permissions: [],
+    active: true,
+  });
+};
+
+
+// ==========================================================
+// تحديد / إلغاء تحديد صلاحية
+// ==========================================================
+
+const toggleAdminPermission = (
+  permissionId
+) => {
+
+  setAdminForm((previous) => {
+
+    const permissions =
+      Array.isArray(
+        previous.permissions
+      )
+        ? previous.permissions
+        : [];
+
+    const exists =
+      permissions.includes(
+        permissionId
+      );
+
+    return {
+      ...previous,
+
+      permissions: exists
+        ? permissions.filter(
+            (id) =>
+              id !== permissionId
+          )
+        : [
+            ...permissions,
+            permissionId,
+          ],
+    };
+  });
+};
+
+
+// ==========================================================
+// تحديد كل الصلاحيات
+// ==========================================================
+
+const selectAllAdminPermissions = () => {
+
+  setAdminForm((previous) => ({
+
+    ...previous,
+
+    permissions:
+      adminPermissions.map(
+        (permission) =>
+          permission.id
+      ),
+
+  }));
+};
+
+
+// ==========================================================
+// إلغاء كل الصلاحيات
+// ==========================================================
+
+const clearAllAdminPermissions = () => {
+
+  setAdminForm((previous) => ({
+
+    ...previous,
+
+    permissions: [],
+
+  }));
+};
+
+
+// ==========================================================
+// حفظ الأدمن
+// ==========================================================
+
+const saveAdmin = async () => {
+
+  try {
+
+    // ========================================================
+    // التحقق من البيانات
+    // ========================================================
+
+    if (
+      !adminForm.name ||
+      !adminForm.name.trim()
+    ) {
+
+      alert(
+        "من فضلك اكتب اسم المشرف"
+      );
+
+      return;
+    }
+
+
+    if (
+      !adminForm.email ||
+      !adminForm.email.trim()
+    ) {
+
+      alert(
+        "من فضلك اكتب البريد الإلكتروني"
+      );
+
+      return;
+    }
+
+
+    if (
+      !editingAdmin &&
+      (
+        !adminForm.password ||
+        !adminForm.password.trim()
+      )
+    ) {
+
+      alert(
+        "من فضلك اكتب كلمة المرور"
+      );
+
+      return;
+    }
+
+
+    if (
+      !editingAdmin &&
+      adminForm.password.length < 6
+    ) {
+
+      alert(
+        "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+      );
+
+      return;
+    }
+
+
+    if (
+      !Array.isArray(
+        adminForm.permissions
+      ) ||
+      adminForm.permissions.length === 0
+    ) {
+
+      alert(
+        "اختر صلاحية واحدة على الأقل"
+      );
+
+      return;
+    }
+
+
+    // ========================================================
+    // تعديل أدمن موجود
+    // ========================================================
+
+    if (
+      editingAdmin?.id
+    ) {
+
+      const adminRef =
+        doc(
+          db,
+          "admins",
+          editingAdmin.id
+        );
+
+
+      const updateData = {
+
+        name:
+          adminForm.name.trim(),
+
+        email:
+          adminForm.email
+            .trim()
+            .toLowerCase(),
+
+        permissions:
+          adminForm.permissions,
+
+        active:
+          adminForm.active,
+
+        updatedAt:
+          serverTimestamp(),
+
+      };
+
+
+      // ------------------------------------------------------
+      // مهم:
+      // لا نحفظ كلمة المرور في Firestore
+      // ------------------------------------------------------
+
+      await updateDoc(
+        adminRef,
+        updateData
+      );
+
+
+      alert(
+        "تم تعديل بيانات المشرف بنجاح ✅"
+      );
+
+    }
+
+
+    // ========================================================
+    // إضافة أدمن جديد
+    // ========================================================
+
+    else {
+
+      const functions =
+        getFunctions();
+
+
+      const createAdminAccount =
+        httpsCallable(
+          functions,
+          "createAdminAccount"
+        );
+
+
+      await createAdminAccount({
+
+        name:
+          adminForm.name.trim(),
+
+        email:
+          adminForm.email
+            .trim()
+            .toLowerCase(),
+
+        password:
+          adminForm.password,
+
+        permissions:
+          adminForm.permissions,
+
+        active:
+          adminForm.active,
+
+      });
+
+
+      alert(
+        "تم إنشاء حساب المشرف بنجاح ✅"
+      );
+    }
+
+
+    // ========================================================
+    // إغلاق النموذج
+    // ========================================================
+
+    closeAdminForm();
+
+
+  } catch (error) {
+
+    console.error(
+      "Error saving admin:",
+      error
+    );
+
+
+    // --------------------------------------------------------
+    // رسائل Firebase واضحة
+    // --------------------------------------------------------
+
+    const errorCode =
+      error?.code || "";
+
+
+    if (
+      errorCode.includes(
+        "already-exists"
+      )
+    ) {
+
+      alert(
+        "❌ هذا البريد الإلكتروني مستخدم بالفعل."
+      );
+
+    } else if (
+      errorCode.includes(
+        "unauthenticated"
+      )
+    ) {
+
+      alert(
+        "❌ يجب تسجيل الدخول أولاً."
+      );
+
+    } else if (
+      errorCode.includes(
+        "permission-denied"
+      )
+    ) {
+
+      alert(
+        "❌ ليس لديك صلاحية لإنشاء مشرف."
+      );
+
+    } else {
+
+      alert(
+        error?.message ||
+        "❌ حدث خطأ أثناء حفظ بيانات المشرف."
+      );
+    }
+  }
+};
+
+
+// ==========================================================
+// حذف أدمن
+// ==========================================================
+
+const deleteAdmin = async (
+  adminId
+) => {
+
+  if (!adminId) {
+    return;
+  }
+
+
+  const confirmed =
+    window.confirm(
+      "هل أنت متأكد من حذف هذا المشرف؟"
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    await deleteDoc(
+      doc(
+        db,
+        "admins",
+        adminId
+      )
+    );
+
+
+    alert(
+      "تم حذف المشرف بنجاح ✅"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Error deleting admin:",
+      error
+    );
+
+
+    alert(
+      error?.message ||
+      "❌ حدث خطأ أثناء حذف المشرف."
+    );
+  }
+};
+
+
+// ==========================================================
+// تفعيل / تعطيل الأدمن
+// ==========================================================
+
+const toggleAdminActive = async (
+  admin
+) => {
+
+  if (!admin?.id) {
+    return;
+  }
+
+
+  try {
+
+    await updateDoc(
+
+      doc(
+        db,
+        "admins",
+        admin.id
+      ),
+
+      {
+
+        active:
+          admin.active === false,
+
+        updatedAt:
+          serverTimestamp(),
+
+      }
+
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Error updating admin status:",
+      error
+    );
+
+
+    alert(
+      error?.message ||
+      "❌ حدث خطأ أثناء تغيير حالة المشرف."
+    );
+  }
+};
   // ==========================================================
   // GENERIC ACTIONS
   // ==========================================================
@@ -2503,7 +4139,260 @@ const startEditOrder = (order) => {
       );
     };
 
+{/* ====================================================
+    ADMIN FORM
+==================================================== */}
 
+{showAdminForm && tab === "admins" && (
+
+  <form
+    className="admin-form"
+    onSubmit={(event) => {
+      event.preventDefault();
+      saveAdmin();
+    }}
+  >
+
+    <h3>
+      {editingAdmin
+        ? "✏️ تعديل المشرف"
+        : "➕ إضافة مشرف جديد"}
+    </h3>
+
+
+    <div className="form-grid">
+
+      {/* اسم المشرف */}
+
+      <label>
+        <span>اسم المشرف</span>
+
+        <input
+          type="text"
+          value={adminForm.name}
+          onChange={(event) =>
+            setAdminForm((previous) => ({
+              ...previous,
+              name: event.target.value,
+            }))
+          }
+        />
+      </label>
+
+
+      {/* البريد الإلكتروني */}
+
+      <label>
+        <span>البريد الإلكتروني</span>
+
+        <input
+          type="email"
+          value={adminForm.email}
+          onChange={(event) =>
+            setAdminForm((previous) => ({
+              ...previous,
+              email: event.target.value,
+            }))
+          }
+        />
+      </label>
+
+
+      {/* كلمة المرور */}
+
+      <label>
+        <span>
+          {editingAdmin
+            ? "كلمة المرور الجديدة (اختياري)"
+            : "كلمة المرور"}
+        </span>
+
+        <input
+          type="password"
+          value={adminForm.password}
+          onChange={(event) =>
+            setAdminForm((previous) => ({
+              ...previous,
+              password:
+                event.target.value,
+            }))
+          }
+        />
+      </label>
+
+
+      {/* الحالة */}
+
+      <label className="checkbox-field">
+
+        <input
+          type="checkbox"
+          checked={
+            adminForm.active !== false
+          }
+          onChange={(event) =>
+            setAdminForm((previous) => ({
+              ...previous,
+              active:
+                event.target.checked,
+            }))
+          }
+        />
+
+        <span>
+          المشرف مفعل
+        </span>
+
+      </label>
+
+    </div>
+
+
+    {/* ====================================================
+        PERMISSIONS
+    ==================================================== */}
+
+    <div style={{ marginTop: "25px" }}>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "15px",
+          gap: "10px",
+          flexWrap: "wrap",
+        }}
+      >
+
+        <h3>
+          🔐 صلاحيات المشرف
+        </h3>
+
+
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+          }}
+        >
+
+          <button
+            type="button"
+            className="add-btn"
+            onClick={
+              selectAllAdminPermissions
+            }
+          >
+            ☑️ تحديد الكل
+          </button>
+
+
+          <button
+            type="button"
+            className="cancel-btn"
+            onClick={
+              clearAllAdminPermissions
+            }
+          >
+            ⬜ إلغاء الكل
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "12px",
+        }}
+      >
+
+        {adminPermissions.map(
+          (permission) => (
+
+            <label
+              key={permission.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "12px",
+                border:
+                  "1px solid #d9dfe8",
+                borderRadius: "10px",
+                cursor: "pointer",
+                background:
+                  adminForm.permissions.includes(
+                    permission.id
+                  )
+                    ? "#f5f8ff"
+                    : "#fff",
+              }}
+            >
+
+              <input
+                type="checkbox"
+                checked={
+                  adminForm.permissions.includes(
+                    permission.id
+                  )
+                }
+                onChange={() =>
+                  toggleAdminPermission(
+                    permission.id
+                  )
+                }
+              />
+
+              <span>
+                {permission.title}
+              </span>
+
+            </label>
+
+          )
+        )}
+
+      </div>
+
+    </div>
+
+
+    {/* ====================================================
+        ACTIONS
+    ==================================================== */}
+
+    <div className="form-actions">
+
+      <button
+        type="submit"
+        className="save-btn"
+      >
+        💾 حفظ المشرف
+      </button>
+
+
+      <button
+        type="button"
+        className="cancel-btn"
+        onClick={
+          closeAdminForm
+        }
+      >
+        إلغاء
+      </button>
+
+    </div>
+
+  </form>
+
+)}
   // ==========================================================
   // CLOUDINARY BANNER UPLOAD
   // ==========================================================
@@ -4880,7 +6769,6 @@ const startEditOrder = (order) => {
           </div>
 
         )}
-
 // ==========================================================
 // CATEGORIES
 // ==========================================================
@@ -5047,6 +6935,7 @@ const startEditOrder = (order) => {
               onChange={
                 handleCategoryChange
               }
+              inputMode="numeric"
             />
 
           </label>
@@ -5059,7 +6948,7 @@ const startEditOrder = (order) => {
           <label>
 
             <span>
-              رقم واتساب القسم
+              📱 رقم واتساب القسم
             </span>
 
             <input
@@ -5071,7 +6960,19 @@ const startEditOrder = (order) => {
                 handleCategoryChange
               }
               dir="ltr"
+              inputMode="tel"
+              placeholder="مثال: 201553570236"
             />
+
+            <small
+              style={{
+                display: "block",
+                marginTop: "6px",
+                color: "#666",
+              }}
+            >
+              سيتم إرسال طلبات منتجات هذا القسم إلى هذا الرقم.
+            </small>
 
           </label>
 
@@ -5142,20 +7043,80 @@ const startEditOrder = (order) => {
           <label>
 
             <span>
-              رابط صورة القسم
+              🖼️ صورة القسم
             </span>
 
             <input
-              name="image"
-              value={
-                categoryForm.image
-              }
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
               onChange={
-                handleCategoryChange
+                handleCategoryImageUpload
               }
-              dir="ltr"
-              placeholder="https://..."
             />
+
+            <small
+              style={{
+                display: "block",
+                marginTop: "6px",
+                color: "#666",
+              }}
+            >
+              اختر صورة من جهازك — JPG أو PNG أو WEBP
+            </small>
+
+
+            {/* ==================================================
+                IMAGE PREVIEW
+            ================================================== */}
+
+            {categoryForm.image && (
+
+              <div
+                style={{
+                  marginTop: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+
+                <img
+                  src={
+                    categoryForm.image
+                  }
+                  alt="صورة القسم"
+                  style={{
+                    width: "100px",
+                    height: "100px",
+                    objectFit: "cover",
+                    borderRadius: "12px",
+                    border: "1px solid #ddd",
+                    background: "#f5f5f5",
+                  }}
+                />
+
+
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  onClick={() => {
+
+                    setCategoryForm(
+                      (prev) => ({
+                        ...prev,
+                        image: "",
+                      })
+                    );
+
+                  }}
+                >
+                  🗑️ إزالة الصورة
+                </button>
+
+              </div>
+
+            )}
 
           </label>
 
@@ -5269,8 +7230,7 @@ const startEditOrder = (order) => {
               name="sortOrder"
               min="0"
               value={
-                categoryForm.sortOrder ??
-                0
+                categoryForm.sortOrder ?? 0
               }
               onChange={
                 handleCategoryChange
@@ -5375,11 +7335,11 @@ const startEditOrder = (order) => {
                       categoryForm.name ||
                       "معاينة القسم"
                     }
-                    onError={(
-                      event
-                    ) => {
+                    onError={(event) => {
+
                       event.currentTarget.style.display =
                         "none";
+
                     }}
                   />
 
@@ -5612,23 +7572,17 @@ const startEditOrder = (order) => {
 
                       <div
                         style={{
-                          display:
-                            "flex",
-                          alignItems:
-                            "center",
-                          gap:
-                            "7px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "7px",
                         }}
                       >
 
                         <span
                           style={{
-                            width:
-                              "25px",
-                            height:
-                              "25px",
-                            borderRadius:
-                              "6px",
+                            width: "25px",
+                            height: "25px",
+                            borderRadius: "6px",
                             background:
                               category.color ||
                               "#071a36",
@@ -5638,6 +7592,7 @@ const startEditOrder = (order) => {
                               "inline-block",
                           }}
                         />
+
 
                         <small
                           dir="ltr"
@@ -5675,8 +7630,7 @@ const startEditOrder = (order) => {
                     <td>
 
                       {
-                        category.sortOrder ||
-                        0
+                        category.sortOrder || 0
                       }
 
                     </td>
@@ -5725,11 +7679,8 @@ const startEditOrder = (order) => {
                     <td>
 
                       {
-                        category.active !==
-                        false
-
+                        category.active !== false
                           ? "🟢 نشط"
-
                           : "🔴 متوقف"
                       }
 
@@ -9976,761 +11927,1114 @@ const startEditOrder = (order) => {
 
         )}
 
+{/* ====================================================
+    GENERIC ADMIN SECTIONS
+==================================================== */}
+
+{[
+  {
+    id: "coupons",
+    icon: "🏷️",
+    title:
+      "الكوبونات والخصومات",
+    collectionType:
+      "coupons",
+    data:
+      coupons,
+    fields: [
+      {
+        name: "code",
+        label:
+          "كود الخصم",
+      },
+      {
+        name: "type",
+        label:
+          "نوع الخصم",
+        type:
+          "select",
+        options: [
+          [
+            "percentage",
+            "نسبة مئوية",
+          ],
+          [
+            "fixed",
+            "قيمة ثابتة",
+          ],
+        ],
+      },
+      {
+        name: "value",
+        label:
+          "قيمة الخصم",
+        type:
+          "number",
+      },
+      {
+        name: "minOrder",
+        label:
+          "الحد الأدنى للطلب",
+        type:
+          "number",
+      },
+      {
+        name: "active",
+        label:
+          "الكوبون مفعل",
+        type:
+          "checkbox",
+      },
+    ],
+  },
+
+  // ====================================================
+  // OLD ANNOUNCEMENTS
+  // ====================================================
+
+  {
+    id: "announcements",
+    icon: "📢",
+    title:
+      "الإعلانات",
+    collectionType:
+      "announcements",
+    data:
+      announcements,
+    fields: [
+      {
+        name: "title",
+        label:
+          "العنوان",
+      },
+      {
+        name: "text",
+        label:
+          "نص الإعلان",
+        type:
+          "textarea",
+      },
+      {
+        name: "active",
+        label:
+          "الإعلان مفعل",
+        type:
+          "checkbox",
+      },
+    ],
+  },
+// ====================================================
+// ANNOUNCEMENT BARS
+// ====================================================
+
+{
+  id: "announcement-bars",
+  icon: "📜",
+  title:
+    "أشرطة الإعلانات",
+  collectionType:
+    "announcementBars",
+  data:
+    announcementBars,
+  fields: [
+    {
+      name: "text",
+      label:
+        "نص شريط الإعلان",
+    },
+    {
+      name: "backgroundColor",
+      label:
+        "لون الخلفية",
+      type:
+        "color",
+    },
+    {
+      name: "textColor",
+      label:
+        "لون النص",
+      type:
+        "color",
+    },
+    {
+      name: "link",
+      label:
+        "الرابط",
+    },
+    {
+      name: "speed",
+      label:
+        "سرعة الحركة",
+      type:
+        "number",
+    },
+    {
+      name: "active",
+      label:
+        "الشريط مفعل",
+      type:
+        "checkbox",
+    },
+  ],
+},
+  // ====================================================
+  // ANNOUNCEMENT BARS
+  // ====================================================
+
+  {
+    id: "announcement-bars",
+    icon: "📢",
+    title:
+      "أشرطة الإعلانات",
+    collectionType:
+      "announcementBars",
+    data:
+      announcementBars,
+    fields: [
+      {
+        name: "text",
+        label:
+          "نص الشريط",
+        type:
+          "textarea",
+      },
+
+      {
+        name: "type",
+        label:
+          "نوع الشريط",
+        type:
+          "select",
+        options: [
+          [
+            "marquee",
+            "شريط متحرك",
+          ],
+          [
+            "text",
+            "نص عادي",
+          ],
+          [
+            "offer",
+            "عرض",
+          ],
+          [
+            "alert",
+            "تنبيه",
+          ],
+          [
+            "discount",
+            "خصم",
+          ],
+          [
+            "shipping",
+            "شحن",
+          ],
+        ],
+      },
+
+      {
+        name: "background",
+        label:
+          "لون الخلفية",
+        type:
+          "color",
+      },
+
+      {
+        name: "textColor",
+        label:
+          "لون النص",
+        type:
+          "color",
+      },
+
+      {
+        name: "fontFamily",
+        label:
+          "نوع الخط",
+        type:
+          "text",
+      },
+
+      {
+        name: "fontSize",
+        label:
+          "حجم الخط",
+        type:
+          "number",
+      },
+
+      {
+        name: "height",
+        label:
+          "ارتفاع الشريط",
+        type:
+          "number",
+      },
+
+      {
+        name: "speed",
+        label:
+          "سرعة الحركة",
+        type:
+          "number",
+      },
+
+      {
+        name: "direction",
+        label:
+          "اتجاه الحركة",
+        type:
+          "select",
+        options: [
+          [
+            "rtl",
+            "من اليمين لليسار",
+          ],
+          [
+            "ltr",
+            "من اليسار لليمين",
+          ],
+        ],
+      },
+
+      {
+        name: "sortOrder",
+        label:
+          "ترتيب الشريط",
+        type:
+          "number",
+      },
+
+      {
+        name: "enabled",
+        label:
+          "الشريط مفعل",
+        type:
+          "checkbox",
+      },
+    ],
+  },
+
+  // ====================================================
+  // SUPPORT
+  // ====================================================
+
+  {
+    id: "support",
+    icon: "💬",
+    title:
+      "خدمة العملاء",
+    collectionType:
+      "support",
+    data:
+      supportMessages,
+    readOnly:
+      true,
+  },
+
+  // ====================================================
+  // NOTIFICATIONS
+  // ====================================================
+
+  {
+    id: "notifications",
+    icon: "🔔",
+    title:
+      "الإشعارات",
+    collectionType:
+      "notifications",
+    data:
+      notifications,
+    readOnly:
+      true,
+  },
+
+  // ====================================================
+  // FAVORITES
+  // ====================================================
+
+  {
+    id: "favorites",
+    icon: "❤️",
+    title:
+      "المفضلة",
+    collectionType:
+      "favorites",
+    data:
+      favorites,
+    readOnly:
+      true,
+  },
+
+  // ====================================================
+  // BLOCKED USERS
+  // ====================================================
+
+  {
+    id: "blocked-users",
+    icon: "🚫",
+    title:
+      "العملاء المحظورون",
+    collectionType:
+      "blocked-users",
+    data:
+      blockedUsers,
+    readOnly:
+      true,
+  },
+
+  // ====================================================
+  // SHIPPING
+  // ====================================================
+
+  {
+    id: "shipping",
+    icon: "🚚",
+    title:
+      "الشحن والتوصيل",
+    collectionType:
+      "shipping",
+    data:
+      shippingZones,
+    fields: [
+      {
+        name: "name",
+        label:
+          "اسم المنطقة",
+      },
+      {
+        name: "price",
+        label:
+          "سعر الشحن",
+        type:
+          "number",
+      },
+      {
+        name: "active",
+        label:
+          "المنطقة مفعلة",
+        type:
+          "checkbox",
+      },
+    ],
+  },
+
+  // ====================================================
+  // PAYMENTS
+  // ====================================================
+
+  {
+    id: "payments",
+    icon: "💳",
+    title:
+      "طرق الدفع",
+    collectionType:
+      "payments",
+    data:
+      paymentMethods,
+    fields: [
+      {
+        name: "name",
+        label:
+          "اسم طريقة الدفع",
+      },
+      {
+        name: "active",
+        label:
+          "مفعلة",
+        type:
+          "checkbox",
+      },
+    ],
+  },
+  // ====================================================
+  // ADMINS
+  // ====================================================
+
+  {
+    id: "admins",
+    icon: "🔐",
+    title: "المشرفون والصلاحيات",
+    collectionType: "admins",
+    data: admins,
+    readOnly: false,
+
+    fields: [
+      {
+        name: "name",
+        label: "اسم المشرف",
+        type: "text",
+      },
+
+      {
+        name: "email",
+        label: "البريد الإلكتروني",
+        type: "email",
+      },
+
+      {
+        name: "password",
+        label: "كلمة المرور",
+        type: "password",
+      },
+
+      {
+        name: "active",
+        label: "المشرف مفعل",
+        type: "checkbox",
+      },
+    ],
+  },
+  // ====================================================
+  // ACTIVITY LOG
+  // ====================================================
+
+  {
+    id: "activity-log",
+    icon: "📝",
+    title: "سجل العمليات",
+    collectionType: "activity-log",
+    data: activityLogs,
+    readOnly: true,
+  },
+
+].map(
+  (section) =>
+
+    tab === section.id ? (
+
+      <div
+        className="table-container"
+        key={section.id}
+      >
 
         {/* ====================================================
-            GENERIC ADMIN SECTIONS
+            SECTION HEADER
         ==================================================== */}
 
-        {[
-          {
-            id: "coupons",
-            icon: "🏷️",
-            title:
-              "الكوبونات والخصومات",
-            collectionType:
-              "coupons",
-            data:
-              coupons,
-            fields: [
-              {
-                name: "code",
-                label:
-                  "كود الخصم",
-              },
-              {
-                name: "type",
-                label:
-                  "نوع الخصم",
-                type:
-                  "select",
-                options: [
-                  [
-                    "percentage",
-                    "نسبة مئوية",
-                  ],
-                  [
-                    "fixed",
-                    "قيمة ثابتة",
-                  ],
-                ],
-              },
-              {
-                name: "value",
-                label:
-                  "قيمة الخصم",
-                type:
-                  "number",
-              },
-              {
-                name: "minOrder",
-                label:
-                  "الحد الأدنى للطلب",
-                type:
-                  "number",
-              },
-              {
-                name: "active",
-                label:
-                  "الكوبون مفعل",
-                type:
-                  "checkbox",
-              },
-            ],
-          },
+        <div
+          className="section-header"
+        >
+
+          <div>
+
+            <h2>
+              {section.icon}{" "}
+              {section.title}
+            </h2>
+
+            <p>
+              إجمالي العناصر:
+              {" "}
+              <strong>
+                {section.data.length}
+              </strong>
+            </p>
+
+          </div>
 
 
-          {
-            id: "announcements",
-            icon: "📢",
-            title:
-              "الإعلانات",
-            collectionType:
-              "announcements",
-            data:
-              announcements,
-            fields: [
-              {
-                name: "title",
-                label:
-                  "العنوان",
-              },
-              {
-                name: "text",
-                label:
-                  "نص الإعلان",
-                type:
-                  "textarea",
-              },
-              {
-                name: "active",
-                label:
-                  "الإعلان مفعل",
-                type:
-                  "checkbox",
-              },
-            ],
-          },
+          {/* ====================================================
+              ADD BUTTON
+          ==================================================== */}
 
+          {section.id === "admins" ? (
 
-          {
-            id: "support",
-            icon: "💬",
-            title:
-              "خدمة العملاء",
-            collectionType:
-              "support",
-            data:
-              supportMessages,
-            readOnly:
-              true,
-          },
+            <button
+              type="button"
+              className="add-btn"
+              onClick={openAddAdminForm}
+            >
+              ➕ إضافة مشرف
+            </button>
 
+          ) : (
 
-          {
-            id: "notifications",
-            icon: "🔔",
-            title:
-              "الإشعارات",
-            collectionType:
-              "notifications",
-            data:
-              notifications,
-            readOnly:
-              true,
-          },
+            !section.readOnly && (
 
+              <button
+                type="button"
+                className="add-btn"
 
-          {
-            id: "favorites",
-            icon: "❤️",
-            title:
-              "المفضلة",
-            collectionType:
-              "favorites",
-            data:
-              favorites,
-            readOnly:
-              true,
-          },
+                onClick={() => {
 
+                  setGenericType(
+                    section.collectionType
+                  );
 
-          {
-            id: "blocked-users",
-            icon: "🚫",
-            title:
-              "العملاء المحظورون",
-            collectionType:
-              "blocked-users",
-            data:
-              blockedUsers,
-            readOnly:
-              true,
-          },
+                  setGenericEditingId(
+                    null
+                  );
 
+                  const initialForm = {};
 
-          {
-            id: "shipping",
-            icon: "🚚",
-            title:
-              "الشحن والتوصيل",
-            collectionType:
-              "shipping",
-            data:
-              shippingZones,
-            fields: [
-              {
-                name: "name",
-                label:
-                  "اسم المنطقة",
-              },
-              {
-                name: "price",
-                label:
-                  "سعر الشحن",
-                type:
-                  "number",
-              },
-              {
-                name: "active",
-                label:
-                  "المنطقة مفعلة",
-                type:
-                  "checkbox",
-              },
-            ],
-          },
+                  section.fields?.forEach(
+                    (field) => {
 
+                      initialForm[
+                        field.name
+                      ] =
+                        field.type ===
+                        "checkbox"
+                          ? true
+                          : field.type ===
+                            "number"
+                          ? 0
+                          : field.type ===
+                            "color"
+                          ? "#ffffff"
+                          : field.type ===
+                            "select"
+                          ? (
+                              field.options?.[0]?.[0] ||
+                              ""
+                            )
+                          : "";
 
-          {
-            id: "payments",
-            icon: "💳",
-            title:
-              "طرق الدفع",
-            collectionType:
-              "payments",
-            data:
-              paymentMethods,
-            fields: [
-              {
-                name: "name",
-                label:
-                  "اسم طريقة الدفع",
-              },
-              {
-                name: "active",
-                label:
-                  "مفعلة",
-                type:
-                  "checkbox",
-              },
-            ],
-          },
+                    }
+                  );
 
+                  setGenericForm(
+                    initialForm
+                  );
 
-          {
-            id: "admins",
-            icon: "🔐",
-            title:
-              "المشرفون والصلاحيات",
-            collectionType:
-              "admins",
-            data:
-              admins,
-            readOnly:
-              true,
-          },
+                  setShowGenericForm(
+                    true
+                  );
 
-
-          {
-            id: "activity-log",
-            icon: "📝",
-            title:
-              "سجل العمليات",
-            collectionType:
-              "activity-log",
-            data:
-              activityLogs,
-            readOnly:
-              true,
-          },
-        ].map(
-          (section) =>
-
-            tab === section.id ? (
-
-              <div
-                className="table-container"
-                key={section.id}
+                }}
               >
+                ➕ إضافة
+              </button>
 
-                <div
-                  className="section-header"
-                >
+            )
 
-                  <div>
+          )}
 
-                    <h2>
-                      {
-                        section.icon
-                      }{" "}
-                      {
-                        section.title
+        </div>
+{/* ====================================================
+    GENERIC FORM
+==================================================== */}
+
+{showGenericForm &&
+  genericType ===
+    section.collectionType &&
+  !section.readOnly && (
+
+    <form
+      className="admin-form"
+      onSubmit={
+        handleGenericSubmit
+      }
+    >
+
+      <h3>
+
+        {
+          genericEditingId
+            ? `✏️ تعديل ${section.title}`
+            : `➕ إضافة ${section.title}`
+        }
+
+      </h3>
+
+
+      <div
+        className="form-grid"
+      >
+
+        {section.fields?.map(
+          (field) => (
+
+            <label
+              key={
+                field.name
+              }
+
+              className={
+                field.type ===
+                "textarea"
+                  ? "form-group-full"
+                  : ""
+              }
+            >
+
+              {
+                /* ==================================================
+                   CHECKBOX
+                ================================================== */
+
+                field.type ===
+                "checkbox" ? (
+
+                  <>
+
+                    <input
+                      type="checkbox"
+                      name={
+                        field.name
                       }
-                    </h2>
 
-                    <p>
-                      إجمالي العناصر:
-                      {" "}
-                      <strong>
-                        {
-                          section.data.length
-                        }
-                      </strong>
-                    </p>
+                      checked={
+                        genericForm[
+                          field.name
+                        ] !==
+                        false
+                      }
 
-                  </div>
+                      onChange={
+                        handleGenericChange
+                      }
+                    />
 
+                    <span>
+                      {
+                        field.label
+                      }
+                    </span>
 
-                  {!section.readOnly && (
+                  </>
 
-                    <button
-                      type="button"
-                      className="add-btn"
+                ) :
 
-                      onClick={() => {
+                /* ==================================================
+                   SELECT
+                ================================================== */
 
-                        setGenericType(
-                          section.collectionType
-                        );
+                field.type ===
+                "select" ? (
 
-                        setGenericEditingId(
-                          null
-                        );
+                  <>
 
+                    <span>
+                      {
+                        field.label
+                      }
+                    </span>
 
-                        const initialForm =
-                          {};
+                    <select
+                      name={
+                        field.name
+                      }
 
-                        section.fields?.forEach(
-                          (field) => {
+                      value={
+                        genericForm[
+                          field.name
+                        ] ??
+                        ""
+                      }
 
-                            initialForm[
-                              field.name
-                            ] =
-                              field.type ===
-                              "checkbox"
-                                ? true
-                                : field.type ===
-                                  "number"
-                                ? 0
-                                : "";
-
-                          }
-                        );
-
-
-                        setGenericForm(
-                          initialForm
-                        );
-
-                        setShowGenericForm(
-                          true
-                        );
-
-                      }}
-                    >
-                      ➕ إضافة
-                    </button>
-
-                  )}
-
-                </div>
-
-
-                {showGenericForm &&
-                  genericType ===
-                    section.collectionType &&
-                  !section.readOnly && (
-
-                    <form
-                      className="admin-form"
-                      onSubmit={
-                        handleGenericSubmit
+                      onChange={
+                        handleGenericChange
                       }
                     >
 
-                      <h3>
+                      {
+                        field.options?.map(
+                          (
+                            option
+                          ) => (
 
-                        {
-                          genericEditingId
-                            ? `✏️ تعديل ${section.title}`
-                            : `➕ إضافة ${section.title}`
-                        }
-
-                      </h3>
-
-
-                      <div
-                        className="form-grid"
-                      >
-
-                        {section.fields?.map(
-                          (field) => (
-
-                            <label
+                            <option
                               key={
-                                field.name
+                                option[0]
                               }
 
-                              className={
-                                field.type ===
-                                "textarea"
-                                  ? "form-group-full"
-                                  : ""
+                              value={
+                                option[0]
                               }
                             >
-
                               {
-                                field.type ===
-                                "checkbox" ? (
-
-                                  <>
-
-                                    <input
-                                      type="checkbox"
-                                      name={
-                                        field.name
-                                      }
-                                      checked={
-                                        genericForm[
-                                          field.name
-                                        ] !==
-                                        false
-                                      }
-                                      onChange={
-                                        handleGenericChange
-                                      }
-                                    />
-
-                                    <span>
-                                      {
-                                        field.label
-                                      }
-                                    </span>
-
-                                  </>
-
-                                ) : field.type ===
-                                  "select" ? (
-
-                                  <>
-
-                                    <span>
-                                      {
-                                        field.label
-                                      }
-                                    </span>
-
-                                    <select
-                                      name={
-                                        field.name
-                                      }
-
-                                      value={
-                                        genericForm[
-                                          field.name
-                                        ] ??
-                                        ""
-                                      }
-
-                                      onChange={
-                                        handleGenericChange
-                                      }
-                                    >
-
-                                      {
-                                        field.options?.map(
-                                          (
-                                            option
-                                          ) => (
-
-                                            <option
-                                              key={
-                                                option[0]
-                                              }
-                                              value={
-                                                option[0]
-                                              }
-                                            >
-                                              {
-                                                option[1]
-                                              }
-                                            </option>
-
-                                          )
-                                        )
-                                      }
-
-                                    </select>
-
-                                  </>
-
-                                ) : field.type ===
-                                  "textarea" ? (
-
-                                  <>
-
-                                    <span>
-                                      {
-                                        field.label
-                                      }
-                                    </span>
-
-                                    <textarea
-                                      name={
-                                        field.name
-                                      }
-                                      rows="4"
-                                      value={
-                                        genericForm[
-                                          field.name
-                                        ] ??
-                                        ""
-                                      }
-                                      onChange={
-                                        handleGenericChange
-                                      }
-                                    />
-
-                                  </>
-
-                                ) : (
-
-                                  <>
-
-                                    <span>
-                                      {
-                                        field.label
-                                      }
-                                    </span>
-
-                                    <input
-                                      type={
-                                        field.type ||
-                                        "text"
-                                      }
-                                      name={
-                                        field.name
-                                      }
-                                      value={
-                                        genericForm[
-                                          field.name
-                                        ] ??
-                                        ""
-                                      }
-                                      onChange={
-                                        handleGenericChange
-                                      }
-                                    />
-
-                                  </>
-
-                                )
+                                option[1]
                               }
-
-                            </label>
+                            </option>
 
                           )
-                        )}
-
-                      </div>
-
-
-                      <div
-                        className="form-actions"
-                      >
-
-                        <button
-                          type="submit"
-                          className="save-btn"
-                          disabled={
-                            actionLoading
-                          }
-                        >
-                          {
-                            actionLoading
-                              ? "⏳ جاري الحفظ..."
-                              : "💾 حفظ"
-                          }
-                        </button>
-
-
-                        <button
-                          type="button"
-                          className="cancel-btn"
-                          onClick={
-                            closeGenericForm
-                          }
-                        >
-                          إلغاء
-                        </button>
-
-                      </div>
-
-                    </form>
-
-                  )}
-
-
-                {section.data.length ===
-                  0 ? (
-
-                  <div
-                    className="empty-state"
-                  >
-
-                    <div>
-                      {
-                        section.icon
+                        )
                       }
-                    </div>
 
-                    <h3>
-                      لا توجد بيانات
-                    </h3>
+                    </select>
 
-                    <p>
-                      لا توجد عناصر مسجلة حاليًا في هذا القسم.
-                    </p>
+                  </>
 
-                  </div>
+                ) :
 
-                ) : (
+                /* ==================================================
+                   TEXTAREA
+                ================================================== */
 
-                  <div
-                    className="table-scroll"
-                  >
+                field.type ===
+                "textarea" ? (
 
-                    <table
-                      className="admin-table"
-                    >
+                  <>
 
-                      <thead>
+                    <span>
+                      {
+                        field.label
+                      }
+                    </span>
 
-                        <tr>
+                    <textarea
+                      name={
+                        field.name
+                      }
 
-                          <th>
-                            البيانات
-                          </th>
+                      rows="4"
 
-                          <th>
-                            التاريخ
-                          </th>
+                      value={
+                        genericForm[
+                          field.name
+                        ] ??
+                        ""
+                      }
 
-                          {!section.readOnly && (
-                            <th>
-                              إجراءات
-                            </th>
-                          )}
+                      onChange={
+                        handleGenericChange
+                      }
+                    />
 
-                        </tr>
+                  </>
 
-                      </thead>
+                ) :
 
+                /* ==================================================
+                   COLOR
+                ================================================== */
 
-                      <tbody>
+                field.type ===
+                "color" ? (
 
-                        {section.data.map(
-                          (item) => (
+                  <>
 
-                            <tr
-                              key={
-                                item.id
-                              }
-                            >
+                    <span>
+                      {
+                        field.label
+                      }
+                    </span>
 
-                              <td>
+                    <input
+                      type="color"
+                      name={
+                        field.name
+                      }
 
-                                <strong>
+                      value={
+                        genericForm[
+                          field.name
+                        ] ||
+                        "#000000"
+                      }
 
-                                  {
-                                    item.title ||
-                                    item.name ||
-                                    item.code ||
-                                    item.text ||
-                                    item.message ||
-                                    item.description ||
-                                    item.email ||
-                                    item.id
-                                  }
+                      onChange={
+                        handleGenericChange
+                      }
 
-                                </strong>
+                      style={{
+                        width:
+                          "70px",
 
+                        height:
+                          "42px",
 
-                                {item.message &&
-                                  item.title && (
+                        padding:
+                          "3px",
 
-                                    <small
-                                      style={{
-                                        display:
-                                          "block",
-                                      }}
-                                    >
-                                      {
-                                        item.message
-                                      }
-                                    </small>
+                        cursor:
+                          "pointer",
+                      }}
+                    />
 
-                                  )}
+                  </>
 
-                              </td>
+                ) :
 
+                /* ==================================================
+                   DEFAULT INPUT
+                   text / number / url / etc.
+                ================================================== */
 
-                              <td>
+                (
 
-                                {
-                                  formatDate(
-                                    item.createdAt
-                                  )
-                                }
+                  <>
 
-                              </td>
+                    <span>
+                      {
+                        field.label
+                      }
+                    </span>
 
+                    <input
+                      type={
+                        field.type ||
+                        "text"
+                      }
 
-                              {!section.readOnly && (
+                      name={
+                        field.name
+                      }
 
-                                <td>
+                      value={
+                        genericForm[
+                          field.name
+                        ] ??
+                        ""
+                      }
 
-                                  <div
-                                    className="table-actions"
-                                  >
+                      onChange={
+                        handleGenericChange
+                      }
+                    />
 
-                                    <button
-                                      type="button"
-                                      className="edit-btn"
+                  </>
 
-                                      onClick={() => {
+                )
 
-                                        setGenericType(
-                                          section.collectionType
-                                        );
+              }
 
-                                        setGenericEditingId(
-                                          item.id
-                                        );
+            </label>
 
-                                        setGenericForm({
-                                          ...item,
-                                        });
-
-                                        setShowGenericForm(
-                                          true
-                                        );
-
-                                      }}
-                                    >
-                                      ✏️ تعديل
-                                    </button>
-
-
-                                    <button
-                                      type="button"
-                                      className="delete-btn"
-
-                                      onClick={() =>
-                                        deleteGenericItem(
-                                          section.collectionType,
-                                          item
-                                        )
-                                      }
-                                    >
-                                      🗑️ حذف
-                                    </button>
-
-                                  </div>
-
-                                </td>
-
-                              )}
-
-                            </tr>
-
-                          )
-                        )}
-
-                      </tbody>
-
-                    </table>
-
-                  </div>
-
-                )}
-
-              </div>
-
-            ) : null
+          )
         )}
 
+      </div>
+
+
+      {/* ==================================================
+          FORM ACTIONS
+      ================================================== */}
+
+      <div
+        className="form-actions"
+      >
+
+        <button
+          type="submit"
+          className="save-btn"
+
+          disabled={
+            actionLoading
+          }
+        >
+
+          {
+            actionLoading
+              ? "⏳ جاري الحفظ..."
+              : "💾 حفظ"
+          }
+
+        </button>
+
+
+        <button
+          type="button"
+          className="cancel-btn"
+
+          onClick={
+            closeGenericForm
+          }
+        >
+          إلغاء
+        </button>
+
+      </div>
+
+    </form>
+
+  )}
+
+        {/* ====================================================
+            EMPTY STATE
+        ==================================================== */}
+
+        {section.data.length ===
+          0 ? (
+
+          <div
+            className="empty-state"
+          >
+
+            <div>
+              {
+                section.icon
+              }
+            </div>
+
+            <h3>
+              لا توجد بيانات
+            </h3>
+
+            <p>
+              لا توجد عناصر مسجلة حاليًا في هذا القسم.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div
+            className="table-scroll"
+          >
+
+            <table
+              className="admin-table"
+            >
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    البيانات
+                  </th>
+
+                  <th>
+                    التاريخ
+                  </th>
+
+                  {!section.readOnly && (
+                    <th>
+                      إجراءات
+                    </th>
+                  )}
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {section.data.map(
+                  (item) => (
+
+                    <tr
+                      key={
+                        item.id
+                      }
+                    >
+
+                      <td>
+
+                        <strong>
+
+                          {
+                            item.title ||
+                            item.name ||
+                            item.code ||
+                            item.text ||
+                            item.message ||
+                            item.description ||
+                            item.email ||
+                            item.id
+                          }
+
+                        </strong>
+
+                        {item.message &&
+                          item.title && (
+
+                            <small
+                              style={{
+                                display:
+                                  "block",
+                              }}
+                            >
+                              {
+                                item.message
+                              }
+                            </small>
+
+                          )}
+
+                      </td>
+
+                      <td>
+
+                        {
+                          formatDate(
+                            item.createdAt
+                          )
+                        }
+
+                      </td>
+
+                      {!section.readOnly && (
+
+                        <td>
+
+                          <div
+                            className="table-actions"
+                          >
+
+                            {/* EDIT */}
+
+                            <button
+                              type="button"
+                              className="edit-btn"
+
+                              onClick={() => {
+
+                                setGenericType(
+                                  section.collectionType
+                                );
+
+                                setGenericEditingId(
+                                  item.id
+                                );
+
+                                setGenericForm({
+                                  ...item,
+                                });
+
+                                setShowGenericForm(
+                                  true
+                                );
+
+                              }}
+                            >
+                              ✏️ تعديل
+                            </button>
+
+                            {/* DELETE */}
+
+                            <button
+                              type="button"
+                              className="delete-btn"
+
+                              onClick={() =>
+                                deleteGenericItem(
+                                  section.collectionType,
+                                  item
+                                )
+                              }
+                            >
+                              🗑️ حذف
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      )}
+
+                    </tr>
+
+                  )
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        )}
+
+      </div>
+
+    ) : null
+)}
 
         {/* ====================================================
             STORE SETTINGS

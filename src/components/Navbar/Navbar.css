@@ -8,21 +8,16 @@
   --jumia-orange: #f68b1e;
   --jumia-orange-dark: #e57a0b;
   --jumia-orange-light: #fff3e5;
-
   --jumia-dark: #282828;
   --jumia-text: #313131;
   --jumia-muted: #757575;
-
   --jumia-white: #ffffff;
   --jumia-bg: #f5f5f5;
   --jumia-border: #e5e5e5;
-
   --jumia-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   --jumia-shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.16);
-
   --nav-font: Cairo, Tahoma, Arial, sans-serif;
 }
-
 
 /* =========================================================
    GLOBAL
@@ -51,22 +46,71 @@ input {
   font-family: var(--nav-font);
 }
 
+/* =========================================================
+   NAVBAR FULL WIDTH
+========================================================= */
+
+.navbar {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.navbar,
+.navbar * ,
+.navbar *::before,
+.navbar *::after {
+  box-sizing: border-box;
+}
+
+.navbar-main,
+.navbar-top,
+.navbar-header,
+.navbar-container,
+.navbar-inner,
+.navbar-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
 
 /* =========================================================
    TOP OFFER BAR
+   مستقل تمامًا عن أي محتوى متحرك أسفل الهيدر
 ========================================================= */
 
 .top-offer-bar {
   width: 100%;
   height: 32px;
+  min-height: 32px;
+  max-height: 32px;
 
   display: flex;
   align-items: center;
+  justify-content: flex-start;
 
   background: var(--jumia-orange);
   color: #ffffff;
 
+  /*
+    العزل الكامل للشريط:
+    - لا يسمح بتأثير محتوى خارجي عليه
+    - ينشئ stacking context مستقل
+    - يحصر الـ animation داخله
+  */
+  position: relative;
+  isolation: isolate;
+  contain: layout paint style;
+
   overflow: hidden;
+  clip-path: inset(0);
+
   white-space: nowrap;
 
   font-family: var(--nav-font);
@@ -75,29 +119,60 @@ input {
 
   direction: ltr;
 
-  position: relative;
-  z-index: 5000;
+  /*
+    أعلى من الهيدر والقوائم
+    لكن بدون أن يؤثر على المحتوى نفسه
+  */
+  z-index: 10000;
+
+  flex-shrink: 0;
 }
 
-.offer-track,
-.offer-text {
+/*
+   حاوية الحركة الخاصة بالشريط البرتقالي فقط
+*/
+.top-offer-bar .offer-track,
+.top-offer-bar .offer-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+
   width: max-content;
   min-width: max-content;
+  height: 100%;
 
   display: flex;
   align-items: center;
 
   gap: 55px;
 
-  animation: offerMove 25s linear infinite;
+  /*
+    الحركة هنا تخص الشريط البرتقالي فقط
+  */
+  animation-name: offerMove;
+  animation-duration: 25s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 
   will-change: transform;
+
+  /*
+    يمنع الـ transform من التأثير على العناصر الخارجية
+  */
+  transform: translate3d(100%, 0, 0);
+  backface-visibility: hidden;
+
+  pointer-events: none;
+
+  z-index: 1;
 }
 
-.offer-track span,
-.offer-text span {
+.top-offer-bar .offer-track span,
+.top-offer-bar .offer-text span {
   display: inline-flex;
   align-items: center;
+
+  flex: 0 0 auto;
 
   padding: 0 10px;
 
@@ -105,18 +180,22 @@ input {
   line-height: 1;
 
   white-space: nowrap;
+
+  pointer-events: none;
 }
 
+/*
+   Animation مستقل تمامًا عن أي Slider أسفل الهيدر
+*/
 @keyframes offerMove {
   from {
-    transform: translateX(100%);
+    transform: translate3d(100%, 0, 0);
   }
 
   to {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
   }
 }
-
 
 /* =========================================================
    MAIN HEADER
@@ -130,7 +209,6 @@ input {
   align-items: center;
 
   gap: 18px;
-
   padding: 9px 28px;
 
   background: var(--jumia-white);
@@ -139,15 +217,20 @@ input {
   direction: rtl;
 
   position: relative;
-  z-index: 4000;
+
+  /*
+    Stacking context مستقل عن Offer Bar
+  */
+  isolation: isolate;
+  z-index: 9000;
 
   overflow: visible !important;
 
   border-bottom: 1px solid var(--jumia-border);
-
   box-shadow: var(--jumia-shadow);
-}
 
+  flex-shrink: 0;
+}
 
 /* =========================================================
    LOGO
@@ -155,7 +238,6 @@ input {
 
 .nav-logo {
   flex: 0 0 auto;
-
   min-width: 145px;
 
   display: flex;
@@ -186,7 +268,6 @@ input {
   opacity: 0.95;
 }
 
-
 /* =========================================================
    SEARCH
 ========================================================= */
@@ -195,7 +276,6 @@ input {
   position: relative;
 
   flex: 1;
-
   min-width: 200px;
 
   height: 46px;
@@ -207,9 +287,8 @@ input {
 
   direction: ltr;
 
-  z-index: 4100;
+  z-index: 9100;
 }
-
 
 /* =========================================================
    SEARCH INPUT
@@ -219,7 +298,6 @@ input {
   flex: 1;
 
   min-width: 0;
-
   width: 100%;
   height: 46px;
 
@@ -256,7 +334,6 @@ input {
   box-shadow:
     inset 0 0 0 1px var(--jumia-orange);
 }
-
 
 /* =========================================================
    SEARCH BUTTON
@@ -299,7 +376,6 @@ input {
   transform: scale(0.97);
 }
 
-
 /* =========================================================
    SEARCH SUGGESTIONS
 ========================================================= */
@@ -308,23 +384,19 @@ input {
   position: absolute;
 
   top: calc(100% + 6px);
-
   right: 0;
   left: 0;
 
   width: 100%;
-
   max-height: 330px;
 
   overflow-x: hidden;
   overflow-y: auto;
 
   background: #ffffff;
-
   color: var(--jumia-text);
 
   border: 1px solid var(--jumia-border);
-
   border-radius: 4px;
 
   box-shadow: var(--jumia-shadow-lg);
@@ -349,21 +421,18 @@ input {
   border-radius: 10px;
 }
 
-
 /* =========================================================
    SUGGESTION ITEM
 ========================================================= */
 
 .suggestion-item {
   width: 100%;
-
   min-height: 58px;
 
   display: flex;
   align-items: center;
 
   gap: 12px;
-
   padding: 8px 12px;
 
   background: #ffffff;
@@ -396,16 +465,13 @@ input {
 
 .suggestion-item span {
   flex: 1;
-
   min-width: 0;
 
   overflow: hidden;
 
   text-overflow: ellipsis;
-
   white-space: nowrap;
 }
-
 
 /* =========================================================
    SUGGESTION IMAGE
@@ -424,10 +490,8 @@ input {
   background: #ffffff;
 
   border: 1px solid #eeeeee;
-
   border-radius: 4px;
 }
-
 
 /* =========================================================
    NO RESULT
@@ -439,17 +503,14 @@ input {
   padding: 15px;
 
   background: #ffffff;
-
   color: var(--jumia-muted);
 
   font-family: var(--nav-font);
-
   font-size: 13px;
   font-weight: 600;
 
   text-align: right;
 }
-
 
 /* =========================================================
    NAV ACTIONS
@@ -468,9 +529,8 @@ input {
 
   position: relative;
 
-  z-index: 5000;
+  z-index: 9200;
 }
-
 
 /* =========================================================
    COMMON ACTION BUTTON
@@ -484,7 +544,6 @@ input {
 
   display: flex;
   flex-direction: column;
-
   align-items: center;
   justify-content: center;
 
@@ -493,7 +552,6 @@ input {
   padding: 3px 7px;
 
   background: transparent;
-
   border: none;
 
   color: var(--jumia-text);
@@ -520,12 +578,10 @@ input {
 .cart-symbol,
 .admin-btn span {
   display: inline-flex;
-
   align-items: center;
   justify-content: center;
 
   font-size: 21px;
-
   line-height: 1;
 }
 
@@ -539,16 +595,13 @@ input {
   color: inherit;
 
   font-family: var(--nav-font);
-
   font-size: 10px;
-
   font-weight: 700;
 
   line-height: 1.2;
 
   white-space: nowrap;
 }
-
 
 /* =========================================================
    WISHLIST
@@ -570,7 +623,6 @@ input {
   padding: 0 4px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -578,17 +630,14 @@ input {
   color: #ffffff;
 
   border: 2px solid #ffffff;
-
   border-radius: 50%;
 
   font-family: Arial, sans-serif;
-
   font-size: 9px;
   font-weight: 700;
 
   line-height: 1;
 }
-
 
 /* =========================================================
    ACCOUNT
@@ -607,20 +656,48 @@ input {
   z-index: 99999;
 }
 
+.account-menu,
+.account-wrapper,
+.navbar-account,
+.account-dropdown-wrapper {
+  min-width: 0;
+
+  position: relative;
+}
+
+/* =========================================================
+   ACCOUNT BUTTON
+========================================================= */
+
+.navbar-account button,
+.account-menu > button,
+.account-wrapper > button {
+  max-width: 100%;
+  min-width: 0;
+
+  white-space: nowrap;
+}
 
 /* =========================================================
    ACCOUNT DROPDOWN
 ========================================================= */
 
-.account-dropdown {
+.account-dropdown,
+.navbar-account .account-dropdown,
+.account-menu .account-dropdown,
+.account-wrapper .account-dropdown,
+.account-dropdown-wrapper .account-dropdown {
   position: absolute !important;
 
   top: calc(100% + 8px);
 
   right: 0;
+  left: auto;
 
   width: 270px;
-  min-width: 270px;
+  min-width: 0;
+
+  max-width: calc(100vw - 20px);
 
   padding: 8px;
 
@@ -630,11 +707,9 @@ input {
   gap: 4px;
 
   background: #ffffff;
-
   color: var(--jumia-text);
 
   border: 1px solid var(--jumia-border);
-
   border-top: 3px solid var(--jumia-orange);
 
   border-radius: 5px;
@@ -662,7 +737,6 @@ input {
   }
 }
 
-
 /* =========================================================
    ACCOUNT ARROW
 ========================================================= */
@@ -673,7 +747,6 @@ input {
   position: absolute;
 
   top: -7px;
-
   right: 25px;
 
   width: 12px;
@@ -689,14 +762,12 @@ input {
   z-index: 1;
 }
 
-
 /* =========================================================
    ACCOUNT USER INFO
 ========================================================= */
 
 .account-user-info {
   padding: 13px 12px;
-
   margin: 0;
 
   display: flex;
@@ -707,7 +778,6 @@ input {
   border-bottom: 1px solid #eeeeee;
 
   direction: rtl;
-
   text-align: right;
 
   position: relative;
@@ -719,9 +789,7 @@ input {
   color: var(--jumia-text);
 
   font-family: var(--nav-font);
-
   font-size: 15px;
-
   font-weight: 800;
 }
 
@@ -737,16 +805,13 @@ input {
   color: var(--jumia-muted);
 
   font-family: Arial, Tahoma, sans-serif;
-
   font-size: 12px;
 
   direction: ltr;
-
   text-align: right;
 
   word-break: break-word;
 }
-
 
 /* =========================================================
    ACCOUNT BUTTONS
@@ -754,7 +819,6 @@ input {
 
 .account-dropdown > button {
   width: 100%;
-
   min-height: 43px;
 
   display: flex;
@@ -767,7 +831,6 @@ input {
   background: transparent;
 
   border: none;
-
   border-radius: 4px;
 
   color: var(--jumia-text);
@@ -775,17 +838,13 @@ input {
   cursor: pointer;
 
   font-family: var(--nav-font);
-
   font-size: 13px;
-
   font-weight: 600;
 
   text-align: right;
-
   direction: rtl;
 
   position: relative;
-
   z-index: 2;
 
   transition:
@@ -795,7 +854,6 @@ input {
 
 .account-dropdown > button:hover {
   background: var(--jumia-orange-light);
-
   color: var(--jumia-orange-dark);
 }
 
@@ -808,7 +866,6 @@ input {
   height: 28px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -816,7 +873,6 @@ input {
 
   font-size: 17px;
 }
-
 
 /* =========================================================
    LOGOUT
@@ -832,7 +888,6 @@ input {
   border-radius: 0 0 4px 4px;
 }
 
-
 /* =========================================================
    ADMIN
 ========================================================= */
@@ -845,10 +900,8 @@ input {
 
 .admin-btn:hover {
   color: #ffffff;
-
   background: var(--jumia-orange);
 }
-
 
 /* =========================================================
    CART
@@ -856,13 +909,11 @@ input {
 
 .cart-icon {
   position: relative;
-
   min-width: 72px;
 }
 
 .cart-symbol {
   position: relative;
-
   font-size: 24px;
 }
 
@@ -878,27 +929,21 @@ input {
   padding: 0 4px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
   background: var(--jumia-orange);
-
   color: #ffffff;
 
   border: 2px solid #ffffff;
-
   border-radius: 50%;
 
   font-family: Arial, sans-serif;
-
   font-size: 9px;
-
   font-weight: 800;
 
   line-height: 1;
 }
-
 
 /* =========================================================
    CATEGORY BAR
@@ -906,11 +951,9 @@ input {
 
 .navbar-bottom-wrapper {
   width: 100%;
-
   min-height: 43px;
 
   display: flex;
-
   align-items: center;
 
   background: #ffffff;
@@ -921,11 +964,17 @@ input {
 
   position: relative;
 
-  z-index: 3000;
+  /*
+    مستقل عن Offer Bar والحركة الموجودة في الصفحة
+  */
+  isolation: isolate;
+
+  z-index: 8000;
 
   overflow: visible !important;
-}
 
+  flex-shrink: 0;
+}
 
 /* =========================================================
    CATEGORY SCROLLER
@@ -939,7 +988,6 @@ input {
   height: 43px;
 
   display: flex;
-
   align-items: center;
 
   gap: 2px;
@@ -957,13 +1005,12 @@ input {
 
   position: relative;
 
-  z-index: 3001;
+  z-index: 8001;
 }
 
 .navbar-bottom::-webkit-scrollbar {
   display: none;
 }
-
 
 /* =========================================================
    CATEGORY WRAPPER
@@ -977,18 +1024,16 @@ input {
   height: 43px;
 
   display: flex;
-
   align-items: center;
 
   overflow: visible !important;
 
-  z-index: 3002;
+  z-index: 8002;
 }
 
 .nav-category-wrapper.category-is-open {
   z-index: 9999;
 }
-
 
 /* =========================================================
    CATEGORY ITEM
@@ -1000,7 +1045,6 @@ input {
   height: 37px;
 
   display: inline-flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1011,7 +1055,6 @@ input {
   background: transparent;
 
   border: none;
-
   border-bottom: 3px solid transparent;
 
   border-radius: 0;
@@ -1026,7 +1069,7 @@ input {
 
   position: relative;
 
-  z-index: 3003;
+  z-index: 8003;
 
   transition:
     background 0.18s ease,
@@ -1046,22 +1089,18 @@ input {
   transform: scale(0.98);
 }
 
-
 /* =========================================================
    CATEGORY ICON
 ========================================================= */
 
 .nav-category-item span {
   display: inline-flex;
-
   align-items: center;
   justify-content: center;
 
   font-size: 16px;
-
   line-height: 1;
 }
-
 
 /* =========================================================
    CATEGORY TITLE
@@ -1069,14 +1108,12 @@ input {
 
 .nav-category-item strong {
   font-size: 12px;
-
   font-weight: 700;
 
   line-height: 1;
 
   white-space: nowrap;
 }
-
 
 /* =========================================================
    CATEGORY IMAGE
@@ -1095,13 +1132,11 @@ input {
   background: #ffffff;
 
   border: 1px solid #dddddd;
-
   border-radius: 50%;
 }
 
-
 /* =========================================================
-   CATEGORY ARROW
+   CATEGORY DOWN ARROW
 ========================================================= */
 
 .category-down-arrow {
@@ -1112,14 +1147,12 @@ input {
   color: var(--jumia-orange);
 }
 
-
 /* =========================================================
    HOME
 ========================================================= */
 
 .home-item {
   color: var(--jumia-orange-dark);
-
   font-weight: 800;
 }
 
@@ -1127,21 +1160,18 @@ input {
   color: inherit;
 }
 
-
 /* =========================================================
    OFFERS
 ========================================================= */
 
 .offer-item {
   color: var(--jumia-orange-dark);
-
   font-weight: 800;
 }
 
 .offer-item:hover {
   color: var(--jumia-orange-dark);
 }
-
 
 /* =========================================================
    CATEGORY ARROWS
@@ -1154,7 +1184,6 @@ input {
   flex: 0 0 40px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1163,15 +1192,12 @@ input {
   border: none;
 
   background: #ffffff;
-
   color: var(--jumia-text);
 
   cursor: pointer;
 
   font-family: Arial, sans-serif;
-
   font-size: 19px;
-
   font-weight: 700;
 
   line-height: 1;
@@ -1183,10 +1209,8 @@ input {
 
 .category-arrow:hover {
   background: var(--jumia-orange-light);
-
   color: var(--jumia-orange);
 }
-
 
 /* =========================================================
    MEGA MENU
@@ -1205,11 +1229,9 @@ input {
   min-height: 100px;
 
   background: #ffffff;
-
   color: var(--jumia-text);
 
   border-top: 3px solid var(--jumia-orange);
-
   border-bottom: 1px solid var(--jumia-border);
 
   border-radius: 0 0 5px 5px;
@@ -1228,17 +1250,14 @@ input {
 @keyframes megaMenuOpen {
   from {
     opacity: 0;
-
     transform: translateY(-6px);
   }
 
   to {
     opacity: 1;
-
     transform: translateY(0);
   }
 }
-
 
 /* =========================================================
    MEGA INNER
@@ -1260,7 +1279,6 @@ input {
   overflow: visible !important;
 }
 
-
 /* =========================================================
    MEGA TITLE
 ========================================================= */
@@ -1269,23 +1287,19 @@ input {
   position: relative;
 
   width: 100%;
-
   min-height: 60px;
 
   display: flex;
-
   align-items: center;
 
   gap: 12px;
 
   padding: 9px 12px;
-
   margin-bottom: 14px;
 
   background: #ffffff;
 
   border: 1px solid var(--jumia-border);
-
   border-right: 4px solid var(--jumia-orange);
 
   border-radius: 4px;
@@ -1294,7 +1308,6 @@ input {
 
   z-index: 1000001;
 }
-
 
 /* =========================================================
    MEGA TITLE ICON
@@ -1311,7 +1324,6 @@ input {
   background: #ffffff;
 
   border: 1px solid #dddddd;
-
   border-radius: 50%;
 }
 
@@ -1322,7 +1334,6 @@ input {
   flex: 0 0 45px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1340,7 +1351,6 @@ input {
   flex: 0 0 48px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1358,10 +1368,8 @@ input {
   object-fit: contain;
 
   border: none;
-
   border-radius: 0;
 }
-
 
 /* =========================================================
    MEGA TITLE CONTENT
@@ -1371,7 +1379,6 @@ input {
   min-width: 0;
 
   display: flex;
-
   flex-direction: column;
 
   gap: 2px;
@@ -1379,7 +1386,6 @@ input {
 
 .mega-menu-title-content {
   display: flex;
-
   flex-direction: column;
 
   gap: 3px;
@@ -1394,9 +1400,7 @@ input {
   color: var(--jumia-text);
 
   font-family: var(--nav-font);
-
   font-size: 16px;
-
   font-weight: 800;
 
   line-height: 1.4;
@@ -1409,12 +1413,10 @@ input {
   color: var(--jumia-muted);
 
   font-family: var(--nav-font);
-
   font-size: 11px;
 
   line-height: 1.5;
 }
-
 
 /* =========================================================
    MEGA COLUMNS
@@ -1427,8 +1429,7 @@ input {
 
   display: grid;
 
-  grid-template-columns:
-    repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 
   gap: 12px;
 
@@ -1438,7 +1439,6 @@ input {
 
   overflow: visible !important;
 }
-
 
 /* =========================================================
    MEGA COLUMN
@@ -1450,7 +1450,6 @@ input {
   padding: 9px;
 
   display: flex;
-
   flex-direction: column;
 
   gap: 7px;
@@ -1468,10 +1467,8 @@ input {
 
 .mega-column:hover {
   border-color: #d6d6d6;
-
   box-shadow: var(--jumia-shadow);
 }
-
 
 /* =========================================================
    MEGA COLUMN TITLE
@@ -1479,23 +1476,19 @@ input {
 
 .mega-column-title {
   width: 100%;
-
   min-height: 44px;
 
   display: flex;
-
   align-items: center;
 
   gap: 8px;
 
   padding: 7px;
-
   margin: 0;
 
   background: var(--jumia-orange-light);
 
   border: none;
-
   border-radius: 4px;
 
   color: var(--jumia-text);
@@ -1503,9 +1496,7 @@ input {
   cursor: pointer;
 
   font-family: var(--nav-font);
-
   font-size: 13px;
-
   font-weight: 800;
 
   text-align: right;
@@ -1517,7 +1508,6 @@ input {
 
 .mega-column-title:hover {
   background: var(--jumia-orange);
-
   color: #ffffff;
 }
 
@@ -1566,7 +1556,6 @@ input {
   white-space: nowrap;
 }
 
-
 /* =========================================================
    MEGA COLUMN ITEMS
 ========================================================= */
@@ -1575,7 +1564,6 @@ input {
   width: 100%;
 
   display: flex;
-
   flex-direction: column;
 
   gap: 2px;
@@ -1583,18 +1571,15 @@ input {
   padding-top: 3px;
 }
 
-
 /* =========================================================
    MEGA LINK
 ========================================================= */
 
 .mega-link {
   width: 100%;
-
   min-height: 35px;
 
   display: flex;
-
   align-items: center;
 
   gap: 7px;
@@ -1604,7 +1589,6 @@ input {
   background: transparent;
 
   border: none;
-
   border-radius: 4px;
 
   color: #555555;
@@ -1612,9 +1596,7 @@ input {
   cursor: pointer;
 
   font-family: var(--nav-font);
-
   font-size: 12px;
-
   font-weight: 600;
 
   text-align: right;
@@ -1656,7 +1638,6 @@ input {
   flex: 0 0 26px;
 
   display: inline-flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1674,7 +1655,6 @@ input {
 
   white-space: nowrap;
 }
-
 
 /* =========================================================
    SINGLE LINK
@@ -1694,10 +1674,8 @@ input {
 
 .mega-single-link:hover {
   background: #ffe4c6;
-
   color: var(--jumia-orange-dark);
 }
-
 
 /* =========================================================
    RECURSIVE TREE
@@ -1721,13 +1699,11 @@ input {
   width: 100%;
 
   display: flex;
-
   flex-wrap: wrap;
 
   gap: 7px;
 
   margin-top: 5px;
-
   margin-bottom: 8px;
 
   padding-right: 10px;
@@ -1747,7 +1723,6 @@ input {
   min-height: 38px;
 
   display: flex;
-
   align-items: center;
 
   gap: 8px;
@@ -1765,9 +1740,7 @@ input {
   cursor: pointer;
 
   font-family: var(--nav-font);
-
   font-size: 12px;
-
   font-weight: 700;
 
   text-align: right;
@@ -1808,7 +1781,6 @@ input {
   flex: 0 0 29px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1831,7 +1803,6 @@ input {
   white-space: nowrap;
 }
 
-
 /* =========================================================
    NESTED LEVELS
 ========================================================= */
@@ -1853,7 +1824,6 @@ input {
   padding-right: 8px;
 }
 
-
 /* =========================================================
    MEGA ARROW
 ========================================================= */
@@ -1864,12 +1834,10 @@ input {
   color: var(--jumia-orange);
 
   font-family: Arial, sans-serif;
-
   font-size: 18px;
 
   line-height: 1;
 }
-
 
 /* =========================================================
    LOGO MODAL
@@ -1884,7 +1852,6 @@ input {
   height: 100%;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1924,26 +1891,21 @@ input {
   height: 44px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
   padding: 0;
 
   border: none;
-
   border-radius: 50%;
 
   background: var(--jumia-orange);
-
   color: #ffffff;
 
   cursor: pointer;
 
   font-family: Arial, sans-serif;
-
   font-size: 24px;
-
   font-weight: 800;
 
   line-height: 1;
@@ -1955,34 +1917,28 @@ input {
 
 .close-logo:hover {
   background: var(--jumia-orange-dark);
-
   transform: rotate(90deg);
 }
 
 @keyframes zoomLogo {
   from {
     transform: scale(0.6);
-
     opacity: 0;
   }
 
   to {
     transform: scale(1);
-
     opacity: 1;
   }
 }
-
 
 /* =========================================================
    TABLET
 ========================================================= */
 
 @media (max-width: 1024px) {
-
   .store-header {
     gap: 10px;
-
     padding: 8px 12px;
   }
 
@@ -2007,7 +1963,6 @@ input {
   .cart-icon,
   .admin-btn {
     min-width: 58px;
-
     padding: 2px 4px;
   }
 
@@ -2037,14 +1992,11 @@ input {
 
   .mega-menu-inner {
     width: 96%;
-
     padding: 14px;
   }
 
   .mega-columns {
-    grid-template-columns:
-      repeat(auto-fit, minmax(155px, 1fr));
-
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
     gap: 9px;
   }
 
@@ -2062,11 +2014,9 @@ input {
 
   .account-dropdown {
     width: 245px;
-
-    min-width: 245px;
+    max-width: calc(100vw - 16px);
   }
 }
-
 
 /* =========================================================
    MOBILE
@@ -2074,28 +2024,49 @@ input {
 
 @media (max-width: 700px) {
 
-  /* TOP OFFER */
+  /* =======================================================
+     TOP OFFER - MOBILE
+     مستقل عن أي Slider أسفل الهيدر
+  ======================================================= */
 
   .top-offer-bar {
+    width: 100%;
     height: 28px;
+    min-height: 28px;
+    max-height: 28px;
+
+    position: relative;
+
+    isolation: isolate;
+    contain: layout paint style;
+
+    overflow: hidden;
+    clip-path: inset(0);
+
+    z-index: 10000;
   }
 
-  .offer-track,
-  .offer-text {
+  .top-offer-bar .offer-track,
+  .top-offer-bar .offer-text {
+    height: 100%;
+
     gap: 28px;
 
     animation-duration: 18s;
+
+    transform: translate3d(100%, 0, 0);
   }
 
-  .offer-track span,
-  .offer-text span {
+  .top-offer-bar .offer-track span,
+  .top-offer-bar .offer-text span {
     padding: 0 7px;
 
     font-size: 10px;
   }
 
-
-  /* MAIN HEADER */
+  /* =======================================================
+     MAIN HEADER
+  ======================================================= */
 
   .store-header {
     min-height: auto;
@@ -2116,9 +2087,10 @@ input {
 
     overflow: visible !important;
 
-    z-index: 4000;
-  }
+    z-index: 9000;
 
+    isolation: isolate;
+  }
 
   /* LOGO */
 
@@ -2132,10 +2104,8 @@ input {
 
   .nav-logo img {
     width: 90px;
-
     height: 39px;
   }
-
 
   /* ACTIONS */
 
@@ -2154,14 +2124,13 @@ input {
 
     position: relative;
 
-    z-index: 5000;
+    z-index: 9200;
   }
 
   .nav-icon,
   .cart-icon,
   .admin-btn {
     min-width: 49px;
-
     height: 41px;
 
     padding: 1px 3px;
@@ -2181,14 +2150,12 @@ input {
     font-size: 8px;
   }
 
-
   /* ACCOUNT */
 
   .account-menu {
     position: relative;
 
     display: flex;
-
     align-items: center;
 
     overflow: visible !important;
@@ -2202,19 +2169,17 @@ input {
     top: calc(100% + 8px);
 
     right: 50%;
-
     left: auto;
 
     width: 235px;
 
-    min-width: 235px;
+    min-width: 0;
 
     max-width: calc(100vw - 16px);
 
     max-height: calc(100vh - 115px);
 
     overflow-x: hidden !important;
-
     overflow-y: auto !important;
 
     transform: translateX(50%);
@@ -2239,9 +2204,7 @@ input {
 
     right: 50%;
 
-    transform:
-      translateX(50%)
-      rotate(-45deg);
+    transform: translateX(50%) rotate(-45deg);
   }
 
   .account-dropdown > button {
@@ -2256,13 +2219,11 @@ input {
     padding: 10px 11px;
   }
 
-
   /* BADGES */
 
   .wishlist-badge,
   .cart-badge {
     min-width: 16px;
-
     height: 16px;
 
     font-size: 8px;
@@ -2278,19 +2239,17 @@ input {
     right: 0;
   }
 
-
   /* SEARCH */
 
   .search-box {
     grid-area: search;
 
     width: 100%;
-
     height: 40px;
 
     margin: 0;
 
-    z-index: 4100;
+    z-index: 9100;
   }
 
   .search-box input {
@@ -2303,7 +2262,6 @@ input {
 
   .search-box .search-button {
     width: 45px;
-
     height: 40px;
 
     flex-basis: 45px;
@@ -2311,15 +2269,16 @@ input {
     font-size: 18px;
   }
 
-
   /* CATEGORY BAR */
 
   .navbar-bottom-wrapper {
     min-height: 39px;
 
-    z-index: 3000;
+    z-index: 8000;
 
     overflow: visible !important;
+
+    isolation: isolate;
   }
 
   .navbar-bottom {
@@ -2330,7 +2289,6 @@ input {
     gap: 1px;
 
     overflow-x: auto;
-
     overflow-y: hidden;
   }
 
@@ -2369,14 +2327,12 @@ input {
 
   .category-arrow {
     width: 30px;
-
     height: 39px;
 
     flex-basis: 30px;
 
     font-size: 16px;
   }
-
 
   /* SEARCH SUGGESTIONS */
 
@@ -2403,7 +2359,6 @@ input {
     flex-basis: 40px;
   }
 
-
   /* MOBILE MEGA */
 
   .mega-menu {
@@ -2421,7 +2376,6 @@ input {
     max-height: calc(100vh - 157px);
 
     overflow-x: hidden !important;
-
     overflow-y: auto !important;
 
     -webkit-overflow-scrolling: touch;
@@ -2440,24 +2394,20 @@ input {
   @keyframes mobileMegaOpen {
     from {
       opacity: 0;
-
       transform: translateY(-8px);
     }
 
     to {
       opacity: 1;
-
       transform: translateY(0);
     }
   }
-
 
   .mega-menu-inner {
     width: 100%;
 
     padding: 9px;
   }
-
 
   /* MOBILE MEGA TITLE */
 
@@ -2498,12 +2448,10 @@ input {
     font-size: 9px;
   }
 
-
   /* MOBILE COLUMNS */
 
   .mega-columns {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 
     gap: 7px;
   }
@@ -2535,7 +2483,6 @@ input {
   .mega-column-title > span:first-of-type {
     font-size: 14px;
   }
-
 
   /* MOBILE LINKS */
 
@@ -2572,7 +2519,6 @@ input {
   .mega-link-icon {
     font-size: 10px;
   }
-
 
   /* MOBILE TREE */
 
@@ -2616,7 +2562,6 @@ input {
     font-size: 16px;
   }
 
-
   /* LOGO MODAL */
 
   .logo-modal {
@@ -2641,13 +2586,11 @@ input {
   }
 }
 
-
 /* =========================================================
    VERY SMALL MOBILE
 ========================================================= */
 
 @media (max-width: 380px) {
-
   .nav-logo {
     min-width: 76px;
   }
@@ -2700,8 +2643,7 @@ input {
   }
 
   .mega-columns {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 
     gap: 5px;
   }
@@ -2725,13 +2667,11 @@ input {
   }
 }
 
-
 /* =========================================================
    LANDSCAPE MOBILE
 ========================================================= */
 
 @media (max-width: 700px) and (orientation: landscape) {
-
   .mega-menu {
     top: 119px;
 
@@ -2743,13 +2683,11 @@ input {
   }
 }
 
-
 /* =========================================================
    TOUCH DEVICES
 ========================================================= */
 
 @media (hover: none) and (pointer: coarse) {
-
   .nav-category-item:hover,
   .mega-column:hover,
   .mega-link:hover,
@@ -2763,7 +2701,6 @@ input {
     -webkit-tap-highlight-color: transparent;
   }
 }
-
 
 /* =========================================================
    FOCUS ACCESSIBILITY
@@ -2785,16 +2722,16 @@ input {
   outline-offset: 2px;
 }
 
-
 /* =========================================================
    REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
-  .offer-track,
-  .offer-text {
+  .top-offer-bar .offer-track,
+  .top-offer-bar .offer-text {
     animation: none;
+
+    transform: none;
   }
 
   .nav-logo img,
@@ -2819,109 +2756,70 @@ input {
     scroll-behavior: auto;
   }
 }
-/* =====================================================
-   FIX - NAVBAR FULL WIDTH + ACCOUNT DROPDOWN
-===================================================== */
 
-/* منع أي عنصر من الـ Navbar إنه يوسع الصفحة */
+/* =========================================================
+   FINAL FULL-WIDTH + ACCOUNT SAFETY FIX
+========================================================= */
+
+/*
+   منع الـ Navbar من عمل Horizontal Scroll
+*/
 .navbar,
-.navbar *,
-.navbar *::before,
-.navbar *::after {
-  box-sizing: border-box;
-}
-
-/* الـ Navbar ياخد عرض الشاشة بالكامل */
-.navbar {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-}
-
-/* الصف الرئيسي */
 .navbar-main,
 .navbar-top,
-.navbar-header {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-/* الحاوية الداخلية */
+.navbar-header,
 .navbar-container,
 .navbar-inner,
-.navbar-content {
-  width: 100%;
+.navbar-content,
+.store-header,
+.navbar-bottom-wrapper {
   max-width: 100%;
   min-width: 0;
-  box-sizing: border-box;
 }
 
-/* =====================================================
-   ACCOUNT
-===================================================== */
-
+/*
+   الحساب لا يوسع الصفحة
+*/
 .navbar-account,
 .account-menu,
 .account-wrapper,
 .account-dropdown-wrapper {
-  position: relative;
   min-width: 0;
-}
 
-/* زر أهلاً / الحساب */
-.navbar-account button,
-.account-menu > button,
-.account-wrapper > button {
   max-width: 100%;
-  min-width: 0;
-  white-space: nowrap;
+
+  overflow: visible !important;
 }
 
-/* =====================================================
-   ACCOUNT DROPDOWN
-   مهم: يفضل يفضل داخل الشاشة
-===================================================== */
-
+/*
+   الـ Dropdown يفضل داخل حدود الشاشة
+*/
 .navbar-account .account-dropdown,
 .account-menu .account-dropdown,
 .account-wrapper .account-dropdown,
 .account-dropdown-wrapper .account-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
   right: 0;
   left: auto;
 
   width: 280px;
+
   max-width: calc(100vw - 20px);
 
   min-width: 0;
 
   box-sizing: border-box;
-  z-index: 99999;
 }
 
-/* لو الـ dropdown موجود ناحية أقصى اليمين */
-.navbar-account:last-child .account-dropdown,
-.account-menu:last-child .account-dropdown,
-.account-wrapper:last-child .account-dropdown {
-  right: 0;
-  left: auto;
-}
-
-/* =====================================================
+/* =========================================================
    DESKTOP
-===================================================== */
+========================================================= */
 
 @media (min-width: 1001px) {
-
   .navbar {
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+
+    max-width: 100%;
+
     margin: 0;
   }
 
@@ -2932,29 +2830,33 @@ input {
   .navbar-inner,
   .navbar-content {
     width: 100%;
+
     max-width: 100%;
+
     margin: 0;
   }
 
-  /* الحساب يفضل داخل الشاشة */
   .navbar-account .account-dropdown,
   .account-menu .account-dropdown,
   .account-wrapper .account-dropdown,
   .account-dropdown-wrapper .account-dropdown {
     right: 0;
     left: auto;
-    max-width: 320px;
+
+    width: 280px;
+
+    max-width: min(320px, calc(100vw - 20px));
   }
 }
 
-/* =====================================================
+/* =========================================================
    TABLET
-===================================================== */
+========================================================= */
 
 @media (min-width: 601px) and (max-width: 1000px) {
-
   .navbar {
     width: 100%;
+
     max-width: 100%;
   }
 
@@ -2964,20 +2866,23 @@ input {
   .account-dropdown-wrapper .account-dropdown {
     right: 0;
     left: auto;
+
     width: 260px;
+
     max-width: calc(100vw - 16px);
   }
 }
 
-/* =====================================================
+/* =========================================================
    MOBILE
-===================================================== */
+========================================================= */
 
 @media (max-width: 600px) {
-
   .navbar {
     width: 100%;
+
     max-width: 100%;
+
     overflow: visible;
   }
 
@@ -2992,12 +2897,54 @@ input {
   .account-menu .account-dropdown,
   .account-wrapper .account-dropdown,
   .account-dropdown-wrapper .account-dropdown {
-    right: 0;
+    right: 50%;
     left: auto;
 
     width: min(280px, calc(100vw - 16px));
+
     max-width: calc(100vw - 16px);
+
+    transform: translateX(50%);
 
     box-sizing: border-box;
   }
+}
+
+/* =========================================================
+   FINAL OFFER BAR ISOLATION
+   =========================================================
+   آخر طبقة حماية:
+   أي Slider أو animation خارج الـ Navbar لن يستطيع
+   التحكم في الشريط البرتقالي أو التداخل معه.
+========================================================= */
+
+.top-offer-bar {
+  isolation: isolate;
+  contain: layout paint style;
+
+  overflow: hidden !important;
+
+  position: relative !important;
+
+  z-index: 10000 !important;
+}
+
+.top-offer-bar .offer-track,
+.top-offer-bar .offer-text {
+  position: absolute !important;
+
+  top: 0;
+  left: 0;
+
+  height: 100%;
+
+  pointer-events: none;
+
+  transform-origin: center center;
+
+  backface-visibility: hidden;
+
+  will-change: transform;
+
+  z-index: 1;
 }

@@ -1,6 +1,6 @@
 /* ============================================================
    HERO SLIDER - ELSAFTY STORE
-   Dynamic / Responsive / Firestore Settings Ready
+   Jumia Style / RTL / Fully Responsive
 ============================================================ */
 
 .hero-section {
@@ -11,6 +11,11 @@
   box-sizing: border-box;
 }
 
+.hero-section *,
+.hero-section *::before,
+.hero-section *::after {
+  box-sizing: border-box;
+}
 
 /* ============================================================
    TOP OFFER STRIP
@@ -19,95 +24,43 @@
 .hero-offer-strip {
   width: 100%;
   height: var(--top-strip-height, 42px);
-
-  background: var(
-    --top-strip-bg,
-    #071A36
-  );
-
-  color: var(
-    --top-strip-text,
-    #FFFFFF
-  );
-
   display: flex;
   align-items: center;
-
   overflow: hidden;
-
   position: relative;
   z-index: 5;
-
-  box-sizing: border-box;
+  background: var(--top-strip-bg, #071A36);
+  color: var(--top-strip-text, #FFFFFF);
 }
-
 
 .hero-offer-track {
   display: flex;
   align-items: center;
-
   gap: 45px;
-
   width: max-content;
-
   min-width: max-content;
-
   white-space: nowrap;
-
   padding-inline: 30px;
-
-  font-family:
-    Cairo,
-    Tahoma,
-    sans-serif;
-
-  font-size: var(
-    --top-strip-font-size,
-    15px
-  );
-
+  font-family: "Cairo", "Tahoma", sans-serif;
+  font-size: var(--top-strip-font-size, 15px);
   font-weight: 700;
-
-  animation-name:
-    heroOfferMove;
-
-  animation-duration:
-    var(
-      --top-strip-duration,
-      40s
-    );
-
-  animation-timing-function:
-    linear;
-
-  animation-iteration-count:
-    infinite;
-
-  will-change:
-    transform;
+  animation: heroOfferMove var(--top-strip-duration, 40s) linear infinite;
+  will-change: transform;
 }
-
 
 .hero-offer-track:hover {
   animation-play-state: paused;
 }
 
-
 .hero-offer-track span {
   display: inline-flex;
-
   align-items: center;
-
   gap: 6px;
-
   color: inherit;
-
   flex-shrink: 0;
 }
 
-
 @keyframes heroOfferMove {
-
   0% {
     transform: translateX(0);
   }
@@ -115,9 +68,7 @@
   100% {
     transform: translateX(-50%);
   }
-
 }
-
 
 /* ============================================================
    HERO SLIDER WRAPPER
@@ -126,15 +77,10 @@
 .hero-slider-wrapper {
   width: 100%;
   max-width: 100%;
-
   position: relative;
-
   overflow: hidden;
-
-  background:
-    #0B1F3A;
+  background: #0B1F3A;
 }
-
 
 /* ============================================================
    SWIPER
@@ -142,14 +88,13 @@
 
 .hero-swiper {
   width: 100%;
-  height: var(
-    --hero-desktop-height,
-    420px
-  );
-
+  height: var(--hero-desktop-height, 420px);
   overflow: hidden;
 }
 
+.hero-swiper .swiper-slide {
+  height: 100%;
+}
 
 /* ============================================================
    SLIDE
@@ -157,32 +102,17 @@
 
 .hero-slide {
   position: relative;
-
   width: 100%;
-
-  height: var(
-    --hero-desktop-height,
-    420px
-  );
-
+  height: var(--hero-desktop-height, 420px);
   min-height: 180px;
 
   background-size: cover;
-
   background-position: center;
-
   background-repeat: no-repeat;
 
   overflow: hidden;
-
-  border-radius: var(
-    --hero-border-radius,
-    0px
-  );
-
-  box-sizing: border-box;
+  border-radius: var(--hero-border-radius, 0px);
 }
-
 
 /* ============================================================
    OVERLAY
@@ -190,34 +120,23 @@
 
 .hero-overlay {
   position: absolute;
-
   inset: 0;
-
   width: 100%;
   height: 100%;
 
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 
-  background:
-    rgba(
-      0,
-      0,
-      0,
-      var(
-        --hero-overlay-opacity,
-        0.35
-      )
-    );
+  background: rgba(
+    0,
+    0,
+    0,
+    var(--hero-overlay-opacity, 0.35)
+  );
 
   z-index: 2;
-
-  box-sizing: border-box;
 }
-
 
 /* ============================================================
    CONTENT
@@ -225,35 +144,27 @@
 
 .hero-content {
   position: relative;
-
   width: 100%;
   height: 100%;
 
   display: flex;
 
-  padding:
-    30px 6%;
-
-  box-sizing: border-box;
+  padding: 30px 6%;
 
   z-index: 3;
 }
 
-
 .hero-text {
+  width: min(700px, 100%);
   max-width: 700px;
 
   display: flex;
-
   flex-direction: column;
-
   justify-content: center;
 
-  box-sizing: border-box;
-
   direction: rtl;
+  overflow: hidden;
 }
-
 
 /* ============================================================
    TAG
@@ -261,45 +172,28 @@
 
 .hero-tag {
   display: inline-flex;
-
   align-items: center;
-
   justify-content: center;
 
   width: fit-content;
-
   max-width: 100%;
 
-  padding:
-    8px 18px;
-
+  padding: 8px 18px;
   margin-bottom: 12px;
 
   border-radius: 30px;
 
-  background:
-    var(
-      --accent,
-      #D4AF37
-    );
+  background: var(--accent, #D4AF37);
+  color: #FFFFFF;
 
-  color:
-    #FFFFFF;
-
-  font-family:
-    inherit;
-
-  font-size:
-    15px;
-
-  font-weight:
-    700;
-
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
   line-height: 1.4;
 
-  box-sizing: border-box;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-
 
 /* ============================================================
    TITLE
@@ -307,27 +201,18 @@
 
 .hero-text h1,
 .hero-title {
-  margin:
-    10px 0;
-
-  color:
-    inherit;
-
-  font-family:
-    inherit;
-
-  line-height:
-    1.25;
-
   max-width: 100%;
 
-  word-break:
-    normal;
+  margin: 10px 0;
 
-  overflow-wrap:
-    break-word;
+  color: inherit;
+  font-family: inherit;
+
+  line-height: 1.25;
+
+  word-break: normal;
+  overflow-wrap: break-word;
 }
-
 
 /* ============================================================
    DESCRIPTION
@@ -335,28 +220,18 @@
 
 .hero-text p,
 .hero-description {
-  margin:
-    8px 0 18px;
+  max-width: 650px;
 
-  color:
-    inherit;
+  margin: 8px 0 18px;
 
-  font-family:
-    inherit;
+  color: inherit;
+  font-family: inherit;
 
-  line-height:
-    1.8;
+  line-height: 1.8;
 
-  max-width:
-    650px;
-
-  word-break:
-    normal;
-
-  overflow-wrap:
-    break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
-
 
 /* ============================================================
    BUTTON
@@ -365,95 +240,53 @@
 .hero-text button,
 .hero-button {
   display: inline-flex;
-
   align-items: center;
-
   justify-content: center;
-
   gap: 10px;
 
   width: fit-content;
-
   min-width: 150px;
 
-  padding:
-    13px 28px;
+  padding: 13px 28px;
 
-  border:
-    none;
+  border: none;
+  border-radius: 10px;
 
-  border-radius:
-    10px;
+  background: var(--hero-button-bg, #D4AF37);
+  color: var(--hero-button-text, #FFFFFF);
 
-  background:
-    var(
-      --hero-button-bg,
-      #D4AF37
-    );
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
 
-  color:
-    var(
-      --hero-button-text,
-      #FFFFFF
-    );
+  cursor: pointer;
 
-  font-family:
-    inherit;
-
-  font-size:
-    17px;
-
-  font-weight:
-    700;
-
-  line-height:
-    1.4;
-
-  cursor:
-    pointer;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.15);
 
   transition:
-    transform .25s ease,
-    box-shadow .25s ease,
-    opacity .25s ease;
-
-  box-shadow:
-    0 5px 18px
-    rgba(0, 0, 0, .15);
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
 }
-
 
 .hero-text button:hover,
 .hero-button:hover {
-  transform:
-    translateY(-3px);
-
-  box-shadow:
-    0 8px 25px
-    rgba(0, 0, 0, .22);
-
-  opacity:
-    .95;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.22);
+  opacity: 0.95;
 }
-
 
 .hero-text button:active,
 .hero-button:active {
-  transform:
-    translateY(-1px);
+  transform: translateY(-1px);
 }
-
 
 .hero-button span {
   display: inline-flex;
-
-  font-size:
-    20px;
-
-  line-height:
-    1;
+  font-size: 20px;
+  line-height: 1;
 }
-
 
 /* ============================================================
    BRAND BADGE
@@ -471,74 +304,42 @@
   border-radius: 50%;
 
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
   justify-content: center;
 
   gap: 2px;
 
-  background:
-    rgba(7, 26, 54, .78);
+  background: rgba(7, 26, 54, 0.78);
+  color: #FFFFFF;
 
-  color:
-    #FFFFFF;
+  border: 1px solid rgba(212, 175, 55, 0.8);
 
-  border:
-    1px solid
-    rgba(212, 175, 55, .8);
+  backdrop-filter: blur(5px);
 
-  backdrop-filter:
-    blur(5px);
-
-  box-shadow:
-    0 8px 25px
-    rgba(0, 0, 0, .2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 
   z-index: 4;
 
   pointer-events: none;
 }
 
-
 .hero-side-badge span {
-  font-size:
-    18px;
-
-  line-height:
-    1;
+  font-size: 18px;
+  line-height: 1;
 }
-
 
 .hero-side-badge strong {
-  font-family:
-    Cairo,
-    Tahoma,
-    sans-serif;
-
-  font-size:
-    13px;
-
-  line-height:
-    1.2;
+  font-family: "Cairo", "Tahoma", sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
 }
-
 
 .hero-side-badge small {
-  font-family:
-    Cairo,
-    Tahoma,
-    sans-serif;
-
-  font-size:
-    10px;
-
-  opacity:
-    .85;
+  font-family: "Cairo", "Tahoma", sans-serif;
+  font-size: 10px;
+  opacity: 0.85;
 }
-
 
 /* ============================================================
    SWIPER NAVIGATION
@@ -546,89 +347,52 @@
 
 .hero-swiper .swiper-button-next,
 .hero-swiper .swiper-button-prev {
-  width:
-    44px;
+  width: 44px;
+  height: 44px;
 
-  height:
-    44px;
+  border-radius: 50%;
 
-  border-radius:
-    50%;
+  background: rgba(7, 26, 54, 0.55);
+  color: #FFFFFF;
 
-  background:
-    rgba(7, 26, 54, .55);
-
-  color:
-    #FFFFFF;
-
-  transition:
-    .25s ease;
+  transition: 0.25s ease;
 }
-
 
 .hero-swiper .swiper-button-next:hover,
 .hero-swiper .swiper-button-prev:hover {
-  background:
-    rgba(7, 26, 54, .85);
-
-  transform:
-    scale(1.05);
+  background: rgba(7, 26, 54, 0.85);
+  transform: scale(1.05);
 }
-
 
 .hero-swiper .swiper-button-next::after,
 .hero-swiper .swiper-button-prev::after {
-  font-size:
-    18px;
-
-  font-weight:
-    900;
+  font-size: 18px;
+  font-weight: 900;
 }
-
 
 /* ============================================================
    SWIPER PAGINATION
 ============================================================ */
 
 .hero-swiper .swiper-pagination {
-  bottom:
-    15px;
+  bottom: 15px;
 }
-
 
 .hero-swiper .swiper-pagination-bullet {
-  width:
-    9px;
+  width: 9px;
+  height: 9px;
 
-  height:
-    9px;
+  opacity: 0.8;
+  background: #FFFFFF;
 
-  opacity:
-    .8;
-
-  background:
-    #FFFFFF;
-
-  transition:
-    .25s ease;
+  transition: 0.25s ease;
 }
 
-
-.hero-swiper
-  .swiper-pagination-bullet-active {
-  width:
-    24px;
-
-  border-radius:
-    10px;
-
-  background:
-    var(
-      --accent,
-      #D4AF37
-    );
+.hero-swiper .swiper-pagination-bullet-active {
+  width: 24px;
+  border-radius: 10px;
+  background: var(--accent, #D4AF37);
 }
-
 
 /* ============================================================
    FEATURES BAR
@@ -638,133 +402,86 @@
   width: 100%;
 
   display: flex;
-
   align-items: center;
-
   justify-content: space-around;
 
   gap: 10px;
 
-  padding:
-    10px 20px;
+  padding: 10px 20px;
 
-  background:
-    #FFFFFF;
+  background: #FFFFFF;
+  color: #071A36;
 
-  color:
-    #071A36;
-
-  border-top:
-    1px solid
-    rgba(212, 175, 55, .25);
-
-  border-bottom:
-    1px solid
-    rgba(212, 175, 55, .25);
-
-  box-sizing: border-box;
+  border-top: 1px solid rgba(212, 175, 55, 0.25);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
 
   overflow: hidden;
 }
 
-
 .hero-feature {
-  flex:
-    1 1 0;
-
-  min-width:
-    0;
+  flex: 1 1 0;
+  min-width: 0;
 
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 
   gap: 10px;
 
-  padding:
-    8px 12px;
-
-  box-sizing: border-box;
+  padding: 8px 12px;
 }
-
 
 .hero-feature-icon {
   flex-shrink: 0;
 
   display: inline-flex;
-
   align-items: center;
-
   justify-content: center;
 
-  font-size:
-    26px;
+  font-size: 26px;
+  line-height: 1;
 
-  line-height:
-    1;
-
-  color:
-    var(
-      --accent,
-      #D4AF37
-    );
+  color: var(--accent, #D4AF37);
 }
 
-
 .hero-feature > div {
-  min-width:
-    0;
+  min-width: 0;
 
   display: flex;
-
   flex-direction: column;
 
   gap: 2px;
 }
 
-
 .hero-feature strong {
   display: block;
 
-  font-family:
-    Cairo,
-    Tahoma,
-    sans-serif;
+  font-family: "Cairo", "Tahoma", sans-serif;
+  color: inherit;
 
-  color:
-    inherit;
+  font-size: 15px;
+  line-height: 1.4;
 
-  font-size:
-    15px;
-
-  line-height:
-    1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 
 .hero-feature small {
   display: block;
 
-  font-family:
-    Cairo,
-    Tahoma,
-    sans-serif;
+  font-family: "Cairo", "Tahoma", sans-serif;
+  color: inherit;
 
-  color:
-    inherit;
+  opacity: 0.72;
 
-  opacity:
-    .72;
+  font-size: 12px;
+  line-height: 1.4;
 
-  font-size:
-    12px;
-
-  line-height:
-    1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 
 /* ============================================================
    TABLET
@@ -774,69 +491,42 @@
 
   .hero-swiper,
   .hero-slide {
-    height:
-      var(
-        --hero-tablet-height,
-        350px
-      );
+    height: var(--hero-tablet-height, 350px);
   }
-
 
   .hero-content {
-    padding:
-      25px 5%;
+    padding: 25px 5%;
   }
-
 
   .hero-text {
-    max-width:
-      600px;
+    max-width: 600px;
   }
-
 
   .hero-side-badge {
-    width:
-      72px;
+    width: 72px;
+    min-height: 72px;
 
-    min-height:
-      72px;
-
-    top:
-      18px;
-
-    left:
-      18px;
+    top: 18px;
+    left: 18px;
   }
-
 
   .hero-side-badge strong {
-    font-size:
-      11px;
+    font-size: 11px;
   }
-
 
   .hero-side-badge small {
-    font-size:
-      9px;
+    font-size: 9px;
   }
-
 
   .hero-feature {
-    gap:
-      7px;
-
-    padding:
-      8px 6px;
+    gap: 7px;
+    padding: 8px 6px;
   }
-
 
   .hero-feature-icon {
-    font-size:
-      22px;
+    font-size: 22px;
   }
-
 }
-
 
 /* ============================================================
    MOBILE
@@ -844,229 +534,222 @@
 
 @media (max-width: 768px) {
 
+  .hero-section {
+    width: 100%;
+  }
+
+  /* TOP STRIP */
+
+  .hero-offer-strip {
+    height: var(--top-strip-height, 38px);
+  }
+
+  .hero-offer-track {
+    gap: 28px;
+    padding-inline: 18px;
+
+    font-size: clamp(
+      11px,
+      3vw,
+      13px
+    );
+  }
+
+  /* HERO */
+
   .hero-swiper,
   .hero-slide {
-    height:
-      var(
-        --hero-mobile-height,
-        240px
-      );
+    height: var(--hero-mobile-height, 240px);
   }
 
+  .hero-slide {
+    background-position: center center;
+  }
 
   .hero-content {
-    padding:
-      18px 20px;
+    padding: 14px 16px;
   }
-
 
   .hero-text {
-    max-width:
-      100%;
+    width: 100%;
+    max-width: min(72%, 430px);
 
-    width:
-      100%;
+    justify-content: center;
   }
-
 
   .hero-tag {
-    padding:
-      6px 12px;
+    max-width: 100%;
 
-    margin-bottom:
-      6px;
+    padding: 5px 10px;
+    margin-bottom: 4px;
 
-    font-size:
-      11px;
+    font-size: 10px;
+    line-height: 1.3;
   }
-
 
   .hero-text h1,
   .hero-title {
-    margin:
-      6px 0;
+    max-width: 100%;
 
-    font-size:
-      clamp(
-        22px,
-        6vw,
-        34px
-      ) !important;
+    margin: 4px 0;
 
-    line-height:
-      1.2;
+    font-size: clamp(
+      19px,
+      6vw,
+      30px
+    ) !important;
+
+    line-height: 1.2;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+
+    overflow: hidden;
   }
-
 
   .hero-text p,
   .hero-description {
-    margin:
-      4px 0 10px;
+    max-width: 100%;
 
-    font-size:
-      clamp(
-        12px,
-        3.5vw,
-        17px
-      ) !important;
+    margin: 4px 0 8px;
 
-    line-height:
-      1.6;
+    font-size: clamp(
+      10px,
+      3.2vw,
+      15px
+    ) !important;
+
+    line-height: 1.5;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+
+    overflow: hidden;
   }
-
 
   .hero-text button,
   .hero-button {
-    min-width:
-      125px;
+    min-width: 112px;
 
-    padding:
-      9px 16px;
+    padding: 8px 13px;
 
-    font-size:
-      13px;
+    font-size: 11px;
 
-    border-radius:
-      8px;
+    border-radius: 7px;
+
+    gap: 6px;
   }
-
 
   .hero-button span {
-    font-size:
-      16px;
+    font-size: 14px;
   }
 
+  /* BRAND */
 
   .hero-side-badge {
-    top:
-      10px;
+    top: 8px;
+    left: 8px;
 
-    left:
-      10px;
-
-    width:
-      55px;
-
-    min-height:
-      55px;
+    width: 54px;
+    min-height: 54px;
   }
-
 
   .hero-side-badge span {
-    font-size:
-      12px;
+    font-size: 11px;
   }
-
 
   .hero-side-badge strong {
-    font-size:
-      9px;
+    font-size: 8px;
   }
-
 
   .hero-side-badge small {
-    display:
-      none;
+    display: none;
   }
 
+  /* NAVIGATION */
 
   .hero-swiper .swiper-button-next,
   .hero-swiper .swiper-button-prev {
-    width:
-      30px;
-
-    height:
-      30px;
+    width: 28px;
+    height: 28px;
   }
-
 
   .hero-swiper .swiper-button-next::after,
   .hero-swiper .swiper-button-prev::after {
-    font-size:
-      13px;
+    font-size: 11px;
   }
-
 
   .hero-swiper .swiper-pagination {
-    bottom:
-      7px;
+    bottom: 6px;
   }
-
 
   .hero-swiper .swiper-pagination-bullet {
-    width:
-      6px;
-
-    height:
-      6px;
+    width: 6px;
+    height: 6px;
   }
 
-
-  .hero-swiper
-    .swiper-pagination-bullet-active {
-    width:
-      16px;
+  .hero-swiper .swiper-pagination-bullet-active {
+    width: 15px;
   }
 
+  /* FEATURES */
 
   .hero-features {
-    height:
-      auto !important;
+    min-height: 64px;
 
-    min-height:
-      65px;
+    height: auto !important;
 
-    padding:
-      7px 5px;
+    padding: 7px 3px;
 
-    gap:
-      2px;
+    gap: 0;
 
-    justify-content:
-      space-between;
+    justify-content: space-between;
   }
-
 
   .hero-feature {
-    flex:
-      1 1 25%;
+    flex: 1 1 25%;
 
-    flex-direction:
-      column;
+    flex-direction: column;
 
-    gap:
-      4px;
+    gap: 3px;
 
-    padding:
-      5px 2px;
+    padding: 4px 2px;
 
-    text-align:
-      center;
+    text-align: center;
+
+    overflow: hidden;
   }
-
 
   .hero-feature-icon {
-    font-size:
-      20px;
+    font-size: 19px;
   }
-
 
   .hero-feature strong {
-    font-size:
-      10px !important;
-  }
+    width: 100%;
 
+    font-size: 9px !important;
+
+    line-height: 1.3;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   .hero-feature small {
-    font-size:
-      8px !important;
+    width: 100%;
 
-    line-height:
-      1.3;
+    font-size: 7px !important;
+
+    line-height: 1.2;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-
 }
-
 
 /* ============================================================
    SMALL MOBILE
@@ -1074,93 +757,201 @@
 
 @media (max-width: 480px) {
 
+  .hero-offer-strip {
+    height: 35px;
+  }
+
+  .hero-offer-track {
+    gap: 22px;
+    padding-inline: 12px;
+
+    font-size: 10px;
+  }
+
   .hero-swiper,
   .hero-slide {
-    height:
-      var(
-        --hero-mobile-height,
-        220px
-      );
+    height: var(--hero-mobile-height, 220px);
   }
-
 
   .hero-content {
-    padding:
-      14px;
+    padding: 11px 12px;
   }
 
+  /*
+     مساحة النص أقل حتى لا يغطي المنتج
+     أو العناصر المهمة في صورة الإعلان.
+  */
+  .hero-text {
+    max-width: 74%;
+  }
 
   .hero-tag {
-    font-size:
-      9px;
+    padding: 4px 8px;
+    margin-bottom: 3px;
 
-    padding:
-      5px 9px;
+    font-size: 8px;
   }
-
 
   .hero-text h1,
   .hero-title {
-    font-size:
-      clamp(
-        19px,
-        6vw,
-        27px
-      ) !important;
-  }
+    margin: 3px 0;
 
+    font-size: clamp(
+      17px,
+      5.8vw,
+      25px
+    ) !important;
+
+    line-height: 1.18;
+  }
 
   .hero-text p,
   .hero-description {
-    font-size:
-      11px !important;
+    margin: 3px 0 7px;
 
-    line-height:
-      1.5;
+    font-size: 10px !important;
 
-    margin-bottom:
-      8px;
+    line-height: 1.4;
+
+    -webkit-line-clamp: 2;
   }
-
 
   .hero-text button,
   .hero-button {
-    min-width:
-      105px;
+    min-width: 96px;
 
-    padding:
-      8px 13px;
+    padding: 7px 11px;
 
-    font-size:
-      11px;
+    font-size: 10px;
+
+    border-radius: 6px;
   }
 
+  .hero-button span {
+    font-size: 12px;
+  }
 
   .hero-side-badge {
-    display:
-      none;
+    display: none;
   }
 
+  .hero-swiper .swiper-button-next,
+  .hero-swiper .swiper-button-prev {
+    width: 25px;
+    height: 25px;
+  }
+
+  .hero-swiper .swiper-button-next::after,
+  .hero-swiper .swiper-button-prev::after {
+    font-size: 10px;
+  }
+
+  .hero-swiper .swiper-pagination {
+    bottom: 5px;
+  }
 
   .hero-feature-icon {
-    font-size:
-      17px;
+    font-size: 16px;
   }
-
 
   .hero-feature strong {
-    font-size:
-      9px !important;
+    font-size: 8px !important;
   }
-
 
   .hero-feature small {
-    display:
-      none;
+    display: none;
   }
-
 }
 
+/* ============================================================
+   VERY SMALL MOBILE
+============================================================ */
+
+@media (max-width: 360px) {
+
+  .hero-swiper,
+  .hero-slide {
+    height: 205px;
+  }
+
+  .hero-content {
+    padding: 9px 10px;
+  }
+
+  .hero-text {
+    max-width: 76%;
+  }
+
+  .hero-tag {
+    font-size: 7px;
+    padding: 3px 7px;
+  }
+
+  .hero-text h1,
+  .hero-title {
+    font-size: 17px !important;
+  }
+
+  .hero-text p,
+  .hero-description {
+    font-size: 9px !important;
+    margin-bottom: 5px;
+  }
+
+  .hero-text button,
+  .hero-button {
+    min-width: 88px;
+    padding: 6px 9px;
+    font-size: 9px;
+  }
+
+  .hero-feature-icon {
+    font-size: 14px;
+  }
+
+  .hero-feature strong {
+    font-size: 7px !important;
+  }
+
+  .hero-swiper .swiper-button-next,
+  .hero-swiper .swiper-button-prev {
+    width: 22px;
+    height: 22px;
+  }
+
+  .hero-swiper .swiper-button-next::after,
+  .hero-swiper .swiper-button-prev::after {
+    font-size: 8px;
+  }
+}
+
+/* ============================================================
+   LANDSCAPE MOBILE
+============================================================ */
+
+@media (max-width: 768px) and (orientation: landscape) {
+
+  .hero-swiper,
+  .hero-slide {
+    height: 260px;
+  }
+
+  .hero-content {
+    padding: 12px 25px;
+  }
+
+  .hero-text {
+    max-width: 65%;
+  }
+
+  .hero-side-badge {
+    display: flex;
+  }
+
+  .hero-features {
+    min-height: 58px;
+  }
+}
 
 /* ============================================================
    ACCESSIBILITY
@@ -1168,21 +959,11 @@
 
 .hero-text button:focus-visible,
 .hero-button:focus-visible,
-.hero-swiper
-  .swiper-button-next:focus-visible,
-.hero-swiper
-  .swiper-button-prev:focus-visible {
-  outline:
-    3px solid
-    var(
-      --accent,
-      #D4AF37
-    );
-
-  outline-offset:
-    3px;
+.hero-swiper .swiper-button-next:focus-visible,
+.hero-swiper .swiper-button-prev:focus-visible {
+  outline: 3px solid var(--accent, #D4AF37);
+  outline-offset: 3px;
 }
-
 
 /* ============================================================
    REDUCED MOTION
@@ -1191,14 +972,14 @@
 @media (prefers-reduced-motion: reduce) {
 
   .hero-offer-track {
-    animation:
-      none;
+    animation: none;
   }
 
   .hero-text button,
-  .hero-button {
-    transition:
-      none;
+  .hero-button,
+  .hero-swiper .swiper-button-next,
+  .hero-swiper .swiper-button-prev {
+    transition: none;
   }
-
 }
+
