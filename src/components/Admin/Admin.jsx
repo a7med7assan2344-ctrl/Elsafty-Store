@@ -1481,7 +1481,8 @@ useEffect(() => {
     try {
 
       const user = auth.currentUser;
-
+console.log("AUTH USER UID:", user?.uid);
+console.log("AUTH USER EMAIL:", user?.email);
       if (!user) {
 
         setCurrentAdmin(null);
@@ -1503,7 +1504,17 @@ useEffect(() => {
 
       const adminSnapshot =
         await getDoc(adminRef);
+console.log(
+  "ADMIN DOC EXISTS:",
+  adminSnapshot.exists()
+);
 
+console.log(
+  "ADMIN DOC DATA:",
+  adminSnapshot.exists()
+    ? adminSnapshot.data()
+    : null
+);
 
       // =====================================================
       // لو الأدمن موجود
@@ -1642,213 +1653,376 @@ useEffect(() => {
 
 }, []);
   // ==========================================================
-  // REALTIME FIRESTORE
-  // ==========================================================
+// REALTIME FIRESTORE
+// ==========================================================
 
-  useEffect(() => {
+useEffect(() => {
 
-    const unsubscribers = [];
+  // ========================================================
+  // نستنى لحد ما نعرف حالة الأدمن
+  // ========================================================
+
+  if (adminAccessLoading) {
+    return;
+  }
+
+  // ========================================================
+  // لو مفيش أدمن فعال، ممنوع نشغل listeners المحمية
+  // ========================================================
+
+  if (!currentAdmin) {
+
+    console.warn(
+      "Realtime Firestore skipped: no active admin."
+    );
+
+    return;
+  }
 
 
-    const watchCollection = (
-      collectionName,
-      setter,
-      sorter = null
-    ) => {
+  const unsubscribers = [];
 
-      const unsubscribe = onSnapshot(
-        collection(db, collectionName),
-        (snapshot) => {
 
-          let data =
-            snapshot.docs.map(
-              (item) => ({
-                id: item.id,
-                ...item.data(),
-              })
-            );
+  // ========================================================
+  // WATCH COLLECTION
+  // ========================================================
 
-          if (sorter) {
-            data.sort(sorter);
-          }
+  const watchCollection = (
+    collectionName,
+    setter,
+    sorter = null
+  ) => {
 
-          setter(data);
-        },
-        (error) => {
+    const unsubscribe = onSnapshot(
 
-          console.error(
-            `${collectionName} error:`,
-            error
+      collection(
+        db,
+        collectionName
+      ),
+
+      (snapshot) => {
+
+        let data =
+          snapshot.docs.map(
+            (item) => ({
+              id: item.id,
+              ...item.data(),
+            })
           );
 
-          setter([]);
-        }
-      );
 
-      unsubscribers.push(
-        unsubscribe
-      );
-    };
+        if (sorter) {
 
-
-    watchCollection(
-      "products",
-      setProducts
-    );
-
-    watchCollection(
-      "categories",
-      setCategories
-    );
-
-    watchCollection(
-      "orders",
-      setOrders,
-      (a, b) =>
-        (
-          toDate(
-            b.createdAt
-          )?.getTime() || 0
-        ) -
-        (
-          toDate(
-            a.createdAt
-          )?.getTime() || 0
-        )
-    );
-
-    watchCollection(
-      "users",
-      setUsers
-    );
-
-    watchCollection(
-      "banners",
-      setBanners
-    );
-
-    watchCollection(
-      "coupons",
-      setCoupons
-    );
-
-    watchCollection(
-      "announcements",
-      setAnnouncements
-    );
-watchCollection(
-  "announcementBars",
-  setAnnouncementBars
-);
-    watchCollection(
-      "notifications",
-      setNotifications,
-      (a, b) =>
-        (
-          toDate(
-            b.createdAt
-          )?.getTime() || 0
-        ) -
-        (
-          toDate(
-            a.createdAt
-          )?.getTime() || 0
-        )
-    );
-
-    watchCollection(
-      "supportMessages",
-      setSupportMessages
-    );
-
-    watchCollection(
-      "favorites",
-      setFavorites
-    );
-
-    watchCollection(
-      "blockedUsers",
-      setBlockedUsers
-    );
-
-    watchCollection(
-      "shippingZones",
-      setShippingZones
-    );
-
-    watchCollection(
-      "paymentMethods",
-      setPaymentMethods
-    );
-
-    watchCollection(
-      "admins",
-      setAdmins
-    );
-
-    watchCollection(
-      "activityLogs",
-      setActivityLogs,
-      (a, b) =>
-        (
-          toDate(
-            b.createdAt
-          )?.getTime() || 0
-        ) -
-        (
-          toDate(
-            a.createdAt
-          )?.getTime() || 0
-        )
-    );
-
-
-    const unsubscribeSettings =
-      onSnapshot(
-        doc(
-          db,
-          "settings",
-          "store"
-        ),
-        (snapshot) => {
-
-          if (
-            snapshot.exists()
-          ) {
-
-            setStoreSettings(
-              (previous) => ({
-                ...previous,
-                ...snapshot.data(),
-              })
-            );
-          }
-        },
-        (error) => {
-
-          console.error(
-            "Store settings error:",
-            error
+          data.sort(
+            sorter
           );
+
         }
-      );
+
+
+        setter(data);
+
+      },
+
+      (error) => {
+
+        console.error(
+          `${collectionName} error:`,
+          error
+        );
+
+        setter([]);
+
+      }
+
+    );
 
 
     unsubscribers.push(
-      unsubscribeSettings
+      unsubscribe
+    );
+
+  };
+
+
+  // ========================================================
+  // PRODUCTS
+  // ========================================================
+
+  watchCollection(
+    "products",
+    setProducts
+  );
+
+
+  // ========================================================
+  // CATEGORIES
+  // ========================================================
+
+  watchCollection(
+    "categories",
+    setCategories
+  );
+
+
+  // ========================================================
+  // ORDERS
+  // ========================================================
+
+  watchCollection(
+    "orders",
+    setOrders,
+
+    (a, b) =>
+      (
+        toDate(
+          b.createdAt
+        )?.getTime() || 0
+      ) -
+      (
+        toDate(
+          a.createdAt
+        )?.getTime() || 0
+      )
+
+  );
+
+
+  // ========================================================
+  // USERS
+  // ========================================================
+
+  watchCollection(
+    "users",
+    setUsers
+  );
+
+
+  // ========================================================
+  // BANNERS
+  // ========================================================
+
+  watchCollection(
+    "banners",
+    setBanners
+  );
+
+
+  // ========================================================
+  // COUPONS
+  // ========================================================
+
+  watchCollection(
+    "coupons",
+    setCoupons
+  );
+
+
+  // ========================================================
+  // ANNOUNCEMENTS
+  // ========================================================
+
+  watchCollection(
+    "announcements",
+    setAnnouncements
+  );
+
+
+  // ========================================================
+  // ANNOUNCEMENT BARS
+  // ========================================================
+
+  watchCollection(
+    "announcementBars",
+    setAnnouncementBars
+  );
+
+
+  // ========================================================
+  // NOTIFICATIONS
+  // ========================================================
+
+  watchCollection(
+    "notifications",
+    setNotifications,
+
+    (a, b) =>
+      (
+        toDate(
+          b.createdAt
+        )?.getTime() || 0
+      ) -
+      (
+        toDate(
+          a.createdAt
+        )?.getTime() || 0
+      )
+
+  );
+
+
+  // ========================================================
+  // SUPPORT MESSAGES
+  // ========================================================
+
+  watchCollection(
+    "supportMessages",
+    setSupportMessages
+  );
+
+
+  // ========================================================
+  // FAVORITES
+  // ========================================================
+
+  watchCollection(
+    "favorites",
+    setFavorites
+  );
+
+
+  // ========================================================
+  // BLOCKED USERS
+  // ========================================================
+
+  watchCollection(
+    "blockedUsers",
+    setBlockedUsers
+  );
+
+
+  // ========================================================
+  // SHIPPING ZONES
+  // ========================================================
+
+  watchCollection(
+    "shippingZones",
+    setShippingZones
+  );
+
+
+  // ========================================================
+  // PAYMENT METHODS
+  // ========================================================
+
+  watchCollection(
+    "paymentMethods",
+    setPaymentMethods
+  );
+
+
+  // ========================================================
+  // ADMINS
+  // ========================================================
+
+  watchCollection(
+    "admins",
+    setAdmins
+  );
+
+
+  // ========================================================
+  // ACTIVITY LOGS
+  // ========================================================
+
+  watchCollection(
+    "activityLogs",
+    setActivityLogs,
+
+    (a, b) =>
+      (
+        toDate(
+          b.createdAt
+        )?.getTime() || 0
+      ) -
+      (
+        toDate(
+          a.createdAt
+        )?.getTime() || 0
+      )
+
+  );
+
+
+  // ========================================================
+  // STORE SETTINGS
+  // ========================================================
+
+  const unsubscribeSettings =
+    onSnapshot(
+
+      doc(
+        db,
+        "settings",
+        "store"
+      ),
+
+      (snapshot) => {
+
+        if (
+          snapshot.exists()
+        ) {
+
+          setStoreSettings(
+            (previous) => ({
+              ...previous,
+              ...snapshot.data(),
+            })
+          );
+
+        }
+
+      },
+
+      (error) => {
+
+        console.error(
+          "Store settings error:",
+          error
+        );
+
+      }
+
     );
 
 
-    return () => {
-      unsubscribers.forEach(
-        (unsubscribe) =>
-          unsubscribe()
-      );
-    };
-
-  }, []);
+  unsubscribers.push(
+    unsubscribeSettings
+  );
 
 
+  // ========================================================
+  // CLEANUP
+  // ========================================================
+
+  return () => {
+
+    unsubscribers.forEach(
+      (unsubscribe) => {
+
+        try {
+
+          unsubscribe();
+
+        } catch (error) {
+
+          console.error(
+            "Firestore unsubscribe error:",
+            error
+          );
+
+        }
+
+      }
+    );
+
+  };
+
+
+}, [
+  adminAccessLoading,
+  currentAdmin,
+]);
   // ==========================================================
   // CATEGORY MAP
   // ==========================================================
@@ -2382,142 +2556,236 @@ watchCollection(
     };
 
 
-  const handleProductChange =
-    (event) => {
+const handleProductChange =
+  (event) => {
 
-      const {
-        name,
-        value,
-        type,
-        checked,
-      } = event.target;
+    const {
+      name,
+      value,
+      type,
+      checked,
+    } = event.target;
 
-      setProductForm(
-        (previous) => ({
-          ...previous,
-          [name]:
-            type === "checkbox"
-              ? checked
-              : value,
-        })
+    setProductForm(
+      (previous) => ({
+        ...previous,
+        [name]:
+          type === "checkbox"
+            ? checked
+            : value,
+      })
+    );
+  };
+
+
+const handleProductImageChange =
+  (event) => {
+
+    const file =
+      event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    // السماح فقط بـ JPG / JPEG
+    if (
+      file.type !== "image/jpeg"
+    ) {
+
+      alert(
+        "من فضلك اختر صورة بصيغة JPG أو JPEG فقط."
       );
-    };
+
+      event.target.value = "";
+
+      return;
+    }
+
+    setProductForm(
+      (previous) => ({
+        ...previous,
+        imageFile: file,
+        imagePreview:
+          URL.createObjectURL(file),
+      })
+    );
+  };
+
+const handleProductSubmit =
+  async (event) => {
+
+    event.preventDefault();
+
+    setActionLoading(true);
+
+    try {
+
+      let imageUrl =
+        productForm.image || "";
 
 
-  const handleProductSubmit =
-    async (event) => {
+      // ==============================================
+      // رفع الصورة الجديدة إلى Cloudinary
+      // ==============================================
 
-      event.preventDefault();
+      if (productForm.imageFile) {
 
-      setActionLoading(true);
+        const formData =
+          new FormData();
 
-      try {
+        formData.append(
+          "file",
+          productForm.imageFile
+        );
 
-        const productData = {
-          title:
-            productForm.title.trim(),
-
-          price:
-            Number(
-              productForm.price || 0
-            ),
-
-          oldPrice:
-            Number(
-              productForm.oldPrice || 0
-            ),
-
-          image:
-            productForm.image.trim(),
-
-          description:
-            productForm.description.trim(),
-
-          categoryId:
-            productForm.categoryId,
-
-          stock:
-            Number(
-              productForm.stock || 0
-            ),
-
-          offer:
-            Boolean(
-              productForm.offer
-            ),
-
-          bestSeller:
-            Boolean(
-              productForm.bestSeller
-            ),
-
-          newArrival:
-            Boolean(
-              productForm.newArrival
-            ),
-
-          recommended:
-            Boolean(
-              productForm.recommended
-            ),
-
-          active:
-            Boolean(
-              productForm.active
-            ),
-
-          updatedAt:
-            serverTimestamp(),
-        };
+        formData.append(
+          "upload_preset",
+          "elsafty_store"
+        );
 
 
-        if (editingProduct) {
-
-          await updateDoc(
-            doc(
-              db,
-              "products",
-              editingProduct.id
-            ),
-            productData
-          );
-
-        } else {
-
-          await setDoc(
-            doc(
-              collection(
-                db,
-                "products"
-              )
-            ),
+        const cloudinaryResponse =
+          await fetch(
+            "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
             {
-              ...productData,
-              createdAt:
-                serverTimestamp(),
+              method: "POST",
+              body: formData,
             }
           );
+
+
+        if (
+          !cloudinaryResponse.ok
+        ) {
+
+          throw new Error(
+            "فشل رفع الصورة إلى Cloudinary"
+          );
+
         }
 
-        resetProductForm();
 
-      } catch (error) {
+        const cloudinaryData =
+          await cloudinaryResponse.json();
 
-        console.error(
-          "Product save error:",
-          error
-        );
 
-        alert(
-          "حدث خطأ أثناء حفظ المنتج."
-        );
+        imageUrl =
+          cloudinaryData.secure_url;
 
-      } finally {
-
-        setActionLoading(false);
       }
-    };
 
+
+      const productData = {
+
+        title:
+          productForm.title.trim(),
+
+        price:
+          Number(
+            productForm.price || 0
+          ),
+
+        oldPrice:
+          Number(
+            productForm.oldPrice || 0
+          ),
+
+        image:
+          imageUrl,
+
+        description:
+          productForm.description.trim(),
+
+        categoryId:
+          productForm.categoryId,
+
+        stock:
+          Number(
+            productForm.stock || 0
+          ),
+
+        offer:
+          Boolean(
+            productForm.offer
+          ),
+
+        bestSeller:
+          Boolean(
+            productForm.bestSeller
+          ),
+
+        newArrival:
+          Boolean(
+            productForm.newArrival
+          ),
+
+        recommended:
+          Boolean(
+            productForm.recommended
+          ),
+
+        active:
+          Boolean(
+            productForm.active
+          ),
+
+        updatedAt:
+          serverTimestamp(),
+      };
+
+
+      if (editingProduct) {
+
+        await updateDoc(
+          doc(
+            db,
+            "products",
+            editingProduct.id
+          ),
+          productData
+        );
+
+      } else {
+
+        await setDoc(
+          doc(
+            collection(
+              db,
+              "products"
+            )
+          ),
+          {
+            ...productData,
+
+            createdAt:
+              serverTimestamp(),
+          }
+        );
+
+      }
+
+
+      resetProductForm();
+
+    } catch (error) {
+
+      console.error(
+        "Product save error:",
+        error
+      );
+
+      alert(
+        "حدث خطأ أثناء حفظ المنتج."
+      );
+
+    } finally {
+
+      setActionLoading(false);
+
+    }
+
+  };
 
   const handleAddProduct =
     () => {
@@ -6555,16 +6823,24 @@ const saveStoreSettings =
                     </span>
 
                     <input
-                      name="image"
-                      value={
-                        productForm.image
-                      }
-                      onChange={
-                        handleProductChange
-                      }
-                      placeholder="رابط صورة المنتج"
-                      dir="ltr"
-                    />
+  type="file"
+  accept=".jpg,.jpeg,image/jpeg"
+  onChange={handleProductImageChange}
+/>
+{productForm.imagePreview && (
+  <img
+    src={productForm.imagePreview}
+    alt="معاينة المنتج"
+    style={{
+      width: "120px",
+      height: "120px",
+      objectFit: "cover",
+      marginTop: "10px",
+      borderRadius: "10px",
+      border: "1px solid #ddd",
+    }}
+  />
+)}
 
                   </label>
 

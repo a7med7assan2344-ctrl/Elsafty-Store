@@ -302,7 +302,8 @@ const DAILY_WHEEL_ATTEMPTS =
         defaultWheelSettings.attemptsPerUser ??
         1
     )
-  );  const SPIN_DURATION = 5;
+  );
+    const SPIN_DURATION = 5;
 
   // ===================================================
   // CURRENT USER

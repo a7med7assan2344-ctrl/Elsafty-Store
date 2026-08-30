@@ -37,7 +37,6 @@ import "./Navbar.css";
 const defaultStoreSettings = {
   storeName: "Elsafty Store",
 
-  // اللوجو الافتراضي
   logo: "/logo/logo.png",
 
   theme: {
@@ -71,34 +70,22 @@ const defaultStoreSettings = {
 };
 
 // =====================================================
-// DEFAULT ANNOUNCEMENT BAR SETTINGS
+// DEFAULT ANNOUNCEMENT BAR
 // =====================================================
 
 const defaultAnnouncementBar = {
   enabled: true,
-
   type: "offer",
-
   text: "",
-
   icon: "📢",
-
   svg: "",
-
   height: 36,
-
   background: "#f68b1e",
-
   textColor: "#ffffff",
-
   fontSize: 13,
-
   fontFamily: "Cairo",
-
   speed: 40,
-
   direction: "rtl",
-
   sortOrder: 999999,
 };
 
@@ -132,9 +119,6 @@ function Navbar({
   const [menuOpen, setMenuOpen] =
     useState(false);
 
-  const [helpOpen, setHelpOpen] =
-    useState(false);
-
   const [logoZoom, setLogoZoom] =
     useState(false);
 
@@ -159,10 +143,6 @@ function Navbar({
   const [storeSettings, setStoreSettings] =
     useState(defaultStoreSettings);
 
-  // =====================================================
-  // ANNOUNCEMENT BARS
-  // =====================================================
-
   const [announcementBars, setAnnouncementBars] =
     useState([]);
 
@@ -182,19 +162,23 @@ function Navbar({
 
   const navbarRootRef = useRef(null);
 
-  const announcementAreaRef = useRef(null);
+  const announcementAreaRef =
+    useRef(null);
 
-  const storeHeaderRef = useRef(null);
+  const storeHeaderRef =
+    useRef(null);
 
-  const categoryMenuRef = useRef(null);
+  const categoryMenuRef =
+    useRef(null);
 
-  const menuRef = useRef(null);
+  const menuRef =
+    useRef(null);
 
-  const helpRef = useRef(null);
+  const searchRef =
+    useRef(null);
 
-  const searchRef = useRef(null);
-
-  const categoryBarRef = useRef(null);
+  const categoryBarRef =
+    useRef(null);
 
   // =====================================================
   // THEME
@@ -206,9 +190,6 @@ function Navbar({
 
   // =====================================================
   // CURRENT LOGO
-  //
-  // لو فيه لوجو محفوظ في Firestore يستخدمه.
-  // لو مفيش يرجع للوجو الافتراضي.
   // =====================================================
 
   const currentLogo =
@@ -220,7 +201,7 @@ function Navbar({
     "/logo/logo.png";
 
   // =====================================================
-  // MEASURE NAVBAR HEIGHT
+  // MEASURE NAVBAR
   // =====================================================
 
   useEffect(() => {
@@ -351,6 +332,7 @@ function Navbar({
     mobileMenuOpen,
     openCategory,
     openSubCategories,
+    searchTerm,
   ]);
 
   // =====================================================
@@ -379,7 +361,6 @@ function Navbar({
 
           ...data,
 
-          // حماية اللوجو لو القيمة غير موجودة
           logo:
             data.logo ||
             previous.logo ||
@@ -387,7 +368,6 @@ function Navbar({
 
           theme: {
             ...previous.theme,
-
             ...(data.theme || {}),
           },
         }));
@@ -424,11 +404,8 @@ function Navbar({
 
               return {
                 ...defaultAnnouncementBar,
-
                 ...data,
-
                 id: barDoc.id,
-
                 ...(data.settings || {}),
 
                 svg:
@@ -437,12 +414,10 @@ function Navbar({
                   "",
               };
             })
-
             .filter(
               (bar) =>
                 bar?.enabled === true
             )
-
             .filter((bar) => {
               const text =
                 bar?.text ||
@@ -455,7 +430,6 @@ function Navbar({
                 String(text).trim() !== ""
               );
             })
-
             .sort((a, b) => {
               const sortA =
                 Number(
@@ -510,7 +484,6 @@ function Navbar({
 
           if (!currentUser) {
             setAccountName("");
-
             return;
           }
 
@@ -660,36 +633,6 @@ function Navbar({
   }, []);
 
   // =====================================================
-  // CLOSE HELP OUTSIDE
-  // =====================================================
-
-  useEffect(() => {
-    const handleOutsideHelp =
-      (event) => {
-        if (
-          helpRef.current &&
-          !helpRef.current.contains(
-            event.target
-          )
-        ) {
-          setHelpOpen(false);
-        }
-      };
-
-    document.addEventListener(
-      "mousedown",
-      handleOutsideHelp
-    );
-
-    return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleOutsideHelp
-      );
-    };
-  }, []);
-
-  // =====================================================
   // CLOSE CATEGORY OUTSIDE
   // =====================================================
 
@@ -703,9 +646,7 @@ function Navbar({
           )
         ) {
           setOpenCategory(null);
-
           setMobileCategory(null);
-
           setOpenSubCategories([]);
         }
       };
@@ -735,19 +676,11 @@ function Navbar({
         }
 
         setMenuOpen(false);
-
-        setHelpOpen(false);
-
         setSuggestions([]);
-
         setOpenCategory(null);
-
         setMobileCategory(null);
-
         setOpenSubCategories([]);
-
         setLogoZoom(false);
-
         setMobileMenuOpen(false);
       };
 
@@ -773,7 +706,6 @@ function Navbar({
       await signOut(auth);
 
       setMenuOpen(false);
-
       setAccountName("");
 
       navigate("/");
@@ -799,13 +731,11 @@ function Navbar({
 
     if (!element) {
       navigate("/");
-
       return;
     }
 
     element.scrollIntoView({
       behavior: "smooth",
-
       block: "start",
     });
   };
@@ -826,7 +756,6 @@ function Navbar({
 
     bar.scrollBy({
       left: direction,
-
       behavior: "smooth",
     });
   };
@@ -847,7 +776,6 @@ function Navbar({
 
       if (!trimmedValue) {
         setSuggestions([]);
-
         return;
       }
 
@@ -891,7 +819,6 @@ function Navbar({
     );
 
     setSuggestions([]);
-
     setMobileMenuOpen(false);
   };
 
@@ -906,7 +833,6 @@ function Navbar({
         product?._id;
 
       setSearchTerm("");
-
       setSuggestions([]);
 
       if (id) {
@@ -1060,7 +986,6 @@ function Navbar({
 
       if (!children.length) {
         selectCategory(category);
-
         return;
       }
 
@@ -1122,11 +1047,8 @@ function Navbar({
     );
 
     setOpenCategory(null);
-
     setMobileCategory(null);
-
     setOpenSubCategories([]);
-
     setMobileMenuOpen(false);
 
     setTimeout(() => {
@@ -1153,7 +1075,6 @@ function Navbar({
 
       if (!children.length) {
         selectCategory(category);
-
         return;
       }
 
@@ -1168,12 +1089,10 @@ function Navbar({
           openCategory === id
         ) {
           selectCategory(category);
-
           return;
         }
 
         setMobileCategory(id);
-
         setOpenCategory(id);
 
         setOpenSubCategories([
@@ -1185,7 +1104,6 @@ function Navbar({
 
       if (openCategory === id) {
         selectCategory(category);
-
         return;
       }
 
@@ -1221,7 +1139,6 @@ function Navbar({
         ]);
       } else {
         setOpenCategory(null);
-
         setOpenSubCategories([]);
       }
     };
@@ -1250,7 +1167,6 @@ function Navbar({
       }
 
       setOpenCategory(null);
-
       setOpenSubCategories([]);
     };
 
@@ -1394,15 +1310,10 @@ function Navbar({
           }`}
           style={{
             position: "fixed",
-
             top: `${megaMenuTop}px`,
-
             left: 0,
-
             right: 0,
-
             width: "100%",
-
             zIndex: 9990,
           }}
           onMouseEnter={() => {
@@ -1665,7 +1576,7 @@ function Navbar({
     };
 
   // =====================================================
-  // ANNOUNCEMENT TEXT
+  // ANNOUNCEMENT HELPERS
   // =====================================================
 
   const getAnnouncementText =
@@ -1679,10 +1590,6 @@ function Navbar({
       );
     };
 
-  // =====================================================
-  // ANNOUNCEMENT SVG
-  // =====================================================
-
   const getBarSvg = (bar) => {
     return (
       bar?.svg ||
@@ -1690,10 +1597,6 @@ function Navbar({
       ""
     );
   };
-
-  // =====================================================
-  // TYPE ICON
-  // =====================================================
 
   const getBarIcon = (bar) => {
     if (bar?.icon) {
@@ -1723,10 +1626,6 @@ function Navbar({
         return "📢";
     }
   };
-
-  // =====================================================
-  // ACTIVE ANNOUNCEMENT BARS
-  // =====================================================
 
   const activeBars =
     announcementBars;
@@ -1777,9 +1676,7 @@ function Navbar({
 
   return (
     <>
-      {/* =================================================
-          DYNAMIC SPACER
-      ================================================= */}
+      {/* DYNAMIC SPACER */}
 
       <div
         className="navbar-dynamic-spacer"
@@ -1791,9 +1688,7 @@ function Navbar({
         }}
       />
 
-      {/* =================================================
-          FIXED NAVBAR
-      ================================================= */}
+      {/* FIXED NAVBAR */}
 
       <div
         ref={navbarRootRef}
@@ -1802,21 +1697,16 @@ function Navbar({
           ...navbarStyle,
 
           position: "fixed",
-
           top: 0,
-
           left: 0,
-
           right: 0,
-
           width: "100%",
-
           zIndex: 10000,
         }}
       >
 
         {/* =================================================
-            INDEPENDENT ANNOUNCEMENT BARS
+            ANNOUNCEMENT BARS
         ================================================= */}
 
         <div
@@ -1916,31 +1806,17 @@ function Navbar({
                   }`}
                   style={{
                     height: `${height}px`,
-
                     minHeight: `${height}px`,
-
                     background,
-
                     color: textColor,
-
                     direction,
-
                     fontSize: `${fontSize}px`,
-
                     fontFamily,
-
                     overflow: "hidden",
-
                     width: "100%",
-
                     display: "flex",
-
-                    alignItems:
-                      "center",
-
-                    position:
-                      "relative",
-
+                    alignItems: "center",
+                    position: "relative",
                     flexShrink: 0,
                   }}
                 >
@@ -1956,131 +1832,65 @@ function Navbar({
                     }`}
                     style={{
                       direction,
-
                       color: textColor,
-
                       fontFamily,
-
                       fontSize: `${fontSize}px`,
-
                       width:
                         "max-content",
-
                       display: "flex",
-
                       alignItems:
                         "center",
-
                       justifyContent:
                         "flex-start",
-
                       gap: "80px",
-
                       whiteSpace:
                         "nowrap",
-
                       animationDuration: `${speed}s`,
-
                       animationDirection:
                         direction ===
                         "ltr"
                           ? "reverse"
                           : "normal",
-
                       animationPlayState:
                         "running",
-
                       padding:
                         "0 40px",
                     }}
                   >
+                    {[
+                      1,
+                      2,
+                      3,
+                      4,
+                    ].map(
+                      (
+                        item,
+                        itemIndex
+                      ) => (
+                        <span
+                          key={itemIndex}
+                          className="announcement-item"
+                          aria-hidden={
+                            itemIndex !==
+                            0
+                          }
+                          style={{
+                            display:
+                              "inline-flex",
+                            alignItems:
+                              "center",
+                            gap: "8px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {renderBarIcon()}
 
-                    <span
-                      className="announcement-item"
-                      style={{
-                        display:
-                          "inline-flex",
-
-                        alignItems:
-                          "center",
-
-                        gap: "8px",
-
-                        flexShrink: 0,
-                      }}
-                    >
-                      {renderBarIcon()}
-
-                      <span>
-                        {text}
-                      </span>
-                    </span>
-
-                    <span
-                      className="announcement-item"
-                      aria-hidden="true"
-                      style={{
-                        display:
-                          "inline-flex",
-
-                        alignItems:
-                          "center",
-
-                        gap: "8px",
-
-                        flexShrink: 0,
-                      }}
-                    >
-                      {renderBarIcon()}
-
-                      <span>
-                        {text}
-                      </span>
-                    </span>
-
-                    <span
-                      className="announcement-item"
-                      aria-hidden="true"
-                      style={{
-                        display:
-                          "inline-flex",
-
-                        alignItems:
-                          "center",
-
-                        gap: "8px",
-
-                        flexShrink: 0,
-                      }}
-                    >
-                      {renderBarIcon()}
-
-                      <span>
-                        {text}
-                      </span>
-                    </span>
-
-                    <span
-                      className="announcement-item"
-                      aria-hidden="true"
-                      style={{
-                        display:
-                          "inline-flex",
-
-                        alignItems:
-                          "center",
-
-                        gap: "8px",
-
-                        flexShrink: 0,
-                      }}
-                    >
-                      {renderBarIcon()}
-
-                      <span>
-                        {text}
-                      </span>
-                    </span>
+                          <span>
+                            {text}
+                          </span>
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
               );
@@ -2125,9 +1935,7 @@ function Navbar({
             ☰
           </button>
 
-          {/* =================================================
-              LOGO
-          ================================================= */}
+          {/* LOGO */}
 
           <div className="nav-logo">
             <img
@@ -2137,8 +1945,6 @@ function Navbar({
                 "Elsafty Store"
               }
               onError={(event) => {
-                // لو اللوجو المحفوظ مش متاح
-                // استخدم اللوجو الافتراضي
                 if (
                   event.currentTarget.src.endsWith(
                     "/logo/logo.png"
@@ -2152,128 +1958,9 @@ function Navbar({
               }}
               onClick={(event) => {
                 event.stopPropagation();
-
                 setLogoZoom(true);
               }}
             />
-          </div>
-
-          {/* SEARCH */}
-
-          <div
-            className="search-box"
-            ref={searchRef}
-          >
-            <input
-              type="text"
-              placeholder="البحث عن منتجات، والعلامات التجارية والأقسام"
-              value={
-                searchTerm || ""
-              }
-              onChange={
-                handleSearchChange
-              }
-              onKeyDown={(event) => {
-                if (
-                  event.key ===
-                  "Enter"
-                ) {
-                  event.preventDefault();
-
-                  handleSearch();
-                }
-
-                if (
-                  event.key ===
-                  "Escape"
-                ) {
-                  setSuggestions([]);
-                }
-              }}
-            />
-
-            <button
-              type="button"
-              className="search-button"
-              aria-label="البحث"
-              onClick={
-                handleSearch
-              }
-            >
-              🔍
-            </button>
-
-            {/* SEARCH SUGGESTIONS */}
-
-            {suggestions.length >
-              0 && (
-              <div className="search-suggestions">
-                {suggestions.map(
-                  (
-                    item,
-                    index
-                  ) => {
-                    const id =
-                      item?.id ||
-                      item?._id ||
-                      `suggestion-${index}`;
-
-                    const title =
-                      item?.title ||
-                      item?.name ||
-                      item?.productName ||
-                      "منتج";
-
-                    const image =
-                      item?.image ||
-                      item?.images?.[0];
-
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        className="suggestion-item"
-                        onClick={() =>
-                          handleSuggestionClick(
-                            item
-                          )
-                        }
-                      >
-                        {image ? (
-                          <img
-                            src={image}
-                            alt={title}
-                            className="suggestion-image"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="suggestion-image-placeholder">
-                            📦
-                          </span>
-                        )}
-
-                        <span>
-                          {title}
-                        </span>
-                      </button>
-                    );
-                  }
-                )}
-              </div>
-            )}
-
-            {/* NO RESULT */}
-
-            {searchTerm?.trim() &&
-              suggestions.length ===
-                0 && (
-                <div className="search-suggestions">
-                  <div className="search-no-result">
-                    لا توجد منتجات مطابقة
-                    للبحث
-                  </div>
-                </div>
-              )}
           </div>
 
           {/* =================================================
@@ -2452,91 +2139,6 @@ function Navbar({
               )}
             </div>
 
-            {/* HELP */}
-
-            <div
-              className="help-menu"
-              ref={helpRef}
-            >
-              <button
-                type="button"
-                className="nav-action-button"
-                aria-label="المساعدة"
-                aria-expanded={
-                  helpOpen
-                }
-                onClick={() =>
-                  setHelpOpen(
-                    (previous) =>
-                      !previous
-                  )
-                }
-              >
-                <span className="action-icon">
-                  ❓
-                </span>
-
-                <span className="action-content">
-                  <small>
-                    محتاج مساعدة؟
-                  </small>
-
-                  <strong>
-                    المساعدة
-                  </strong>
-                </span>
-
-                <span className="action-arrow">
-                  ▾
-                </span>
-              </button>
-
-              {helpOpen && (
-                <div className="help-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHelpOpen(
-                        false
-                      );
-
-                      navigate(
-                        "/contact"
-                      );
-                    }}
-                  >
-                    💬 تواصل معنا
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHelpOpen(
-                        false
-                      );
-
-                      navigate(
-                        "/orders"
-                      );
-                    }}
-                  >
-                    📦 متابعة طلباتي
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setHelpOpen(
-                        false
-                      )
-                    }
-                  >
-                    ℹ️ مركز المساعدة
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* WISHLIST */}
 
             <button
@@ -2622,6 +2224,126 @@ function Navbar({
               </span>
             </button>
           </div>
+
+          {/* =================================================
+              SEARCH
+              تحت اللوجو والأيقونات
+          ================================================= */}
+
+          <div
+            className="search-box"
+            ref={searchRef}
+          >
+            <input
+              type="text"
+              placeholder="البحث عن منتجات، والعلامات التجارية والأقسام"
+              value={
+                searchTerm || ""
+              }
+              onChange={
+                handleSearchChange
+              }
+              onKeyDown={(event) => {
+                if (
+                  event.key ===
+                  "Enter"
+                ) {
+                  event.preventDefault();
+                  handleSearch();
+                }
+
+                if (
+                  event.key ===
+                  "Escape"
+                ) {
+                  setSuggestions([]);
+                }
+              }}
+            />
+
+            <button
+              type="button"
+              className="search-button"
+              aria-label="البحث"
+              onClick={
+                handleSearch
+              }
+            >
+              🔍
+            </button>
+
+            {/* SEARCH SUGGESTIONS */}
+
+            {suggestions.length >
+              0 && (
+              <div className="search-suggestions">
+                {suggestions.map(
+                  (
+                    item,
+                    index
+                  ) => {
+                    const id =
+                      item?.id ||
+                      item?._id ||
+                      `suggestion-${index}`;
+
+                    const title =
+                      item?.title ||
+                      item?.name ||
+                      item?.productName ||
+                      "منتج";
+
+                    const image =
+                      item?.image ||
+                      item?.images?.[0];
+
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        className="suggestion-item"
+                        onClick={() =>
+                          handleSuggestionClick(
+                            item
+                          )
+                        }
+                      >
+                        {image ? (
+                          <img
+                            src={image}
+                            alt={title}
+                            className="suggestion-image"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="suggestion-image-placeholder">
+                            📦
+                          </span>
+                        )}
+
+                        <span>
+                          {title}
+                        </span>
+                      </button>
+                    );
+                  }
+                )}
+              </div>
+            )}
+
+            {/* NO RESULT */}
+
+            {searchTerm?.trim() &&
+              suggestions.length ===
+                0 && (
+                <div className="search-suggestions">
+                  <div className="search-no-result">
+                    لا توجد منتجات مطابقة
+                    للبحث
+                  </div>
+                </div>
+              )}
+          </div>
         </header>
 
         {/* =================================================
@@ -2679,21 +2401,10 @@ function Navbar({
               type="button"
               className="nav-category-item home-item"
               onClick={() => {
-                setOpenCategory(
-                  null
-                );
-
-                setMobileCategory(
-                  null
-                );
-
-                setOpenSubCategories(
-                  []
-                );
-
-                setMobileMenuOpen(
-                  false
-                );
+                setOpenCategory(null);
+                setMobileCategory(null);
+                setOpenSubCategories([]);
+                setMobileMenuOpen(false);
 
                 navigate("/");
               }}
@@ -2711,21 +2422,10 @@ function Navbar({
               type="button"
               className="nav-category-item"
               onClick={() => {
-                setOpenCategory(
-                  null
-                );
-
-                setMobileCategory(
-                  null
-                );
-
-                setOpenSubCategories(
-                  []
-                );
-
-                setMobileMenuOpen(
-                  false
-                );
+                setOpenCategory(null);
+                setMobileCategory(null);
+                setOpenSubCategories([]);
+                setMobileMenuOpen(false);
 
                 scrollToSection(
                   ".categories"
