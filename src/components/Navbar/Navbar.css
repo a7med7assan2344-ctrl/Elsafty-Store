@@ -1,26 +1,32 @@
 /* =========================================================
-   ELSAFTY STORE - JUMIA STYLE NAVBAR
+   ELSAFTY STORE - JUMIA / AMAZON STYLE NAVBAR
    RTL / DESKTOP + TABLET + MOBILE
-   Orange + White + Gray
+   ORANGE + WHITE + GRAY
+   FIXED / STICKY HEADER
+   MOBILE BANNER GAP FIX
 ========================================================= */
 
 :root {
   --jumia-orange: #f68b1e;
   --jumia-orange-dark: #e57a0b;
-  --jumia-orange-light: #fff3e5;
+  --jumia-orange-light: #fff5ea;
   --jumia-dark: #282828;
   --jumia-text: #313131;
   --jumia-muted: #757575;
   --jumia-white: #ffffff;
   --jumia-bg: #f5f5f5;
   --jumia-border: #e5e5e5;
-  --jumia-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  --jumia-shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.16);
+  --jumia-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --jumia-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.16);
   --nav-font: Cairo, Tahoma, Arial, sans-serif;
+
+  --offer-height: 32px;
+  --main-header-height: 70px;
+  --category-height: 43px;
 }
 
 /* =========================================================
-   GLOBAL
+   GLOBAL BOX SIZING
 ========================================================= */
 
 .top-offer-bar,
@@ -47,7 +53,7 @@ input {
 }
 
 /* =========================================================
-   NAVBAR FULL WIDTH
+   NAVBAR ROOT
 ========================================================= */
 
 .navbar {
@@ -56,12 +62,25 @@ input {
   min-width: 0;
   margin: 0;
   padding: 0;
+
+  position: sticky;
+  position: -webkit-sticky;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  z-index: 100000;
   overflow: visible;
+
   box-sizing: border-box;
+  background: #ffffff;
+
+  isolation: isolate;
 }
 
 .navbar,
-.navbar * ,
+.navbar *,
 .navbar *::before,
 .navbar *::after {
   box-sizing: border-box;
@@ -82,14 +101,13 @@ input {
 
 /* =========================================================
    TOP OFFER BAR
-   مستقل تمامًا عن أي محتوى متحرك أسفل الهيدر
 ========================================================= */
 
 .top-offer-bar {
   width: 100%;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--offer-height);
+  min-height: var(--offer-height);
+  max-height: var(--offer-height);
 
   display: flex;
   align-items: center;
@@ -98,17 +116,11 @@ input {
   background: var(--jumia-orange);
   color: #ffffff;
 
-  /*
-    العزل الكامل للشريط:
-    - لا يسمح بتأثير محتوى خارجي عليه
-    - ينشئ stacking context مستقل
-    - يحصر الـ animation داخله
-  */
   position: relative;
   isolation: isolate;
-  contain: layout paint style;
 
-  overflow: hidden;
+  contain: layout paint style;
+  overflow: hidden !important;
   clip-path: inset(0);
 
   white-space: nowrap;
@@ -119,21 +131,14 @@ input {
 
   direction: ltr;
 
-  /*
-    أعلى من الهيدر والقوائم
-    لكن بدون أن يؤثر على المحتوى نفسه
-  */
-  z-index: 10000;
-
+  z-index: 100001;
   flex-shrink: 0;
 }
 
-/*
-   حاوية الحركة الخاصة بالشريط البرتقالي فقط
-*/
 .top-offer-bar .offer-track,
 .top-offer-bar .offer-text {
-  position: absolute;
+  position: absolute !important;
+
   top: 0;
   left: 0;
 
@@ -146,24 +151,18 @@ input {
 
   gap: 55px;
 
-  /*
-    الحركة هنا تخص الشريط البرتقالي فقط
-  */
   animation-name: offerMove;
   animation-duration: 25s;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 
   will-change: transform;
-
-  /*
-    يمنع الـ transform من التأثير على العناصر الخارجية
-  */
   transform: translate3d(100%, 0, 0);
+
+  transform-origin: center center;
   backface-visibility: hidden;
 
   pointer-events: none;
-
   z-index: 1;
 }
 
@@ -180,13 +179,9 @@ input {
   line-height: 1;
 
   white-space: nowrap;
-
   pointer-events: none;
 }
 
-/*
-   Animation مستقل تمامًا عن أي Slider أسفل الهيدر
-*/
 @keyframes offerMove {
   from {
     transform: translate3d(100%, 0, 0);
@@ -203,7 +198,7 @@ input {
 
 .store-header {
   width: 100%;
-  min-height: 70px;
+  min-height: var(--main-header-height);
 
   display: flex;
   align-items: center;
@@ -211,25 +206,25 @@ input {
   gap: 18px;
   padding: 9px 28px;
 
-  background: var(--jumia-white);
+  background: #ffffff;
   color: var(--jumia-text);
 
   direction: rtl;
 
   position: relative;
-
-  /*
-    Stacking context مستقل عن Offer Bar
-  */
   isolation: isolate;
-  z-index: 9000;
+
+  z-index: 100002;
 
   overflow: visible !important;
 
   border-bottom: 1px solid var(--jumia-border);
-  box-shadow: var(--jumia-shadow);
+
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.08);
 
   flex-shrink: 0;
+
+  margin: 0;
 }
 
 /* =========================================================
@@ -287,12 +282,8 @@ input {
 
   direction: ltr;
 
-  z-index: 9100;
+  z-index: 100010;
 }
-
-/* =========================================================
-   SEARCH INPUT
-========================================================= */
 
 .search-box input {
   flex: 1;
@@ -303,7 +294,7 @@ input {
 
   padding: 0 17px;
 
-  border: 1px solid #dddddd;
+  border: 1px solid #d8d8d8;
   border-right: none;
 
   outline: none;
@@ -334,10 +325,6 @@ input {
   box-shadow:
     inset 0 0 0 1px var(--jumia-orange);
 }
-
-/* =========================================================
-   SEARCH BUTTON
-========================================================= */
 
 .search-box .search-button {
   width: 55px;
@@ -388,6 +375,7 @@ input {
   left: 0;
 
   width: 100%;
+
   max-height: 330px;
 
   overflow-x: hidden;
@@ -397,13 +385,13 @@ input {
   color: var(--jumia-text);
 
   border: 1px solid var(--jumia-border);
-  border-radius: 4px;
+  border-radius: 5px;
 
   box-shadow: var(--jumia-shadow-lg);
 
   direction: rtl;
 
-  z-index: 999999;
+  z-index: 9999999;
 
   scrollbar-width: thin;
 }
@@ -468,14 +456,9 @@ input {
   min-width: 0;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* =========================================================
-   SUGGESTION IMAGE
-========================================================= */
 
 .suggestion-image {
   width: 45px;
@@ -492,10 +475,6 @@ input {
   border: 1px solid #eeeeee;
   border-radius: 4px;
 }
-
-/* =========================================================
-   NO RESULT
-========================================================= */
 
 .search-no-result {
   width: 100%;
@@ -528,8 +507,7 @@ input {
   direction: ltr;
 
   position: relative;
-
-  z-index: 9200;
+  z-index: 100020;
 }
 
 /* =========================================================
@@ -560,7 +538,7 @@ input {
 
   font-family: var(--nav-font);
 
-  border-radius: 4px;
+  border-radius: 5px;
 
   transition:
     background 0.2s ease,
@@ -578,6 +556,7 @@ input {
 .cart-symbol,
 .admin-btn span {
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
 
@@ -595,6 +574,7 @@ input {
   color: inherit;
 
   font-family: var(--nav-font);
+
   font-size: 10px;
   font-weight: 700;
 
@@ -653,7 +633,7 @@ input {
 
   overflow: visible !important;
 
-  z-index: 99999;
+  z-index: 100030;
 }
 
 .account-menu,
@@ -661,13 +641,8 @@ input {
 .navbar-account,
 .account-dropdown-wrapper {
   min-width: 0;
-
   position: relative;
 }
-
-/* =========================================================
-   ACCOUNT BUTTON
-========================================================= */
 
 .navbar-account button,
 .account-menu > button,
@@ -694,9 +669,9 @@ input {
   right: 0;
   left: auto;
 
-  width: 270px;
-  min-width: 0;
+  width: 280px;
 
+  min-width: 0;
   max-width: calc(100vw - 20px);
 
   padding: 8px;
@@ -718,7 +693,7 @@ input {
 
   direction: rtl;
 
-  z-index: 999999 !important;
+  z-index: 99999999 !important;
 
   overflow: visible !important;
 
@@ -736,10 +711,6 @@ input {
     transform: translateY(0);
   }
 }
-
-/* =========================================================
-   ACCOUNT ARROW
-========================================================= */
 
 .account-dropdown::before {
   content: "";
@@ -762,10 +733,6 @@ input {
   z-index: 1;
 }
 
-/* =========================================================
-   ACCOUNT USER INFO
-========================================================= */
-
 .account-user-info {
   padding: 13px 12px;
   margin: 0;
@@ -781,7 +748,6 @@ input {
   text-align: right;
 
   position: relative;
-
   z-index: 2;
 }
 
@@ -789,6 +755,7 @@ input {
   color: var(--jumia-text);
 
   font-family: var(--nav-font);
+
   font-size: 15px;
   font-weight: 800;
 }
@@ -799,12 +766,12 @@ input {
   max-width: 100%;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
 
   color: var(--jumia-muted);
 
   font-family: Arial, Tahoma, sans-serif;
+
   font-size: 12px;
 
   direction: ltr;
@@ -812,10 +779,6 @@ input {
 
   word-break: break-word;
 }
-
-/* =========================================================
-   ACCOUNT BUTTONS
-========================================================= */
 
 .account-dropdown > button {
   width: 100%;
@@ -829,8 +792,8 @@ input {
   padding: 10px 12px;
 
   background: transparent;
-
   border: none;
+
   border-radius: 4px;
 
   color: var(--jumia-text);
@@ -838,6 +801,7 @@ input {
   cursor: pointer;
 
   font-family: var(--nav-font);
+
   font-size: 13px;
   font-weight: 600;
 
@@ -874,10 +838,6 @@ input {
   font-size: 17px;
 }
 
-/* =========================================================
-   LOGOUT
-========================================================= */
-
 .account-dropdown > button:last-child {
   margin-top: 4px;
 
@@ -894,7 +854,6 @@ input {
 
 .admin-btn {
   min-width: 72px;
-
   color: var(--jumia-orange-dark);
 }
 
@@ -939,6 +898,7 @@ input {
   border-radius: 50%;
 
   font-family: Arial, sans-serif;
+
   font-size: 9px;
   font-weight: 800;
 
@@ -951,29 +911,45 @@ input {
 
 .navbar-bottom-wrapper {
   width: 100%;
-  min-height: 43px;
+  min-height: var(--category-height);
 
   display: flex;
   align-items: center;
 
   background: #ffffff;
 
-  border-bottom: 1px solid var(--jumia-border);
+  border-bottom: 1px solid #dddddd;
 
   direction: ltr;
 
   position: relative;
-
-  /*
-    مستقل عن Offer Bar والحركة الموجودة في الصفحة
-  */
   isolation: isolate;
 
-  z-index: 8000;
+  z-index: 100003;
 
   overflow: visible !important;
 
   flex-shrink: 0;
+
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+
+  margin: 0;
+}
+
+.navbar-bottom-wrapper::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 1px;
+
+  background: #f3f3f3;
+
+  pointer-events: none;
 }
 
 /* =========================================================
@@ -985,17 +961,17 @@ input {
 
   min-width: 0;
 
-  height: 43px;
+  height: var(--category-height);
 
   display: flex;
   align-items: center;
 
-  gap: 2px;
+  gap: 0;
 
   overflow-x: auto;
   overflow-y: hidden;
 
-  padding: 0 8px;
+  padding: 0 10px;
 
   scroll-behavior: smooth;
 
@@ -1005,7 +981,7 @@ input {
 
   position: relative;
 
-  z-index: 8001;
+  z-index: 100004;
 }
 
 .navbar-bottom::-webkit-scrollbar {
@@ -1021,18 +997,18 @@ input {
 
   flex: 0 0 auto;
 
-  height: 43px;
+  height: var(--category-height);
 
   display: flex;
   align-items: center;
 
   overflow: visible !important;
 
-  z-index: 8002;
+  z-index: 100005;
 }
 
 .nav-category-wrapper.category-is-open {
-  z-index: 9999;
+  z-index: 9999999;
 }
 
 /* =========================================================
@@ -1050,7 +1026,7 @@ input {
 
   gap: 7px;
 
-  padding: 0 13px;
+  padding: 0 15px;
 
   background: transparent;
 
@@ -1059,7 +1035,7 @@ input {
 
   border-radius: 0;
 
-  color: var(--jumia-text);
+  color: #333333;
 
   cursor: pointer;
 
@@ -1069,16 +1045,33 @@ input {
 
   position: relative;
 
-  z-index: 8003;
+  z-index: 100006;
 
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
-    color 0.18s ease;
+    color 0.18s ease,
+    transform 0.15s ease;
+}
+
+.nav-category-item::after {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 9px;
+
+  width: 1px;
+  height: 20px;
+
+  background: #eeeeee;
+
+  pointer-events: none;
 }
 
 .nav-category-item:hover {
-  background: var(--jumia-orange-light);
+  background: #fff8f0;
 
   border-bottom-color: var(--jumia-orange);
 
@@ -1095,6 +1088,7 @@ input {
 
 .nav-category-item span {
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
 
@@ -1120,10 +1114,10 @@ input {
 ========================================================= */
 
 .nav-category-item img {
-  width: 24px;
-  height: 24px;
+  width: 25px;
+  height: 25px;
 
-  flex: 0 0 24px;
+  flex: 0 0 25px;
 
   display: block;
 
@@ -1131,20 +1125,27 @@ input {
 
   background: #ffffff;
 
-  border: 1px solid #dddddd;
+  border: 1px solid #e1e1e1;
+
   border-radius: 50%;
 }
 
 /* =========================================================
-   CATEGORY DOWN ARROW
+   DOWN ARROW
 ========================================================= */
 
 .category-down-arrow {
-  font-size: 11px !important;
+  font-size: 10px !important;
 
   margin-right: 2px;
 
   color: var(--jumia-orange);
+
+  transition: transform 0.18s ease;
+}
+
+.nav-category-wrapper.category-is-open .category-down-arrow {
+  transform: rotate(180deg);
 }
 
 /* =========================================================
@@ -1179,7 +1180,7 @@ input {
 
 .category-arrow {
   width: 40px;
-  height: 43px;
+  height: var(--category-height);
 
   flex: 0 0 40px;
 
@@ -1192,11 +1193,13 @@ input {
   border: none;
 
   background: #ffffff;
-  color: var(--jumia-text);
+
+  color: #555555;
 
   cursor: pointer;
 
   font-family: Arial, sans-serif;
+
   font-size: 19px;
   font-weight: 700;
 
@@ -1204,12 +1207,16 @@ input {
 
   transition:
     background 0.18s ease,
-    color 0.18s ease;
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .category-arrow:hover {
-  background: var(--jumia-orange-light);
+  background: #fff7ef;
+
   color: var(--jumia-orange);
+
+  box-shadow: inset 0 -2px 0 var(--jumia-orange);
 }
 
 /* =========================================================
@@ -1219,28 +1226,34 @@ input {
 .mega-menu {
   position: fixed !important;
 
-  top: 145px;
+  top: calc(
+    var(--offer-height) +
+    var(--main-header-height) +
+    var(--category-height)
+  );
 
   right: 0;
   left: 0;
 
   width: 100%;
 
-  min-height: 100px;
+  min-height: 90px;
 
   background: #ffffff;
+
   color: var(--jumia-text);
 
-  border-top: 3px solid var(--jumia-orange);
-  border-bottom: 1px solid var(--jumia-border);
+  border-top: 2px solid var(--jumia-orange);
 
-  border-radius: 0 0 5px 5px;
+  border-bottom: 1px solid #dddddd;
 
-  box-shadow: var(--jumia-shadow-lg);
+  border-radius: 0 0 6px 6px;
+
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.13);
 
   direction: rtl;
 
-  z-index: 999999 !important;
+  z-index: 99999999 !important;
 
   overflow: visible !important;
 
@@ -1250,7 +1263,7 @@ input {
 @keyframes megaMenuOpen {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-5px);
   }
 
   to {
@@ -1259,79 +1272,70 @@ input {
   }
 }
 
-/* =========================================================
-   MEGA INNER
-========================================================= */
-
 .mega-menu-inner {
   position: relative;
 
-  z-index: 1000000;
+  z-index: 100000000;
 
   width: min(1400px, 96%);
 
   margin: 0 auto;
 
-  padding: 18px;
+  padding: 16px 18px 20px;
 
   background: #ffffff;
 
   overflow: visible !important;
 }
 
-/* =========================================================
-   MEGA TITLE
-========================================================= */
-
 .mega-menu-title {
   position: relative;
 
   width: 100%;
-  min-height: 60px;
+  min-height: 55px;
 
   display: flex;
   align-items: center;
 
-  gap: 12px;
+  gap: 11px;
 
-  padding: 9px 12px;
-  margin-bottom: 14px;
+  padding: 8px 11px;
+
+  margin-bottom: 12px;
 
   background: #ffffff;
 
-  border: 1px solid var(--jumia-border);
-  border-right: 4px solid var(--jumia-orange);
+  border: 1px solid #eeeeee;
 
-  border-radius: 4px;
+  border-right: 3px solid var(--jumia-orange);
+
+  border-radius: 5px;
 
   color: var(--jumia-text);
 
-  z-index: 1000001;
+  z-index: 100000001;
 }
 
-/* =========================================================
-   MEGA TITLE ICON
-========================================================= */
-
 .mega-menu-title img {
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
 
-  flex: 0 0 45px;
+  flex: 0 0 40px;
 
   object-fit: cover;
 
   background: #ffffff;
 
   border: 1px solid #dddddd;
+
   border-radius: 50%;
 }
 
 .mega-menu-title > span {
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
 
-  flex: 0 0 45px;
+  flex: 0 0 40px;
 
   display: flex;
   align-items: center;
@@ -1341,14 +1345,14 @@ input {
 
   border-radius: 50%;
 
-  font-size: 24px;
+  font-size: 21px;
 }
 
 .mega-menu-title-icon {
-  width: 48px;
-  height: 48px;
+  width: 43px;
+  height: 43px;
 
-  flex: 0 0 48px;
+  flex: 0 0 43px;
 
   display: flex;
   align-items: center;
@@ -1356,7 +1360,7 @@ input {
 
   background: var(--jumia-orange-light);
 
-  border-radius: 6px;
+  border-radius: 5px;
 
   overflow: hidden;
 }
@@ -1371,10 +1375,6 @@ input {
   border-radius: 0;
 }
 
-/* =========================================================
-   MEGA TITLE CONTENT
-========================================================= */
-
 .mega-menu-title > div {
   min-width: 0;
 
@@ -1388,7 +1388,7 @@ input {
   display: flex;
   flex-direction: column;
 
-  gap: 3px;
+  gap: 2px;
 
   min-width: 0;
 }
@@ -1397,10 +1397,11 @@ input {
 .mega-menu-title-content strong {
   display: block;
 
-  color: var(--jumia-text);
+  color: #2f2f2f;
 
   font-family: var(--nav-font);
-  font-size: 16px;
+
+  font-size: 15px;
   font-weight: 800;
 
   line-height: 1.4;
@@ -1410,10 +1411,11 @@ input {
 .mega-menu-title-content small {
   display: block;
 
-  color: var(--jumia-muted);
+  color: #888888;
 
   font-family: var(--nav-font);
-  font-size: 11px;
+
+  font-size: 10px;
 
   line-height: 1.5;
 }
@@ -1429,36 +1431,33 @@ input {
 
   display: grid;
 
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns:
+    repeat(auto-fit, minmax(190px, 1fr));
 
-  gap: 12px;
+  gap: 10px;
 
   align-items: start;
 
-  z-index: 1000001;
+  z-index: 100000001;
 
   overflow: visible !important;
 }
 
-/* =========================================================
-   MEGA COLUMN
-========================================================= */
-
 .mega-column {
   min-width: 0;
 
-  padding: 9px;
+  padding: 7px;
 
   display: flex;
   flex-direction: column;
 
-  gap: 7px;
+  gap: 6px;
 
   background: #ffffff;
 
-  border: 1px solid var(--jumia-border);
+  border: 1px solid #ededed;
 
-  border-radius: 4px;
+  border-radius: 5px;
 
   transition:
     border-color 0.18s ease,
@@ -1466,37 +1465,37 @@ input {
 }
 
 .mega-column:hover {
-  border-color: #d6d6d6;
-  box-shadow: var(--jumia-shadow);
-}
+  border-color: #dddddd;
 
-/* =========================================================
-   MEGA COLUMN TITLE
-========================================================= */
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+}
 
 .mega-column-title {
   width: 100%;
-  min-height: 44px;
+  min-height: 42px;
 
   display: flex;
   align-items: center;
 
   gap: 8px;
 
-  padding: 7px;
+  padding: 6px 7px;
+
   margin: 0;
 
-  background: var(--jumia-orange-light);
+  background: #fafafa;
 
   border: none;
+
   border-radius: 4px;
 
-  color: var(--jumia-text);
+  color: #333333;
 
   cursor: pointer;
 
   font-family: var(--nav-font);
-  font-size: 13px;
+
+  font-size: 12px;
   font-weight: 800;
 
   text-align: right;
@@ -1507,15 +1506,16 @@ input {
 }
 
 .mega-column-title:hover {
-  background: var(--jumia-orange);
-  color: #ffffff;
+  background: var(--jumia-orange-light);
+
+  color: var(--jumia-orange-dark);
 }
 
 .mega-column-title img {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
 
-  flex: 0 0 32px;
+  flex: 0 0 30px;
 
   object-fit: cover;
 
@@ -1529,10 +1529,10 @@ input {
 .mega-column-title > span:first-of-type {
   display: inline-flex;
 
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
 
-  flex: 0 0 32px;
+  flex: 0 0 30px;
 
   align-items: center;
   justify-content: center;
@@ -1541,7 +1541,7 @@ input {
 
   border-radius: 4px;
 
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .mega-column-title > span:last-child {
@@ -1556,70 +1556,64 @@ input {
   white-space: nowrap;
 }
 
-/* =========================================================
-   MEGA COLUMN ITEMS
-========================================================= */
-
 .mega-column-items {
   width: 100%;
 
   display: flex;
   flex-direction: column;
 
-  gap: 2px;
+  gap: 1px;
 
-  padding-top: 3px;
+  padding-top: 2px;
 }
-
-/* =========================================================
-   MEGA LINK
-========================================================= */
 
 .mega-link {
   width: 100%;
-  min-height: 35px;
+  min-height: 33px;
 
   display: flex;
   align-items: center;
 
   gap: 7px;
 
-  padding: 6px 8px;
+  padding: 5px 7px;
 
   background: transparent;
 
   border: none;
+
   border-radius: 4px;
 
-  color: #555555;
+  color: #606060;
 
   cursor: pointer;
 
   font-family: var(--nav-font);
-  font-size: 12px;
+
+  font-size: 11px;
   font-weight: 600;
 
   text-align: right;
 
   transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    padding-right 0.18s ease;
+    background 0.16s ease,
+    color 0.16s ease,
+    padding-right 0.16s ease;
 }
 
 .mega-link:hover {
-  background: var(--jumia-orange-light);
+  background: #fff7ef;
 
   color: var(--jumia-orange-dark);
 
-  padding-right: 12px;
+  padding-right: 11px;
 }
 
 .mega-link img {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
 
-  flex: 0 0 26px;
+  flex: 0 0 24px;
 
   object-fit: cover;
 
@@ -1632,16 +1626,17 @@ input {
 
 .mega-link > span:first-of-type,
 .mega-link-icon {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
 
-  flex: 0 0 26px;
+  flex: 0 0 24px;
 
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
 
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .mega-link > span:last-child {
@@ -1656,12 +1651,8 @@ input {
   white-space: nowrap;
 }
 
-/* =========================================================
-   SINGLE LINK
-========================================================= */
-
 .mega-single-link {
-  margin-top: 5px;
+  margin-top: 4px;
 
   justify-content: center;
 
@@ -1669,11 +1660,12 @@ input {
 
   font-weight: 800;
 
-  background: var(--jumia-orange-light);
+  background: #fff7ef;
 }
 
 .mega-single-link:hover {
-  background: #ffe4c6;
+  background: var(--jumia-orange-light);
+
   color: var(--jumia-orange-dark);
 }
 
@@ -1684,31 +1676,32 @@ input {
 .mega-recursive-tree {
   position: relative;
 
-  z-index: 1000001;
+  z-index: 100000001;
 
   width: 100%;
 
-  margin-top: 18px;
+  margin-top: 15px;
 
-  padding-top: 14px;
+  padding-top: 12px;
 
-  border-top: 1px solid var(--jumia-border);
+  border-top: 1px solid #eeeeee;
 }
 
 .mega-sub-level {
   width: 100%;
 
   display: flex;
+
   flex-wrap: wrap;
 
-  gap: 7px;
+  gap: 6px;
 
   margin-top: 5px;
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 
-  padding-right: 10px;
+  padding-right: 9px;
 
-  border-right: 2px solid var(--jumia-orange-light);
+  border-right: 2px solid #f7dfc5;
 }
 
 .mega-child-wrapper {
@@ -1720,27 +1713,28 @@ input {
 }
 
 .mega-child-item {
-  min-height: 38px;
+  min-height: 36px;
 
   display: flex;
   align-items: center;
 
-  gap: 8px;
+  gap: 7px;
 
-  padding: 6px 9px;
+  padding: 5px 8px;
 
   background: #ffffff;
 
-  border: 1px solid var(--jumia-border);
+  border: 1px solid #e4e4e4;
 
   border-radius: 4px;
 
-  color: var(--jumia-text);
+  color: #444444;
 
   cursor: pointer;
 
   font-family: var(--nav-font);
-  font-size: 12px;
+
+  font-size: 11px;
   font-weight: 700;
 
   text-align: right;
@@ -1748,24 +1742,27 @@ input {
   white-space: nowrap;
 
   transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    border-color 0.18s ease;
+    background 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .mega-child-item:hover {
-  background: var(--jumia-orange);
+  background: var(--jumia-orange-light);
 
-  border-color: var(--jumia-orange);
+  border-color: #f0c99e;
 
-  color: #ffffff;
+  color: var(--jumia-orange-dark);
+
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.06);
 }
 
 .mega-child-item img {
-  width: 29px;
-  height: 29px;
+  width: 27px;
+  height: 27px;
 
-  flex: 0 0 29px;
+  flex: 0 0 27px;
 
   object-fit: cover;
 
@@ -1775,20 +1772,20 @@ input {
 }
 
 .mega-child-icon {
-  width: 29px;
-  height: 29px;
+  width: 27px;
+  height: 27px;
 
-  flex: 0 0 29px;
+  flex: 0 0 27px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  background: var(--jumia-orange-light);
+  background: #fff7ef;
 
   border-radius: 4px;
 
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .mega-child-item > span:not(.mega-child-icon) {
@@ -1803,40 +1800,41 @@ input {
   white-space: nowrap;
 }
 
-/* =========================================================
-   NESTED LEVELS
-========================================================= */
-
 .mega-sub-level.level-1 {
-  padding-right: 14px;
+  padding-right: 13px;
 }
 
 .mega-sub-level.level-2 {
-  padding-right: 12px;
+  padding-right: 11px;
 }
 
 .mega-sub-level.level-3 {
-  padding-right: 10px;
+  padding-right: 9px;
 }
 
 .mega-sub-level.level-4,
 .mega-sub-level.level-5 {
-  padding-right: 8px;
+  padding-right: 7px;
 }
-
-/* =========================================================
-   MEGA ARROW
-========================================================= */
 
 .mega-arrow {
   margin-right: auto;
 
-  color: var(--jumia-orange);
+  color: #999999;
 
   font-family: Arial, sans-serif;
-  font-size: 18px;
+
+  font-size: 17px;
 
   line-height: 1;
+
+  transition:
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.mega-child-item:hover .mega-arrow {
+  color: var(--jumia-orange);
 }
 
 /* =========================================================
@@ -1859,7 +1857,7 @@ input {
 
   background: rgba(0, 0, 0, 0.78);
 
-  z-index: 9999999;
+  z-index: 999999999;
 
   cursor: pointer;
 }
@@ -1897,6 +1895,7 @@ input {
   padding: 0;
 
   border: none;
+
   border-radius: 50%;
 
   background: var(--jumia-orange);
@@ -1905,6 +1904,7 @@ input {
   cursor: pointer;
 
   font-family: Arial, sans-serif;
+
   font-size: 24px;
   font-weight: 800;
 
@@ -1917,6 +1917,7 @@ input {
 
 .close-logo:hover {
   background: var(--jumia-orange-dark);
+
   transform: rotate(90deg);
 }
 
@@ -1937,6 +1938,12 @@ input {
 ========================================================= */
 
 @media (max-width: 1024px) {
+  :root {
+    --offer-height: 32px;
+    --main-header-height: 70px;
+    --category-height: 43px;
+  }
+
   .store-header {
     gap: 10px;
     padding: 8px 12px;
@@ -1986,26 +1993,24 @@ input {
     padding: 0 10px;
   }
 
-  .mega-menu {
-    top: 143px;
+  .mega-columns {
+    grid-template-columns:
+      repeat(auto-fit, minmax(155px, 1fr));
+
+    gap: 8px;
   }
 
   .mega-menu-inner {
     width: 96%;
-    padding: 14px;
-  }
-
-  .mega-columns {
-    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-    gap: 9px;
+    padding: 13px;
   }
 
   .mega-column {
-    padding: 7px;
+    padding: 6px;
   }
 
   .mega-column-title {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .mega-link {
@@ -2013,37 +2018,88 @@ input {
   }
 
   .account-dropdown {
-    width: 245px;
+    width: 260px;
+
     max-width: calc(100vw - 16px);
   }
 }
 
 /* =========================================================
    MOBILE
+   IMPORTANT BANNER GAP FIX
 ========================================================= */
 
 @media (max-width: 700px) {
+  :root {
+    --offer-height: 28px;
+    --main-header-height: 0px;
+    --category-height: 39px;
+  }
 
-  /* =======================================================
-     TOP OFFER - MOBILE
-     مستقل عن أي Slider أسفل الهيدر
-  ======================================================= */
+  /* -------------------------------------------------------
+     HARD RESET - NAVBAR MUST NOT CREATE EXTRA SPACE
+  ------------------------------------------------------- */
+
+  .navbar {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    min-width: 0 !important;
+
+    position: sticky !important;
+    position: -webkit-sticky !important;
+
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: visible !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    display: block !important;
+
+    z-index: 100000 !important;
+
+    transform: none !important;
+  }
+
+  /* مهم جدًا:
+     لا يوجد margin أو padding أسفل الـ Navbar */
+  .navbar,
+  .navbar-main,
+  .navbar-top,
+  .navbar-header,
+  .navbar-container,
+  .navbar-inner,
+  .navbar-content {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* -------------------------------------------------------
+     TOP OFFER
+  ------------------------------------------------------- */
 
   .top-offer-bar {
-    width: 100%;
-    height: 28px;
-    min-height: 28px;
-    max-height: 28px;
+    width: 100% !important;
 
-    position: relative;
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
 
-    isolation: isolate;
-    contain: layout paint style;
+    margin: 0 !important;
+    padding: 0 !important;
 
-    overflow: hidden;
-    clip-path: inset(0);
+    display: flex;
 
-    z-index: 10000;
+    overflow: hidden !important;
+
+    z-index: 100001 !important;
   }
 
   .top-offer-bar .offer-track,
@@ -2064,12 +2120,18 @@ input {
     font-size: 10px;
   }
 
-  /* =======================================================
+  /* -------------------------------------------------------
      MAIN HEADER
-  ======================================================= */
+     ارتفاعه الحقيقي فقط بدون أي فراغ
+  ------------------------------------------------------- */
 
   .store-header {
-    min-height: auto;
+    width: 100% !important;
+
+    min-height: 0 !important;
+    height: auto !important;
+
+    margin: 0 !important;
 
     display: grid;
 
@@ -2081,42 +2143,68 @@ input {
 
     gap: 7px;
 
-    padding: 8px;
+    padding: 8px !important;
 
     direction: rtl;
 
     overflow: visible !important;
 
-    z-index: 9000;
+    z-index: 100002 !important;
 
-    isolation: isolate;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.08);
+
+    flex-shrink: 0;
   }
 
-  /* LOGO */
+  /* -------------------------------------------------------
+     LOGO
+  ------------------------------------------------------- */
 
   .nav-logo {
     grid-area: logo;
 
     min-width: 88px;
 
+    width: auto;
+
+    display: flex;
+
+    align-items: center;
     justify-content: flex-start;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden;
   }
 
   .nav-logo img {
     width: 90px;
     height: 39px;
+
+    max-width: 100%;
+
+    object-fit: contain;
+
+    margin: 0;
   }
 
-  /* ACTIONS */
+  /* -------------------------------------------------------
+     ACTIONS
+  ------------------------------------------------------- */
 
   .nav-actions {
     grid-area: actions;
 
     min-width: 0;
 
+    width: 100%;
+
     display: flex;
 
     justify-content: flex-start;
+
+    align-items: center;
 
     gap: 1px;
 
@@ -2124,16 +2212,24 @@ input {
 
     position: relative;
 
-    z-index: 9200;
+    z-index: 100020;
+
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .nav-icon,
   .cart-icon,
   .admin-btn {
     min-width: 49px;
+
+    width: auto;
+
     height: 41px;
 
     padding: 1px 3px;
+
+    margin: 0 !important;
   }
 
   .nav-icon span,
@@ -2150,7 +2246,9 @@ input {
     font-size: 8px;
   }
 
-  /* ACCOUNT */
+  /* -------------------------------------------------------
+     ACCOUNT
+  ------------------------------------------------------- */
 
   .account-menu {
     position: relative;
@@ -2160,7 +2258,7 @@ input {
 
     overflow: visible !important;
 
-    z-index: 99999;
+    z-index: 100030;
   }
 
   .account-dropdown {
@@ -2184,9 +2282,11 @@ input {
 
     transform: translateX(50%);
 
-    z-index: 9999999 !important;
+    z-index: 99999999 !important;
 
     padding: 7px;
+
+    margin: 0 !important;
 
     background: #ffffff;
 
@@ -2219,11 +2319,14 @@ input {
     padding: 10px 11px;
   }
 
-  /* BADGES */
+  /* -------------------------------------------------------
+     BADGES
+  ------------------------------------------------------- */
 
   .wishlist-badge,
   .cart-badge {
     min-width: 16px;
+
     height: 16px;
 
     font-size: 8px;
@@ -2239,20 +2342,35 @@ input {
     right: 0;
   }
 
-  /* SEARCH */
+  /* -------------------------------------------------------
+     SEARCH
+  ------------------------------------------------------- */
 
   .search-box {
     grid-area: search;
 
-    width: 100%;
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
     height: 40px;
 
-    margin: 0;
+    margin: 0 !important;
 
-    z-index: 9100;
+    padding: 0 !important;
+
+    z-index: 100010;
   }
 
   .search-box input {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
     height: 40px;
 
     padding: 0 12px;
@@ -2262,6 +2380,7 @@ input {
 
   .search-box .search-button {
     width: 45px;
+
     height: 40px;
 
     flex-basis: 45px;
@@ -2269,26 +2388,44 @@ input {
     font-size: 18px;
   }
 
-  /* CATEGORY BAR */
+  /* -------------------------------------------------------
+     CATEGORY BAR
+  ------------------------------------------------------- */
 
   .navbar-bottom-wrapper {
-    min-height: 39px;
+    width: 100% !important;
 
-    z-index: 8000;
+    min-height: 39px !important;
+    height: 39px !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    z-index: 100003;
 
     overflow: visible !important;
 
     isolation: isolate;
+
+    flex-shrink: 0;
   }
 
   .navbar-bottom {
-    height: 39px;
+    width: 100% !important;
+
+    height: 39px !important;
+
+    min-width: 0 !important;
 
     padding: 0 3px;
 
     gap: 1px;
 
+    margin: 0 !important;
+
     overflow-x: auto;
+
     overflow-y: hidden;
   }
 
@@ -2327,6 +2464,7 @@ input {
 
   .category-arrow {
     width: 30px;
+
     height: 39px;
 
     flex-basis: 30px;
@@ -2334,12 +2472,14 @@ input {
     font-size: 16px;
   }
 
-  /* SEARCH SUGGESTIONS */
+  /* -------------------------------------------------------
+     SEARCH SUGGESTIONS
+  ------------------------------------------------------- */
 
   .search-suggestions {
     max-height: 260px;
 
-    z-index: 9999999;
+    z-index: 99999999;
   }
 
   .suggestion-item {
@@ -2359,34 +2499,61 @@ input {
     flex-basis: 40px;
   }
 
-  /* MOBILE MEGA */
+  /* -------------------------------------------------------
+     MOBILE MEGA MENU
+     
+     لا نستخدم 157px بشكل ثابت.
+     نستخدم calc من الارتفاعات الفعلية.
+  ------------------------------------------------------- */
 
   .mega-menu {
     position: fixed !important;
 
-    top: 157px;
+    top: calc(
+      var(--offer-height) +
+      8px +
+      39px +
+      7px +
+      40px +
+      8px +
+      var(--category-height)
+    ) !important;
 
-    right: 0;
-    left: 0;
+    right: 0 !important;
+    left: 0 !important;
 
-    width: 100%;
+    width: 100% !important;
 
-    max-width: none;
+    max-width: 100vw !important;
 
-    max-height: calc(100vh - 157px);
+    min-width: 0 !important;
+
+    max-height: calc(
+      100vh -
+      (
+        var(--offer-height) +
+        8px +
+        39px +
+        7px +
+        40px +
+        8px +
+        var(--category-height)
+      )
+    ) !important;
 
     overflow-x: hidden !important;
+
     overflow-y: auto !important;
 
     -webkit-overflow-scrolling: touch;
 
-    border-top-width: 3px;
+    border-top-width: 2px;
 
     border-radius: 0 0 5px 5px;
 
     box-shadow: var(--jumia-shadow-lg);
 
-    z-index: 9999999 !important;
+    z-index: 99999999 !important;
 
     animation: mobileMegaOpen 0.18s ease;
   }
@@ -2394,11 +2561,13 @@ input {
   @keyframes mobileMegaOpen {
     from {
       opacity: 0;
-      transform: translateY(-8px);
+
+      transform: translateY(-7px);
     }
 
     to {
       opacity: 1;
+
       transform: translateY(0);
     }
   }
@@ -2406,64 +2575,77 @@ input {
   .mega-menu-inner {
     width: 100%;
 
-    padding: 9px;
+    max-width: 100%;
+
+    min-width: 0;
+
+    padding: 8px;
   }
 
-  /* MOBILE MEGA TITLE */
-
   .mega-menu-title {
-    min-height: 50px;
+    min-height: 48px;
 
     gap: 8px;
 
-    padding: 7px 9px;
+    padding: 6px 8px;
 
-    margin-bottom: 9px;
+    margin-bottom: 8px;
 
     border-right-width: 3px;
   }
 
   .mega-menu-title img,
   .mega-menu-title > span {
-    width: 37px;
-    height: 37px;
+    width: 35px;
+    height: 35px;
 
-    flex-basis: 37px;
+    flex-basis: 35px;
   }
 
   .mega-menu-title-icon {
-    width: 37px;
-    height: 37px;
+    width: 35px;
+    height: 35px;
 
-    flex-basis: 37px;
+    flex-basis: 35px;
   }
 
   .mega-menu-title strong,
   .mega-menu-title-content strong {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .mega-menu-title small,
   .mega-menu-title-content small {
-    font-size: 9px;
+    font-size: 8px;
   }
 
-  /* MOBILE COLUMNS */
-
   .mega-columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
 
-    gap: 7px;
+    max-width: 100%;
+
+    min-width: 0;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 6px;
   }
 
   .mega-column {
-    padding: 6px;
+    min-width: 0;
+
+    max-width: 100%;
+
+    padding: 5px;
 
     border-radius: 4px;
+
+    overflow: hidden;
   }
 
   .mega-column-title {
-    min-height: 37px;
+    min-height: 36px;
 
     gap: 5px;
 
@@ -2474,26 +2656,24 @@ input {
 
   .mega-column-title img,
   .mega-column-title > span:first-of-type {
-    width: 26px;
-    height: 26px;
+    width: 25px;
+    height: 25px;
 
-    flex-basis: 26px;
+    flex-basis: 25px;
   }
 
   .mega-column-title > span:first-of-type {
-    font-size: 14px;
+    font-size: 13px;
   }
-
-  /* MOBILE LINKS */
 
   .mega-column-items {
     gap: 1px;
 
-    padding-top: 3px;
+    padding-top: 2px;
   }
 
   .mega-link {
-    min-height: 30px;
+    min-height: 29px;
 
     gap: 4px;
 
@@ -2509,23 +2689,21 @@ input {
   .mega-link img,
   .mega-link > span:first-of-type,
   .mega-link-icon {
-    width: 21px;
-    height: 21px;
+    width: 20px;
+    height: 20px;
 
-    flex-basis: 21px;
+    flex-basis: 20px;
   }
 
   .mega-link > span:first-of-type,
   .mega-link-icon {
-    font-size: 10px;
+    font-size: 9px;
   }
 
-  /* MOBILE TREE */
-
   .mega-recursive-tree {
-    margin-top: 11px;
+    margin-top: 10px;
 
-    padding-top: 9px;
+    padding-top: 8px;
   }
 
   .mega-sub-level {
@@ -2537,32 +2715,34 @@ input {
   }
 
   .mega-child-item {
-    min-height: 33px;
+    min-height: 32px;
 
     gap: 5px;
 
     padding: 4px 6px;
 
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .mega-child-item img,
   .mega-child-icon {
-    width: 24px;
-    height: 24px;
+    width: 23px;
+    height: 23px;
 
-    flex-basis: 24px;
+    flex-basis: 23px;
   }
 
   .mega-child-icon {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .mega-arrow {
-    font-size: 16px;
+    font-size: 15px;
   }
 
-  /* LOGO MODAL */
+  /* -------------------------------------------------------
+     LOGO MODAL
+  ------------------------------------------------------- */
 
   .logo-modal {
     padding: 15px;
@@ -2583,6 +2763,31 @@ input {
     height: 40px;
 
     font-size: 21px;
+  }
+
+  /* =======================================================
+     FINAL BANNER GAP PROTECTION
+     
+     أي عنصر يأتي بعد Navbar لا يأخذ فراغ من الـ Navbar.
+  ======================================================= */
+
+  .navbar + * {
+    margin-top: 0 !important;
+  }
+
+  .navbar + *:first-child {
+    padding-top: 0 !important;
+  }
+
+  /* لو البانر أو الـ Hero له margin علوي */
+  .navbar ~ .hero-slider,
+  .navbar ~ .hero-banner,
+  .navbar ~ .home-hero,
+  .navbar ~ .hero,
+  .navbar ~ .banner,
+  .navbar ~ section:first-of-type {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 }
 
@@ -2633,17 +2838,37 @@ input {
   }
 
   .mega-menu {
-    top: 151px;
+    top: calc(
+      var(--offer-height) +
+      8px +
+      35px +
+      7px +
+      36px +
+      8px +
+      var(--category-height)
+    ) !important;
 
-    max-height: calc(100vh - 151px);
+    max-height: calc(
+      100vh -
+      (
+        var(--offer-height) +
+        8px +
+        35px +
+        7px +
+        36px +
+        8px +
+        var(--category-height)
+      )
+    ) !important;
   }
 
   .mega-menu-inner {
-    padding: 7px;
+    padding: 6px;
   }
 
   .mega-columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
 
     gap: 5px;
   }
@@ -2673,9 +2898,17 @@ input {
 
 @media (max-width: 700px) and (orientation: landscape) {
   .mega-menu {
-    top: 119px;
+    top: calc(
+      var(--offer-height) +
+      8px +
+      39px +
+      7px +
+      40px +
+      8px +
+      var(--category-height)
+    ) !important;
 
-    max-height: calc(100vh - 119px);
+    max-height: calc(100vh - 119px) !important;
   }
 
   .account-dropdown {
@@ -2758,12 +2991,9 @@ input {
 }
 
 /* =========================================================
-   FINAL FULL-WIDTH + ACCOUNT SAFETY FIX
+   FINAL FULL WIDTH
 ========================================================= */
 
-/*
-   منع الـ Navbar من عمل Horizontal Scroll
-*/
 .navbar,
 .navbar-main,
 .navbar-top,
@@ -2773,13 +3003,15 @@ input {
 .navbar-content,
 .store-header,
 .navbar-bottom-wrapper {
+  width: 100%;
   max-width: 100%;
   min-width: 0;
 }
 
-/*
-   الحساب لا يوسع الصفحة
-*/
+/* =========================================================
+   ACCOUNT SAFETY
+========================================================= */
+
 .navbar-account,
 .account-menu,
 .account-wrapper,
@@ -2791,14 +3023,12 @@ input {
   overflow: visible !important;
 }
 
-/*
-   الـ Dropdown يفضل داخل حدود الشاشة
-*/
 .navbar-account .account-dropdown,
 .account-menu .account-dropdown,
 .account-wrapper .account-dropdown,
 .account-dropdown-wrapper .account-dropdown {
   right: 0;
+
   left: auto;
 
   width: 280px;
@@ -2821,6 +3051,10 @@ input {
     max-width: 100%;
 
     margin: 0;
+
+    position: sticky;
+
+    top: 0;
   }
 
   .navbar-main,
@@ -2841,11 +3075,13 @@ input {
   .account-wrapper .account-dropdown,
   .account-dropdown-wrapper .account-dropdown {
     right: 0;
+
     left: auto;
 
     width: 280px;
 
-    max-width: min(320px, calc(100vw - 20px));
+    max-width:
+      min(320px, calc(100vw - 20px));
   }
 }
 
@@ -2858,6 +3094,10 @@ input {
     width: 100%;
 
     max-width: 100%;
+
+    position: sticky;
+
+    top: 0;
   }
 
   .navbar-account .account-dropdown,
@@ -2865,6 +3105,7 @@ input {
   .account-wrapper .account-dropdown,
   .account-dropdown-wrapper .account-dropdown {
     right: 0;
+
     left: auto;
 
     width: 260px;
@@ -2874,16 +3115,32 @@ input {
 }
 
 /* =========================================================
-   MOBILE
+   MOBILE FINAL
+   IMPORTANT: لا نرجع position:relative هنا
 ========================================================= */
 
 @media (max-width: 600px) {
   .navbar {
-    width: 100%;
+    width: 100% !important;
 
-    max-width: 100%;
+    max-width: 100% !important;
 
-    overflow: visible;
+    min-width: 0 !important;
+
+    position: sticky !important;
+    position: -webkit-sticky !important;
+
+    top: 0 !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    overflow: visible !important;
+
+    height: auto !important;
+
+    min-height: 0 !important;
   }
 
   .navbar-account,
@@ -2898,6 +3155,7 @@ input {
   .account-wrapper .account-dropdown,
   .account-dropdown-wrapper .account-dropdown {
     right: 50%;
+
     left: auto;
 
     width: min(280px, calc(100vw - 16px));
@@ -2908,43 +3166,1487 @@ input {
 
     box-sizing: border-box;
   }
+
+  /* منع الفراغ بعد الـ Navbar */
+  .navbar + * {
+    margin-top: 0 !important;
+  }
 }
 
 /* =========================================================
-   FINAL OFFER BAR ISOLATION
-   =========================================================
-   آخر طبقة حماية:
-   أي Slider أو animation خارج الـ Navbar لن يستطيع
-   التحكم في الشريط البرتقالي أو التداخل معه.
+   FINAL MOBILE WIDTH / OVERFLOW SAFETY
 ========================================================= */
 
-.top-offer-bar {
-  isolation: isolate;
-  contain: layout paint style;
+@media (max-width: 768px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: hidden !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .navbar {
+    width: 100% !important;
+
+    max-width: 100vw !important;
+
+    min-width: 0 !important;
+
+    overflow: visible !important;
+
+    position: sticky !important;
+
+    top: 0 !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+  }
+
+  .navbar *,
+  .navbar-container,
+  .navbar-main,
+  .navbar-top,
+  .navbar-bottom {
+    box-sizing: border-box;
+  }
+
+  .navbar-container,
+  .navbar-main,
+  .navbar-top,
+  .navbar-bottom {
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+  }
+
+  .navbar img,
+  .navbar svg,
+  .navbar button,
+  .navbar input,
+  .navbar a {
+    max-width: 100%;
+  }
+
+  .navbar-search,
+  .search-container,
+  .search-box {
+    min-width: 0;
+
+    max-width: 100%;
+  }
+
+  .navbar-search input,
+  .search-container input,
+  .search-box input {
+    min-width: 0;
+
+    max-width: 100%;
+
+    width: 100%;
+  }
+
+  .navbar-top,
+  .navbar-main {
+    flex-wrap: nowrap;
+  }
+
+  .navbar-logo {
+    min-width: 0;
+
+    max-width: 120px;
+
+    overflow: hidden;
+  }
+
+  .navbar-logo img {
+    max-width: 100%;
+
+    height: auto;
+  }
+
+  .navbar-actions,
+  .nav-actions,
+  .navbar-icons {
+    min-width: 0;
+
+    max-width: 100%;
+  }
+
+  .navbar-menu,
+  .nav-menu,
+  .navbar-links {
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    overflow-x: auto;
+
+    overflow-y: hidden;
+
+    scrollbar-width: none;
+  }
+
+  .navbar-menu::-webkit-scrollbar,
+  .nav-menu::-webkit-scrollbar,
+  .navbar-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navbar a,
+  .navbar button,
+  .navbar span {
+    overflow-wrap: anywhere;
+  }
+
+  /* -------------------------------------------------------
+     MOBILE MEGA MENU SAFETY
+  ------------------------------------------------------- */
+
+  .mega-menu {
+    width: 100% !important;
+
+    max-width: 100vw !important;
+
+    min-width: 0 !important;
+
+    left: 0 !important;
+
+    right: 0 !important;
+
+    box-sizing: border-box;
+
+    overflow-x: hidden !important;
+
+    overflow-y: auto !important;
+  }
+
+  .mega-menu-inner {
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+  }
+
+  .mega-columns {
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .mega-column {
+    min-width: 0;
+
+    max-width: 100%;
+
+    overflow: hidden;
+  }
+
+  .mega-link,
+  .mega-child-item {
+    min-width: 0;
+
+    max-width: 100%;
+  }
+
+  .mega-link span,
+  .mega-child-item span,
+  .mega-column-title span {
+    min-width: 0;
+
+    max-width: 100%;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+  }
+}
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 480px) {
+  .navbar {
+    font-size: 13px;
+  }
+
+  .navbar-logo {
+    max-width: 95px;
+  }
+
+  .navbar-actions,
+  .nav-actions,
+  .navbar-icons {
+    gap: 4px;
+  }
+
+  .navbar-search {
+    min-width: 0;
+
+    width: 100%;
+  }
+
+  .navbar-search input,
+  .search-container input,
+  .search-box input {
+    font-size: 13px;
+  }
+
+  .mega-columns {
+    gap: 6px;
+  }
+
+  .mega-column {
+    padding: 5px;
+  }
+
+  .mega-link {
+    min-height: 30px;
+
+    padding: 4px;
+
+    font-size: 9px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 360px) {
+  .navbar-logo {
+    max-width: 82px;
+  }
+
+  .navbar-search input,
+  .search-container input,
+  .search-box input {
+    font-size: 12px;
+  }
+
+  .mega-columns {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 4px;
+  }
+
+  .mega-link {
+    font-size: 8px;
+
+    padding: 3px;
+  }
+}
+
+/* =========================================================
+   HARD MOBILE OVERFLOW PROTECTION
+========================================================= */
+
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden !important;
+  }
+
+  /* لا تستخدم relative هنا لأنه كان سببًا في اختلاف
+     سلوك الـ Navbar والـ Hero على بعض الأجهزة */
+  .navbar {
+    position: sticky !important;
+    position: -webkit-sticky !important;
+
+    top: 0 !important;
+
+    overflow: visible !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    height: auto !important;
+
+    min-height: 0 !important;
+
+    transform: none !important;
+  }
+
+  /* إزالة أي مساحة وهمية بين الـ Navbar والبانر */
+  .navbar + * {
+    margin-top: 0 !important;
+  }
+}
+/* =========================================================
+   FINAL ACCOUNT DROPDOWN
+   DESKTOP + TABLET + MOBILE
+   يمنع خروج القائمة خارج الشاشة
+========================================================= */
+
+/* =========================
+   DESKTOP
+========================= */
+
+@media (min-width: 769px) {
+
+  .account-menu,
+  .account-wrapper,
+  .navbar-account,
+  .account-dropdown-wrapper {
+    position: relative !important;
+    overflow: visible !important;
+    z-index: 100020 !important;
+  }
+
+  .account-dropdown,
+  .navbar-account .account-dropdown,
+  .account-menu .account-dropdown,
+  .account-wrapper .account-dropdown,
+  .account-dropdown-wrapper .account-dropdown {
+
+    position: absolute !important;
+
+    top: calc(100% + 8px) !important;
+
+    right: 0 !important;
+    left: auto !important;
+
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: calc(100vw - 20px) !important;
+
+    transform: none !important;
+
+    box-sizing: border-box !important;
+
+    z-index: 999999999 !important;
+
+    overflow: visible !important;
+  }
+
+  .account-dropdown::before {
+    display: block !important;
+  }
+
+  /* لو القائمة قربت من الحافة اليسرى */
+  .account-menu:first-child .account-dropdown,
+  .account-wrapper:first-child .account-dropdown,
+  .navbar-account:first-child .account-dropdown {
+    right: auto !important;
+    left: 0 !important;
+  }
+}
+
+
+/* =========================
+   TABLET
+========================= */
+
+@media (min-width: 601px) and (max-width: 768px) {
+
+  .account-menu,
+  .account-wrapper,
+  .navbar-account,
+  .account-dropdown-wrapper {
+    position: relative !important;
+    overflow: visible !important;
+    z-index: 100020 !important;
+  }
+
+  .account-dropdown,
+  .navbar-account .account-dropdown,
+  .account-menu .account-dropdown,
+  .account-wrapper .account-dropdown,
+  .account-dropdown-wrapper .account-dropdown {
+
+    position: absolute !important;
+
+    top: calc(100% + 8px) !important;
+
+    right: 0 !important;
+    left: auto !important;
+
+    width: 260px !important;
+    max-width: calc(100vw - 16px) !important;
+    min-width: 0 !important;
+
+    transform: none !important;
+
+    box-sizing: border-box !important;
+
+    z-index: 999999999 !important;
+
+    overflow: visible !important;
+  }
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+  .account-menu,
+  .account-wrapper,
+  .navbar-account,
+  .account-dropdown-wrapper {
+    position: relative !important;
+    overflow: visible !important;
+    z-index: 100020 !important;
+  }
+
+  .account-dropdown,
+  .navbar-account .account-dropdown,
+  .account-menu .account-dropdown,
+  .account-wrapper .account-dropdown,
+  .account-dropdown-wrapper .account-dropdown {
+
+    position: fixed !important;
+
+    top: 125px !important;
+
+    right: 8px !important;
+    left: 8px !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    transform: none !important;
+
+    margin: 0 !important;
+    padding: 7px !important;
+
+    box-sizing: border-box !important;
+
+    z-index: 999999999 !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    max-height: calc(100vh - 135px) !important;
+  }
+
+  .account-dropdown::before {
+    display: none !important;
+  }
+
+  .account-dropdown > button {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .account-user-info {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+
+/* =========================
+   LAYER FIX
+   القائمة فوق شريط الأقسام
+========================= */
+
+.store-header {
+  position: relative !important;
+  z-index: 100005 !important;
+  overflow: visible !important;
+}
+
+.nav-actions {
+  position: relative !important;
+  z-index: 100010 !important;
+}
+
+.navbar-bottom-wrapper {
+  position: relative !important;
+  z-index: 100003 !important;
+}
+/* =========================================================
+   ELSAFTY STORE - ACCOUNT MENU
+   JUMIA / AMAZON STYLE
+========================================================= */
+
+.account-dropdown {
+  width: 300px !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  color: #282828 !important;
+
+  border: 1px solid #e2e2e2 !important;
+  border-top: 3px solid var(--jumia-orange) !important;
+  border-radius: 6px !important;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 12px 30px rgba(0, 0, 0, 0.10) !important;
 
   overflow: hidden !important;
+  direction: rtl !important;
+}
+
+/* =========================
+   USER INFO
+========================= */
+
+.account-user-info {
+  width: 100% !important;
+  min-height: 76px;
+
+  margin: 0 !important;
+  padding: 14px 16px !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+
+  gap: 4px !important;
+
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #fffaf5 100%
+  ) !important;
+
+  border-bottom: 1px solid #eeeeee !important;
+
+  box-sizing: border-box !important;
+}
+
+.account-user-info strong {
+  display: block !important;
+
+  color: #282828 !important;
+  font-family: var(--nav-font) !important;
+
+  font-size: 15px !important;
+  font-weight: 800 !important;
+
+  line-height: 1.4 !important;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-user-info span {
+  display: block !important;
+
+  color: #777777 !important;
+
+  font-family: Arial, Tahoma, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+
+  direction: ltr !important;
+  text-align: right !important;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* =========================
+   MENU BUTTONS
+========================= */
+
+.account-dropdown > button {
+  width: 100% !important;
+  min-height: 47px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 12px !important;
+
+  margin: 0 !important;
+  padding: 9px 15px !important;
+
+  background: #ffffff !important;
+  color: #333333 !important;
+
+  border: none !important;
+  border-radius: 0 !important;
+
+  font-family: var(--nav-font) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+
+  text-align: right !important;
+  direction: rtl !important;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    padding-right 0.18s ease !important;
+}
+
+/* ICON */
+
+.account-dropdown > button span:first-child {
+  width: 31px !important;
+  height: 31px !important;
+
+  flex: 0 0 31px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  background: #fff5ea !important;
+  color: var(--jumia-orange-dark) !important;
+
+  border-radius: 50% !important;
+
+  font-size: 16px !important;
+}
+
+/* TEXT */
+
+.account-dropdown > button span:last-child {
+  flex: 1 !important;
+  min-width: 0 !important;
+
+  color: inherit !important;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* HOVER */
+
+.account-dropdown > button:hover {
+  background: #fff7ef !important;
+  color: var(--jumia-orange-dark) !important;
+
+  padding-right: 19px !important;
+}
+
+.account-dropdown > button:hover span:first-child {
+  background: #ffe8cf !important;
+  color: var(--jumia-orange-dark) !important;
+}
+
+/* ACTIVE */
+
+.account-dropdown > button:active {
+  background: #ffead5 !important;
+}
+
+
+/* =========================
+   LOGOUT BUTTON
+========================= */
+
+.account-dropdown > button:last-child {
+  margin-top: 4px !important;
+  padding-top: 12px !important;
+
+  border-top: 1px solid #eeeeee !important;
+
+  background: #ffffff !important;
+  color: #d32f2f !important;
+
+  border-radius: 0 !important;
+}
+
+.account-dropdown > button:last-child span:first-child {
+  background: #ffebee !important;
+  color: #d32f2f !important;
+}
+
+.account-dropdown > button:last-child:hover {
+  background: #fff5f5 !important;
+  color: #c62828 !important;
+}
+
+
+/* =========================
+   DESKTOP
+========================= */
+
+@media (min-width: 769px) {
+
+  .account-dropdown {
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: calc(100vw - 20px) !important;
+
+    top: calc(100% + 8px) !important;
+
+    border-radius: 6px !important;
+  }
+
+  .account-user-info {
+    min-height: 78px;
+  }
+}
+
+
+/* =========================
+   TABLET
+========================= */
+
+@media (min-width: 601px) and (max-width: 768px) {
+
+  .account-dropdown {
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  .account-user-info {
+    min-height: 72px;
+  }
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+  .account-dropdown {
+    right: 8px !important;
+    left: 8px !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    border-radius: 7px !important;
+
+    box-shadow:
+      0 5px 15px rgba(0, 0, 0, 0.14),
+      0 15px 35px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  .account-user-info {
+    min-height: 70px;
+
+    padding: 12px 14px !important;
+  }
+
+  .account-user-info strong {
+    font-size: 14px !important;
+  }
+
+  .account-user-info span {
+    font-size: 10px !important;
+  }
+
+  .account-dropdown > button {
+    min-height: 45px !important;
+
+    padding: 8px 12px !important;
+
+    font-size: 12px !important;
+  }
+
+  .account-dropdown > button span:first-child {
+    width: 29px !important;
+    height: 29px !important;
+
+    flex-basis: 29px !important;
+
+    font-size: 15px !important;
+  }
+
+  .account-dropdown > button:hover {
+    padding-right: 12px !important;
+  }
+}
+
+
+/* =========================
+   REMOVE OLD ARROW
+========================= */
+
+.account-dropdown::before {
+  width: 12px !important;
+  height: 12px !important;
+
+  background: #ffffff !important;
+
+  border-top: 1px solid #e2e2e2 !important;
+  border-right: 1px solid #e2e2e2 !important;
+}
+
+
+/* =========================
+   ACCESSIBILITY
+========================= */
+
+.account-dropdown > button:focus-visible {
+  outline: 2px solid var(--jumia-orange) !important;
+  outline-offset: -2px !important;
+}
+/* إخفاء زر الإغلاق الموجود في الهيدر */
+.navbar .close-btn,
+.navbar .close-button,
+.navbar .header-close,
+.navbar .menu-close {
+  display: none !important;
+}
+/* =========================================================
+   ELSAFTY STORE
+   PREMIUM CATEGORY NAVBAR
+   JUMIA / AMAZON MARKETPLACE STYLE
+========================================================= */
+
+/* =========================
+   CATEGORY BAR
+========================= */
+
+.navbar-bottom-wrapper {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  background: #ffffff !important;
+
+  border-top: 1px solid #f0f0f0 !important;
+  border-bottom: 1px solid #dedede !important;
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06) !important;
+
+  direction: rtl !important;
+
+  position: relative !important;
+  z-index: 100003 !important;
+
+  overflow: visible !important;
+}
+
+
+/* =========================
+   CATEGORY SCROLLER
+========================= */
+
+.navbar-bottom {
+  width: 100% !important;
+  height: 48px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 3px !important;
+
+  padding: 0 12px !important;
+  margin: 0 !important;
+
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+
+  direction: rtl !important;
+
+  scrollbar-width: none !important;
+
+  scroll-behavior: smooth;
+}
+
+.navbar-bottom::-webkit-scrollbar {
+  display: none !important;
+}
+
+
+/* =========================
+   CATEGORY WRAPPER
+========================= */
+
+.nav-category-wrapper {
+  position: relative !important;
+
+  height: 48px !important;
+
+  flex: 0 0 auto !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  overflow: visible !important;
+}
+
+
+/* =========================
+   CATEGORY BUTTON
+========================= */
+
+.nav-category-item {
+  height: 40px !important;
+
+  min-width: 0 !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  gap: 7px !important;
+
+  padding: 0 16px !important;
+
+  background: transparent !important;
+
+  border: 0 !important;
+  border-bottom: 3px solid transparent !important;
+
+  border-radius: 6px !important;
+
+  color: #333333 !important;
+
+  font-family: var(--nav-font) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  white-space: nowrap !important;
+
+  cursor: pointer;
 
   position: relative !important;
 
-  z-index: 10000 !important;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease !important;
 }
 
-.top-offer-bar .offer-track,
-.top-offer-bar .offer-text {
-  position: absolute !important;
 
-  top: 0;
+/* =========================
+   SEPARATOR
+========================= */
+
+.nav-category-item::after {
+  content: "";
+
+  position: absolute;
+
   left: 0;
+  top: 10px;
 
-  height: 100%;
+  width: 1px;
+  height: 20px;
+
+  background: #eeeeee;
 
   pointer-events: none;
+}
 
-  transform-origin: center center;
 
-  backface-visibility: hidden;
+/* =========================
+   ICON
+========================= */
 
-  will-change: transform;
+.nav-category-item > span {
+  width: 27px !important;
+  height: 27px !important;
 
-  z-index: 1;
+  flex: 0 0 27px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  color: #555555;
+
+  font-size: 16px !important;
+
+  line-height: 1 !important;
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease !important;
+}
+
+
+/* =========================
+   CATEGORY IMAGE
+========================= */
+
+.nav-category-item img {
+  width: 27px !important;
+  height: 27px !important;
+
+  flex: 0 0 27px !important;
+
+  display: block !important;
+
+  object-fit: cover !important;
+
+  background: #ffffff !important;
+
+  border: 1px solid #eeeeee !important;
+
+  border-radius: 50% !important;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease !important;
+}
+
+
+/* =========================
+   TITLE
+========================= */
+
+.nav-category-item strong {
+  color: inherit !important;
+
+  font-family: var(--nav-font) !important;
+
+  font-size: 12px !important;
+  font-weight: 800 !important;
+
+  line-height: 1 !important;
+
+  white-space: nowrap !important;
+}
+
+
+/* =========================
+   HOVER
+========================= */
+
+.nav-category-item:hover {
+  background: #fff5ea !important;
+
+  color: var(--jumia-orange-dark) !important;
+
+  border-bottom-color: var(--jumia-orange) !important;
+}
+
+.nav-category-item:hover > span {
+  color: var(--jumia-orange) !important;
+
+  transform: translateY(-1px);
+}
+
+.nav-category-item:hover img {
+  border-color: #f6c58f !important;
+
+  transform: scale(1.06);
+}
+
+
+/* =========================
+   ACTIVE / OPEN
+========================= */
+
+.nav-category-wrapper.category-is-open
+.nav-category-item {
+  background: #fff5ea !important;
+
+  color: var(--jumia-orange-dark) !important;
+
+  border-bottom-color: var(--jumia-orange) !important;
+}
+
+.nav-category-wrapper.category-is-open
+.nav-category-item > span {
+  color: var(--jumia-orange) !important;
+}
+
+
+/* =========================
+   ARROW
+========================= */
+
+.category-down-arrow {
+  width: 16px !important;
+  height: 16px !important;
+
+  flex: 0 0 16px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  margin: 0 !important;
+
+  color: var(--jumia-orange) !important;
+
+  font-size: 9px !important;
+
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease !important;
+}
+
+.nav-category-wrapper.category-is-open
+.category-down-arrow {
+  transform: rotate(180deg);
+}
+
+
+/* =========================
+   HOME
+========================= */
+
+.nav-category-item.home-item {
+  color: var(--jumia-orange-dark) !important;
+
+  background: #fff8f0 !important;
+
+  font-weight: 800 !important;
+}
+
+.nav-category-item.home-item:hover {
+  background: var(--jumia-orange) !important;
+
+  color: #ffffff !important;
+}
+
+.nav-category-item.home-item:hover > span {
+  color: #ffffff !important;
+}
+
+
+/* =========================
+   OFFERS
+========================= */
+
+.nav-category-item.offer-item {
+  color: var(--jumia-orange-dark) !important;
+
+  font-weight: 800 !important;
+}
+
+.nav-category-item.offer-item:hover {
+  background: var(--jumia-orange) !important;
+
+  color: #ffffff !important;
+}
+
+
+/* =========================
+   CATEGORY ARROWS
+========================= */
+
+.category-arrow {
+  width: 38px !important;
+  height: 48px !important;
+
+  flex: 0 0 38px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+
+  background: #ffffff !important;
+
+  color: #666666 !important;
+
+  font-size: 18px !important;
+  font-weight: 800 !important;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.category-arrow:hover {
+  background: #fff5ea !important;
+
+  color: var(--jumia-orange) !important;
+
+  box-shadow:
+    inset 0 -3px 0 var(--jumia-orange) !important;
+}
+
+
+/* =========================================================
+   إخفاء أي زر إغلاق داخل شريط الأقسام فقط
+========================================================= */
+
+.navbar-bottom-wrapper .close-btn,
+.navbar-bottom-wrapper .close-button,
+.navbar-bottom-wrapper .category-close,
+.navbar-bottom-wrapper .nav-close,
+.navbar-bottom-wrapper .close,
+.navbar-bottom-wrapper button[aria-label="Close"],
+.navbar-bottom-wrapper button[aria-label="close"],
+.navbar-bottom-wrapper button[title="Close"],
+.navbar-bottom-wrapper button[title="close"] {
+  display: none !important;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (min-width: 601px) and (max-width: 1000px) {
+
+  .navbar-bottom-wrapper {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+
+  .navbar-bottom {
+    height: 46px !important;
+
+    padding: 0 8px !important;
+
+    gap: 2px !important;
+  }
+
+  .nav-category-wrapper {
+    height: 46px !important;
+  }
+
+  .nav-category-item {
+    height: 38px !important;
+
+    padding: 0 12px !important;
+
+    gap: 5px !important;
+  }
+
+  .nav-category-item strong {
+    font-size: 11px !important;
+  }
+
+  .nav-category-item > span {
+    width: 24px !important;
+    height: 24px !important;
+
+    flex-basis: 24px !important;
+
+    font-size: 14px !important;
+  }
+
+  .nav-category-item img {
+    width: 24px !important;
+    height: 24px !important;
+
+    flex-basis: 24px !important;
+  }
+
+  .category-arrow {
+    width: 34px !important;
+    flex-basis: 34px !important;
+    height: 46px !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .navbar-bottom-wrapper {
+    height: 42px !important;
+    min-height: 42px !important;
+
+    border-bottom: 1px solid #dddddd !important;
+
+    box-shadow:
+      0 2px 7px rgba(0, 0, 0, 0.07) !important;
+  }
+
+  .navbar-bottom {
+    height: 42px !important;
+
+    padding: 0 5px !important;
+
+    gap: 2px !important;
+
+    overflow-x: auto !important;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-category-wrapper {
+    height: 42px !important;
+  }
+
+  .nav-category-item {
+    height: 35px !important;
+
+    padding: 0 10px !important;
+
+    gap: 5px !important;
+
+    border-radius: 5px !important;
+  }
+
+  .nav-category-item strong {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+  }
+
+  .nav-category-item > span {
+    width: 21px !important;
+    height: 21px !important;
+
+    flex-basis: 21px !important;
+
+    font-size: 14px !important;
+  }
+
+  .nav-category-item img {
+    width: 21px !important;
+    height: 21px !important;
+
+    flex-basis: 21px !important;
+  }
+
+  .category-down-arrow {
+    width: 13px !important;
+    height: 13px !important;
+
+    flex-basis: 13px !important;
+
+    font-size: 8px !important;
+  }
+
+  .category-arrow {
+    width: 29px !important;
+    height: 42px !important;
+
+    flex-basis: 29px !important;
+
+    font-size: 16px !important;
+  }
+
+  .nav-category-item::after {
+    top: 9px;
+    height: 17px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .navbar-bottom-wrapper {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .navbar-bottom {
+    height: 40px !important;
+
+    padding: 0 3px !important;
+  }
+
+  .nav-category-wrapper {
+    height: 40px !important;
+  }
+
+  .nav-category-item {
+    height: 33px !important;
+
+    padding: 0 8px !important;
+
+    gap: 4px !important;
+  }
+
+  .nav-category-item strong {
+    font-size: 9px !important;
+  }
+
+  .nav-category-item > span,
+  .nav-category-item img {
+    width: 19px !important;
+    height: 19px !important;
+    flex-basis: 19px !important;
+  }
+
+  .category-arrow {
+    width: 27px !important;
+    height: 40px !important;
+    flex-basis: 27px !important;
+  }
+}
+
+
+/* =========================================================
+   TOUCH
+========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+
+  .nav-category-item:hover {
+    background: transparent !important;
+    color: #333333 !important;
+    border-bottom-color: transparent !important;
+  }
+
+  .nav-category-item.home-item:hover,
+  .nav-category-item.offer-item:hover {
+    background: #fff8f0 !important;
+    color: var(--jumia-orange-dark) !important;
+  }
+
+  .nav-category-wrapper.category-is-open
+  .nav-category-item {
+    background: #fff5ea !important;
+    color: var(--jumia-orange-dark) !important;
+    border-bottom-color: var(--jumia-orange) !important;
+  }
+}
+/* =========================================================
+   REMOVE CLOSE BUTTON FROM CATEGORY BAR
+   ========================================================= */
+
+.navbar-bottom-wrapper .close-btn,
+.navbar-bottom-wrapper .close-button,
+.navbar-bottom-wrapper .category-close,
+.navbar-bottom-wrapper .category-close-btn,
+.navbar-bottom-wrapper button[aria-label="Close"],
+.navbar-bottom-wrapper button[aria-label="close"],
+.navbar-bottom-wrapper button[title="Close"],
+.navbar-bottom-wrapper button[title="close"] {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
 }

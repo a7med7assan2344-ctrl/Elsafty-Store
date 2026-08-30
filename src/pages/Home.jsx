@@ -294,16 +294,15 @@ function Home({
       seconds: "00",
     });
 
-  const DAILY_WHEEL_ATTEMPTS =
-    Math.max(
-      1,
-      Number(
-        wheelSettings?.attemptsPerUser ||
-          defaultWheelSettings.attemptsPerUser
-      )
-    );
-
-  const SPIN_DURATION = 5;
+const DAILY_WHEEL_ATTEMPTS =
+  Math.max(
+    1,
+    Number(
+      wheelSettings?.attemptsPerUser ??
+        defaultWheelSettings.attemptsPerUser ??
+        1
+    )
+  );  const SPIN_DURATION = 5;
 
   // ===================================================
   // CURRENT USER
@@ -1485,196 +1484,219 @@ function Home({
     };
 
   // ===================================================
-  // SPIN WHEEL
+// SPIN WHEEL
+// ===================================================
+
+const spinWheel = async () => {
+  if (
+    isSpinning ||
+    activeWheelPrizes.length === 0
+  ) {
+    return;
+  }
+
+  if (!currentUser?.uid) {
+    alert(
+      "من فضلك سجل الدخول أولاً حتى تتمكن من لف العجلة."
+    );
+
+    navigate("/login");
+    return;
+  }
+
+  const today = getLocalDateKey();
+
+  const attemptRef = doc(
+    db,
+    "wheelAttempts",
+    `${currentUser.uid}_${today}`
+  );
+
+  let newAttempts = 0;
+
+  // ===================================================
+  // REGISTER ATTEMPT
   // ===================================================
 
-  const spinWheel =
-    async () => {
-      if (
-        isSpinning ||
-        activeWheelPrizes.length ===
-          0
-      ) {
-        return;
-      }
+  try {
+    await runTransaction(
+      db,
+      async (transaction) => {
+        const snapshot =
+          await transaction.get(attemptRef);
 
-      if (!currentUser?.uid) {
-        alert(
-          "من فضلك سجل الدخول أولاً حتى تتمكن من لف العجلة."
-        );
+        const currentAttempts =
+          snapshot.exists()
+            ? Number(
+                snapshot.data()?.attempts || 0
+              )
+            : 0;
 
-        navigate("/login");
-
-        return;
-      }
-
-      const today =
-        getLocalDateKey();
-
-      const attemptRef =
-        doc(
-          db,
-          "wheelAttempts",
-          `${currentUser.uid}_${today}`
-        );
-
-      let newAttempts = 0;
-
-      try {
-        await runTransaction(
-          db,
-          async (transaction) => {
-            const snapshot =
-              await transaction.get(
-                attemptRef
-              );
-
-            const currentAttempts =
-              snapshot.exists()
-                ? Number(
-                    snapshot.data()
-                      ?.attempts || 0
-                  )
-                : 0;
-
-            if (
-              currentAttempts >=
-              DAILY_WHEEL_ATTEMPTS
-            ) {
-              throw new Error(
-                "DAILY_LIMIT_REACHED"
-              );
-            }
-
-            newAttempts =
-              currentAttempts + 1;
-
-            transaction.set(
-              attemptRef,
-              {
-                uid: currentUser.uid,
-
-                attempts:
-                  newAttempts,
-
-                date: today,
-
-                updatedAt:
-                  new Date().toISOString(),
-              },
-              {
-                merge: true,
-              }
-            );
-          }
-        );
-
-        setWheelAttempts(
-          newAttempts
-        );
-      } catch (error) {
         if (
-          error?.message ===
-          "DAILY_LIMIT_REACHED"
+          currentAttempts >=
+          DAILY_WHEEL_ATTEMPTS
         ) {
-          setWheelAttempts(
-            DAILY_WHEEL_ATTEMPTS
+          throw new Error(
+            "DAILY_LIMIT_REACHED"
           );
-
-          alert(
-            `لقد استخدمت ${DAILY_WHEEL_ATTEMPTS} محاولاتك المسموح بها اليوم. ارجع بكرة وجرب حظك من جديد ❤️`
-          );
-
-          return;
         }
 
-        console.error(
-          "Wheel Spin Error:",
-          error
-        );
+        newAttempts =
+          currentAttempts + 1;
 
-        alert(
-          "حصل خطأ أثناء تشغيل العجلة، حاول مرة أخرى."
+        transaction.set(
+          attemptRef,
+          {
+            uid: currentUser.uid,
+            attempts: newAttempts,
+            date: today,
+            updatedAt:
+              new Date().toISOString(),
+          },
+          {
+            merge: true,
+          }
         );
-
-        return;
       }
+    );
 
-      // ================================================
-      // SELECT PRIZE
-      // ================================================
-
-      const randomIndex =
-        Math.floor(
-          Math.random() *
-            activeWheelPrizes.length
-        );
-
-      const selectedPrize =
-        activeWheelPrizes[
-          randomIndex
-        ];
-
-      // ================================================
-      // CALCULATE ROTATION
-      // ================================================
-
-      const segmentAngle =
-        360 /
-        activeWheelPrizes.length;
-
-      /*
-       * المؤشر ثابت في الأعلى.
-       * نحسب مركز القطاع الفائز
-       * ونجعله يصل إلى المؤشر.
-       */
-      const targetAngle =
-        -(
-          randomIndex *
-            segmentAngle +
-          segmentAngle / 2
-        );
-
-      const extraRotation =
-        360 * 6;
-
-      const finalRotation =
-        wheelRotation +
-        extraRotation +
-        targetAngle;
-
-      // ================================================
-      // START
-      // ================================================
-
-      setIsSpinning(true);
-
-      setWheelResult(null);
-
-      setSpinCountdown(
-        SPIN_DURATION
+    setWheelAttempts(newAttempts);
+  } catch (error) {
+    if (
+      error?.message ===
+      "DAILY_LIMIT_REACHED"
+    ) {
+      setWheelAttempts(
+        DAILY_WHEEL_ATTEMPTS
       );
 
+      alert(
+        `لقد استخدمت ${DAILY_WHEEL_ATTEMPTS} محاولاتك المسموح بها اليوم. ارجع بكرة وجرب حظك من جديد ❤️`
+      );
+
+      return;
+    }
+
+    console.error(
+      "Wheel Spin Error:",
+      error
+    );
+
+    alert(
+      "حصل خطأ أثناء تشغيل العجلة، حاول مرة أخرى."
+    );
+
+    return;
+  }
+
+  // ===================================================
+  // SELECT PRIZE
+  // ===================================================
+
+  const randomIndex =
+    Math.floor(
+      Math.random() *
+        activeWheelPrizes.length
+    );
+
+  const selectedPrize =
+    activeWheelPrizes[randomIndex];
+
+  // ===================================================
+  // CALCULATE ROTATION
+  // ===================================================
+
+  const segmentAngle =
+    360 / activeWheelPrizes.length;
+
+  /*
+   * المؤشر موجود أعلى العجلة عند 12:00.
+   *
+   * مركز القطاع:
+   * randomIndex * segmentAngle + segmentAngle / 2
+   *
+   * لذلك نقوم بتدوير العجلة في الاتجاه
+   * العكسي حتى يصل مركز القطاع للمؤشر.
+   */
+
+  const prizeCenterAngle =
+    randomIndex * segmentAngle +
+    segmentAngle / 2;
+
+  const targetAngle =
+    360 - prizeCenterAngle;
+
+  // عدد اللفات الكاملة
+  const extraRotation = 360 * 6;
+
+  /*
+   * نستخدم rotation الحالية حتى لا يحصل
+   * رجوع مفاجئ للعجلة بين كل محاولة.
+   */
+  const normalizedCurrentRotation =
+    ((wheelRotation % 360) + 360) % 360;
+
+  const normalizedTargetAngle =
+    ((targetAngle % 360) + 360) % 360;
+
+  let additionalRotation =
+    normalizedTargetAngle -
+    normalizedCurrentRotation;
+
+  if (additionalRotation < 0) {
+    additionalRotation += 360;
+  }
+
+  const finalRotation =
+    wheelRotation +
+    extraRotation +
+    additionalRotation;
+
+  // ===================================================
+  // START SPIN
+  // ===================================================
+
+  setIsSpinning(true);
+
+  setWheelResult(null);
+
+  setSpinCountdown(SPIN_DURATION);
+
+  // إلغاء أي Timer قديم
+  if (spinTimerRef.current) {
+    clearTimeout(
+      spinTimerRef.current
+    );
+  }
+
+  // تشغيل الدوران
+  setWheelRotation(
+    finalRotation
+  );
+
+  // ===================================================
+  // FINISH
+  // ===================================================
+
+  spinTimerRef.current =
+    setTimeout(() => {
+      setIsSpinning(false);
+
+      setSpinCountdown(0);
+
+      setWheelResult(
+        selectedPrize
+      );
+
+      /*
+       * نحافظ على قيمة rotation
+       * بدل إعادة العجلة للصفر.
+       */
       setWheelRotation(
         finalRotation
       );
-
-      // ================================================
-      // FINISH
-      // ================================================
-
-      spinTimerRef.current =
-        setTimeout(() => {
-          setIsSpinning(false);
-
-          setSpinCountdown(0);
-
-          setWheelResult(
-            selectedPrize
-          );
-        }, SPIN_DURATION * 1000);
-    };
-
+    }, SPIN_DURATION * 1000);
+};
   // ===================================================
   // DYNAMIC CSS
   // ===================================================

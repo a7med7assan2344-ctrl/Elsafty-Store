@@ -1,3055 +1,1384 @@
-import React, {
-  useState,
-  useEffect,
-} from "react";
-
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-
-import {
-  onAuthStateChanged,
-} from "firebase/auth";
-
-import {
-  auth,
-  db,
-} from "../firebase";
-
-import "./Checkout.css";
-
-
-function Checkout({
-  cart,
-  setCart,
-  setCurrentView,
-}) {
-
-  // ==================================================
-  // STATES
-  // ==================================================
-
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-
-  const [paymentMethod, setPaymentMethod] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [currentUser, setCurrentUser] =
-    useState(null);
-
-  const [categories, setCategories] =
-    useState([]);
-
-  const [categoriesLoading, setCategoriesLoading] =
-    useState(true);
-
-  const [paymentMethods, setPaymentMethods] =
-    useState([]);
-
-  const [paymentMethodsLoading, setPaymentMethodsLoading] =
-    useState(true);
-
-  const [shippingZones, setShippingZones] =
-    useState([]);
-
-  const [shippingZonesLoading, setShippingZonesLoading] =
-    useState(true);
-
-  const [selectedShippingZone, setSelectedShippingZone] =
-    useState("");
-
-  const [shippingCost, setShippingCost] =
-    useState(0);
-
-  const [couponCode, setCouponCode] =
-    useState("");
-
-  const [appliedCoupon, setAppliedCoupon] =
-    useState(null);
-
-  const [couponLoading, setCouponLoading] =
-    useState(false);
-
-  const [couponError, setCouponError] =
-    useState("");
-
-  const [couponMessage, setCouponMessage] =
-    useState("");
-
-  // ==================================================
-  // REVIEW
-  // ==================================================
-
-  const [showReview, setShowReview] =
-    useState(false);
-
-  const [reviewData, setReviewData] =
-    useState(null);
-
-
-  // ==================================================
-  // RESTORE CART
-  // ==================================================
-
-  useEffect(() => {
-
-    if (
-      Array.isArray(cart) &&
-      cart.length > 0
-    ) {
-      return;
-    }
-
-    try {
-
-      const savedCart =
-        localStorage.getItem("cart");
-
-      if (!savedCart) {
-        return;
-      }
-
-      const parsedCart =
-        JSON.parse(savedCart);
-
-      if (
-        !Array.isArray(parsedCart) ||
-        parsedCart.length === 0
-      ) {
-        return;
-      }
-
-      const preparedCart =
-        parsedCart.map((item) => ({
-
-          ...item,
-
-          id:
-            item.id ||
-            item.productId ||
-            item._id,
-
-          productId:
-            item.productId ||
-            item.id ||
-            item._id,
-
-          quantity:
-            Math.max(
-              1,
-              Number(item.quantity || 1)
-            ),
-
-          cartId:
-            item.cartId ||
-            item.id ||
-            item.productId ||
-            item._id,
-
-        }));
-
-      setCart(preparedCart);
-
-    } catch (error) {
-
-      console.error(
-        "❌ Restore Cart Error:",
-        error
-      );
-
-    }
-
-  }, [cart, setCart]);
-
-
-  // ==================================================
-  // CURRENT USER
-  // ==================================================
-
-  useEffect(() => {
-
-    const unsubscribe =
-      onAuthStateChanged(
-        auth,
-        (user) => {
-
-          setCurrentUser(
-            user || null
-          );
-
-        }
-      );
-
-    return () => {
-      unsubscribe();
-    };
-
-  }, []);
-
-
-  // ==================================================
-  // LOAD CATEGORIES
-  // ==================================================
-
-  useEffect(() => {
-
-    const loadCategories =
-      async () => {
-
-        try {
-
-          setCategoriesLoading(true);
-
-          const snapshot =
-            await getDocs(
-              collection(
-                db,
-                "categories"
-              )
-            );
-
-          const loadedCategories =
-            snapshot.docs.map(
-              (item) => ({
-                id: item.id,
-                ...item.data(),
-              })
-            );
-
-          setCategories(
-            loadedCategories
-          );
-
-        } catch (error) {
-
-          console.error(
-            "❌ خطأ تحميل الأقسام:",
-            error
-          );
-
-          setCategories([]);
-
-        } finally {
-
-          setCategoriesLoading(false);
-
-        }
-
-      };
-
-    loadCategories();
-
-  }, []);
-
-
-  // ==================================================
-  // LOAD PAYMENT METHODS
-  // ==================================================
-
-  useEffect(() => {
-
-    const loadPaymentMethods =
-      async () => {
-
-        try {
-
-          setPaymentMethodsLoading(true);
-
-          const snapshot =
-            await getDocs(
-              collection(
-                db,
-                "paymentMethods"
-              )
-            );
-
-          const loadedMethods =
-            snapshot.docs
-              .map(
-                (item) => ({
-                  id: item.id,
-                  ...item.data(),
-                })
-              )
-              .filter(
-                (method) =>
-                  method.active !== false
-              );
-
-          setPaymentMethods(
-            loadedMethods
-          );
-
-        } catch (error) {
-
-          console.error(
-            "❌ خطأ تحميل طرق الدفع:",
-            error
-          );
-
-          setPaymentMethods([
-            {
-              id: "cash_on_delivery",
-              title: "الدفع عند الاستلام",
-              icon: "💵",
-              number: "",
-              description:
-                "ادفع قيمة الطلب عند استلامه",
-              active: true,
-            },
-          ]);
-
-        } finally {
-
-          setPaymentMethodsLoading(false);
-
-        }
-
-      };
-
-    loadPaymentMethods();
-
-  }, []);
-
-
-  // ==================================================
-  // DEFAULT PAYMENT METHOD
-  // ==================================================
-
-  useEffect(() => {
-
-    if (
-      paymentMethods.length === 0
-    ) {
-      return;
-    }
-
-    const selectedStillExists =
-      paymentMethods.some(
-        (method) =>
-          String(method.id) ===
-          String(paymentMethod)
-      );
-
-    if (
-      !paymentMethod ||
-      !selectedStillExists
-    ) {
-
-      const cashMethod =
-        paymentMethods.find(
-          (method) =>
-            method.id ===
-              "cash_on_delivery" ||
-            method.id === "cash" ||
-            method.id === "cod"
-        );
-
-      setPaymentMethod(
-        cashMethod?.id ||
-        paymentMethods[0].id
-      );
-
-    }
-
-  }, [
-    paymentMethods,
-    paymentMethod,
-  ]);
-
-
-  // ==================================================
-  // LOAD SHIPPING ZONES
-  // ==================================================
-
-  useEffect(() => {
-
-    const loadShippingZones =
-      async () => {
-
-        try {
-
-          setShippingZonesLoading(true);
-
-          const snapshot =
-            await getDocs(
-              collection(
-                db,
-                "shippingZones"
-              )
-            );
-
-          const loadedZones =
-            snapshot.docs
-              .map(
-                (item) => ({
-                  id: item.id,
-                  ...item.data(),
-                })
-              )
-              .filter(
-                (zone) =>
-                  zone.active !== false
-              );
-
-          setShippingZones(
-            loadedZones
-          );
-
-        } catch (error) {
-
-          console.error(
-            "❌ خطأ تحميل مناطق الشحن:",
-            error
-          );
-
-          setShippingZones([]);
-
-        } finally {
-
-          setShippingZonesLoading(false);
-
-        }
-
-      };
-
-    loadShippingZones();
-
-  }, []);
-
-
-  // ==================================================
-  // SELECTED SHIPPING ZONE
-  // ==================================================
-
-  const selectedZone =
-    shippingZones.find(
-      (zone) =>
-        String(zone.id) ===
-        String(selectedShippingZone)
-    ) || null;
-
-
-  // ==================================================
-  // SHIPPING COST
-  // ==================================================
-
-  useEffect(() => {
-
-    if (
-      !selectedShippingZone ||
-      !selectedZone
-    ) {
-
-      setShippingCost(0);
-
-      return;
-
-    }
-
-    const zonePrice =
-      Number(
-        selectedZone.price ??
-        selectedZone.shippingCost ??
-        selectedZone.cost ??
-        selectedZone.amount ??
-        0
-      );
-
-    setShippingCost(
-      zonePrice >= 0
-        ? zonePrice
-        : 0
-    );
-
-  }, [
-    selectedShippingZone,
-    selectedZone,
-  ]);
-
-
-  // ==================================================
-  // NORMALIZE PHONE
-  // ==================================================
-
-  const normalizePhone = (value) => {
-
-    if (!value) {
-      return "";
-    }
-
-    let cleanPhone =
-      String(value)
-        .replace(/\D/g, "");
-
-    if (
-      cleanPhone.startsWith("01") &&
-      cleanPhone.length === 11
-    ) {
-
-      return cleanPhone;
-
-    }
-
-    if (
-      cleanPhone.startsWith("20") &&
-      cleanPhone.length === 12
-    ) {
-
-      return (
-        "0" +
-        cleanPhone.slice(2)
-      );
-
-    }
-
-    return cleanPhone;
-
-  };
-
-
-  // ==================================================
-  // FIND CATEGORY
-  // ==================================================
-
-  const findCategoryForProduct = (
-    product
-  ) => {
-
-    if (!product) {
-      return null;
-    }
-
-    const productCategoryId =
-      product.categoryId ||
-      product.categoryID ||
-      product.category_id ||
-      product.category?.id ||
-      product.category?.categoryId ||
-      null;
-
-    if (productCategoryId) {
-
-      const directCategory =
-        categories.find(
-          (cat) =>
-            String(cat.id) ===
-            String(productCategoryId)
-        );
-
-      if (directCategory) {
-        return directCategory;
-      }
-
-    }
-
-    if (
-      typeof product.category ===
-      "string"
-    ) {
-
-      const category =
-        categories.find(
-          (cat) =>
-            String(cat.id) ===
-              String(product.category) ||
-            String(
-              cat.categoryNumber
-            ) ===
-              String(product.category)
-        );
-
-      if (category) {
-        return category;
-      }
-
-    }
-
-    const productCategoryNumber =
-      product.categoryNumber ||
-      product.categoryNo ||
-      product.departmentNumber ||
-      null;
-
-    if (
-      productCategoryNumber !== null &&
-      productCategoryNumber !== undefined &&
-      productCategoryNumber !== ""
-    ) {
-
-      const category =
-        categories.find(
-          (cat) =>
-            String(
-              cat.categoryNumber
-            ) ===
-            String(
-              productCategoryNumber
-            )
-        );
-
-      if (category) {
-        return category;
-      }
-
-    }
-
-    return null;
-
-  };
-
-
-  // ==================================================
-  // FIND DEPARTMENT WHATSAPP
-  // ==================================================
-
-  const getDepartmentWhatsapp = (
-    product
-  ) => {
-
-    let category =
-      findCategoryForProduct(
-        product
-      );
-
-    const visited =
-      new Set();
-
-    while (
-      category &&
-      !visited.has(category.id)
-    ) {
-
-      visited.add(
-        category.id
-      );
-
-      const whatsapp =
-        normalizePhone(
-          category.whatsapp
-        );
-
-      if (whatsapp) {
-
-        return {
-          phone: whatsapp,
-          category,
-        };
-
-      }
-
-      if (
-        category.parentId
-      ) {
-
-        category =
-          categories.find(
-            (cat) =>
-              String(cat.id) ===
-              String(
-                category.parentId
-              )
-          );
-
-      } else {
-
-        category = null;
-
-      }
-
-    }
-
-    return {
-      phone: "",
-      category: null,
-    };
-
-  };
-
-
-  // ==================================================
-  // PAYMENT TEXT
-  // ==================================================
-
-  const getPaymentMethodText = (
-    method
-  ) => {
-
-    if (!method) {
-      return "غير محدد";
-    }
-
-    const foundMethod =
-      paymentMethods.find(
-        (item) =>
-          String(item.id) ===
-          String(method)
-      );
-
-    if (foundMethod?.title) {
-      return foundMethod.title;
-    }
-
-    const value =
-      String(method)
-        .trim()
-        .toLowerCase();
-
-    const fallbackMap = {
-
-      cash_on_delivery:
-        "الدفع عند الاستلام",
-
-      cash:
-        "الدفع عند الاستلام",
-
-      cod:
-        "الدفع عند الاستلام",
-
-      vodafone_cash:
-        "Vodafone Cash",
-
-      we_pay:
-        "WE Pay",
-
-      instapay:
-        "InstaPay",
-
-      card:
-        "الدفع الإلكتروني",
-
-      online:
-        "الدفع الإلكتروني",
-
-    };
-
-    return (
-      fallbackMap[value] ||
-      method ||
-      "غير محدد"
-    );
-
-  };
-
-
-  // ==================================================
-  // PAYMENT NUMBER
-  // ==================================================
-
-  const getPaymentNumber = (
-    method
-  ) => {
-
-    const selectedPayment =
-      paymentMethods.find(
-        (item) =>
-          String(item.id) ===
-          String(method)
-      );
-
-    if (
-      selectedPayment?.number
-    ) {
-
-      return selectedPayment.number;
-
-    }
-
-    if (
-      selectedPayment?.phone
-    ) {
-
-      return selectedPayment.phone;
-
-    }
-
-    return "";
-
-  };
-
-
-  // ==================================================
-  // SUBTOTAL
-  // ==================================================
-
-  const subtotal =
-    Array.isArray(cart)
-      ? cart.reduce(
-          (sum, item) => {
-
-            const price =
-              Number(
-                item?.price || 0
-              );
-
-            const quantity =
-              Number(
-                item?.quantity || 1
-              );
-
-            return (
-              sum +
-              price * quantity
-            );
-
-          },
-          0
-        )
-      : 0;
-
-
-  // ==================================================
-  // COUPON DISCOUNT
-  // ==================================================
-
-  const couponDiscount =
-    appliedCoupon
-      ? appliedCoupon.type ===
-        "percentage"
-        ? Math.min(
-            subtotal,
-            subtotal *
-              (
-                Number(
-                  appliedCoupon.value ||
-                  0
-                ) / 100
-              )
-          )
-        : Math.min(
-            subtotal,
-            Number(
-              appliedCoupon.value ||
-              0
-            )
-          )
-      : 0;
-
-
-  // ==================================================
-  // TOTALS
-  // ==================================================
-
-  const totalBeforeShipping =
-    Math.max(
-      subtotal -
-        couponDiscount,
-      0
-    );
-
-  const finalTotal =
-    Math.max(
-      totalBeforeShipping +
-        shippingCost,
-      0
-    );
-
-
-  // ==================================================
-  // APPLY COUPON
-  // ==================================================
-
-  const handleApplyCoupon =
-    async () => {
-
-      const cleanCode =
-        couponCode
-          .trim()
-          .toUpperCase();
-
-      if (!cleanCode) {
-
-        setCouponError(
-          "اكتب كود الخصم أولًا."
-        );
-
-        setCouponMessage("");
-
-        return;
-
-      }
-
-      setCouponLoading(true);
-      setCouponError("");
-      setCouponMessage("");
-      setAppliedCoupon(null);
-
-      try {
-
-        const couponQuery =
-          query(
-            collection(
-              db,
-              "coupons"
-            ),
-            where(
-              "code",
-              "==",
-              cleanCode
-            )
-          );
-
-        const snapshot =
-          await getDocs(
-            couponQuery
-          );
-
-        if (
-          snapshot.empty
-        ) {
-
-          setCouponError(
-            "كود الخصم غير صحيح."
-          );
-
-          return;
-
-        }
-
-        const couponDoc =
-          snapshot.docs[0];
-
-        const coupon = {
-          id: couponDoc.id,
-          ...couponDoc.data(),
-        };
-
-        if (
-          coupon.active === false
-        ) {
-
-          setCouponError(
-            "كود الخصم غير مفعل."
-          );
-
-          return;
-
-        }
-
-        const minimumOrder =
-          Number(
-            coupon.minOrder || 0
-          );
-
-        if (
-          subtotal <
-          minimumOrder
-        ) {
-
-          setCouponError(
-            `الحد الأدنى لاستخدام الكوبون هو ${minimumOrder.toLocaleString(
-              "ar-EG"
-            )} ج.م`
-          );
-
-          return;
-
-        }
-
-        const couponValue =
-          Number(
-            coupon.value || 0
-          );
-
-        if (
-          couponValue <= 0
-        ) {
-
-          setCouponError(
-            "قيمة الكوبون غير صحيحة."
-          );
-
-          return;
-
-        }
-
-        if (
-          coupon.type !==
-            "percentage" &&
-          coupon.type !==
-            "fixed"
-        ) {
-
-          setCouponError(
-            "نوع الخصم غير صحيح."
-          );
-
-          return;
-
-        }
-
-        setAppliedCoupon(
-          coupon
-        );
-
-        setCouponMessage(
-          `✅ تم تطبيق الكوبون ${coupon.code} بنجاح.`
-        );
-
-      } catch (error) {
-
-        console.error(
-          "❌ Coupon error:",
-          error
-        );
-
-        setCouponError(
-          "حدث خطأ أثناء التحقق من الكوبون."
-        );
-
-      } finally {
-
-        setCouponLoading(false);
-
-      }
-
-    };
-
-
-  // ==================================================
-  // REMOVE COUPON
-  // ==================================================
-
-  const handleRemoveCoupon =
-    () => {
-
-      setAppliedCoupon(null);
-      setCouponCode("");
-      setCouponError("");
-      setCouponMessage("");
-
-    };
-
-
-  // ==================================================
-  // PREPARE ORDER
-  // ==================================================
-
-  const prepareOrder = () => {
-
-    if (loading) {
-      return;
-    }
-
-    if (!currentUser?.uid) {
-
-      alert(
-        "يجب تسجيل الدخول أولًا لإتمام الطلب"
-      );
-
-      return;
-
-    }
-
-    if (
-      !Array.isArray(cart) ||
-      cart.length === 0
-    ) {
-
-      alert(
-        "السلة فارغة"
-      );
-
-      return;
-
-    }
-
-    if (categoriesLoading) {
-
-      alert(
-        "جاري تحميل بيانات الأقسام، حاول مرة أخرى بعد لحظات."
-      );
-
-      return;
-
-    }
-
-    if (
-      !Array.isArray(categories) ||
-      categories.length === 0
-    ) {
-
-      alert(
-        "لم يتم تحميل الأقسام من Firebase."
-      );
-
-      return;
-
-    }
-
-    if (paymentMethodsLoading) {
-
-      alert(
-        "جاري تحميل طرق الدفع، حاول مرة أخرى بعد لحظات."
-      );
-
-      return;
-
-    }
-
-    if (shippingZonesLoading) {
-
-      alert(
-        "جاري تحميل مناطق الشحن، حاول مرة أخرى بعد لحظات."
-      );
-
-      return;
-
-    }
-
-    const cleanName =
-      name.trim();
-
-    const cleanPhone =
-      normalizePhone(phone);
-
-    const cleanAddress =
-      address.trim();
-
-    if (
-      !cleanName ||
-      !cleanPhone ||
-      !cleanAddress
-    ) {
-
-      alert(
-        "الرجاء إكمال بيانات الشحن (الاسم، الهاتف، العنوان)"
-      );
-
-      return;
-
-    }
-
-    if (!paymentMethod) {
-
-      alert(
-        "برجاء اختيار طريقة الدفع"
-      );
-
-      return;
-
-    }
-
-    if (
-      cleanPhone.length < 10 ||
-      cleanPhone.length > 15
-    ) {
-
-      alert(
-        "برجاء إدخال رقم هاتف صحيح"
-      );
-
-      return;
-
-    }
-
-
-    // ==================================================
-    // FIND DEPARTMENT
-    // ==================================================
-
-    let departmentWhatsapp =
-      "";
-
-    let departmentCategory =
-      null;
-
-    for (
-      const item of cart
-    ) {
-
-      const result =
-        getDepartmentWhatsapp(
-          item
-        );
-
-      if (
-        result.phone
-      ) {
-
-        departmentWhatsapp =
-          result.phone;
-
-        departmentCategory =
-          result.category;
-
-        break;
-
-      }
-
-    }
-
-    if (
-      !departmentWhatsapp
-    ) {
-
-      alert(
-        "لا يوجد رقم واتساب صالح للقسم.\n\n" +
-        "تأكد أن المنتج مرتبط بقسم، وأن القسم أو القسم الأب يحتوي على رقم واتساب في Firebase."
-      );
-
-      return;
-
-    }
-
-
-    // ==================================================
-    // PREPARE PRODUCTS
-    // ==================================================
-
-    const orderProducts =
-      cart.map(
-        (item) => {
-
-          const quantity =
-            Math.max(
-              1,
-              Number(
-                item?.quantity || 1
-              )
-            );
-
-          const price =
-            Number(
-              item?.price || 0
-            );
-
-          const productId =
-            item?.id ||
-            item?.productId ||
-            item?._id ||
-            null;
-
-          const productTitle =
-            item?.title ||
-            item?.name ||
-            "منتج";
-
-          const variantName =
-            item?.variantName ||
-            item?.selectedVariant?.name ||
-            item?.selectedVariant?.title ||
-            item?.selectedVariant?.label ||
-            "";
-
-          const variantId =
-            item?.variantId ||
-            item?.selectedVariant?.id ||
-            null;
-
-          const category =
-            findCategoryForProduct(
-              item
-            );
-
-          return {
-
-            productId,
-
-            title:
-              productTitle,
-
-            name:
-              productTitle,
-
-            quantity,
-
-            price,
-
-            total:
-              price * quantity,
-
-            variantName,
-
-            variantId,
-
-            categoryId:
-              category?.id ||
-              item?.categoryId ||
-              null,
-
-            categoryNumber:
-              category?.categoryNumber ||
-              item?.categoryNumber ||
-              "",
-
-            categoryName:
-              category?.name ||
-              "",
-
-          };
-
-        }
-      );
-
-
-    // ==================================================
-    // PAYMENT
-    // ==================================================
-
-    const selectedPayment =
-      paymentMethods.find(
-        (item) =>
-          String(item.id) ===
-          String(paymentMethod)
-      );
-
-    const paymentNumber =
-      getPaymentNumber(
-        paymentMethod
-      );
-
-    const paymentTitle =
-      selectedPayment?.title ||
-      selectedPayment?.name ||
-      getPaymentMethodText(
-        paymentMethod
-      );
-
-
-    // ==================================================
-    // SHIPPING
-    // ==================================================
-
-    const shippingZoneName =
-      selectedZone?.name ||
-      selectedZone?.title ||
-      "";
-
-
-    // ==================================================
-    // REVIEW DATA
-    // ==================================================
-
-    const data = {
-
-      cleanName,
-
-      cleanPhone,
-
-      cleanAddress,
-
-      orderProducts,
-
-      departmentWhatsapp,
-
-      departmentCategory,
-
-      paymentMethod,
-
-      paymentNumber,
-
-      paymentTitle,
-
-      shippingZoneId:
-        selectedShippingZone ||
-        "",
-
-      shippingZoneName,
-
-      subtotal,
-
-      couponDiscount,
-
-      shippingCost,
-
-      finalTotal,
-
-      appliedCoupon:
-        appliedCoupon
-          ? {
-              id:
-                appliedCoupon.id ||
-                "",
-              code:
-                appliedCoupon.code ||
-                cleanCodeForStorage(
-                  appliedCoupon.code
-                ),
-              type:
-                appliedCoupon.type ||
-                "",
-              value:
-                Number(
-                  appliedCoupon.value ||
-                  0
-                ),
-            }
-          : null,
-
-    };
-
-    setReviewData(data);
-    setShowReview(true);
-
-  };
-
-
-  // ==================================================
-  // CLEAN COUPON CODE
-  // ==================================================
-
-  const cleanCodeForStorage = (
-    value
-  ) => {
-
-    return String(
-      value || ""
-    )
-      .trim()
-      .toUpperCase();
-
-  };
-
-
-  // ==================================================
-  // EDIT REVIEW
-  // ==================================================
-
-  const handleEditOrder =
-    () => {
-
-      if (loading) {
-        return;
-      }
-
-      setShowReview(false);
-      setReviewData(null);
-
-    };
-
-
-  // ==================================================
-  // CANCEL REVIEW
-  // ==================================================
-
-  const handleCancelReview =
-    () => {
-
-      if (loading) {
-        return;
-      }
-
-      setShowReview(false);
-      setReviewData(null);
-
-    };
-
-
-  // ==================================================
-  // CONFIRM FINAL ORDER
-  // ==================================================
-
-  const handleConfirmOrder =
-    async () => {
-
-      if (
-        loading ||
-        !reviewData
-      ) {
-
-        return;
-
-      }
-
-      if (!currentUser?.uid) {
-
-        alert(
-          "يجب تسجيل الدخول أولًا."
-        );
-
-        return;
-
-      }
-
-      setLoading(true);
-
-      try {
-
-        const {
-          cleanName,
-          cleanPhone,
-          cleanAddress,
-          orderProducts,
-          departmentWhatsapp,
-          departmentCategory,
-          paymentMethod,
-          paymentNumber,
-          paymentTitle,
-          shippingZoneId,
-          shippingZoneName,
-          subtotal,
-          couponDiscount,
-          shippingCost,
-          finalTotal,
-          appliedCoupon: confirmedCoupon,
-        } = reviewData;
-
-
-        // ==================================================
-        // ORDER DATA
-        // ==================================================
-
-        const orderData = {
-
-          // ==================================================
-          // CUSTOMER ID
-          // ==================================================
-
-          userId:
-            currentUser.uid,
-
-          uid:
-            currentUser.uid,
-
-          customerId:
-            currentUser.uid,
-
-          userUID:
-            currentUser.uid,
-
-
-          // ==================================================
-          // CUSTOMER DATA
-          // ==================================================
-
-          customerName:
-            cleanName,
-
-          name:
-            cleanName,
-
-          customerEmail:
-            currentUser.email ||
-            "",
-
-          email:
-            currentUser.email ||
-            "",
-
-          customerPhone:
-            cleanPhone,
-
-          phone:
-            cleanPhone,
-
-          address:
-            cleanAddress,
-
-
-          // ==================================================
-          // PRODUCTS
-          // ==================================================
-
-          products:
-            orderProducts,
-
-
-          // ==================================================
-          // DEPARTMENT
-          // ==================================================
-
-          departmentId:
-            departmentCategory?.id ||
-            "",
-
-          departmentNumber:
-            departmentCategory?.categoryNumber ||
-            "",
-
-          departmentName:
-            departmentCategory?.name ||
-            "",
-
-          departmentWhatsapp:
-            departmentWhatsapp,
-
-
-          // ==================================================
-          // SHIPPING
-          // ==================================================
-
-          shippingZoneId:
-            shippingZoneId ||
-            "",
-
-          shippingZoneName:
-            shippingZoneName ||
-            "",
-
-          shippingCost:
-            Number(
-              shippingCost || 0
-            ),
-
-
-          // ==================================================
-          // TOTALS
-          // ==================================================
-
-          subtotal:
-            Number(
-              subtotal || 0
-            ),
-
-          discount:
-            Number(
-              couponDiscount || 0
-            ),
-
-          shipping:
-            Number(
-              shippingCost || 0
-            ),
-
-          total:
-            Number(
-              finalTotal || 0
-            ),
-
-          totalPrice:
-            Number(
-              finalTotal || 0
-            ),
-
-
-          // ==================================================
-          // COUPON
-          // ==================================================
-
-          couponId:
-            confirmedCoupon?.id ||
-            "",
-
-          couponCode:
-            confirmedCoupon?.code ||
-            "",
-
-          couponType:
-            confirmedCoupon?.type ||
-            "",
-
-          couponValue:
-            Number(
-              confirmedCoupon?.value ||
-              0
-            ),
-
-
-          // ==================================================
-          // PAYMENT
-          // ==================================================
-
-          paymentMethod:
-            paymentMethod ||
-            "",
-
-          paymentMethodName:
-            paymentTitle ||
-            "",
-
-          paymentNumber:
-            paymentNumber ||
-            "",
-
-          paymentStatus:
-            "pending",
-
-
-          // ==================================================
-          // STATUS
-          // ==================================================
-
-          status:
-            "pending",
-
-          orderStatus:
-            "pending",
-
-
-          // ==================================================
-          // DATES
-          // ==================================================
-
-          createdAt:
-            serverTimestamp(),
-
-          updatedAt:
-            serverTimestamp(),
-
-        };
-
-
-        // ==================================================
-        // SAVE ORDER TO FIRESTORE
-        // ==================================================
-
-        const orderRef =
-          await addDoc(
-            collection(
-              db,
-              "orders"
-            ),
-            orderData
-          );
-
-
-        console.log(
-          "✅ تم إنشاء الطلب:",
-          orderRef.id
-        );
-
-
-        // ==================================================
-        // SUCCESS MESSAGE
-        // ==================================================
-
-        let successMessage =
-          "تم تسجيل طلبك بنجاح ✅\n\n" +
-          "رقم الطلب: " +
-          orderRef.id.slice(0, 8);
-
-
-        successMessage +=
-          "\n🏷️ القسم: " +
-          (
-            departmentCategory?.name ||
-            "غير محدد"
-          );
-
-
-        if (
-          departmentCategory?.categoryNumber
-        ) {
-
-          successMessage +=
-            "\n🔢 رقم القسم: " +
-            departmentCategory.categoryNumber;
-
-        }
-
-
-        successMessage +=
-          "\n📱 واتساب القسم: " +
-          (
-            departmentWhatsapp ||
-            "غير متوفر"
-          );
-
-
-        if (
-          shippingZoneName
-        ) {
-
-          successMessage +=
-            "\n🚚 منطقة الشحن: " +
-            shippingZoneName;
-
-        }
-
-
-        if (
-          Number(shippingCost) > 0
-        ) {
-
-          successMessage +=
-            "\n💵 تكلفة الشحن: " +
-            Number(
-              shippingCost
-            ).toLocaleString(
-              "ar-EG"
-            ) +
-            " جنيه";
-
-        }
-
-
-        if (
-          confirmedCoupon &&
-          Number(couponDiscount) > 0
-        ) {
-
-          successMessage +=
-            "\n🎟️ كود الخصم: " +
-            confirmedCoupon.code;
-
-          successMessage +=
-            "\n💸 قيمة الخصم: " +
-            Number(
-              couponDiscount
-            ).toLocaleString(
-              "ar-EG"
-            ) +
-            " جنيه";
-
-        }
-
-
-        successMessage +=
-          "\n\n💳 طريقة الدفع: " +
-          paymentTitle;
-
-
-        if (
-          paymentNumber
-        ) {
-
-          successMessage +=
-            "\n📱 رقم التحويل: " +
-            paymentNumber;
-
-        }
-
-
-        const isCashPayment =
-          paymentMethod ===
-            "cash_on_delivery" ||
-          paymentMethod ===
-            "cash" ||
-          paymentMethod ===
-            "cod";
-
-
-        if (
-          !isCashPayment
-        ) {
-
-          successMessage +=
-            "\n\nيرجى تحويل قيمة الطلب والاحتفاظ بإثبات الدفع.";
-
-        }
-
-
-        successMessage +=
-          "\n\n💰 إجمالي الطلب النهائي: " +
-          Number(
-            finalTotal
-          ).toLocaleString(
-            "ar-EG"
-          ) +
-          " جنيه";
-
-
-        // ==================================================
-        // CLEAR CART
-        // ==================================================
-
-        setCart([]);
-
-        try {
-
-          localStorage.removeItem(
-            "cart"
-          );
-
-        } catch (error) {
-
-          console.error(
-            "❌ Clear Local Cart Error:",
-            error
-          );
-
-        }
-
-
-        // ==================================================
-        // CLEAR REVIEW
-        // ==================================================
-
-        setShowReview(false);
-        setReviewData(null);
-
-
-        // ==================================================
-        // SUCCESS
-        // ==================================================
-
-        alert(
-          successMessage
-        );
-
-
-        // ==================================================
-        // RETURN STORE
-        // ==================================================
-
-        setCurrentView(
-          "store"
-        );
-
-      } catch (error) {
-
-        console.error(
-          "❌ Create Order Error:",
-          error
-        );
-
-        alert(
-          error?.message ||
-          "حدث خطأ أثناء تسجيل الطلب، حاول مرة أخرى."
-        );
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    };
-
-
-  // ==================================================
-  // EMPTY CART
-  // ==================================================
-
-  if (
-    !Array.isArray(cart) ||
-    cart.length === 0
-  ) {
-
-    return (
-
-      <div
-        className="checkout-container"
-        dir="rtl"
-      >
-
-        <div className="checkout-navigation">
-
-          <button
-            type="button"
-            className="checkout-nav-btn back-store-btn"
-            onClick={() =>
-              setCurrentView("store")
-            }
-          >
-            🏠 العودة للمتجر
-          </button>
-
-          <button
-            type="button"
-            className="checkout-nav-btn back-cart-btn"
-            onClick={() =>
-              setCurrentView("cart")
-            }
-          >
-            🛒 العودة للسلة
-          </button>
-
-        </div>
-
-
-        <h2>
-          🛒 السلة فارغة
-        </h2>
-
-
-        <button
-          type="button"
-          className="submit-order-btn"
-          onClick={() =>
-            setCurrentView("store")
-          }
-        >
-          العودة للمتجر 🛍️
-        </button>
-
-      </div>
-
-    );
-
-  }
-
-
-  // ==================================================
-  // REVIEW SCREEN
-  // ==================================================
-
-  if (
-    showReview &&
-    reviewData
-  ) {
-
-    return (
-
-      <div
-        className="checkout-container checkout-review-container"
-        dir="rtl"
-      >
-
-        <div className="checkout-navigation">
-
-          <button
-            type="button"
-            className="checkout-nav-btn back-store-btn"
-            onClick={() =>
-              setCurrentView("store")
-            }
-            disabled={loading}
-          >
-            🏠 العودة للمتجر
-          </button>
-
-
-          <button
-            type="button"
-            className="checkout-nav-btn back-cart-btn"
-            onClick={() =>
-              setCurrentView("cart")
-            }
-            disabled={loading}
-          >
-            🛒 العودة للسلة
-          </button>
-
-        </div>
-
-
-        <h2>
-          📝 مراجعة الطلب
-        </h2>
-
-
-        <p className="checkout-subtitle">
-          راجع بياناتك والطلب قبل التأكيد النهائي
-        </p>
-
-
-        {/* CUSTOMER */}
-
-        <div className="review-section">
-
-          <h3>
-            👤 بيانات العميل
-          </h3>
-
-
-          <div className="review-row">
-
-            <span>
-              الاسم
-            </span>
-
-            <strong>
-              {reviewData.cleanName}
-            </strong>
-
-          </div>
-
-
-          <div className="review-row">
-
-            <span>
-              الهاتف
-            </span>
-
-            <strong dir="ltr">
-              {reviewData.cleanPhone}
-            </strong>
-
-          </div>
-
-
-          <div className="review-row review-address">
-
-            <span>
-              العنوان
-            </span>
-
-            <strong>
-              {reviewData.cleanAddress}
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        {/* PRODUCTS */}
-
-        <div className="review-section">
-
-          <h3>
-            📦 المنتجات
-          </h3>
-
-
-          {reviewData.orderProducts.map(
-            (item, index) => (
-
-              <div
-                className="review-product-row"
-                key={
-                  item.productId ||
-                  item.variantId ||
-                  index
-                }
-              >
-
-                <div>
-
-                  <strong>
-                    {item.title}
-                  </strong>
-
-
-                  {item.variantName && (
-
-                    <small>
-                      المتغير:{" "}
-                      {item.variantName}
-                    </small>
-
-                  )}
-
-                </div>
-
-
-                <span>
-                  × {item.quantity}
-                </span>
-
-
-                <strong>
-                  {Number(
-                    item.total || 0
-                  ).toLocaleString(
-                    "ar-EG"
-                  )}{" "}
-                  ج.م
-                </strong>
-
-              </div>
-
-            )
-          )}
-
-        </div>
-
-
-        {/* PAYMENT & SHIPPING */}
-
-        <div className="review-section">
-
-          <h3>
-            💳 الدفع والشحن
-          </h3>
-
-
-          <div className="review-row">
-
-            <span>
-              طريقة الدفع
-            </span>
-
-            <strong>
-              {reviewData.paymentTitle}
-            </strong>
-
-          </div>
-
-
-          {reviewData.paymentNumber && (
-
-            <div className="review-row">
-
-              <span>
-                رقم التحويل
-              </span>
-
-              <strong dir="ltr">
-                {reviewData.paymentNumber}
-              </strong>
-
-            </div>
-
-          )}
-
-
-          {reviewData.shippingZoneName && (
-
-            <div className="review-row">
-
-              <span>
-                منطقة الشحن
-              </span>
-
-              <strong>
-                {reviewData.shippingZoneName}
-              </strong>
-
-            </div>
-
-          )}
-
-
-          {Number(
-            reviewData.shippingCost || 0
-          ) > 0 && (
-
-            <div className="review-row">
-
-              <span>
-                تكلفة الشحن
-              </span>
-
-              <strong>
-                {Number(
-                  reviewData.shippingCost
-                ).toLocaleString(
-                  "ar-EG"
-                )}{" "}
-                ج.م
-              </strong>
-
-            </div>
-
-          )}
-
-        </div>
-
-
-        {/* TOTAL */}
-
-        <div className="review-total-box">
-
-          <div>
-
-            <span>
-              إجمالي المنتجات
-            </span>
-
-            <strong>
-              {Number(
-                reviewData.subtotal || 0
-              ).toLocaleString(
-                "ar-EG"
-              )}{" "}
-              ج.م
-            </strong>
-
-          </div>
-
-
-          {Number(
-            reviewData.couponDiscount || 0
-          ) > 0 && (
-
-            <div>
-
-              <span>
-                الخصم
-              </span>
-
-              <strong>
-                -{" "}
-                {Number(
-                  reviewData.couponDiscount
-                ).toLocaleString(
-                  "ar-EG"
-                )}{" "}
-                ج.م
-              </strong>
-
-            </div>
-
-          )}
-
-
-          {Number(
-            reviewData.shippingCost || 0
-          ) > 0 && (
-
-            <div>
-
-              <span>
-                الشحن
-              </span>
-
-              <strong>
-                {Number(
-                  reviewData.shippingCost
-                ).toLocaleString(
-                  "ar-EG"
-                )}{" "}
-                ج.م
-              </strong>
-
-            </div>
-
-          )}
-
-
-          <div className="review-final-total">
-
-            <span>
-              الإجمالي النهائي
-            </span>
-
-            <strong>
-              {Number(
-                reviewData.finalTotal || 0
-              ).toLocaleString(
-                "ar-EG"
-              )}{" "}
-              ج.م
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        {/* ACTIONS */}
-
-        <div className="checkout-review-actions">
-
-          <button
-            type="button"
-            className="review-edit-btn"
-            onClick={handleEditOrder}
-            disabled={loading}
-          >
-            ✏️ تعديل الطلب
-          </button>
-
-
-          <button
-            type="button"
-            className="review-cancel-btn"
-            onClick={handleCancelReview}
-            disabled={loading}
-          >
-            ❌ إلغاء
-          </button>
-
-
-          <button
-            type="button"
-            className="review-confirm-btn"
-            onClick={handleConfirmOrder}
-            disabled={loading}
-          >
-            {loading
-              ? "⏳ جاري تسجيل الطلب..."
-              : "✅ تأكيد الطلب النهائي"}
-          </button>
-
-        </div>
-
-      </div>
-
-    );
-
-  }
-
-
-  // ==================================================
-  // MAIN CHECKOUT
-  // ==================================================
-
-  return (
-
-    <div
-      className="checkout-container"
-      dir="rtl"
-    >
-
-      {/* NAVIGATION */}
-
-      <div className="checkout-navigation">
-
-        <button
-          type="button"
-          className="checkout-nav-btn back-store-btn"
-          onClick={() =>
-            setCurrentView("store")
-          }
-          disabled={loading}
-        >
-          🏠 العودة للمتجر
-        </button>
-
-
-        <button
-          type="button"
-          className="checkout-nav-btn back-cart-btn"
-          onClick={() =>
-            setCurrentView("cart")
-          }
-          disabled={loading}
-        >
-          🛒 العودة للسلة
-        </button>
-
-      </div>
-
-
-      <h2>
-        إتمام الطلب 🛒
-      </h2>
-
-
-      <p className="checkout-subtitle">
-        أدخل بيانات الشحن واختر طريقة الدفع
-      </p>
-
-
-      <form
-        className="checkout-form"
-        onSubmit={(e) => {
-
-          e.preventDefault();
-
-          prepareOrder();
-
-        }}
-      >
-
-        {/* NAME */}
-
-        <div className="form-group">
-
-          <label>
-            الاسم الكامل:
-          </label>
-
-          <input
-            type="text"
-            placeholder="أدخل اسمك هنا"
-            value={name}
-            onChange={(e) =>
-              setName(
-                e.target.value
-              )
-            }
-            disabled={loading}
-            required
-          />
-
-        </div>
-
-
-        {/* PHONE */}
-
-        <div className="form-group">
-
-          <label>
-            رقم الهاتف:
-          </label>
-
-          <input
-            type="tel"
-            inputMode="tel"
-            placeholder="01553570220"
-            value={phone}
-            onChange={(e) =>
-              setPhone(
-                e.target.value
-              )
-            }
-            disabled={loading}
-            required
-          />
-
-        </div>
-
-
-        {/* ADDRESS */}
-
-        <div className="form-group">
-
-          <label>
-            عنوان الشحن بالتفصيل:
-          </label>
-
-          <textarea
-            placeholder="المحافظة - المدينة - الشارع - رقم المنزل"
-            value={address}
-            onChange={(e) =>
-              setAddress(
-                e.target.value
-              )
-            }
-            rows="4"
-            disabled={loading}
-            required
-          />
-
-        </div>
-
-
-        {/* SHIPPING */}
-
-        {shippingZones.length > 0 && (
-
-          <div className="form-group">
-
-            <label>
-              🚚 منطقة الشحن:
-            </label>
-
-            <select
-              value={
-                selectedShippingZone
-              }
-              onChange={(e) =>
-                setSelectedShippingZone(
-                  e.target.value
-                )
-              }
-              disabled={
-                loading ||
-                shippingZonesLoading
-              }
-            >
-
-              <option value="">
-                اختر منطقة الشحن
-              </option>
-
-
-              {shippingZones.map(
-                (zone) => {
-
-                  const zonePrice =
-                    Number(
-                      zone.price ??
-                      zone.shippingCost ??
-                      zone.cost ??
-                      zone.amount ??
-                      0
-                    );
-
-                  return (
-
-                    <option
-                      key={zone.id}
-                      value={zone.id}
-                    >
-
-                      {zone.name ||
-                        zone.title ||
-                        "منطقة شحن"}
-
-                      {" - "}
-
-                      {zonePrice.toLocaleString(
-                        "ar-EG"
-                      )}{" "}
-                      ج.م
-
-                    </option>
-
-                  );
-
-                }
-              )}
-
-            </select>
-
-          </div>
-
-        )}
-
-
-        {/* PAYMENT */}
-
-        <div className="payment-method-section">
-
-          <h3>
-            💳 اختر طريقة الدفع
-          </h3>
-
-
-          {paymentMethodsLoading ? (
-
-            <div className="empty-state">
-              ⏳ جاري تحميل طرق الدفع...
-            </div>
-
-          ) : paymentMethods.length === 0 ? (
-
-            <div className="empty-state">
-              لا توجد طرق دفع متاحة حاليًا.
-            </div>
-
-          ) : (
-
-            <div className="payment-methods">
-
-              {paymentMethods.map(
-                (method) => {
-
-                  const isSelected =
-                    String(paymentMethod) ===
-                    String(method.id);
-
-                  const methodNumber =
-                    method.number ||
-                    method.phone ||
-                    "";
-
-                  const methodDescription =
-                    method.description ||
-                    "متاح للدفع عند إتمام الطلب";
-
-                  return (
-
-                    <label
-                      key={method.id}
-                      className={
-                        `payment-method-card ${
-                          isSelected
-                            ? "selected"
-                            : ""
-                        }`
-                      }
-                    >
-
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.id}
-                        checked={isSelected}
-                        onChange={() =>
-                          setPaymentMethod(
-                            method.id
-                          )
-                        }
-                        disabled={loading}
-                      />
-
-
-                      <div className="payment-method-content">
-
-                        <div className="payment-method-title">
-
-                          <span className="payment-icon">
-                            {
-                              method.icon ||
-                              "💳"
-                            }
-                          </span>
-
-
-                          <strong>
-                            {
-                              method.title ||
-                              method.name ||
-                              "طريقة دفع"
-                            }
-                          </strong>
-
-                        </div>
-
-
-                        <p>
-                          {methodDescription}
-                        </p>
-
-
-                        {methodNumber && (
-
-                          <div className="payment-number">
-
-                            📱{" "}
-
-                            <strong>
-                              {methodNumber}
-                            </strong>
-
-                          </div>
-
-                        )}
-
-                      </div>
-
-                    </label>
-
-                  );
-
-                }
-              )}
-
-            </div>
-
-          )}
-
-
-          {paymentMethod &&
-            paymentMethod !==
-              "cash_on_delivery" &&
-            paymentMethod !==
-              "cash" &&
-            paymentMethod !==
-              "cod" && (
-
-            <div className="payment-notice">
-
-              ⚠️{" "}
-
-              <strong>
-                تنبيه:
-              </strong>
-
-              <br />
-
-              بعد تحويل مبلغ الطلب على الرقم الموضح،
-              يرجى الاحتفاظ بإثبات الدفع.
-
-            </div>
-
-          )}
-
-        </div>
-
-
-        {/* COUPON */}
-
-        <div className="coupon-section">
-
-          <h3>
-            🎟️ لديك كود خصم؟
-          </h3>
-
-
-          <div className="coupon-input-row">
-
-            <input
-              type="text"
-              placeholder="أدخل كود الخصم"
-              value={couponCode}
-              onChange={(e) => {
-
-                setCouponCode(
-                  e.target.value.toUpperCase()
-                );
-
-                setCouponError("");
-                setCouponMessage("");
-
-              }}
-              disabled={
-                loading ||
-                couponLoading ||
-                !!appliedCoupon
-              }
-            />
-
-
-            {!appliedCoupon ? (
-
-              <button
-                type="button"
-                className="save-btn"
-                onClick={
-                  handleApplyCoupon
-                }
-                disabled={
-                  loading ||
-                  couponLoading
-                }
-              >
-
-                {couponLoading
-                  ? "⏳ جاري التحقق..."
-                  : "تطبيق"}
-
-              </button>
-
-            ) : (
-
-              <button
-                type="button"
-                className="cancel-btn"
-                onClick={
-                  handleRemoveCoupon
-                }
-                disabled={loading}
-              >
-
-                إزالة الكوبون
-
-              </button>
-
-            )}
-
-          </div>
-
-
-          {couponError && (
-
-            <div className="coupon-error">
-
-              ❌{" "}
-              {couponError}
-
-            </div>
-
-          )}
-
-
-          {couponMessage && (
-
-            <div className="coupon-success">
-
-              {couponMessage}
-
-            </div>
-
-          )}
-
-        </div>
-
-
-        {/* PRODUCTS */}
-
-        <div className="order-products-preview">
-
-          <h3>
-            📦 المنتجات المطلوبة
-          </h3>
-
-
-          {cart.map(
-            (item, index) => {
-
-              const quantity =
-                Math.max(
-                  1,
-                  Number(
-                    item?.quantity || 1
-                  )
-                );
-
-              const price =
-                Number(
-                  item?.price || 0
-                );
-
-              const itemTotal =
-                price *
-                quantity;
-
-
-              return (
-
-                <div
-                  className="checkout-product-row"
-                  key={
-                    item?.cartId ||
-                    item?.id ||
-                    item?.productId ||
-                    index
-                  }
-                >
-
-                  <div>
-
-                    <strong>
-                      {
-                        item?.title ||
-                        item?.name ||
-                        "منتج"
-                      }
-                    </strong>
-
-
-                    {(item?.variantName ||
-                      item?.selectedVariant?.name ||
-                      item?.selectedVariant?.title ||
-                      item?.selectedVariant?.label) && (
-
-                      <small>
-
-                        المتغير:{" "}
-
-                        {
-                          item?.variantName ||
-                          item?.selectedVariant?.name ||
-                          item?.selectedVariant?.title ||
-                          item?.selectedVariant?.label
-                        }
-
-                      </small>
-
-                    )}
-
-                  </div>
-
-
-                  <span>
-                    × {quantity}
-                  </span>
-
-
-                  <strong>
-
-                    {itemTotal.toLocaleString(
-                      "ar-EG"
-                    )}
-
-                    {" "}
-                    ج.م
-
-                  </strong>
-
-                </div>
-
-              );
-
-            }
-          )}
-
-        </div>
-
-
-        {/* TOTAL */}
-
-        <div className="order-summary-box">
-
-          <h4>
-
-            إجمالي المنتجات:
-
-            <span>
-
-              {subtotal.toLocaleString(
-                "ar-EG"
-              )}
-
-              {" "}
-              جنيه
-
-            </span>
-
-          </h4>
-
-
-          {couponDiscount > 0 && (
-
-            <h4>
-
-              الخصم:
-
-              <span>
-
-                -{" "}
-                {couponDiscount.toLocaleString(
-                  "ar-EG"
-                )}
-
-                {" "}
-                جنيه
-
-              </span>
-
-            </h4>
-
-          )}
-
-
-          {shippingCost > 0 && (
-
-            <h4>
-
-              الشحن:
-
-              <span>
-
-                {shippingCost.toLocaleString(
-                  "ar-EG"
-                )}
-
-                {" "}
-                جنيه
-
-              </span>
-
-            </h4>
-
-          )}
-
-
-          <h4>
-
-            الإجمالي النهائي:
-
-            <span>
-
-              {finalTotal.toLocaleString(
-                "ar-EG"
-              )}
-
-              {" "}
-              جنيه
-
-            </span>
-
-          </h4>
-
-        </div>
-
-
-        {/* SUBMIT */}
-
-        <button
-          type="submit"
-          className="submit-order-btn"
-          disabled={
-            loading ||
-            categoriesLoading ||
-            paymentMethodsLoading ||
-            shippingZonesLoading
-          }
-        >
-
-          {loading
-            ? "⏳ جاري التجهيز..."
-            : categoriesLoading
-              ? "⏳ جاري تحميل الأقسام..."
-              : paymentMethodsLoading
-                ? "⏳ جاري تحميل طرق الدفع..."
-                : shippingZonesLoading
-                  ? "⏳ جاري تحميل الشحن..."
-                  : "مراجعة الطلب وتأكيده ✅"}
-
-        </button>
-
-
-        {/* CANCEL */}
-
-        <button
-          type="button"
-          className="checkout-cancel-main-btn"
-          onClick={() =>
-            setCurrentView("cart")
-          }
-          disabled={loading}
-        >
-
-          ❌ إلغاء والعودة للسلة
-
-        </button>
-
-      </form>
-
-    </div>
-
-  );
-
+```css
+/* ==========================================================
+   ELSAFTY STORE - CHECKOUT
+   Professional RTL Checkout
+   Blue + Gold / Responsive
+   ========================================================== */
+
+.checkout-container {
+  width: 100%;
+  max-width: 820px;
+  margin: 35px auto;
+  padding: 30px;
+  background: #ffffff;
+  direction: rtl;
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  border-radius: 22px;
+  box-shadow:
+    0 12px 35px rgba(7, 26, 54, 0.10),
+    0 2px 8px rgba(7, 26, 54, 0.04);
+  box-sizing: border-box;
 }
 
+/* ==========================================================
+   NAVIGATION
+   ========================================================== */
 
-export default Checkout;
+.checkout-navigation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.checkout-nav-btn {
+  min-height: 48px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.back-store-btn {
+  border: 1px solid #0b1f3a;
+  background: #0b1f3a;
+  color: #ffffff;
+}
+
+.back-cart-btn {
+  border: 1px solid #d4af37;
+  background: #ffffff;
+  color: #0b1f3a;
+}
+
+.checkout-nav-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 18px rgba(7, 26, 54, 0.14);
+}
+
+.back-store-btn:hover:not(:disabled) {
+  background: #071a36;
+}
+
+.back-cart-btn:hover:not(:disabled) {
+  background: #fffdf5;
+}
+
+.checkout-nav-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   HEADER
+   ========================================================== */
+
+.checkout-container h2 {
+  margin: 0;
+  text-align: center;
+  color: #0b1f3a;
+  font-size: 29px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.checkout-subtitle {
+  margin: 8px 0 30px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* ==========================================================
+   FORM
+   ========================================================== */
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: #071a36;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 15px;
+  box-sizing: border-box;
+
+  border: 1px solid #d8dee8;
+  border-radius: 11px;
+
+  background: #ffffff;
+  color: #071a36;
+
+  font-family: inherit;
+  font-size: 15px;
+
+  outline: none;
+
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+
+.form-group textarea {
+  min-height: 120px;
+  line-height: 1.8;
+  resize: vertical;
+}
+
+.form-group select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #94a3b8;
+}
+
+.form-group input:hover,
+.form-group textarea:hover,
+.form-group select:hover {
+  border-color: #b9c3d1;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14);
+  background: #fffef9;
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled,
+.form-group select:disabled {
+  background: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ==========================================================
+   PAYMENT METHODS
+   ========================================================== */
+
+.payment-method-section {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+
+  background: #fbfcfe;
+  border: 1px solid #e1e6ee;
+  border-radius: 17px;
+}
+
+.payment-method-section h3 {
+  margin: 0 0 15px;
+  color: #0b1f3a;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.payment-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.payment-method-card {
+  position: relative;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  min-width: 0;
+  padding: 17px;
+
+  border: 1px solid #dce2ea;
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  cursor: pointer;
+
+  box-sizing: border-box;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.payment-method-card:hover {
+  transform: translateY(-2px);
+  border-color: #d4af37;
+  box-shadow: 0 6px 16px rgba(7, 26, 54, 0.08);
+}
+
+.payment-method-card.selected {
+  border-color: #d4af37;
+  background: #fffdf5;
+  box-shadow:
+    0 6px 18px rgba(212, 175, 55, 0.12),
+    inset 0 0 0 1px rgba(212, 175, 55, 0.12);
+}
+
+.payment-method-card input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+
+  accent-color: #d4af37;
+
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.payment-method-content {
+  width: 100%;
+  min-width: 0;
+}
+
+.payment-method-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  min-width: 0;
+
+  color: #071a36;
+}
+
+.payment-method-title strong {
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.payment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  border-radius: 9px;
+
+  background: #f1f5f9;
+
+  font-size: 20px;
+}
+
+.payment-method-card.selected .payment-icon {
+  background: #fff3bd;
+}
+
+.payment-method-content p {
+  margin: 8px 0 0;
+
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.payment-number {
+  margin-top: 10px;
+
+  color: #475569;
+  font-size: 12px;
+
+  direction: ltr;
+  text-align: right;
+}
+
+.payment-number strong {
+  color: #0b1f3a;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+}
+
+.payment-notice {
+  margin-top: 14px;
+  padding: 14px 15px;
+
+  border: 1px solid #e6c94c;
+  border-radius: 12px;
+
+  background: #fff9df;
+  color: #6b5510;
+
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.payment-notice strong {
+  color: #4d3b00;
+}
+
+/* ==========================================================
+   COUPON
+   ========================================================== */
+
+.coupon-section {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+
+  background: #f8fafc;
+  border: 1px solid #e0e5ec;
+  border-radius: 17px;
+}
+
+.coupon-section h3 {
+  margin: 0 0 13px;
+
+  color: #0b1f3a;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.coupon-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+.coupon-input-row input {
+  flex: 1;
+  min-width: 0;
+
+  padding: 13px 14px;
+
+  border: 1px solid #d8dee8;
+  border-radius: 10px;
+
+  background: #ffffff;
+  color: #071a36;
+
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+
+  outline: none;
+
+  text-transform: uppercase;
+  direction: ltr;
+  text-align: left;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.coupon-input-row input::placeholder {
+  color: #94a3b8;
+  text-transform: none;
+}
+
+.coupon-input-row input:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.13);
+}
+
+.coupon-input-row input:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.save-btn,
+.cancel-btn {
+  min-width: 120px;
+  padding: 12px 18px;
+
+  border-radius: 10px;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.save-btn {
+  border: 1px solid #0b1f3a;
+  background: #0b1f3a;
+  color: #ffffff;
+}
+
+.save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #071a36;
+  box-shadow: 0 5px 13px rgba(7, 26, 54, 0.18);
+}
+
+.cancel-btn {
+  border: 1px solid #d4af37;
+  background: #ffffff;
+  color: #0b1f3a;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #fffdf5;
+  box-shadow: 0 5px 13px rgba(212, 175, 55, 0.12);
+}
+
+.save-btn:disabled,
+.cancel-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.coupon-error,
+.coupon-success {
+  margin-top: 11px;
+  padding: 11px 13px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.coupon-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.coupon-success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+/* ==========================================================
+   ORDER PRODUCTS
+   ========================================================== */
+
+.order-products-preview {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+
+  background: #ffffff;
+  border: 1px solid #e0e5ec;
+  border-radius: 17px;
+}
+
+.order-products-preview h3 {
+  margin: 0 0 12px;
+
+  color: #0b1f3a;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.checkout-product-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+
+  align-items: center;
+  gap: 15px;
+
+  padding: 15px 0;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.checkout-product-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.checkout-product-row > div {
+  min-width: 0;
+}
+
+.checkout-product-row strong {
+  display: block;
+
+  color: #071a36;
+  font-size: 14px;
+  font-weight: 800;
+
+  line-height: 1.6;
+}
+
+.checkout-product-row small {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.checkout-product-row > span {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.checkout-product-row > strong:last-child {
+  color: #0b1f3a;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   ORDER SUMMARY
+   ========================================================== */
+
+.order-summary-box {
+  width: 100%;
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #d4af37;
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0b1f3a 0%,
+      #071a36 100%
+    );
+
+  color: #ffffff;
+
+  box-shadow: 0 8px 22px rgba(7, 26, 54, 0.14);
+}
+
+.order-summary-box h4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin: 0;
+  padding: 10px 0;
+
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  line-height: 1.6;
+}
+
+.order-summary-box h4 + h4 {
+  border-top: 1px solid rgba(212, 175, 55, 0.22);
+}
+
+.order-summary-box h4 span {
+  color: #d4af37;
+
+  font-size: 17px;
+  font-weight: 900;
+
+  white-space: nowrap;
+}
+
+.order-summary-box h4:last-child {
+  margin-top: 8px;
+  padding-top: 16px;
+
+  border-top: 1px solid rgba(212, 175, 55, 0.75);
+
+  color: #ffffff;
+
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.order-summary-box h4:last-child span {
+  color: #f4d06f;
+  font-size: 23px;
+}
+
+/* ==========================================================
+   SUBMIT ORDER
+   ========================================================== */
+
+.submit-order-btn {
+  width: 100%;
+
+  min-height: 56px;
+  padding: 15px 20px;
+
+  border: 1px solid #d4af37;
+  border-radius: 12px;
+
+  background: #0b1f3a;
+  color: #f4d06f;
+
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.submit-order-btn:hover:not(:disabled) {
+  background: #071a36;
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 9px 22px rgba(7, 26, 54, 0.20);
+}
+
+.submit-order-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==========================================================
+   WHATSAPP BUTTON
+   ========================================================== */
+
+.whatsapp-submit-btn {
+  width: 100%;
+
+  min-height: 54px;
+  padding: 15px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #25d366;
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.whatsapp-submit-btn:hover {
+  background: #1ebe5d;
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 18px rgba(37, 211, 102, 0.20);
+}
+
+/* ==========================================================
+   MAIN CANCEL
+   ========================================================== */
+
+.checkout-cancel-main-btn {
+  width: 100%;
+
+  min-height: 50px;
+  padding: 13px 20px;
+
+  border: 1px solid #dc2626;
+  border-radius: 12px;
+
+  background: #ffffff;
+  color: #b91c1c;
+
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.checkout-cancel-main-btn:hover:not(:disabled) {
+  background: #fef2f2;
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 5px 14px rgba(220, 38, 38, 0.10);
+}
+
+.checkout-cancel-main-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   EMPTY STATE
+   ========================================================== */
+
+.empty-state {
+  width: 100%;
+
+  padding: 25px 18px;
+
+  box-sizing: border-box;
+
+  text-align: center;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 13px;
+
+  background: #f8fafc;
+  color: #64748b;
+
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ==========================================================
+   REVIEW SCREEN
+   ========================================================== */
+
+.checkout-review-container {
+  max-width: 820px;
+}
+
+.review-section {
+  width: 100%;
+
+  margin-bottom: 16px;
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #e0e5ec;
+  border-radius: 17px;
+
+  box-shadow: 0 3px 12px rgba(7, 26, 54, 0.035);
+}
+
+.review-section h3 {
+  margin: 0 0 13px;
+
+  color: #0b1f3a;
+
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* ==========================================================
+   REVIEW CUSTOMER DATA
+   ========================================================== */
+
+.review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 12px 0;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.review-row:last-child {
+  border-bottom: none;
+}
+
+.review-row span {
+  flex-shrink: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.review-row strong {
+  color: #071a36;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  text-align: left;
+
+  word-break: break-word;
+}
+
+.review-address {
+  align-items: flex-start;
+}
+
+.review-address strong {
+  max-width: 72%;
+  line-height: 1.8;
+}
+
+/* ==========================================================
+   REVIEW PRODUCTS
+   ========================================================== */
+
+.review-product-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+
+  align-items: center;
+
+  gap: 15px;
+
+  padding: 14px 0;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.review-product-row:last-child {
+  border-bottom: none;
+}
+
+.review-product-row > div {
+  min-width: 0;
+}
+
+.review-product-row strong {
+  display: block;
+
+  color: #071a36;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  line-height: 1.6;
+}
+
+.review-product-row small {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.review-product-row > span {
+  color: #475569;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+.review-product-row > strong:last-child {
+  color: #0b1f3a;
+
+  font-size: 15px;
+
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   REVIEW TOTAL
+   ========================================================== */
+
+.review-total-box {
+  width: 100%;
+
+  margin-bottom: 20px;
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #d4af37;
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0b1f3a 0%,
+      #071a36 100%
+    );
+
+  color: #ffffff;
+
+  box-shadow: 0 8px 22px rgba(7, 26, 54, 0.14);
+}
+
+.review-total-box > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 9px 0;
+}
+
+.review-total-box span {
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.review-total-box strong {
+  color: #d4af37;
+
+  font-size: 16px;
+  font-weight: 900;
+
+  white-space: nowrap;
+}
+
+.review-final-total {
+  margin-top: 9px;
+  padding-top: 16px !important;
+
+  border-top: 1px solid rgba(212, 175, 55, 0.75);
+}
+
+.review-final-total span {
+  color: #ffffff;
+
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.review-final-total strong {
+  color: #f4d06f;
+
+  font-size: 24px;
+}
+
+/* ==========================================================
+   REVIEW ACTIONS
+   ========================================================== */
+
+.checkout-review-actions {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 12px;
+}
+
+.review-edit-btn,
+.review-cancel-btn,
+.review-confirm-btn {
+  min-height: 53px;
+
+  padding: 13px 16px;
+
+  border-radius: 12px;
+
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.review-edit-btn {
+  border: 1px solid #0b1f3a;
+  background: #ffffff;
+  color: #0b1f3a;
+}
+
+.review-cancel-btn {
+  border: 1px solid #dc2626;
+  background: #ffffff;
+  color: #b91c1c;
+}
+
+.review-confirm-btn {
+  grid-column: 1 / -1;
+
+  border: 1px solid #d4af37;
+
+  background: #0b1f3a;
+  color: #f4d06f;
+}
+
+.review-edit-btn:hover:not(:disabled),
+.review-cancel-btn:hover:not(:disabled),
+.review-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.review-edit-btn:hover:not(:disabled) {
+  background: #f8fafc;
+
+  box-shadow:
+    0 6px 15px rgba(7, 26, 54, 0.10);
+}
+
+.review-cancel-btn:hover:not(:disabled) {
+  background: #fef2f2;
+
+  box-shadow:
+    0 6px 15px rgba(220, 38, 38, 0.10);
+}
+
+.review-confirm-btn:hover:not(:disabled) {
+  background: #071a36;
+
+  box-shadow:
+    0 8px 20px rgba(7, 26, 54, 0.20);
+}
+
+.review-edit-btn:disabled,
+.review-cancel-btn:disabled,
+.review-confirm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   TABLET
+   ========================================================== */
+
+@media (max-width: 700px) {
+
+  .checkout-container {
+    width: calc(100% - 24px);
+
+    margin: 18px auto;
+    padding: 20px 15px;
+
+    border-radius: 17px;
+  }
+
+  .checkout-container h2 {
+    font-size: 23px;
+  }
+
+  .checkout-subtitle {
+    margin-bottom: 22px;
+    font-size: 13px;
+  }
+
+  .checkout-navigation {
+    grid-template-columns: 1fr;
+    gap: 9px;
+
+    margin-bottom: 22px;
+  }
+
+  .checkout-nav-btn {
+    width: 100%;
+  }
+
+  .checkout-form {
+    gap: 16px;
+  }
+
+  .payment-method-section,
+  .coupon-section,
+  .order-products-preview,
+  .review-section {
+    padding: 16px;
+  }
+
+  .payment-methods {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-method-card {
+    padding: 14px;
+  }
+
+  .coupon-input-row {
+    flex-direction: column;
+  }
+
+  .coupon-input-row input,
+  .save-btn,
+  .cancel-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .checkout-product-row {
+    grid-template-columns: 1fr auto;
+    gap: 7px 12px;
+  }
+
+  .checkout-product-row > div {
+    grid-column: 1 / -1;
+  }
+
+  .checkout-product-row > span {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .checkout-product-row > strong:last-child {
+    grid-column: 2;
+    grid-row: 2;
+
+    text-align: left;
+  }
+
+  .order-summary-box {
+    padding: 17px 14px;
+  }
+
+  .order-summary-box h4 {
+    font-size: 14px;
+  }
+
+  .order-summary-box h4 span {
+    font-size: 16px;
+  }
+
+  .order-summary-box h4:last-child {
+    font-size: 17px;
+  }
+
+  .order-summary-box h4:last-child span {
+    font-size: 21px;
+  }
+
+  .submit-order-btn,
+  .whatsapp-submit-btn {
+    font-size: 16px;
+  }
+
+  /* REVIEW */
+
+  .review-row {
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 5px;
+  }
+
+  .review-row strong {
+    width: 100%;
+
+    text-align: right;
+  }
+
+  .review-address strong {
+    max-width: 100%;
+  }
+
+  .review-product-row {
+    grid-template-columns: 1fr auto;
+
+    gap: 7px 12px;
+  }
+
+  .review-product-row > div {
+    grid-column: 1 / -1;
+  }
+
+  .review-product-row > span {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .review-product-row > strong:last-child {
+    grid-column: 2;
+    grid-row: 2;
+
+    text-align: left;
+  }
+
+  .checkout-review-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .review-confirm-btn {
+    grid-column: auto;
+    order: -1;
+  }
+
+  .review-final-total {
+    flex-direction: column;
+    align-items: center !important;
+
+    gap: 6px !important;
+
+    text-align: center;
+  }
+}
+
+/* ==========================================================
+   SMALL MOBILE
+   ========================================================== */
+
+@media (max-width: 400px) {
+
+  .checkout-container {
+    width: calc(100% - 16px);
+
+    margin: 10px auto;
+    padding: 15px 11px;
+
+    border-radius: 15px;
+  }
+
+  .checkout-container h2 {
+    font-size: 21px;
+  }
+
+  .checkout-subtitle {
+    font-size: 12px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    font-size: 14px;
+  }
+
+  .payment-method-section,
+  .coupon-section,
+  .order-products-preview,
+  .review-section {
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  .payment-method-section h3,
+  .coupon-section h3,
+  .order-products-preview h3,
+  .review-section h3 {
+    font-size: 16px;
+  }
+
+  .payment-method-title strong {
+    font-size: 14px;
+  }
+
+  .payment-method-content p {
+    font-size: 11px;
+  }
+
+  .payment-number strong {
+    font-size: 13px;
+  }
+
+  .checkout-product-row,
+  .review-product-row {
+    font-size: 13px;
+  }
+
+  .checkout-product-row > strong:last-child,
+  .review-product-row > strong:last-child {
+    font-size: 13px;
+  }
+
+  .order-summary-box {
+    padding: 15px 12px;
+  }
+
+  .order-summary-box h4 {
+    font-size: 13px;
+  }
+
+  .order-summary-box h4 span {
+    font-size: 15px;
+  }
+
+  .order-summary-box h4:last-child {
+    font-size: 16px;
+  }
+
+  .order-summary-box h4:last-child span {
+    font-size: 20px;
+  }
+
+  .submit-order-btn {
+    min-height: 52px;
+    font-size: 15px;
+  }
+
+  .checkout-cancel-main-btn {
+    font-size: 14px;
+  }
+
+  .review-total-box {
+    padding: 16px 13px;
+  }
+
+  .review-total-box span {
+    font-size: 13px;
+  }
+
+  .review-total-box strong {
+    font-size: 14px;
+  }
+
+  .review-final-total span {
+    font-size: 16px;
+  }
+
+  .review-final-total strong {
+    font-size: 21px;
+  }
+}
+```

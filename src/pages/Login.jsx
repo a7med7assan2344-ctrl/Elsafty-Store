@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import {
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  sendEmailVerification
 } from "firebase/auth";
 
 import {
@@ -21,6 +22,7 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
 
   const login = async (e) => {
@@ -28,6 +30,16 @@ function Login() {
     e.preventDefault();
 
     if (loading) {
+      return;
+    }
+
+    const cleanEmail =
+      email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      alert(
+        "من فضلك أدخل البريد الإلكتروني وكلمة المرور"
+      );
       return;
     }
 
@@ -42,7 +54,7 @@ function Login() {
       const result =
         await signInWithEmailAndPassword(
           auth,
-          email.trim().toLowerCase(),
+          cleanEmail,
           password
         );
 
@@ -55,14 +67,55 @@ function Login() {
       }
 
       // ==========================================
+      // EMAIL VERIFICATION
+      // ==========================================
+
+      /*
+        الحسابات الجديدة لازم تكون مؤكدة من Gmail
+        قبل السماح لها بالدخول.
+      */
+
+      if (!user.emailVerified) {
+
+        try {
+
+          await sendEmailVerification(user);
+
+        } catch (verificationError) {
+
+          console.error(
+            "Verification Email Error:",
+            verificationError
+          );
+
+        }
+
+        alert(
+          "📧 هذا الحساب لم يتم تأكيد البريد الإلكتروني الخاص به.\n\n" +
+          "تم إرسال رسالة تأكيد جديدة إلى Gmail الخاص بك.\n\n" +
+          "افتح الرسالة واضغط على رابط التأكيد، ثم حاول تسجيل الدخول مرة أخرى."
+        );
+
+        /*
+          تسجيل الخروج فورًا حتى لا يظل المستخدم
+          داخل الحساب وهو غير مؤكد.
+        */
+
+        await auth.signOut();
+
+        return;
+      }
+
+      // ==========================================
       // FIRESTORE USER
       // ==========================================
 
-      const userRef = doc(
-        db,
-        "users",
-        user.uid
-      );
+      const userRef =
+        doc(
+          db,
+          "users",
+          user.uid
+        );
 
       const userSnap =
         await getDoc(userRef);
@@ -72,8 +125,13 @@ function Login() {
       // ==========================================
 
       const loginVisit = {
-        date: new Date().toISOString(),
-        type: "login"
+
+        date:
+          new Date().toISOString(),
+
+        type:
+          "login"
+
       };
 
       // ==========================================
@@ -82,10 +140,13 @@ function Login() {
 
       if (userSnap.exists()) {
 
-        const userData = userSnap.data();
+        const userData =
+          userSnap.data();
 
         const oldVisits =
-          Array.isArray(userData.visits)
+          Array.isArray(
+            userData.visits
+          )
             ? userData.visits
             : [];
 
@@ -124,7 +185,8 @@ function Login() {
           userRef,
           {
 
-            uid: user.uid,
+            uid:
+              user.uid,
 
             name:
               user.displayName || "",
@@ -138,11 +200,17 @@ function Login() {
             phone:
               user.phoneNumber || "",
 
-            role: "user",
+            role:
+              "user",
 
-            active: true,
+            active:
+              true,
 
-            loginCount: 1,
+            emailVerified:
+              true,
+
+            loginCount:
+              1,
 
             lastLoginAt:
               serverTimestamp(),
@@ -157,7 +225,23 @@ function Login() {
             registeredAt:
               serverTimestamp(),
 
-            address: "",
+            address:
+              "",
+
+            whatsapp:
+              "",
+
+            gender:
+              "",
+
+            favoriteCategories:
+              [],
+
+            interests:
+              [],
+
+            discoverySource:
+              "",
 
             updatedAt:
               serverTimestamp()
@@ -185,7 +269,9 @@ function Login() {
       switch (err?.code) {
 
         case "auth/invalid-credential":
+
         case "auth/wrong-password":
+
         case "auth/user-not-found":
 
           alert(
@@ -193,6 +279,7 @@ function Login() {
           );
 
           break;
+
 
         case "auth/invalid-email":
 
@@ -202,6 +289,7 @@ function Login() {
 
           break;
 
+
         case "auth/too-many-requests":
 
           alert(
@@ -210,6 +298,7 @@ function Login() {
 
           break;
 
+
         case "auth/network-request-failed":
 
           alert(
@@ -217,6 +306,16 @@ function Login() {
           );
 
           break;
+
+
+        case "auth/user-disabled":
+
+          alert(
+            "هذا الحساب تم إيقافه. يرجى التواصل مع إدارة المتجر."
+          );
+
+          break;
+
 
         default:
 
@@ -236,6 +335,7 @@ function Login() {
 
   };
 
+
   return (
 
     <div
@@ -252,29 +352,48 @@ function Login() {
           تسجيل الدخول
         </h2>
 
+
+        {/* ==========================================
+            EMAIL
+        ========================================== */}
+
         <input
           type="email"
           placeholder="البريد الإلكتروني"
           value={email}
           onChange={(e) =>
-            setEmail(e.target.value)
+            setEmail(
+              e.target.value
+            )
           }
           disabled={loading}
           autoComplete="email"
           required
         />
 
+
+        {/* ==========================================
+            PASSWORD
+        ========================================== */}
+
         <input
           type="password"
           placeholder="كلمة المرور"
           value={password}
           onChange={(e) =>
-            setPassword(e.target.value)
+            setPassword(
+              e.target.value
+            )
           }
           disabled={loading}
           autoComplete="current-password"
           required
         />
+
+
+        {/* ==========================================
+            LOGIN BUTTON
+        ========================================== */}
 
         <button
           type="submit"
@@ -286,6 +405,11 @@ function Login() {
             : "دخول"}
 
         </button>
+
+
+        {/* ==========================================
+            REGISTER
+        ========================================== */}
 
         <p>
 

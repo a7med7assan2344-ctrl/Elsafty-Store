@@ -26,6 +26,7 @@ import {
   onSnapshot,
   where,
   query,
+  serverTimestamp,
 } from "firebase/firestore";
 import {
   onAuthStateChanged,
@@ -1467,116 +1468,64 @@ const [editOrderData, setEditOrderData] = useState({
     );
 
   };
-    // ==========================================================
-  // LOAD CURRENT ADMIN
-  // ==========================================================
+// ==========================================================
+// LOAD CURRENT ADMIN
+// ==========================================================
 
-  useEffect(() => {
+useEffect(() => {
 
-    const loadCurrentAdmin = async () => {
+  const loadCurrentAdmin = async () => {
 
-      setAdminAccessLoading(true);
+    setAdminAccessLoading(true);
 
-      try {
+    try {
 
-        const user =
-          auth.currentUser;
+      const user = auth.currentUser;
 
-        if (!user) {
+      if (!user) {
 
-          setCurrentAdmin(null);
-          setAdminPermissionsList([]);
+        setCurrentAdmin(null);
+        setAdminPermissionsList([]);
 
-          return;
-        }
-
-
-        // البحث عن المشرف باستخدام UID
-        const adminQuery =
-          query(
-            collection(
-              db,
-              "admins"
-            ),
-            where(
-              "uid",
-              "==",
-              user.uid
-            )
-          );
+        return;
+      }
 
 
-        const snapshot =
-          await getDocs(
-            adminQuery
-          );
+      // =====================================================
+      // قراءة الأدمن مباشرة باستخدام UID كـ Document ID
+      // =====================================================
+
+      const adminRef = doc(
+        db,
+        "admins",
+        user.uid
+      );
+
+      const adminSnapshot =
+        await getDoc(adminRef);
 
 
+      // =====================================================
+      // لو الأدمن موجود
+      // =====================================================
+
+      if (adminSnapshot.exists()) {
+
+        const adminData =
+          adminSnapshot.data();
+
+
+        // التأكد أن الحساب أدمن ومفعل
         if (
-          snapshot.empty
+          adminData.role === "admin" &&
+          adminData.active !== false
         ) {
 
-          // لو الحساب الأساسي موجود في users
-          const userQuery =
-            query(
-              collection(
-                db,
-                "users"
-              ),
-              where(
-                "uid",
-                "==",
-                user.uid
-              )
-            );
-
-
-          const userSnapshot =
-            await getDocs(
-              userQuery
-            );
-
-
-          if (
-            !userSnapshot.empty
-          ) {
-
-            const userData =
-              userSnapshot.docs[0].data();
-
-            setCurrentAdmin({
-              id:
-                userSnapshot.docs[0].id,
-
-              ...userData,
-            });
-
-            setAdminPermissionsList(
-              Array.isArray(
-                userData.permissions
-              )
-                ? userData.permissions
-                : []
-            );
-
-          } else {
-
-            setCurrentAdmin(null);
-            setAdminPermissionsList([]);
-
-          }
-
-        } else {
-
-          const adminData =
-            snapshot.docs[0].data();
-
           setCurrentAdmin({
-            id:
-              snapshot.docs[0].id,
-
+            id: adminSnapshot.id,
             ...adminData,
           });
+
 
           setAdminPermissionsList(
             Array.isArray(
@@ -1586,32 +1535,112 @@ const [editOrderData, setEditOrderData] = useState({
               : []
           );
 
+        } else {
+
+          setCurrentAdmin(null);
+          setAdminPermissionsList([]);
+
+          console.warn(
+            "Current user is not an active admin."
+          );
         }
 
-      } catch (error) {
 
-        console.error(
-          "Load current admin error:",
-          error
+        return;
+      }
+
+
+      // =====================================================
+      // FALLBACK:
+      // البحث في users لو مفيش document في admins
+      // =====================================================
+
+      const userRef = doc(
+        db,
+        "users",
+        user.uid
+      );
+
+      const userSnapshot =
+        await getDoc(userRef);
+
+
+      if (userSnapshot.exists()) {
+
+        const userData =
+          userSnapshot.data();
+
+
+        setCurrentAdmin({
+          id: userSnapshot.id,
+          ...userData,
+        });
+
+
+        setAdminPermissionsList(
+          Array.isArray(
+            userData.permissions
+          )
+            ? userData.permissions
+            : []
         );
+
+      } else {
 
         setCurrentAdmin(null);
         setAdminPermissionsList([]);
 
-      } finally {
-
-        setAdminAccessLoading(
-          false
-        );
-
       }
 
-    };
+    } catch (error) {
+
+      console.error(
+        "Load current admin error:",
+        error
+      );
+
+      setCurrentAdmin(null);
+      setAdminPermissionsList([]);
+
+    } finally {
+
+      setAdminAccessLoading(false);
+
+    }
+
+  };
 
 
-    loadCurrentAdmin();
+  // ==========================================================
+  // مهم: ننتظر Firebase Auth قبل التحميل
+  // ==========================================================
 
-  }, []);
+  const unsubscribe =
+    onAuthStateChanged(
+      auth,
+      (user) => {
+
+        if (user) {
+
+          loadCurrentAdmin();
+
+        } else {
+
+          setCurrentAdmin(null);
+          setAdminPermissionsList([]);
+          setAdminAccessLoading(false);
+
+        }
+
+      }
+    );
+
+
+  return () => {
+    unsubscribe();
+  };
+
+}, []);
   // ==========================================================
   // REALTIME FIRESTORE
   // ==========================================================
@@ -2733,6 +2762,79 @@ const handleCategorySubmit =
       if (
         categoryForm.image instanceof File
       ) {
+const handleLogoUpload = async (event) => {
+  const file = event.target.files?.[0];
+
+  if (!file) return;
+
+  // التأكد أن الملف صورة
+  if (!file.type.startsWith("image/")) {
+    alert("من فضلك اختر صورة صحيحة");
+    return;
+  }
+
+  // حجم أقصى 5MB
+  if (file.size > 5 * 1024 * 1024) {
+    alert("حجم اللوجو يجب ألا يتجاوز 5MB");
+    return;
+  }
+
+  try {
+    setSaving(true);
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append(
+      "upload_preset",
+      "elsafty_store"
+    );
+
+    const cloudinaryResponse = await fetch(
+      "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (!cloudinaryResponse.ok) {
+      throw new Error(
+        "فشل رفع اللوجو إلى Cloudinary"
+      );
+    }
+
+    const cloudinaryData =
+      await cloudinaryResponse.json();
+
+    const logoUrl =
+      cloudinaryData.secure_url;
+
+    // تحديث اللوجو داخل الحالة
+    setStoreSettings((previous) => ({
+      ...previous,
+      logo: logoUrl,
+    }));
+
+    alert("تم رفع اللوجو بنجاح ✅");
+
+  } catch (error) {
+    console.error(
+      "Logo upload error:",
+      error
+    );
+
+    alert(
+      "حدث خطأ أثناء رفع اللوجو"
+    );
+
+  } finally {
+    setSaving(false);
+
+    // السماح باختيار نفس الصورة مرة أخرى
+    event.target.value = "";
+  }
+};
 
         const formData =
           new FormData();
@@ -2934,6 +3036,7 @@ const handleCategorySubmit =
     }
 
   };
+  
   (category) => {
 
     setEditingCategory(category);
@@ -3032,105 +3135,169 @@ const handleCategorySubmit =
       }
     };
 
+const handleEditCategory = (category) => {
+  if (!category) {
+    return;
+  }
 
-  const renderCategoryTree =
-    (
-      items,
-      level = 0
-    ) => (
+  setEditingCategory(category);
 
-      <div>
+  setCategoryForm({
+    name: category.name || "",
+    description: category.description || "",
+    image: category.image || "",
+    categoryNumber: category.categoryNumber || "",
+    whatsapp: category.whatsapp || "",
+    parentId: category.parentId || "",
+    active: category.active !== false,
+    color: category.color || "#071a36",
+    cardSize: category.cardSize || "medium",
+    sortOrder: Number(category.sortOrder || 0),
+  });
 
-        {items.map(
-          (category) => {
+  setShowCategoryForm(true);
+  setTab("categories");
+};
+const renderCategoryTree = (
+  items,
+  level = 0
+) => (
 
-            const children =
-              categories.filter(
-                (item) =>
-                  item.parentId ===
-                  category.id
-              );
+  <div
+    className={
+      level === 0
+        ? "category-tree-root"
+        : "category-tree-children"
+    }
+  >
 
-            return (
-              <div
-                key={
-                  category.id
+    {items.map(
+      (category) => {
+
+        const children =
+          categories
+            .filter(
+              (item) =>
+                item.parentId ===
+                category.id
+            )
+            .sort(
+              (a, b) =>
+                Number(
+                  a.sortOrder || 0
+                ) -
+                Number(
+                  b.sortOrder || 0
+                )
+            );
+
+        return (
+
+          <div
+            key={
+              category.id
+            }
+            className="category-tree-node"
+          >
+
+            {/* ==========================
+                CATEGORY
+            ========================== */}
+
+            <div
+              className="category-tree-item"
+              style={{
+                paddingRight:
+                  `${level * 24}px`,
+              }}
+            >
+
+              <strong>
+
+                {
+                  level > 0
+                    ? "↳ "
+                    : "📂 "
                 }
+
+                {
+                  category.name
+                }
+
+              </strong>
+
+
+              <span>
+
+                {
+                  category.categoryNumber ||
+                  "—"
+                }
+
+              </span>
+
+
+              <div
+                className="table-actions"
               >
 
-                <div
-                  className="category-tree-item"
-                  style={{
-                    paddingRight:
-                      `${level * 24}px`,
-                  }}
+                <button
+                  type="button"
+                  className="edit-btn"
+                  onClick={() =>
+                    handleEditCategory(
+                      category
+                    )
+                  }
                 >
+                  ✏️ تعديل
+                </button>
 
-                  <strong>
-                    {
-                      level > 0
-                        ? "↳ "
-                        : "📂 "
-                    }
 
-                    {
-                      category.name
-                    }
-                  </strong>
-
-                  <span>
-                    {
-                      category.categoryNumber ||
-                      "—"
-                    }
-                  </span>
-
-                  <div
-                    className="table-actions"
-                  >
-
-                    <button
-                      type="button"
-                      className="edit-btn"
-                      onClick={() =>
-                        handleEditCategory(
-                          category
-                        )
-                      }
-                    >
-                      ✏️ تعديل
-                    </button>
-
-                    <button
-                      type="button"
-                      className="delete-btn"
-                      onClick={() =>
-                        handleDeleteCategory(
-                          category
-                        )
-                      }
-                    >
-                      🗑️ حذف
-                    </button>
-
-                  </div>
-
-                </div>
-
-                {children.length >
-                  0 &&
-                  renderCategoryTree(
-                    children,
-                    level + 1
-                  )}
+                <button
+                  type="button"
+                  className="delete-btn"
+                  onClick={() =>
+                    handleDeleteCategory(
+                      category
+                    )
+                  }
+                >
+                  🗑️ حذف
+                </button>
 
               </div>
-            );
-          }
-        )}
 
-      </div>
-    );
+            </div>
+
+
+            {/* ==========================
+                CHILDREN
+            ========================== */}
+
+            {children.length > 0 && (
+
+              <div
+                className="category-tree-children"
+              >
+
+                {renderCategoryTree(
+                  children,
+                  level + 1
+                )}
+
+              </div>
+
+            )}
+
+          </div>
+
+        );
+      }
+    )}
+
+  </div>
+);
       const saveWheelSettings = async () => {
     try {
       await setDoc(
@@ -3928,7 +4095,6 @@ const saveAdmin = async () => {
   }
 };
 
-
 // ==========================================================
 // حذف أدمن
 // ==========================================================
@@ -4139,113 +4305,113 @@ const toggleAdminActive = async (
       );
     };
 
-{/* ====================================================
-    ADMIN FORM
-==================================================== */}
+  {/* ====================================================
+      ADMIN FORM
+  ==================================================== */}
 
-{showAdminForm && tab === "admins" && (
+  {showAdminForm && tab === "admins" && (
 
-  <form
-    className="admin-form"
-    onSubmit={(event) => {
-      event.preventDefault();
-      saveAdmin();
-    }}
-  >
+    <form
+      className="admin-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        saveAdmin();
+      }}
+    >
 
-    <h3>
-      {editingAdmin
-        ? "✏️ تعديل المشرف"
-        : "➕ إضافة مشرف جديد"}
-    </h3>
-
-
-    <div className="form-grid">
-
-      {/* اسم المشرف */}
-
-      <label>
-        <span>اسم المشرف</span>
-
-        <input
-          type="text"
-          value={adminForm.name}
-          onChange={(event) =>
-            setAdminForm((previous) => ({
-              ...previous,
-              name: event.target.value,
-            }))
-          }
-        />
-      </label>
+      <h3>
+        {editingAdmin
+          ? "✏️ تعديل المشرف"
+          : "➕ إضافة مشرف جديد"}
+      </h3>
 
 
-      {/* البريد الإلكتروني */}
+      <div className="form-grid">
 
-      <label>
-        <span>البريد الإلكتروني</span>
+        {/* اسم المشرف */}
 
-        <input
-          type="email"
-          value={adminForm.email}
-          onChange={(event) =>
-            setAdminForm((previous) => ({
-              ...previous,
-              email: event.target.value,
-            }))
-          }
-        />
-      </label>
+        <label>
+          <span>اسم المشرف</span>
 
-
-      {/* كلمة المرور */}
-
-      <label>
-        <span>
-          {editingAdmin
-            ? "كلمة المرور الجديدة (اختياري)"
-            : "كلمة المرور"}
-        </span>
-
-        <input
-          type="password"
-          value={adminForm.password}
-          onChange={(event) =>
-            setAdminForm((previous) => ({
-              ...previous,
-              password:
-                event.target.value,
-            }))
-          }
-        />
-      </label>
+          <input
+            type="text"
+            value={adminForm.name}
+            onChange={(event) =>
+              setAdminForm((previous) => ({
+                ...previous,
+                name: event.target.value,
+              }))
+            }
+          />
+        </label>
 
 
-      {/* الحالة */}
+        {/* البريد الإلكتروني */}
 
-      <label className="checkbox-field">
+        <label>
+          <span>البريد الإلكتروني</span>
 
-        <input
-          type="checkbox"
-          checked={
-            adminForm.active !== false
-          }
-          onChange={(event) =>
-            setAdminForm((previous) => ({
-              ...previous,
-              active:
-                event.target.checked,
-            }))
-          }
-        />
+          <input
+            type="email"
+            value={adminForm.email}
+            onChange={(event) =>
+              setAdminForm((previous) => ({
+                ...previous,
+                email: event.target.value,
+              }))
+            }
+          />
+        </label>
 
-        <span>
-          المشرف مفعل
-        </span>
 
-      </label>
+        {/* كلمة المرور */}
 
-    </div>
+        <label>
+          <span>
+            {editingAdmin
+              ? "كلمة المرور الجديدة (اختياري)"
+              : "كلمة المرور"}
+          </span>
+
+          <input
+            type="password"
+            value={adminForm.password}
+            onChange={(event) =>
+              setAdminForm((previous) => ({
+                ...previous,
+                password:
+                  event.target.value,
+              }))
+            }
+          />
+        </label>
+
+
+        {/* الحالة */}
+
+        <label className="checkbox-field">
+
+          <input
+            type="checkbox"
+            checked={
+              adminForm.active !== false
+            }
+            onChange={(event) =>
+              setAdminForm((previous) => ({
+                ...previous,
+                active:
+                  event.target.checked,
+              }))
+            }
+          />
+
+          <span>
+            المشرف مفعل
+          </span>
+
+        </label>
+
+      </div>
 
 
     {/* ====================================================
@@ -4774,58 +4940,152 @@ const toggleAdminActive = async (
       }
     };
 
+// ==========================================================
+// UPLOAD STORE LOGO
+// ==========================================================
 
-  // ==========================================================
-  // STORE SETTINGS
-  // ==========================================================
+const handleLogoUpload = async (event) => {
+  const file = event.target.files?.[0];
 
-  const saveStoreSettings =
-    async (event) => {
+  if (!file) {
+    return;
+  }
 
-      if (
-        event?.preventDefault
-      ) {
-        event.preventDefault();
+  if (file.size > 5 * 1024 * 1024) {
+    alert("حجم اللوجو يجب ألا يتجاوز 5MB.");
+    event.target.value = "";
+    return;
+  }
+
+  const allowedTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/svg+xml",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    alert(
+      "من فضلك اختر صورة PNG أو JPG أو WEBP أو SVG."
+    );
+
+    event.target.value = "";
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+
+    formData.append(
+      "file",
+      file
+    );
+
+    formData.append(
+      "upload_preset",
+      "elsafty_store"
+    );
+
+    const cloudinaryResponse =
+      await fetch(
+        "https://api.cloudinary.com/v1_1/wkcpvsqi/image/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+    if (!cloudinaryResponse.ok) {
+      throw new Error(
+        "Cloudinary upload failed"
+      );
+    }
+
+    const data =
+      await cloudinaryResponse.json();
+
+    if (!data.secure_url) {
+      throw new Error(
+        "لم يتم الحصول على رابط اللوجو"
+      );
+    }
+
+    setStoreSettings(
+      (previous) => ({
+        ...previous,
+        logo: data.secure_url,
+      })
+    );
+
+    alert(
+      "تم رفع اللوجو بنجاح. اضغط حفظ إعدادات المتجر لتثبيته."
+    );
+
+  } catch (error) {
+    console.error(
+      "Logo Upload Error:",
+      error
+    );
+
+    alert(
+      "حدث خطأ أثناء رفع اللوجو."
+    );
+  } finally {
+    event.target.value = "";
+  }
+};
+
+
+// ==========================================================
+// STORE SETTINGS
+// ==========================================================
+
+const saveStoreSettings =
+  async (event) => {
+
+  if (
+    event?.preventDefault
+  ) {
+    event.preventDefault();
+  }
+
+  try {
+
+    await setDoc(
+      doc(
+        db,
+        "settings",
+        "store"
+      ),
+      {
+        ...storeSettings,
+
+        updatedAt:
+          serverTimestamp(),
+      },
+      {
+        merge: true,
       }
+    );
 
-      try {
+    await addActivityLog(
+      "إعدادات المتجر",
+      "تم تحديث إعدادات المتجر"
+    );
 
-        await setDoc(
-          doc(
-            db,
-            "settings",
-            "store"
-          ),
-          {
-            ...storeSettings,
+    alert(
+      "تم حفظ إعدادات المتجر بنجاح."
+    );
 
-            updatedAt:
-              serverTimestamp(),
-          },
-          {
-            merge: true,
-          }
-        );
+  } catch (error) {
 
-        await addActivityLog(
-          "إعدادات المتجر",
-          "تم تحديث إعدادات المتجر"
-        );
+    console.error(error);
 
-        alert(
-          "تم حفظ إعدادات المتجر بنجاح."
-        );
-
-      } catch (error) {
-
-        console.error(error);
-
-        alert(
-          "حدث خطأ أثناء حفظ الإعدادات."
-        );
-      }
-    };
-
+    alert(
+      "حدث خطأ أثناء حفظ الإعدادات."
+    );
+  }
+};
 
   // ==========================================================
   // SIDEBAR
@@ -6769,9 +7029,7 @@ const toggleAdminActive = async (
           </div>
 
         )}
-// ==========================================================
-// CATEGORIES
-// ==========================================================
+
 
 {tab === "categories" && (
 
@@ -7770,435 +8028,550 @@ const toggleAdminActive = async (
   </div>
 
 )}
-                {/* ====================================================
-            ORDERS
-        ==================================================== */}
+{/* ====================================================
+    ORDERS
+==================================================== */}
 
-        {tab === "orders" && (
+{tab === "orders" && (
 
-          <div
-            className="table-container"
-          >
+  <div className="table-container">
 
-            <div
-              className="section-header"
-            >
+    {/* HEADER */}
+    <div className="section-header">
 
-              <div>
+      <div>
 
-                <h2>
-                  🛒 إدارة الطلبات
-                </h2>
+        <h2>
+          🛒 إدارة الطلبات
+        </h2>
 
-                <p>
-                  إجمالي الطلبات:
-                  {" "}
-                  <strong>
-                    {orders.length}
-                  </strong>
-                </p>
+        <p>
+          إجمالي الطلبات:
+          {" "}
+          <strong>
+            {orders.length}
+          </strong>
+        </p>
 
-              </div>
+      </div>
 
-            </div>
+    </div>
 
 
-            <div
-              className="orders-toolbar"
-            >
+    {/* SEARCH + FILTER */}
+    <div className="orders-toolbar">
 
-              <input
-                type="search"
-                placeholder="🔎 ابحث برقم الطلب أو اسم العميل أو الهاتف..."
-                value={
-                  orderSearch
-                }
-                onChange={(event) =>
-                  setOrderSearch(
-                    event.target.value
-                  )
-                }
-              />
+      <input
+        type="search"
+        placeholder="🔎 ابحث برقم الطلب أو اسم العميل أو الهاتف..."
+        value={orderSearch}
+        onChange={(event) =>
+          setOrderSearch(
+            event.target.value
+          )
+        }
+      />
 
 
-              <select
-                value={
-                  orderStatusFilter
-                }
-                onChange={(event) =>
-                  setOrderStatusFilter(
-                    event.target.value
-                  )
-                }
-              >
+      <select
+        value={orderStatusFilter}
+        onChange={(event) =>
+          setOrderStatusFilter(
+            event.target.value
+          )
+        }
+      >
 
-                <option value="all">
-                  كل الحالات
-                </option>
+        <option value="all">
+          كل الحالات
+        </option>
 
-                <option value="pending">
-                  قيد الانتظار
-                </option>
+        <option value="pending">
+          قيد الانتظار
+        </option>
 
-                <option value="confirmed">
-                  تم التأكيد
-                </option>
+        <option value="confirmed">
+          تم التأكيد
+        </option>
 
-                <option value="processing">
-                  جاري التجهيز
-                </option>
+        <option value="processing">
+          جاري التجهيز
+        </option>
 
-                <option value="shipped">
-                  تم الشحن
-                </option>
+        <option value="shipped">
+          تم الشحن
+        </option>
 
-                <option value="delivered">
-                  تم التسليم
-                </option>
+        <option value="delivered">
+          تم التسليم
+        </option>
 
-                <option value="completed">
-                  مكتمل
-                </option>
+        <option value="completed">
+          مكتمل
+        </option>
 
-                <option value="cancelled">
-                  ملغي
-                </option>
+        <option value="cancelled">
+          ملغي
+        </option>
 
-              </select>
+      </select>
 
-            </div>
+    </div>
 
 
-            <div
-              className="orders-summary"
-            >
+    {/* SUMMARY */}
+    <div className="orders-summary">
 
-              <div>
-                <span>
-                  كل الطلبات
-                </span>
+      <div>
+        <span>
+          كل الطلبات
+        </span>
 
-                <strong>
-                  {orders.length}
-                </strong>
-              </div>
-
-
-              <div>
-                <span>
-                  قيد الانتظار
-                </span>
-
-                <strong>
-                  {pendingOrders}
-                </strong>
-              </div>
+        <strong>
+          {orders.length}
+        </strong>
+      </div>
 
 
-              <div>
-                <span>
-                  قيد التجهيز
-                </span>
+      <div>
+        <span>
+          قيد الانتظار
+        </span>
 
-                <strong>
-                  {
-                    orders.filter(
-                      (order) =>
-                        normalizeText(
-                          order.status ||
-                          order.orderStatus
-                        ) ===
-                        "processing"
-                    ).length
-                  }
-                </strong>
-              </div>
+        <strong>
+          {pendingOrders}
+        </strong>
+      </div>
 
 
-              <div>
-                <span>
-                  تم التسليم
-                </span>
+      <div>
+        <span>
+          قيد التجهيز
+        </span>
 
-                <strong>
-                  {deliveredOrders}
-                </strong>
-              </div>
-
-            </div>
-
-
-            <div
-              className="table-scroll"
-            >
-
-              <table
-                className="admin-table"
-              >
-
-                <thead>
-
-                  <tr>
-                    <th>رقم الطلب</th>
-                    <th>العميل</th>
-                    <th>الهاتف</th>
-                    <th>التاريخ</th>
-                    <th>الدفع</th>
-                    <th>الإجمالي</th>
-                    <th>الحالة</th>
-                    <th>إجراء</th>
-                  </tr>
-
-                </thead>
+        <strong>
+          {
+            orders.filter(
+              (order) =>
+                normalizeText(
+                  order.status ||
+                  order.orderStatus
+                ) === "processing"
+            ).length
+          }
+        </strong>
+      </div>
 
 
-                <tbody>
+      <div>
+        <span>
+          تم التسليم
+        </span>
 
-                  {filteredOrders.length ===
-                    0 ? (
+        <strong>
+          {deliveredOrders}
+        </strong>
+      </div>
 
-                    <tr>
+    </div>
 
-                      <td colSpan="8">
-                        لا توجد طلبات.
-                      </td>
 
-                    </tr>
+    {/* ORDERS TABLE */}
+    <div className="table-scroll">
 
-                  ) : (
+      <table className="admin-table">
 
-                    filteredOrders.map(
-                      (order) => {
+        <thead>
 
-                        const status =
-                          order?.status ||
-                          order?.orderStatus ||
-                          "pending";
+          <tr>
 
-                        const paymentStatus =
-                          order?.paymentStatus ||
-                          "pending";
+            <th>
+              رقم الطلب
+            </th>
 
-                        return (
+            <th>
+              العميل
+            </th>
 
-                          <tr
-                            key={
-                              order.id
+            <th>
+              الهاتف
+            </th>
+
+            <th>
+              التاريخ
+            </th>
+
+            <th>
+              الدفع
+            </th>
+
+            <th>
+              الإجمالي
+            </th>
+
+            <th>
+              الحالة
+            </th>
+
+            <th>
+              إجراء
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          {filteredOrders.length === 0 ? (
+
+            <tr>
+
+              <td colSpan="8">
+                لا توجد طلبات.
+              </td>
+
+            </tr>
+
+          ) : (
+
+            filteredOrders.map(
+              (order) => {
+
+                const status =
+                  order?.status ||
+                  order?.orderStatus ||
+                  "pending";
+
+                const paymentStatus =
+                  order?.paymentStatus ||
+                  "pending";
+
+
+                return (
+
+                  <tr
+                    key={order.id}
+                  >
+
+                    {/* رقم الطلب */}
+                    <td dir="ltr">
+
+                      #
+                      {
+                        order.orderNumber ||
+                        order.id?.slice(
+                          0,
+                          8
+                        ) ||
+                        "—"
+                      }
+
+                    </td>
+
+
+                    {/* العميل */}
+                    <td>
+
+                      <strong>
+
+                        {
+                          order?.customerName ||
+                          order?.name ||
+                          "عميل"
+                        }
+
+                      </strong>
+
+
+                      <small
+                        style={{
+                          display:
+                            "block",
+                        }}
+                      >
+
+                        {
+                          order?.email ||
+                          ""
+                        }
+
+                      </small>
+
+                    </td>
+
+
+                    {/* الهاتف */}
+                    <td dir="ltr">
+
+                      {
+                        order?.phone ||
+                        order?.customerPhone ||
+                        "—"
+                      }
+
+                    </td>
+
+
+                    {/* التاريخ */}
+                    <td>
+
+                      {
+                        formatDate(
+                          order?.createdAt
+                        )
+                      }
+
+                    </td>
+
+
+                    {/* الدفع */}
+                    <td>
+
+                      <div>
+
+                        {
+                          getPaymentMethodText(
+                            order?.paymentMethod
+                          )
+                        }
+
+
+                        <small
+                          style={{
+                            display:
+                              "block",
+                          }}
+                        >
+
+                          {
+                            getPaymentStatusText(
+                              paymentStatus
+                            )
+                          }
+
+                        </small>
+
+                      </div>
+
+                    </td>
+
+
+                    {/* الإجمالي */}
+                    <td>
+
+                      <strong>
+
+                        {
+                          Number(
+                            order?.total ||
+                            order?.grandTotal ||
+                            order?.amount ||
+                            0
+                          ).toLocaleString(
+                            "ar-EG"
+                          )
+                        }
+
+                        {" "}
+                        ج.م
+
+                      </strong>
+
+                    </td>
+
+
+                    {/* الحالة */}
+                    <td>
+
+                      <select
+                        value={status}
+                        onChange={(event) =>
+                          handleOrderStatusChange(
+                            order.id,
+                            event.target.value
+                          )
+                        }
+                      >
+
+                        <option value="pending">
+                          قيد الانتظار
+                        </option>
+
+                        <option value="confirmed">
+                          تم التأكيد
+                        </option>
+
+                        <option value="processing">
+                          جاري التجهيز
+                        </option>
+
+                        <option value="shipped">
+                          تم الشحن
+                        </option>
+
+                        <option value="delivered">
+                          تم التسليم
+                        </option>
+
+                        <option value="completed">
+                          مكتمل
+                        </option>
+
+                        <option value="cancelled">
+                          ملغي
+                        </option>
+
+                      </select>
+
+                    </td>
+
+
+                    {/* الإجراءات */}
+                    <td>
+
+                      <div className="table-actions">
+
+                        {/* تفاصيل الطلب */}
+                        <button
+                          type="button"
+                          className="edit-btn"
+                          onClick={() =>
+                            openOrderDetails(
+                              order
+                            )
+                          }
+                        >
+                          👁️ التفاصيل
+                        </button>
+
+
+                        {/* إلغاء الطلب */}
+                        {status !==
+                          "cancelled" &&
+                          status !==
+                            "completed" && (
+
+                          <button
+                            type="button"
+                            className="cancel-btn"
+                            onClick={() =>
+                              handleOrderStatusChange(
+                                order.id,
+                                "cancelled"
+                              )
                             }
                           >
+                            ❌ إلغاء
+                          </button>
 
-                            <td dir="ltr">
-
-                              #
-                              {
-                                order.orderNumber ||
-                                order.id?.slice(
-                                  0,
-                                  8
-                                ) ||
-                                "—"
-                              }
-
-                            </td>
+                        )}
 
 
-                            <td>
+                        {/* حذف الطلب */}
+                        <button
+                          type="button"
+                          className="delete-btn"
+                          onClick={async () => {
 
-                              <strong>
-                                {
-                                  order?.customerName ||
-                                  order?.name ||
-                                  "عميل"
-                                }
-                              </strong>
-
-                              <small
-                                style={{
-                                  display:
-                                    "block",
-                                }}
-                              >
-                                {
-                                  order?.email ||
-                                  ""
-                                }
-                              </small>
-
-                            </td>
+                            if (
+                              !window.confirm(
+                                `هل أنت متأكد من حذف الطلب رقم #${
+                                  order.orderNumber ||
+                                  order.id?.slice(
+                                    0,
+                                    8
+                                  )
+                                }؟`
+                              )
+                            ) {
+                              return;
+                            }
 
 
-                            <td dir="ltr">
+                            try {
 
-                              {
-                                order?.phone ||
-                                order?.customerPhone ||
-                                "—"
-                              }
-
-                            </td>
+                              setActionLoading(
+                                true
+                              );
 
 
-                            <td>
-                              {
-                                formatDate(
-                                  order?.createdAt
+                              await deleteDoc(
+                                doc(
+                                  db,
+                                  "orders",
+                                  order.id
                                 )
-                              }
-                            </td>
+                              );
 
 
-                            <td>
-
-                              <div>
-
-                                {
-                                  getPaymentMethodText(
-                                    order?.paymentMethod
-                                  )
-                                }
-
-                                <small
-                                  style={{
-                                    display:
-                                      "block",
-                                  }}
-                                >
-
-                                  {
-                                    getPaymentStatusText(
-                                      paymentStatus
-                                    )
-                                  }
-
-                                </small>
-
-                              </div>
-
-                            </td>
+                              await addActivityLog(
+                                "حذف طلب",
+                                `تم حذف الطلب رقم ${
+                                  order.orderNumber ||
+                                  order.id
+                                }`
+                              );
 
 
-                            <td>
+                              alert(
+                                "✅ تم حذف الطلب بنجاح."
+                              );
 
-                              <strong>
+                            } catch (
+                              error
+                            ) {
 
-                                {
-                                  Number(
-                                    order?.total ||
-                                    order?.grandTotal ||
-                                    order?.amount ||
-                                    0
-                                  ).toLocaleString(
-                                    "ar-EG"
-                                  )
-                                }
-
-                                {" "}
-                                ج.م
-
-                              </strong>
-
-                            </td>
+                              console.error(
+                                "Delete order error:",
+                                error
+                              );
 
 
-                            <td>
+                              alert(
+                                error?.message ||
+                                "❌ حدث خطأ أثناء حذف الطلب."
+                              );
 
-                              <select
-                                value={
-                                  status
-                                }
-                                onChange={(event) =>
-                                  handleOrderStatusChange(
-                                    order.id,
-                                    event.target.value
-                                  )
-                                }
-                              >
+                            } finally {
 
-                                <option value="pending">
-                                  قيد الانتظار
-                                </option>
+                              setActionLoading(
+                                false
+                              );
 
-                                <option value="confirmed">
-                                  تم التأكيد
-                                </option>
+                            }
 
-                                <option value="processing">
-                                  جاري التجهيز
-                                </option>
+                          }}
+                          disabled={
+                            actionLoading
+                          }
+                        >
+                          🗑️ حذف
+                        </button>
 
-                                <option value="shipped">
-                                  تم الشحن
-                                </option>
+                      </div>
 
-                                <option value="delivered">
-                                  تم التسليم
-                                </option>
+                    </td>
 
-                                <option value="completed">
-                                  مكتمل
-                                </option>
+                  </tr>
 
-                                <option value="cancelled">
-                                  ملغي
-                                </option>
+                );
 
-                              </select>
+              }
+            )
 
-                            </td>
+          )}
 
+        </tbody>
 
-                            <td>
+      </table>
 
-                              <div
-                                className="table-actions"
-                              >
+    </div>
 
-                                <button
-                                  type="button"
-                                  className="edit-btn"
-                                  onClick={() =>
-                                    openOrderDetails(
-                                      order
-                                    )
-                                  }
-                                >
-                                  👁️ التفاصيل
-                                </button>
+  </div>
 
-
-                                <button
-                                  type="button"
-                                  className="delete-btn"
-                                  onClick={() =>
-                                    deleteOrder(
-                                      order
-                                    )
-                                  }
-                                >
-                                  🗑️ حذف
-                                </button>
-
-                              </div>
-
-                            </td>
-
-                          </tr>
-
-                        );
-                      }
-                    )
-
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          </div>
-
-        )}
+)}
 
 {/* ====================================================
     ORDER DETAILS
@@ -9795,7 +10168,6 @@ const toggleAdminActive = async (
 
         )}
 
-
         {/* ====================================================
             OFFERS
         ==================================================== */}
@@ -11386,6 +11758,7 @@ const toggleAdminActive = async (
                     />
 
                   </label>
+
 
 
                   <label>
@@ -13076,6 +13449,108 @@ const toggleAdminActive = async (
               <h3>
                 🏪 البيانات الأساسية
               </h3>
+{/* ================= LOGO ================= */}
+
+<div
+  className="store-logo-setting"
+  style={{
+    marginBottom: "25px",
+    padding: "20px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "14px",
+    textAlign: "center",
+  }}
+>
+
+  <span
+    style={{
+      display: "block",
+      fontWeight: "700",
+      marginBottom: "15px",
+      fontSize: "16px",
+    }}
+  >
+    🖼️ لوجو المتجر
+  </span>
+
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "15px",
+    }}
+  >
+
+    {storeSettings.logo ? (
+      <img
+        src={storeSettings.logo}
+        alt="Store Logo"
+        style={{
+          width: "140px",
+          height: "140px",
+          objectFit: "contain",
+          border: "1px solid #ddd",
+          borderRadius: "12px",
+          padding: "10px",
+          background: "#fff",
+        }}
+      />
+    ) : (
+      <div
+        style={{
+          width: "140px",
+          height: "140px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "2px dashed #ccc",
+          borderRadius: "12px",
+          color: "#888",
+        }}
+      >
+        لا يوجد لوجو
+      </div>
+    )}
+
+    <label
+      htmlFor="store-logo-upload"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "10px 20px",
+        background: "#071a36",
+        color: "#fff",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontWeight: "600",
+      }}
+    >
+      📤 تغيير اللوجو
+
+      <input
+        id="store-logo-upload"
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        onChange={handleLogoUpload}
+        style={{
+          display: "none",
+        }}
+      />
+    </label>
+
+    <small
+      style={{
+        color: "#777",
+      }}
+    >
+      PNG أو JPG أو WEBP — الحد الأقصى 5MB
+    </small>
+
+  </div>
+
+</div>
 
 
               <div

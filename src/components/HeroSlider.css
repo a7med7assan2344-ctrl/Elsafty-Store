@@ -41,9 +41,11 @@
   min-width: max-content;
   white-space: nowrap;
   padding-inline: 30px;
+
   font-family: "Cairo", "Tahoma", sans-serif;
   font-size: var(--top-strip-font-size, 15px);
   font-weight: 700;
+
   animation: heroOfferMove var(--top-strip-duration, 40s) linear infinite;
   will-change: transform;
 }
@@ -93,6 +95,7 @@
 }
 
 .hero-swiper .swiper-slide {
+  width: 100%;
   height: 100%;
 }
 
@@ -148,6 +151,7 @@
   height: 100%;
 
   display: flex;
+  align-items: center;
 
   padding: 30px 6%;
 
@@ -161,8 +165,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
 
   direction: rtl;
+
   overflow: hidden;
 }
 
@@ -201,6 +207,7 @@
 
 .hero-text h1,
 .hero-title {
+  width: 100%;
   max-width: 100%;
 
   margin: 10px 0;
@@ -220,6 +227,7 @@
 
 .hero-text p,
 .hero-description {
+  width: 100%;
   max-width: 650px;
 
   margin: 8px 0 18px;
@@ -484,6 +492,46 @@
 }
 
 /* ============================================================
+   FEATURES MOTION TRACK
+   يدعم الحركة لو كان المحتوى داخل Track
+============================================================ */
+
+.hero-features-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+
+  gap: 0;
+
+  will-change: transform;
+  animation: heroFeaturesMove 18s linear infinite;
+}
+
+.hero-features-track:hover {
+  animation-play-state: paused;
+}
+
+.hero-features-track .hero-feature {
+  flex: 0 0 auto;
+}
+
+/*
+   حركة مستمرة وناعمة.
+   لو الـ JSX فيه نسختين متتاليتين من المميزات
+   الحركة هتكون Loop بدون قفزة واضحة.
+*/
+@keyframes heroFeaturesMove {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ============================================================
    TABLET
 ============================================================ */
 
@@ -536,11 +584,15 @@
 
   .hero-section {
     width: 100%;
+    max-width: 100%;
   }
 
-  /* TOP STRIP */
+  /* ========================================================
+     TOP STRIP
+  ======================================================== */
 
   .hero-offer-strip {
+    width: 100%;
     height: var(--top-strip-height, 38px);
   }
 
@@ -555,10 +607,13 @@
     );
   }
 
-  /* HERO */
+  /* ========================================================
+     HERO
+  ======================================================== */
 
   .hero-swiper,
   .hero-slide {
+    width: 100%;
     height: var(--hero-mobile-height, 240px);
   }
 
@@ -567,15 +622,25 @@
   }
 
   .hero-content {
-    padding: 14px 16px;
+    width: 100%;
+    height: 100%;
+
+    padding: 12px 16px;
   }
 
   .hero-text {
     width: 100%;
-    max-width: min(72%, 430px);
+    max-width: min(70%, 420px);
 
+    align-items: flex-start;
     justify-content: center;
+
+    overflow: hidden;
   }
+
+  /* ========================================================
+     TAG
+  ======================================================== */
 
   .hero-tag {
     max-width: 100%;
@@ -583,12 +648,23 @@
     padding: 5px 10px;
     margin-bottom: 4px;
 
+    border-radius: 20px;
+
     font-size: 10px;
     line-height: 1.3;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  /* ========================================================
+     TITLE
+  ======================================================== */
 
   .hero-text h1,
   .hero-title {
+    width: 100%;
     max-width: 100%;
 
     margin: 4px 0;
@@ -606,10 +682,16 @@
     -webkit-box-orient: vertical;
 
     overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  /* ========================================================
+     DESCRIPTION
+  ======================================================== */
 
   .hero-text p,
   .hero-description {
+    width: 100%;
     max-width: 100%;
 
     margin: 4px 0 8px;
@@ -627,7 +709,12 @@
     -webkit-box-orient: vertical;
 
     overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  /* ========================================================
+     BUTTON
+  ======================================================== */
 
   .hero-text button,
   .hero-button {
@@ -640,13 +727,17 @@
     border-radius: 7px;
 
     gap: 6px;
+
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
   }
 
   .hero-button span {
     font-size: 14px;
   }
 
-  /* BRAND */
+  /* ========================================================
+     BRAND BADGE
+  ======================================================== */
 
   .hero-side-badge {
     top: 8px;
@@ -654,6 +745,8 @@
 
     width: 54px;
     min-height: 54px;
+
+    border-width: 1px;
   }
 
   .hero-side-badge span {
@@ -668,12 +761,16 @@
     display: none;
   }
 
-  /* NAVIGATION */
+  /* ========================================================
+     NAVIGATION
+  ======================================================== */
 
   .hero-swiper .swiper-button-next,
   .hero-swiper .swiper-button-prev {
     width: 28px;
     height: 28px;
+
+    background: rgba(7, 26, 54, 0.62);
   }
 
   .hero-swiper .swiper-button-next::after,
@@ -694,11 +791,13 @@
     width: 15px;
   }
 
-  /* FEATURES */
+  /* ========================================================
+     FEATURES
+  ======================================================== */
 
   .hero-features {
+    width: 100%;
     min-height: 64px;
-
     height: auto !important;
 
     padding: 7px 3px;
@@ -706,10 +805,18 @@
     gap: 0;
 
     justify-content: space-between;
+
+    overflow: hidden;
   }
 
+  /*
+     في الوضع العادي تفضل المميزات 4 أعمدة.
+     لو استخدمت hero-features-track سيتم تفعيل
+     الحركة الأفقية تلقائياً.
+  */
   .hero-feature {
     flex: 1 1 25%;
+    min-width: 0;
 
     flex-direction: column;
 
@@ -730,7 +837,6 @@
     width: 100%;
 
     font-size: 9px !important;
-
     line-height: 1.3;
 
     white-space: nowrap;
@@ -742,12 +848,28 @@
     width: 100%;
 
     font-size: 7px !important;
-
     line-height: 1.2;
 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /*
+     لو الـ Track موجود:
+     نخلي كل ميزة لها عرض ثابت بحيث الحركة
+     تكون منتظمة وما يحصلش تكسير للعناصر.
+  */
+  .hero-features-track {
+    min-width: max-content;
+    gap: 0;
+
+    animation-duration: 16s;
+  }
+
+  .hero-features-track .hero-feature {
+    flex: 0 0 25vw;
+    min-width: 25vw;
   }
 }
 
@@ -768,32 +890,48 @@
     font-size: 10px;
   }
 
+  /* ========================================================
+     HERO SIZE
+  ======================================================== */
+
   .hero-swiper,
   .hero-slide {
     height: var(--hero-mobile-height, 220px);
   }
 
   .hero-content {
-    padding: 11px 12px;
+    padding: 10px 12px;
   }
 
-  /*
-     مساحة النص أقل حتى لا يغطي المنتج
-     أو العناصر المهمة في صورة الإعلان.
-  */
   .hero-text {
-    max-width: 74%;
+    width: 100%;
+    max-width: 72%;
+
+    justify-content: center;
   }
+
+  /* ========================================================
+     TAG
+  ======================================================== */
 
   .hero-tag {
+    max-width: 100%;
+
     padding: 4px 8px;
     margin-bottom: 3px;
 
     font-size: 8px;
+    line-height: 1.25;
   }
+
+  /* ========================================================
+     TITLE
+  ======================================================== */
 
   .hero-text h1,
   .hero-title {
+    width: 100%;
+
     margin: 3px 0;
 
     font-size: clamp(
@@ -803,10 +941,18 @@
     ) !important;
 
     line-height: 1.18;
+
+    -webkit-line-clamp: 2;
   }
+
+  /* ========================================================
+     DESCRIPTION
+  ======================================================== */
 
   .hero-text p,
   .hero-description {
+    width: 100%;
+
     margin: 3px 0 7px;
 
     font-size: 10px !important;
@@ -815,6 +961,10 @@
 
     -webkit-line-clamp: 2;
   }
+
+  /* ========================================================
+     BUTTON
+  ======================================================== */
 
   .hero-text button,
   .hero-button {
@@ -825,15 +975,25 @@
     font-size: 10px;
 
     border-radius: 6px;
+
+    gap: 5px;
   }
 
   .hero-button span {
     font-size: 12px;
   }
 
+  /* ========================================================
+     BADGE
+  ======================================================== */
+
   .hero-side-badge {
     display: none;
   }
+
+  /* ========================================================
+     NAVIGATION
+  ======================================================== */
 
   .hero-swiper .swiper-button-next,
   .hero-swiper .swiper-button-prev {
@@ -850,6 +1010,16 @@
     bottom: 5px;
   }
 
+  /* ========================================================
+     FEATURES
+  ======================================================== */
+
+  .hero-features {
+    min-height: 58px;
+
+    padding: 6px 2px;
+  }
+
   .hero-feature-icon {
     font-size: 16px;
   }
@@ -861,6 +1031,15 @@
   .hero-feature small {
     display: none;
   }
+
+  .hero-features-track {
+    animation-duration: 14s;
+  }
+
+  .hero-features-track .hero-feature {
+    flex: 0 0 25vw;
+    min-width: 25vw;
+  }
 }
 
 /* ============================================================
@@ -869,40 +1048,105 @@
 
 @media (max-width: 360px) {
 
+  .hero-offer-strip {
+    height: 33px;
+  }
+
+  .hero-offer-track {
+    gap: 18px;
+    padding-inline: 10px;
+
+    font-size: 9px;
+  }
+
+  /* ========================================================
+     HERO
+  ======================================================== */
+
   .hero-swiper,
   .hero-slide {
     height: 205px;
   }
 
   .hero-content {
-    padding: 9px 10px;
+    padding: 8px 10px;
   }
 
   .hero-text {
-    max-width: 76%;
+    max-width: 73%;
   }
 
+  /* ========================================================
+     TAG
+  ======================================================== */
+
   .hero-tag {
+    max-width: 100%;
+
     font-size: 7px;
     padding: 3px 7px;
+
+    margin-bottom: 2px;
   }
+
+  /* ========================================================
+     TITLE
+  ======================================================== */
 
   .hero-text h1,
   .hero-title {
+    margin: 2px 0;
+
     font-size: 17px !important;
+    line-height: 1.15;
   }
+
+  /* ========================================================
+     DESCRIPTION
+  ======================================================== */
 
   .hero-text p,
   .hero-description {
     font-size: 9px !important;
-    margin-bottom: 5px;
+
+    line-height: 1.35;
+
+    margin: 2px 0 5px;
   }
+
+  /* ========================================================
+     BUTTON
+  ======================================================== */
 
   .hero-text button,
   .hero-button {
     min-width: 88px;
+
     padding: 6px 9px;
+
     font-size: 9px;
+
+    border-radius: 6px;
+
+    gap: 4px;
+  }
+
+  .hero-button span {
+    font-size: 11px;
+  }
+
+  /* ========================================================
+     FEATURES
+  ======================================================== */
+
+  .hero-features {
+    min-height: 55px;
+    padding: 5px 1px;
+  }
+
+  .hero-feature {
+    padding: 3px 1px;
+    gap: 2px;
   }
 
   .hero-feature-icon {
@@ -913,6 +1157,19 @@
     font-size: 7px !important;
   }
 
+  .hero-features-track {
+    animation-duration: 12s;
+  }
+
+  .hero-features-track .hero-feature {
+    flex: 0 0 25vw;
+    min-width: 25vw;
+  }
+
+  /* ========================================================
+     NAVIGATION
+  ======================================================== */
+
   .hero-swiper .swiper-button-next,
   .hero-swiper .swiper-button-prev {
     width: 22px;
@@ -922,6 +1179,19 @@
   .hero-swiper .swiper-button-next::after,
   .hero-swiper .swiper-button-prev::after {
     font-size: 8px;
+  }
+
+  .hero-swiper .swiper-pagination {
+    bottom: 4px;
+  }
+
+  .hero-swiper .swiper-pagination-bullet {
+    width: 5px;
+    height: 5px;
+  }
+
+  .hero-swiper .swiper-pagination-bullet-active {
+    width: 12px;
   }
 }
 
@@ -951,6 +1221,39 @@
   .hero-features {
     min-height: 58px;
   }
+
+  .hero-features-track {
+    animation-duration: 14s;
+  }
+
+  .hero-features-track .hero-feature {
+    flex: 0 0 25vw;
+    min-width: 25vw;
+  }
+}
+
+/* ============================================================
+   TOUCH DEVICES
+============================================================ */
+
+@media (hover: none) and (pointer: coarse) {
+
+  .hero-text button:hover,
+  .hero-button:hover {
+    transform: none;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.15);
+    opacity: 1;
+  }
+
+  .hero-swiper .swiper-button-next:hover,
+  .hero-swiper .swiper-button-prev:hover {
+    transform: none;
+    background: rgba(7, 26, 54, 0.62);
+  }
+
+  .hero-features-track:hover {
+    animation-play-state: running;
+  }
 }
 
 /* ============================================================
@@ -971,7 +1274,8 @@
 
 @media (prefers-reduced-motion: reduce) {
 
-  .hero-offer-track {
+  .hero-offer-track,
+  .hero-features-track {
     animation: none;
   }
 
@@ -982,4 +1286,55 @@
     transition: none;
   }
 }
+/* ============================================================
+   MOBILE - FIX EMPTY SPACE ABOVE HERO
+============================================================ */
 
+@media (max-width: 768px) {
+
+  .hero-section {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .hero-slider-wrapper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .hero-swiper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .hero-swiper .swiper-wrapper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .hero-swiper .swiper-slide {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .hero-slide {
+    margin-top: 0 !important;
+  }
+}
+
+/* ============================================================
+   SMALL MOBILE
+============================================================ */
+
+@media (max-width: 480px) {
+
+  .hero-section,
+  .hero-slider-wrapper,
+  .hero-swiper,
+  .hero-swiper .swiper-wrapper,
+  .hero-swiper .swiper-slide,
+  .hero-slide {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}

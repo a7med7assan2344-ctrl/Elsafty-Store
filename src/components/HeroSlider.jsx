@@ -73,6 +73,10 @@ const defaultStoreSettings = {
   },
 
 
+  // ==========================================================
+  // BANNER SETTINGS
+  // ==========================================================
+
   bannerSettings: {
 
     heightDesktop: 420,
@@ -86,54 +90,9 @@ const defaultStoreSettings = {
   },
 
 
-  topStrip: {
-
-    enabled: true,
-
-    direction: "rtl",
-
-    speed: 40,
-
-    height: 42,
-
-    fontSize: 15,
-
-    items: [
-
-      {
-        icon: "🚚",
-        text: "شحن سريع لجميع المحافظات",
-        active: true,
-      },
-
-      {
-        icon: "💰",
-        text: "أفضل الأسعار",
-        active: true,
-      },
-
-      {
-        icon: "🔥",
-        text: "عروض وخصومات مستمرة",
-        active: true,
-      },
-
-      {
-        icon: "🎟️",
-        text: "استخدم أكواد الخصم عند إتمام الطلب",
-        active: true,
-      },
-
-      {
-        icon: "🛍️",
-        text: "تسوق الآن من Elsafty Store",
-        active: true,
-      },
-
-    ],
-
-  },
-
+  // ==========================================================
+  // FEATURES BAR
+  // ==========================================================
 
   featuresBar: {
 
@@ -148,6 +107,10 @@ const defaultStoreSettings = {
     height: 80,
 
     fontSize: 16,
+
+    direction: "rtl",
+
+    speed: 40,
 
     items: [
 
@@ -426,8 +389,6 @@ export default function HeroSlider() {
                       banner.order || 0
                     ),
 
-
-                  // FONT SETTINGS
                   fontFamily:
                     banner.fontFamily ||
                     "Cairo",
@@ -521,7 +482,7 @@ export default function HeroSlider() {
 
 
   // ==========================================================
-  // LOAD STORE APPEARANCE SETTINGS
+  // LOAD STORE SETTINGS
   // ==========================================================
 
   useEffect(() => {
@@ -542,56 +503,90 @@ export default function HeroSlider() {
         (snapshot) => {
 
           if (
-            snapshot.exists()
+            !snapshot.exists()
           ) {
 
-            const data =
-              snapshot.data();
-
-
-            setStoreSettings(
-              (previous) => ({
-
-                ...previous,
-
-                ...data,
-
-                theme: {
-
-                  ...previous.theme,
-
-                  ...(data.theme || {}),
-
-                },
-
-                bannerSettings: {
-
-                  ...previous.bannerSettings,
-
-                  ...(data.bannerSettings || {}),
-
-                },
-
-                topStrip: {
-
-                  ...previous.topStrip,
-
-                  ...(data.topStrip || {}),
-
-                },
-
-                featuresBar: {
-
-                  ...previous.featuresBar,
-
-                  ...(data.featuresBar || {}),
-
-                },
-
-              })
-            );
+            return;
 
           }
+
+
+          const data =
+            snapshot.data();
+
+
+          // ==================================================
+          // FEATURES BAR
+          // ==================================================
+
+          const firebaseFeaturesBar =
+            data.featuresBar || {};
+
+
+          const firebaseFeatureItems =
+            Array.isArray(
+              firebaseFeaturesBar.items
+            )
+              ? firebaseFeaturesBar.items
+              : defaultStoreSettings.featuresBar.items;
+
+
+          setStoreSettings({
+
+            ...defaultStoreSettings,
+
+            ...data,
+
+
+            theme: {
+
+              ...defaultStoreSettings.theme,
+
+              ...(data.theme || {}),
+
+            },
+
+
+            bannerSettings: {
+
+              ...defaultStoreSettings.bannerSettings,
+
+              ...(data.bannerSettings || {}),
+
+            },
+
+
+            featuresBar: {
+
+              ...defaultStoreSettings.featuresBar,
+
+              ...firebaseFeaturesBar,
+
+              items:
+                firebaseFeatureItems.map(
+                  (item) => ({
+
+                    icon:
+                      item?.icon ??
+                      "⭐",
+
+                    title:
+                      item?.title ??
+                      "",
+
+                    text:
+                      item?.text ??
+                      "",
+
+                    active:
+                      item?.active !== false,
+
+                  })
+                ),
+
+            },
+
+          });
 
         },
 
@@ -712,17 +707,12 @@ export default function HeroSlider() {
 
 
   // ==========================================================
-  // SETTINGS SHORTCUTS
+  // SETTINGS
   // ==========================================================
 
   const bannerSettings =
     storeSettings.bannerSettings ||
     defaultStoreSettings.bannerSettings;
-
-
-  const topStrip =
-    storeSettings.topStrip ||
-    defaultStoreSettings.topStrip;
 
 
   const featuresBar =
@@ -735,19 +725,9 @@ export default function HeroSlider() {
     defaultStoreSettings.theme;
 
 
-  const topStripItems =
-    Array.isArray(
-      topStrip.items
-    )
-
-      ? topStrip.items.filter(
-          (item) =>
-            item?.active !== false &&
-            item?.text
-        )
-
-      : [];
-
+  // ==========================================================
+  // FEATURES ITEMS
+  // ==========================================================
 
   const featureItems =
     Array.isArray(
@@ -756,9 +736,45 @@ export default function HeroSlider() {
 
       ? featuresBar.items.filter(
           (item) =>
-            item?.active !== false
+            item &&
+            item.active !== false
         )
 
+      : [];
+
+
+  // ==========================================================
+  // FEATURES SPEED
+  // ==========================================================
+
+  const featuresSpeed =
+    Math.max(
+      5,
+      Number(
+        featuresBar.speed ?? 40
+      )
+    );
+
+
+  // ==========================================================
+  // FEATURES DIRECTION
+  // ==========================================================
+
+  const featuresDirection =
+    featuresBar.direction ||
+    "rtl";
+
+
+  // ==========================================================
+  // FEATURES LOOP ITEMS
+  // ==========================================================
+
+  const duplicatedFeatureItems =
+    featureItems.length > 0
+      ? [
+          ...featureItems,
+          ...featureItems,
+        ]
       : [];
 
 
@@ -807,23 +823,23 @@ export default function HeroSlider() {
         bannerSettings.overlayOpacity ?? 0.35
       ),
 
-    "--top-strip-height":
+
+    // ========================================================
+    // FEATURES
+    // ========================================================
+
+    "--features-height":
       `${Number(
-        topStrip.height || 42
+        featuresBar.height || 80
       )}px`,
 
-    "--top-strip-font-size":
+    "--features-font-size":
       `${Number(
-        topStrip.fontSize || 15
+        featuresBar.fontSize || 16
       )}px`,
 
-    "--top-strip-duration":
-      `${Math.max(
-        5,
-        Number(
-          topStrip.speed || 40
-        )
-      )}s`,
+    "--features-duration":
+      `${featuresSpeed}s`,
 
   };
 
@@ -839,147 +855,14 @@ export default function HeroSlider() {
       dir="rtl"
       style={{
         ...heroStyle,
+
         background:
           theme.pageBackground,
+
+        marginTop: 0,
+        paddingTop: 0,
       }}
     >
-
-      {/* ====================================================
-          TOP STRIP
-      ==================================================== */}
-
-      {topStrip.enabled !== false && (
-
-        <div
-          className="hero-offer-strip"
-          style={{
-            height:
-              `${Number(
-                topStrip.height || 42
-              )}px`,
-
-            background:
-              theme.topStripBackground ||
-              "#071A36",
-
-            color:
-              theme.topStripText ||
-              "#FFFFFF",
-
-            overflow:
-              "hidden",
-
-            direction:
-              topStrip.direction ||
-              "rtl",
-
-            display:
-              "flex",
-
-            alignItems:
-              "center",
-          }}
-        >
-
-          <div
-            className="hero-offer-track"
-            style={{
-              fontSize:
-                `${Number(
-                  topStrip.fontSize || 15
-                )}px`,
-
-              color:
-                theme.topStripText ||
-                "#FFFFFF",
-
-              direction:
-                topStrip.direction ||
-                "rtl",
-
-              animationDuration:
-                `${Math.max(
-                  5,
-                  Number(
-                    topStrip.speed || 40
-                  )
-                )}s`,
-
-              animationDirection:
-                topStrip.direction ===
-                "ltr"
-                  ? "reverse"
-                  : "normal",
-
-              whiteSpace:
-                "nowrap",
-
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                "40px",
-
-            }}
-          >
-
-            {topStripItems.length > 0 ? (
-
-              topStripItems.map(
-                (
-                  item,
-                  index
-                ) => (
-
-                  <span
-                    key={
-                      `${item.text}-${index}`
-                    }
-                  >
-
-                    {
-                      item.icon || ""
-                    }
-
-                    {" "}
-
-                    {
-                      item.text
-                    }
-
-                  </span>
-
-                )
-              )
-
-            ) : (
-
-              <>
-
-                <span>
-                  🚚 شحن سريع لجميع المحافظات
-                </span>
-
-                <span>
-                  💰 أفضل الأسعار
-                </span>
-
-                <span>
-                  🔥 عروض وخصومات مستمرة
-                </span>
-
-              </>
-
-            )}
-
-          </div>
-
-        </div>
-
-      )}
 
 
       {/* ====================================================
@@ -989,6 +872,7 @@ export default function HeroSlider() {
       <div
         className="hero-slider-wrapper"
         style={{
+
           borderRadius:
             `${Number(
               bannerSettings.borderRadius || 0
@@ -996,6 +880,9 @@ export default function HeroSlider() {
 
           overflow:
             "hidden",
+
+          marginTop: 0,
+
         }}
       >
 
@@ -1079,6 +966,7 @@ export default function HeroSlider() {
                   <div
                     className="hero-slide"
                     style={{
+
                       backgroundImage:
                         `url("${slide.image}")`,
 
@@ -1086,12 +974,9 @@ export default function HeroSlider() {
                         `${Number(
                           bannerSettings.borderRadius || 0
                         )}px`,
+
                     }}
                   >
-
-                    {/* ========================================
-                        OVERLAY
-                    ======================================== */}
 
                     <div
                       className="hero-overlay"
@@ -1106,6 +991,7 @@ export default function HeroSlider() {
                       <div
                         className="hero-content"
                         style={{
+
                           ...contentPosition,
 
                           height:
@@ -1119,22 +1005,21 @@ export default function HeroSlider() {
 
                           padding:
                             "30px 6%",
+
                         }}
                       >
 
                         <div
                           className="hero-text"
                           style={{
+
                             ...textStyle,
 
                             width:
                               "100%",
+
                           }}
                         >
-
-                          {/* ====================================
-                              TAG
-                          ==================================== */}
 
                           <span
                             className="hero-tag"
@@ -1166,10 +1051,6 @@ export default function HeroSlider() {
 
                           </span>
 
-
-                          {/* ====================================
-                              TITLE
-                          ==================================== */}
 
                           {slide.title && (
 
@@ -1210,10 +1091,6 @@ export default function HeroSlider() {
                           )}
 
 
-                          {/* ====================================
-                              DESCRIPTION
-                          ==================================== */}
-
                           {slide.text && (
 
                             <p
@@ -1251,10 +1128,6 @@ export default function HeroSlider() {
 
                           )}
 
-
-                          {/* ====================================
-                              BUTTON
-                          ==================================== */}
 
                           <button
                             type="button"
@@ -1294,10 +1167,6 @@ export default function HeroSlider() {
 
                     </div>
 
-
-                    {/* ========================================
-                        BRAND BADGE
-                    ======================================== */}
 
                     <div
                       className="hero-side-badge"
@@ -1359,18 +1228,67 @@ export default function HeroSlider() {
                 featuresBar.fontSize || 16
               )}px`,
 
+            overflow:
+              "hidden",
+
+            position:
+              "relative",
+
+            direction:
+              featuresDirection,
+
             display:
               "flex",
 
             alignItems:
               "center",
 
+            marginTop:
+              0,
+
           }}
         >
 
-          {featureItems.length > 0 ? (
+          <div
+            className="hero-features-track"
+            style={{
 
-            featureItems.map(
+              /*
+                بنثبت اتجاه الـ track على LTR
+                عشان حركة CSS تكون مستقرة.
+                اتجاه الموقع نفسه يفضل RTL.
+              */
+              direction:
+                "ltr",
+
+              animationDuration:
+                `${featuresSpeed}s`,
+
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              gap:
+                "60px",
+
+              width:
+                "max-content",
+
+              minWidth:
+                "max-content",
+
+              whiteSpace:
+                "nowrap",
+
+              willChange:
+                "transform",
+
+            }}
+          >
+
+            {duplicatedFeatureItems.map(
               (
                 item,
                 index
@@ -1379,21 +1297,28 @@ export default function HeroSlider() {
                 <div
                   className="hero-feature"
                   key={
-                    `${item.title || "feature"}-${index}`
+                    `feature-${index}`
                   }
                   style={{
+
                     color:
                       featuresBar.color ||
                       "#071A36",
+
+                    flexShrink:
+                      0,
+
                   }}
                 >
 
                   <span
                     className="hero-feature-icon"
                     style={{
+
                       color:
                         featuresBar.accentColor ||
                         "#D4AF37",
+
                     }}
                   >
 
@@ -1409,6 +1334,7 @@ export default function HeroSlider() {
 
                     <strong
                       style={{
+
                         color:
                           featuresBar.color ||
                           "#071A36",
@@ -1417,6 +1343,7 @@ export default function HeroSlider() {
                           `${Number(
                             featuresBar.fontSize || 16
                           )}px`,
+
                       }}
                     >
 
@@ -1432,9 +1359,11 @@ export default function HeroSlider() {
 
                       <small
                         style={{
+
                           color:
                             featuresBar.color ||
                             "#071A36",
+
                         }}
                       >
 
@@ -1451,99 +1380,9 @@ export default function HeroSlider() {
                 </div>
 
               )
+            )}
 
-            )
-
-          ) : (
-
-            <>
-
-              <div className="hero-feature">
-
-                <span className="hero-feature-icon">
-                  🚚
-                </span>
-
-                <div>
-
-                  <strong>
-                    شحن سريع
-                  </strong>
-
-                  <small>
-                    لجميع المحافظات
-                  </small>
-
-                </div>
-
-              </div>
-
-
-              <div className="hero-feature">
-
-                <span className="hero-feature-icon">
-                  💳
-                </span>
-
-                <div>
-
-                  <strong>
-                    طرق دفع متعددة
-                  </strong>
-
-                  <small>
-                    دفع عند الاستلام وإلكتروني
-                  </small>
-
-                </div>
-
-              </div>
-
-
-              <div className="hero-feature">
-
-                <span className="hero-feature-icon">
-                  🎟️
-                </span>
-
-                <div>
-
-                  <strong>
-                    كوبونات خصم
-                  </strong>
-
-                  <small>
-                    وفر أكثر عند الشراء
-                  </small>
-
-                </div>
-
-              </div>
-
-
-              <div className="hero-feature">
-
-                <span className="hero-feature-icon">
-                  ⭐
-                </span>
-
-                <div>
-
-                  <strong>
-                    منتجات مميزة
-                  </strong>
-
-                  <small>
-                    اختيارات تناسبك
-                  </small>
-
-                </div>
-
-              </div>
-
-            </>
-
-          )}
+          </div>
 
         </div>
 
