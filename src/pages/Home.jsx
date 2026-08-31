@@ -2922,115 +2922,6 @@ const spinWheel = async () => {
           )}
 
         {/* =================================================
-            QUICK CATEGORIES
-        ================================================= */}
-
-        <section className="jumia-section quick-shop-section">
-          <div className="jumia-section-title">
-            <h2>
-              كل اللي هتحتاجه في مكان واحد
-            </h2>
-
-            <button
-              type="button"
-              onClick={() =>
-                scrollToSection(
-                  ".jumia-all-categories"
-                )
-              }
-            >
-              عرض الكل
-            </button>
-          </div>
-
-          <div className="jumia-categories">
-            {rootCategories.length >
-            0 ? (
-              rootCategories
-                .slice(0, 8)
-                .map((category) => {
-                  const children =
-                    getChildCategories(
-                      category?.id
-                    );
-
-                  const categoryProducts =
-                    getCategoryProducts(
-                      category
-                    );
-
-                  return (
-                    <button
-                      type="button"
-                      key={
-                        category?.id ||
-                        category?.name
-                      }
-                      className="store-choice-card"
-                      style={getCategoryCardStyle(
-                        category
-                      )}
-                      onClick={() =>
-                        openCategory(
-                          category
-                        )
-                      }
-                    >
-                      <div className="store-choice-image">
-                        {category?.image ? (
-                          <img
-                            src={
-                              category.image
-                            }
-                            alt={
-                              category?.name ||
-                              "قسم"
-                            }
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span>
-                            {category?.icon ||
-                              "📦"}
-                          </span>
-                        )}
-                      </div>
-
-                      <strong>
-                        {category?.name ||
-                          "قسم"}
-                      </strong>
-
-                      <small>
-                        {children.length >
-                        0
-                          ? `${children.length} قسم فرعي`
-                          : categoryProducts.length >
-                              0
-                            ? `${categoryProducts.length} منتج`
-                            : "تصفح الآن"}
-                      </small>
-                    </button>
-                  );
-                })
-            ) : (
-              <div className="store-empty-choice">
-                <div>📂</div>
-
-                <h3>
-                  لا توجد أقسام حاليًا
-                </h3>
-
-                <p>
-                  أضف الأقسام من لوحة
-                  الأدمن
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* =================================================
             TODAY OFFERS
         ================================================= */}
 
@@ -3084,40 +2975,89 @@ const spinWheel = async () => {
             />
           </section>
         )}
+{/* =================================================
+    COUPONS
+================================================= */}
 
-        {/* =================================================
-            COUPONS
-        ================================================= */}
+<section className="jumia-promo-strip">
 
-        <section className="jumia-promo-strip">
-          <div className="promo-content">
-            <span className="promo-icon">
-              🏷️
-            </span>
+  <div className="promo-content">
 
-            <div>
-              <h2>
-                ألحق أكواد الخصم!
-              </h2>
+    <span className="promo-icon">
+      🏷️
+    </span>
 
-              <p>
-                وفر أكتر مع العروض
-                والكوبونات
-              </p>
-            </div>
-          </div>
+    <div>
 
-          <button
-            type="button"
-            onClick={() =>
-              scrollToSection(
-                "#today-offers"
-              )
-            }
-          >
-            تسوق الآن
-          </button>
-        </section>
+      <h2>
+        {storeSettings?.couponPromoTitle ||
+          "ألحق أكواد الخصم!"}
+      </h2>
+
+      <p>
+        {storeSettings?.couponPromoDescription ||
+          "وفر أكتر مع العروض والكوبونات"}
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <button
+    type="button"
+    onClick={() => {
+
+      const link =
+        storeSettings?.couponPromoLink?.trim();
+
+
+      /* ==========================================
+         لو مفيش لينك → السلوك القديم
+      ========================================== */
+
+      if (!link) {
+
+        scrollToSection(
+          "#today-offers"
+        );
+
+        return;
+      }
+
+
+      /* ==========================================
+         رابط خارجي
+      ========================================== */
+
+      if (
+        link.startsWith("http://") ||
+        link.startsWith("https://")
+      ) {
+
+        window.location.href =
+          link;
+
+        return;
+      }
+
+
+      /* ==========================================
+         رابط داخلي داخل المتجر
+         مثال: /offers
+      ========================================== */
+
+      navigate(link);
+
+    }}
+  >
+
+    {storeSettings?.couponPromoButton ||
+      "تسوق الآن"}
+
+  </button>
+
+</section>
 
         {/* =================================================
             NEW ARRIVALS

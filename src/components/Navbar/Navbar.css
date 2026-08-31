@@ -1986,3 +1986,104 @@ body {
     animation: none !important;
   }
 }
+/* =====================================================
+   MOBILE ACCOUNT DROPDOWN FIX
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .account-dropdown {
+    position: fixed !important;
+
+    top: 58px !important;
+
+    right: 8px !important;
+    left: 8px !important;
+
+    width: auto !important;
+    max-width: calc(100vw - 16px) !important;
+
+    max-height: calc(100vh - 70px);
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    z-index: 100000 !important;
+
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #313133;
+
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.22);
+  }
+
+  .account-dropdown button {
+    width: 100%;
+
+    min-height: 48px;
+
+    padding: 10px 13px;
+
+    font-size: 13px;
+
+    white-space: normal;
+
+    overflow: visible;
+  }
+
+  .account-user-info {
+    width: 100%;
+
+    padding: 13px;
+
+    overflow: hidden;
+  }
+
+  .account-user-info strong {
+    font-size: 14px;
+
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .account-user-info span {
+    font-size: 11px;
+
+    white-space: normal;
+    word-break: break-word;
+
+    overflow: visible;
+    text-overflow: unset;
+  }
+}
+
+
+/* =====================================================
+   SMALL MOBILE ACCOUNT DROPDOWN
+===================================================== */
+
+@media (max-width: 420px) {
+
+  .account-dropdown {
+    top: 56px !important;
+
+    right: 6px !important;
+    left: 6px !important;
+
+    max-width: calc(100vw - 12px) !important;
+  }
+
+  .account-dropdown button {
+    min-height: 46px;
+
+    padding: 9px 11px;
+
+    font-size: 12px;
+  }
+
+  .account-user-info {
+    padding: 11px;
+  }
+}

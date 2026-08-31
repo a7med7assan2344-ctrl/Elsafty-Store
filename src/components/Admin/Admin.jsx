@@ -2,16 +2,14 @@
 // Admin.jsx - PART 1 / 3
 // Elsafty Store - Full Admin Panel
 // ============================================================
-
-import { CartContext } from "../../context/CartContext";
-import { getFunctions, httpsCallable } from "firebase/functions";
 import React, {
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-
+import { CartContext } from "../../context/CartContext";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -808,8 +806,7 @@ const adminPermissions = [
   title: "🔑 الأمان",
 },
 
-];
-// ============================================================
+];// ============================================================
 // ADMIN COMPONENT
 // ============================================================
 
@@ -819,153 +816,267 @@ function Admin() {
 
   const { replaceCart } =
     useContext(CartContext);
-const handleCategoryImageUpload = (event) => {
 
-  const file =
-    event.target.files?.[0];
 
-  if (!file) return;
-
-  if (!file.type.startsWith("image/")) {
-
-    alert(
-      "من فضلك اختر ملف صورة فقط."
-    );
-
-    event.target.value = "";
-
-    return;
-  }
-
-  const maxSize =
-    5 * 1024 * 1024;
-
-  if (file.size > maxSize) {
-
-    alert(
-      "حجم الصورة يجب ألا يتجاوز 5 ميجابايت."
-    );
-
-    event.target.value = "";
-
-    return;
-  }
-
-  setCategoryForm(
-    (prev) => ({
-      ...prev,
-      image: file,
-    })
-  );
-
-};
-  // MAIN STATE
+  // ==========================================================
+  // 🎡 WHEEL POPUP STATE
   // ==========================================================
 
-  const [wheelSettings, setWheelSettings] =
-    useState({
-      enabled: false,
+  const [showWheelPopup, setShowWheelPopup] =
+    useState(false);
+     
+// ==========================================================
+// MAIN STATE
+// ==========================================================
 
-      title: "🎡 جرب حظك!",
+// =========================================================
+// 🎁 INTERACTIVE PROMOTIONS / GAMES
+// =========================================================
 
-      description:
-        "لف العجلة واكسب عرضك",
+const [wheelSettings, setWheelSettings] =
+  useState({
 
-      attemptsPerUser: 1,
+    // =======================================================
+    // 🎡 تفعيل عجلة الحظ
+    // =======================================================
 
-      prizes: [],
-    });
-
-
-  const [tab, setTab] =
-    useState("dashboard");
-
-
-  const [products, setProducts] =
-    useState([]);
+    enabled: false,
 
 
-  const [categories, setCategories] =
-    useState([]);
+    // =======================================================
+    // 📍 طريقة الظهور
+    //
+    // store = داخل المتجر
+    // popup = إعلان منبثق
+    // both  = الاثنين
+    // =======================================================
+
+    displayMode: "store",
 
 
-  const [orders, setOrders] =
-    useState([]);
+    // =======================================================
+    // 📝 عنوان العجلة
+    // =======================================================
+
+    title:
+      "🎡 جرب حظك!",
 
 
-  const [users, setUsers] =
-    useState([]);
+    // =======================================================
+    // 📄 وصف العجلة
+    // =======================================================
+
+    description:
+      "لف العجلة واكسب عرضك",
 
 
-  const [banners, setBanners] =
-    useState([]);
+    // =======================================================
+    // 🎯 عدد المحاولات لكل عميل يوميًا
+    // =======================================================
+
+    attemptsPerUser: 1,
 
 
-  const [coupons, setCoupons] =
-    useState([]);
+    // =======================================================
+    // ⏱️ عدد الثواني قبل ظهور الـ Popup
+    // =======================================================
 
+    popupDelay: 3,
+
+
+    // =======================================================
+    // 📅 ظهور مرة واحدة يوميًا
+    // =======================================================
+
+    showOncePerDay: true,
+
+
+    // =======================================================
+    // ❌ السماح بإغلاق الـ Popup
+    // =======================================================
+
+    allowClose: true,
+
+
+    // =======================================================
+    // 🎁 الجوائز
+    // =======================================================
+
+    prizes: [],
+
+  });
+
+
+// ==========================================================
+// 📂 ACTIVE ADMIN TAB
+// ==========================================================
+
+const [tab, setTab] =
+  useState("dashboard");
+
+
+// ==========================================================
+// 📦 PRODUCTS
+// ==========================================================
+
+const [products, setProducts] =
+  useState([]);
+
+
+// ==========================================================
+// 📂 CATEGORIES
+// ==========================================================
+
+const [categories, setCategories] =
+  useState([]);
+
+
+// ==========================================================
+// 🛒 ORDERS
+// ==========================================================
+
+const [orders, setOrders] =
+  useState([]);
+
+
+// ==========================================================
+// 👥 USERS
+// ==========================================================
+
+const [users, setUsers] =
+  useState([]);
+
+
+// ==========================================================
+// 🖼️ BANNERS
+// ==========================================================
+
+const [banners, setBanners] =
+  useState([]);
+
+
+// ==========================================================
+// 🎟️ COUPONS
+// ==========================================================
+
+const [coupons, setCoupons] =
+  useState([]);
+
+
+// ==========================================================
+// 📢 ANNOUNCEMENTS
+// ==========================================================
 
 const [announcements, setAnnouncements] =
   useState([]);
 
 
+// ==========================================================
+// 📢 ANNOUNCEMENT BARS
+// ==========================================================
+
 const [announcementBars, setAnnouncementBars] =
   useState([]);
 
 
+// ==========================================================
+// 🔔 NOTIFICATIONS
+// ==========================================================
+
 const [notifications, setNotifications] =
   useState([]);
 
-  const [supportMessages, setSupportMessages] =
-    useState([]);
+
+// ==========================================================
+// 💬 SUPPORT MESSAGES
+// ==========================================================
+
+const [supportMessages, setSupportMessages] =
+  useState([]);
 
 
-  const [favorites, setFavorites] =
-    useState([]);
+// ==========================================================
+// ❤️ FAVORITES
+// ==========================================================
+
+const [favorites, setFavorites] =
+  useState([]);
 
 
-  const [blockedUsers, setBlockedUsers] =
-    useState([]);
+// ==========================================================
+// 🚫 BLOCKED USERS
+// ==========================================================
+
+const [blockedUsers, setBlockedUsers] =
+  useState([]);
 
 
-  const [shippingZones, setShippingZones] =
-    useState([]);
+// ==========================================================
+// 🚚 SHIPPING ZONES
+// ==========================================================
+
+const [shippingZones, setShippingZones] =
+  useState([]);
 
 
-  const [paymentMethods, setPaymentMethods] =
-    useState([]);
+// ==========================================================
+// 💳 PAYMENT METHODS
+// ==========================================================
+
+const [paymentMethods, setPaymentMethods] =
+  useState([]);
 
 
-  const [admins, setAdmins] =
-    useState([]);
+// ==========================================================
+// 👨‍💼 ADMINS
+// ==========================================================
+
+const [admins, setAdmins] =
+  useState([]);
 
 
-  const [activityLogs, setActivityLogs] =
-    useState([]);
+// ==========================================================
+// 📋 ACTIVITY LOGS
+// ==========================================================
+
+const [activityLogs, setActivityLogs] =
+  useState([]);
 
 
-  // ==========================================================
-  // ADMINS MANAGEMENT
-  // ==========================================================
+// ==========================================================
+// 👨‍💼 ADMIN MANAGEMENT
+// ==========================================================
 
-  const [adminForm, setAdminForm] =
-    useState({
-      name: "",
-      email: "",
-      password: "",
-      permissions: [],
-      active: true,
-    });
+const [adminForm, setAdminForm] =
+  useState({
 
+    name: "",
 
-  const [editingAdmin, setEditingAdmin] =
-    useState(null);
+    email: "",
 
+    password: "",
 
-  const [showAdminForm, setShowAdminForm] =
-    useState(false);
+    permissions: [],
+
+    active: true,
+
+  });
 
 
+// ==========================================================
+// ✏️ EDITING ADMIN
+// ==========================================================
+
+const [editingAdmin, setEditingAdmin] =
+  useState(null);
+
+
+// ==========================================================
+// 📝 SHOW ADMIN FORM
+// ==========================================================
+
+const [showAdminForm, setShowAdminForm] =
+  useState(false);
   // ==========================================================
   // STORE SETTINGS
   // ==========================================================
@@ -3221,56 +3332,33 @@ const handleLogoUpload = async (event) => {
 
       };
 
-
       // ======================================================
-      // ✏️ تعديل قسم موجود
+      // ✏️ تعديل قسم موجود / ➕ إضافة قسم جديد
       // ======================================================
 
       if (editingCategory) {
-
         await updateDoc(
-
           doc(
             db,
             "categories",
             editingCategory.id
           ),
-
           categoryData
-
         );
-
-      }
-
-
-      // ======================================================
-      // ➕ إضافة قسم جديد
-      // ======================================================
-
-      else {
-
+      } else {
         await setDoc(
-
           doc(
             collection(
               db,
               "categories"
             )
           ),
-
           {
-
             ...categoryData,
-
-            createdAt:
-              serverTimestamp(),
-
+            createdAt: serverTimestamp(),
           }
-
         );
-
       }
-
 
       // ======================================================
       // ✅ نجاح الحفظ
@@ -3284,9 +3372,7 @@ const handleLogoUpload = async (event) => {
           : "✅ تم إضافة القسم بنجاح."
       );
 
-
     } catch (error) {
-
       console.error(
         "handleCategorySubmit error:",
         error
@@ -3296,66 +3382,103 @@ const handleLogoUpload = async (event) => {
         "❌ حدث خطأ أثناء حفظ القسم أو رفع الصورة."
       );
 
-
     } finally {
-
       setActionLoading(false);
-
     }
 
   };
-  
-  (category) => {
+
+
+  // ==========================================================
+  // ✏️ EDIT CATEGORY
+  // ==========================================================
+
+  const handleEditCategory = (category) => {
+
+    if (!category) {
+      return;
+    }
 
     setEditingCategory(category);
 
     setCategoryForm({
-
       name:
-        category?.name || "",
+        category.name || "",
 
       description:
-        category?.description || "",
+        category.description || "",
 
       image:
-        category?.image || "",
+        category.image || "",
 
       categoryNumber:
-        category?.categoryNumber || "",
+        category.categoryNumber || "",
 
       whatsapp:
-        category?.whatsapp || "",
+        category.whatsapp || "",
 
       parentId:
-        category?.parentId || "",
+        category.parentId || "",
 
       active:
-        category?.active !== false,
+        category.active !== false,
 
       // 🎨 لون القسم
       color:
-        category?.color || "#071a36",
+        category.color || "#071a36",
 
-      // 📏 حجم القسم
+      // 📏 حجم بطاقة القسم
       cardSize:
-        category?.cardSize || "medium",
+        category.cardSize || "medium",
 
       // 🔢 ترتيب القسم
       sortOrder:
         Number(
-          category?.sortOrder || 0
+          category.sortOrder || 0
         ),
-
     });
 
     setShowCategoryForm(true);
 
     setTab("categories");
+
+    // ======================================================
+    // ⬆️ الرجوع لأعلى قسم الأقسام بعد الضغط على تعديل
+    // ======================================================
+
+    setTimeout(() => {
+
+      const categorySection =
+        document.querySelector(
+          ".categories-section"
+        );
+
+      if (categorySection) {
+        categorySection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+
+    }, 100);
+
   };
 
 
+  // ==========================================================
+  // 🗑️ DELETE CATEGORY
+  // ==========================================================
+
   const handleDeleteCategory =
     async (category) => {
+
+      if (!category) {
+        return;
+      }
+
+      // ======================================================
+      // 🔎 التأكد أن القسم لا يحتوي على أقسام فرعية
+      // ======================================================
 
       const hasChildren =
         categories.some(
@@ -3373,15 +3496,17 @@ const handleLogoUpload = async (event) => {
         return;
       }
 
+      // ======================================================
+      // ⚠️ تأكيد الحذف
+      // ======================================================
 
       if (
         !window.confirm(
-          `هل أنت متأكد من حذف القسم "${category?.name || ""}"؟`
+          `هل أنت متأكد من حذف القسم "${category.name || ""}"؟`
         )
       ) {
         return;
       }
-
 
       try {
 
@@ -3393,195 +3518,377 @@ const handleLogoUpload = async (event) => {
           )
         );
 
-      } catch (error) {
+        // ====================================================
+        // لو القسم المحذوف هو القسم المفتوح في التعديل
+        // يتم إغلاق الفورم
+        // ====================================================
 
-        console.error(error);
+        if (
+          editingCategory?.id ===
+          category.id
+        ) {
+          resetCategoryForm();
+        }
 
         alert(
-          "حدث خطأ أثناء حذف القسم."
+          "✅ تم حذف القسم بنجاح."
+        );
+
+      } catch (error) {
+
+        console.error(
+          "handleDeleteCategory error:",
+          error
+        );
+
+        alert(
+          "❌ حدث خطأ أثناء حذف القسم."
         );
       }
     };
 
-const handleEditCategory = (category) => {
-  if (!category) {
-    return;
-  }
 
-  setEditingCategory(category);
+  // ==========================================================
+  // 🌳 CATEGORY TREE
+  // ==========================================================
 
-  setCategoryForm({
-    name: category.name || "",
-    description: category.description || "",
-    image: category.image || "",
-    categoryNumber: category.categoryNumber || "",
-    whatsapp: category.whatsapp || "",
-    parentId: category.parentId || "",
-    active: category.active !== false,
-    color: category.color || "#071a36",
-    cardSize: category.cardSize || "medium",
-    sortOrder: Number(category.sortOrder || 0),
-  });
+  const renderCategoryTree = (
+    items,
+    level = 0
+  ) => {
 
-  setShowCategoryForm(true);
-  setTab("categories");
-};
-const renderCategoryTree = (
-  items,
-  level = 0
-) => (
-
-  <div
-    className={
-      level === 0
-        ? "category-tree-root"
-        : "category-tree-children"
+    if (
+      !Array.isArray(items) ||
+      items.length === 0
+    ) {
+      return null;
     }
-  >
 
-    {items.map(
-      (category) => {
+    return (
 
-        const children =
-          categories
-            .filter(
-              (item) =>
-                item.parentId ===
-                category.id
-            )
-            .sort(
-              (a, b) =>
-                Number(
-                  a.sortOrder || 0
-                ) -
-                Number(
-                  b.sortOrder || 0
+      <div
+        className={
+          level === 0
+            ? "category-tree-root"
+            : "category-tree-children"
+        }
+      >
+
+        {items.map(
+          (category) => {
+
+            // ==================================================
+            // 🔎 جلب الأقسام الفرعية
+            // ==================================================
+
+            const children =
+              categories
+                .filter(
+                  (item) =>
+                    item.parentId ===
+                    category.id
                 )
-            );
+                .sort(
+                  (a, b) =>
+                    Number(
+                      a.sortOrder || 0
+                    ) -
+                    Number(
+                      b.sortOrder || 0
+                    )
+                );
 
-        return (
-
-          <div
-            key={
-              category.id
-            }
-            className="category-tree-node"
-          >
-
-            {/* ==========================
-                CATEGORY
-            ========================== */}
-
-            <div
-              className="category-tree-item"
-              style={{
-                paddingRight:
-                  `${level * 24}px`,
-              }}
-            >
-
-              <strong>
-
-                {
-                  level > 0
-                    ? "↳ "
-                    : "📂 "
-                }
-
-                {
-                  category.name
-                }
-
-              </strong>
-
-
-              <span>
-
-                {
-                  category.categoryNumber ||
-                  "—"
-                }
-
-              </span>
-
+            return (
 
               <div
-                className="table-actions"
+                key={
+                  category.id
+                }
+                className="category-tree-node"
               >
 
-                <button
-                  type="button"
-                  className="edit-btn"
-                  onClick={() =>
-                    handleEditCategory(
-                      category
-                    )
-                  }
+                {/* ============================================
+                    CATEGORY ITEM
+                ============================================ */}
+
+                <div
+                  className="category-tree-item"
+                  style={{
+                    paddingRight:
+                      `${level * 24}px`,
+                  }}
                 >
-                  ✏️ تعديل
-                </button>
+
+                  {/* ==========================================
+                      CATEGORY NAME
+                  ========================================== */}
+
+                  <div
+                    className="category-tree-info"
+                  >
+
+                    <strong>
+
+                      {
+                        level > 0
+                          ? "↳ "
+                          : "📂 "
+                      }
+
+                      {
+                        category.name ||
+                        "بدون اسم"
+                      }
+
+                    </strong>
 
 
-                <button
-                  type="button"
-                  className="delete-btn"
-                  onClick={() =>
-                    handleDeleteCategory(
-                      category
-                    )
-                  }
-                >
-                  🗑️ حذف
-                </button>
+                    {/* ========================================
+                        CATEGORY NUMBER
+                    ======================================== */}
 
-              </div>
+                    <span
+                      className="category-number"
+                    >
 
-            </div>
+                      {
+                        category.categoryNumber ||
+                        "—"
+                      }
+
+                    </span>
 
 
-            {/* ==========================
-                CHILDREN
-            ========================== */}
+                    {/* ========================================
+                        ACTIVE STATUS
+                    ======================================== */}
 
-            {children.length > 0 && (
+                    <span
+                      className={
+                        category.active !== false
+                          ? "category-status active"
+                          : "category-status inactive"
+                      }
+                    >
 
-              <div
-                className="category-tree-children"
-              >
+                      {
+                        category.active !== false
+                          ? "نشط"
+                          : "غير نشط"
+                      }
 
-                {renderCategoryTree(
-                  children,
-                  level + 1
+                    </span>
+
+                  </div>
+
+
+                  {/* ==========================================
+                      ACTIONS
+                  ========================================== */}
+
+                  <div
+                    className="table-actions category-actions"
+                  >
+
+                    <button
+                      type="button"
+                      className="edit-btn"
+                      onClick={() =>
+                        handleEditCategory(
+                          category
+                        )
+                      }
+                    >
+
+                      ✏️ تعديل
+
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      onClick={() =>
+                        handleDeleteCategory(
+                          category
+                        )
+                      }
+                    >
+
+                      🗑️ حذف
+
+                    </button>
+
+                  </div>
+
+                </div>
+
+
+                {/* ==========================================
+                    CHILDREN
+                ========================================== */}
+
+                {children.length > 0 && (
+
+                  <div
+                    className="category-tree-children"
+                  >
+
+                    {renderCategoryTree(
+                      children,
+                      level + 1
+                    )}
+
+                  </div>
+
                 )}
 
               </div>
 
-            )}
+            );
+          }
+        )}
 
-          </div>
+      </div>
 
-        );
-      }
-    )}
+    );
+  };
 
-  </div>
-);
-      const saveWheelSettings = async () => {
+  /// ==========================================================
+// 🎡 SAVE WHEEL SETTINGS
+// ==========================================================
+
+const saveWheelSettings =
+  async () => {
+
     try {
+
       await setDoc(
-        doc(db, "settings", "wheel"),
+
+        doc(
+          db,
+          "settings",
+          "wheel"
+        ),
+
         {
-          ...wheelSettings,
-          updatedAt: new Date(),
+
+          // =================================================
+          // 🎡 تفعيل العجلة
+          // =================================================
+
+          enabled:
+            wheelSettings?.enabled === true,
+
+
+          // =================================================
+          // 📍 طريقة الظهور
+          //
+          // store = داخل المتجر
+          // popup = إعلان منبثق
+          // both  = الاثنين
+          // =================================================
+
+          displayMode:
+            wheelSettings?.displayMode ||
+            "store",
+
+
+          // =================================================
+          // ⏱️ تأخير ظهور الـ Popup
+          // =================================================
+
+          popupDelay:
+            Math.max(
+              0,
+              Number(
+                wheelSettings?.popupDelay ?? 3
+              )
+            ),
+
+
+          // =================================================
+          // 📅 ظهور مرة واحدة يوميًا
+          // =================================================
+
+          showOncePerDay:
+            wheelSettings?.showOncePerDay !== false,
+
+
+          // =================================================
+          // ❌ السماح بإغلاق الـ Popup
+          // =================================================
+
+          allowClose:
+            wheelSettings?.allowClose !== false,
+
+
+          // =================================================
+          // 🎯 عدد المحاولات اليومية
+          // =================================================
+
+          attemptsPerUser:
+            Math.max(
+              1,
+              Number(
+                wheelSettings?.attemptsPerUser ?? 1
+              )
+            ),
+
+
+          // =================================================
+          // 📝 العنوان
+          // =================================================
+
+          title:
+            wheelSettings?.title ||
+            "🎡 جرب حظك!",
+
+
+          // =================================================
+          // 📄 الوصف
+          // =================================================
+
+          description:
+            wheelSettings?.description ||
+            "لف العجلة واكسب عرضك",
+
+
+          // =================================================
+          // 🎁 الجوائز
+          // =================================================
+
+          prizes:
+            Array.isArray(
+              wheelSettings?.prizes
+            )
+              ? wheelSettings.prizes
+              : [],
+
+
+          // =================================================
+          // 🕐 آخر تحديث
+          // =================================================
+
+          updatedAt:
+            new Date(),
+
         },
+
         {
           merge: true,
         }
+
       );
 
-      alert("تم حفظ إعدادات عجلة الحظ بنجاح 🎡");
+
+      alert(
+        "تم حفظ إعدادات عجلة الحظ بنجاح 🎡"
+      );
+
 
     } catch (error) {
+
       console.error(
         "Wheel Settings Error:",
         error
@@ -3590,45 +3897,121 @@ const renderCategoryTree = (
       alert(
         "حدث خطأ أثناء حفظ إعدادات عجلة الحظ"
       );
-    }
-  };
 
+    }
+
+  };// =======================================================
+// 🎡 SHOW WHEEL AS POPUP
+// =======================================================
+
+const shouldShowWheelAsPopup =
+  wheelSettings?.enabled === true &&
+  (
+    wheelSettings?.displayMode === "popup" ||
+    wheelSettings?.displayMode === "both"
+  );
+  // ==========================================================
+  // 🎡 LISTEN TO WHEEL SETTINGS
+  // ==========================================================
 
   useEffect(() => {
-    const wheelRef = doc(
-      db,
-      "settings",
-      "wheel"
-    );
 
-    const unsubscribe = onSnapshot(
-      wheelRef,
-      (snapshot) => {
+    const wheelRef =
+      doc(
+        db,
+        "settings",
+        "wheel"
+      );
 
-        if (!snapshot.exists()) {
-          return;
+
+    const unsubscribe =
+      onSnapshot(
+
+        wheelRef,
+
+        (snapshot) => {
+
+          if (
+            !snapshot.exists()
+          ) {
+
+            return;
+
+          }
+
+
+          const data =
+            snapshot.data();
+
+
+          setWheelSettings(
+            (previous) => ({
+
+              ...previous,
+
+              ...data,
+
+
+              // =================================================
+              // Defaults للإعدادات الجديدة
+              // =================================================
+
+              enabled:
+                data.enabled === true,
+
+              displayMode:
+                data.displayMode ||
+                "store",
+
+              popupDelay:
+                Number(
+                  data.popupDelay || 3
+                ),
+
+              showOncePerDay:
+                data.showOncePerDay !== false,
+
+              allowClose:
+                data.allowClose !== false,
+
+              attemptsPerUser:
+                Number(
+                  data.attemptsPerUser || 1
+                ),
+
+
+              // =================================================
+              // PRIZES
+              // =================================================
+
+              prizes:
+                Array.isArray(
+                  data.prizes
+                )
+                  ? data.prizes
+                  : [],
+
+            })
+          );
+
+        },
+
+
+        (error) => {
+
+          console.error(
+            "Wheel Settings Error:",
+            error
+          );
+
         }
 
-        const data = snapshot.data();
+      );
 
-        setWheelSettings((previous) => ({
-          ...previous,
-          ...data,
-          prizes: Array.isArray(data.prizes)
-            ? data.prizes
-            : [],
-        }));
 
-      },
-      (error) => {
-        console.error(
-          "Wheel Settings Error:",
-          error
-        );
-      }
-    );
+    return () =>
+      unsubscribe();
 
-    return () => unsubscribe();
   }, []);
       // ==========================================================
   // ACTIVITY / ORDERS
@@ -6080,39 +6463,690 @@ const saveStoreSettings =
           </div>
 
         )}
-        {/* ====================================================
-            WHEEL OF LUCK
-        ==================================================== */}
+{/* ====================================================
+    WHEEL OF LUCK
+==================================================== */}
 
-        {tab === "wheel" && (
+{tab === "wheel" && (
 
-          <div className="admin-dashboard">
+  <div className="admin-dashboard">
 
-            <div className="table-container">
+    <div className="table-container">
 
-              <div className="section-header">
+      {/* ====================================================
+          HEADER
+      ==================================================== */}
 
-                <div>
-                  <h2>
-                    🎡 عجلة الحظ
-                  </h2>
+      <div className="section-header">
 
-                  <p>
-                    إدارة الجوائز والعروض التي تظهر للعملاء في عجلة الحظ
-                  </p>
-                </div>
+        <div>
 
-              </div>
+          <h2>
+            🎡 عجلة الحظ
+          </h2>
+
+          <p>
+            إدارة الجوائز والعروض وطريقة ظهور عجلة الحظ للعملاء
+          </p>
+
+        </div>
+
+      </div>
 
 
-              <div className="admin-form-grid">
+      {/* ====================================================
+          GENERAL SETTINGS
+      ==================================================== */}
 
-                {/* تفعيل العجلة */}
+      <div className="admin-form-grid">
+
+
+        {/* ==================================================
+            تفعيل العجلة
+        ================================================== */}
+
+        <div className="form-group">
+
+          <label>
+            حالة عجلة الحظ
+          </label>
+
+          <label className="admin-checkbox">
+
+            <input
+              type="checkbox"
+              checked={
+                wheelSettings?.enabled === true
+              }
+              onChange={(event) =>
+                setWheelSettings(
+                  (previous) => ({
+                    ...previous,
+                    enabled:
+                      event.target.checked,
+                  })
+                )
+              }
+            />
+
+            <span>
+              تفعيل عجلة الحظ للعملاء
+            </span>
+
+          </label>
+
+        </div>
+
+
+        {/* ==================================================
+            طريقة الظهور
+        ================================================== */}
+
+        <div className="form-group">
+
+          <label>
+            📍 طريقة ظهور عجلة الحظ
+          </label>
+
+          <select
+            value={
+              wheelSettings?.displayMode ||
+              "store"
+            }
+            onChange={(event) =>
+              setWheelSettings(
+                (previous) => ({
+                  ...previous,
+                  displayMode:
+                    event.target.value,
+                })
+              )
+            }
+          >
+
+            <option value="store">
+              🛍️ داخل المتجر فقط
+            </option>
+
+            <option value="popup">
+              🔔 إعلان منبثق فقط
+            </option>
+
+            <option value="both">
+              ✨ داخل المتجر + إعلان منبثق
+            </option>
+
+          </select>
+
+        </div>
+
+
+        {/* ==================================================
+            عنوان العجلة
+        ================================================== */}
+
+        <div className="form-group">
+
+          <label>
+            عنوان العجلة
+          </label>
+
+          <input
+            type="text"
+            value={
+              wheelSettings?.title ||
+              "🎡 جرب حظك!"
+            }
+            onChange={(event) =>
+              setWheelSettings(
+                (previous) => ({
+                  ...previous,
+                  title:
+                    event.target.value,
+                })
+              )
+            }
+            placeholder="مثال: جرب حظك واكسب!"
+          />
+
+        </div>
+
+
+        {/* ==================================================
+            الوصف
+        ================================================== */}
+
+        <div className="form-group">
+
+          <label>
+            وصف العجلة
+          </label>
+
+          <input
+            type="text"
+            value={
+              wheelSettings?.description ||
+              "لف العجلة واكسب عرضك"
+            }
+            onChange={(event) =>
+              setWheelSettings(
+                (previous) => ({
+                  ...previous,
+                  description:
+                    event.target.value,
+                })
+              )
+            }
+            placeholder="وصف يظهر أسفل العنوان"
+          />
+
+        </div>
+
+
+        {/* ==================================================
+            عدد المحاولات
+        ================================================== */}
+
+        <div className="form-group">
+
+          <label>
+            عدد المحاولات لكل عميل
+          </label>
+
+          <input
+            type="number"
+            min="1"
+            value={
+              wheelSettings?.attemptsPerUser ||
+              1
+            }
+            onChange={(event) =>
+              setWheelSettings(
+                (previous) => ({
+                  ...previous,
+                  attemptsPerUser:
+                    Math.max(
+                      1,
+                      Number(
+                        event.target.value
+                      ) || 1
+                    ),
+                })
+              )
+            }
+          />
+
+        </div>
+
+
+        {/* ==================================================
+            تأخير الـ POPUP
+        ================================================== */}
+
+        {(wheelSettings?.displayMode === "popup" ||
+          wheelSettings?.displayMode === "both") && (
+
+          <div className="form-group">
+
+            <label>
+              ⏱️ تأخير ظهور الإعلان المنبثق
+            </label>
+
+            <input
+              type="number"
+              min="0"
+              max="60"
+              value={
+                wheelSettings?.popupDelay ??
+                3
+              }
+              onChange={(event) =>
+                setWheelSettings(
+                  (previous) => ({
+                    ...previous,
+                    popupDelay:
+                      Math.max(
+                        0,
+                        Math.min(
+                          60,
+                          Number(
+                            event.target.value
+                          ) || 0
+                        )
+                      ),
+                  })
+                )
+              }
+            />
+
+            <small
+              style={{
+                display: "block",
+                marginTop: "6px",
+                color: "#777",
+              }}
+            >
+              عدد الثواني قبل ظهور عجلة الحظ
+            </small>
+
+          </div>
+
+        )}
+
+
+        {/* ==================================================
+            مرة واحدة يوميًا
+        ================================================== */}
+
+        {(wheelSettings?.displayMode === "popup" ||
+          wheelSettings?.displayMode === "both") && (
+
+          <div className="form-group">
+
+            <label>
+              🔄 تكرار الإعلان المنبثق
+            </label>
+
+            <label className="admin-checkbox">
+
+              <input
+                type="checkbox"
+                checked={
+                  wheelSettings?.showOncePerDay !== false
+                }
+                onChange={(event) =>
+                  setWheelSettings(
+                    (previous) => ({
+                      ...previous,
+                      showOncePerDay:
+                        event.target.checked,
+                    })
+                  )
+                }
+              />
+
+              <span>
+                إظهار الإعلان مرة واحدة يوميًا لكل عميل
+              </span>
+
+            </label>
+
+          </div>
+
+        )}
+
+
+        {/* ==================================================
+            السماح بالإغلاق
+        ================================================== */}
+
+        {(wheelSettings?.displayMode === "popup" ||
+          wheelSettings?.displayMode === "both") && (
+
+          <div className="form-group">
+
+            <label>
+              ❌ إغلاق الإعلان
+            </label>
+
+            <label className="admin-checkbox">
+
+              <input
+                type="checkbox"
+                checked={
+                  wheelSettings?.allowClose !== false
+                }
+                onChange={(event) =>
+                  setWheelSettings(
+                    (previous) => ({
+                      ...previous,
+                      allowClose:
+                        event.target.checked,
+                    })
+                  )
+                }
+              />
+
+              <span>
+                السماح للعميل بإغلاق الإعلان
+              </span>
+
+            </label>
+
+          </div>
+
+        )}
+
+      </div>
+
+
+      {/* ====================================================
+          INFO
+      ==================================================== */}
+
+      {(wheelSettings?.displayMode === "popup" ||
+        wheelSettings?.displayMode === "both") && (
+
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "15px 18px",
+            borderRadius: "12px",
+            background: "#f8fafc",
+            border: "1px solid #e5e7eb",
+            lineHeight: "1.8",
+          }}
+        >
+
+          <strong>
+            💡 إعدادات الإعلان المنبثق
+          </strong>
+
+          <div
+            style={{
+              marginTop: "5px",
+              color: "#666",
+              fontSize: "14px",
+            }}
+          >
+
+            ستظهر عجلة الحظ فوق الصفحة بعد عدد الثواني المحدد،
+            ويمكن للعميل إغلاقها إذا كان خيار الإغلاق مفعلاً.
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {/* ====================================================
+          PRIZES
+      ==================================================== */}
+
+      <div
+        className="section-header"
+        style={{
+          marginTop: "30px",
+        }}
+      >
+
+        <div>
+
+          <h2>
+            🎁 جوائز عجلة الحظ
+          </h2>
+
+          <p>
+            أضف العروض التي تريد أن يفوز بها العميل
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          className="save-btn"
+          onClick={() =>
+            setWheelSettings(
+              (previous) => ({
+                ...previous,
+
+                prizes: [
+                  ...(previous?.prizes || []),
+
+                  {
+                    id:
+                      Date.now().toString(),
+
+                    title:
+                      "خصم 10%",
+
+                    type:
+                      "discount",
+
+                    value:
+                      10,
+
+                    color:
+                      "#F68B1E",
+
+                    enabled:
+                      true,
+                  },
+                ],
+              })
+            )
+          }
+        >
+          ➕ إضافة جائزة
+        </button>
+
+      </div>
+
+
+      {/* ====================================================
+          PRIZES LIST
+      ==================================================== */}
+
+      <div className="wheel-prizes-list">
+
+        {(wheelSettings?.prizes || [])
+          .map(
+            (prize, index) => (
+
+              <div
+                className="wheel-prize-card"
+                key={
+                  prize?.id ||
+                  index
+                }
+              >
+
+                {/* ==================================================
+                    اسم الجائزة
+                ================================================== */}
 
                 <div className="form-group">
 
                   <label>
-                    حالة عجلة الحظ
+                    اسم العرض
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      prize?.title ||
+                      ""
+                    }
+                    onChange={(event) => {
+
+                      const prizes = [
+                        ...(wheelSettings?.prizes || []),
+                      ];
+
+                      prizes[index] = {
+                        ...prizes[index],
+                        title:
+                          event.target.value,
+                      };
+
+                      setWheelSettings(
+                        (previous) => ({
+                          ...previous,
+                          prizes,
+                        })
+                      );
+
+                    }}
+                    placeholder="مثال: خصم 20%"
+                  />
+
+                </div>
+
+
+                {/* ==================================================
+                    نوع العرض
+                ================================================== */}
+
+                <div className="form-group">
+
+                  <label>
+                    نوع العرض
+                  </label>
+
+                  <select
+                    value={
+                      prize?.type ||
+                      "discount"
+                    }
+                    onChange={(event) => {
+
+                      const prizes = [
+                        ...(wheelSettings?.prizes || []),
+                      ];
+
+                      prizes[index] = {
+                        ...prizes[index],
+                        type:
+                          event.target.value,
+                      };
+
+                      setWheelSettings(
+                        (previous) => ({
+                          ...previous,
+                          prizes,
+                        })
+                      );
+
+                    }}
+                  >
+
+                    <option value="discount">
+                      نسبة خصم
+                    </option>
+
+                    <option value="fixed">
+                      خصم مبلغ
+                    </option>
+
+                    <option value="free-shipping">
+                      شحن مجاني
+                    </option>
+
+                    <option value="gift">
+                      هدية
+                    </option>
+
+                    <option value="nothing">
+                      حظ أوفر
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                {/* ==================================================
+                    قيمة العرض
+                ================================================== */}
+
+                {prize?.type !==
+                  "free-shipping" &&
+                  prize?.type !==
+                    "nothing" && (
+
+                  <div className="form-group">
+
+                    <label>
+                      قيمة العرض
+                    </label>
+
+                    <input
+                      type="number"
+                      min="0"
+                      value={
+                        prize?.value ??
+                        ""
+                      }
+                      onChange={(event) => {
+
+                        const prizes = [
+                          ...(wheelSettings?.prizes || []),
+                        ];
+
+                        prizes[index] = {
+                          ...prizes[index],
+                          value:
+                            Number(
+                              event.target.value
+                            ),
+                        };
+
+                        setWheelSettings(
+                          (previous) => ({
+                            ...previous,
+                            prizes,
+                          })
+                        );
+
+                      }}
+                    />
+
+                  </div>
+
+                )}
+
+
+                {/* ==================================================
+                    اللون
+                ================================================== */}
+
+                <div className="form-group">
+
+                  <label>
+                    لون الجزء
+                  </label>
+
+                  <input
+                    type="color"
+                    value={
+                      prize?.color ||
+                      "#F68B1E"
+                    }
+                    onChange={(event) => {
+
+                      const prizes = [
+                        ...(wheelSettings?.prizes || []),
+                      ];
+
+                      prizes[index] = {
+                        ...prizes[index],
+                        color:
+                          event.target.value,
+                      };
+
+                      setWheelSettings(
+                        (previous) => ({
+                          ...previous,
+                          prizes,
+                        })
+                      );
+
+                    }}
+                  />
+
+                </div>
+
+
+                {/* ==================================================
+                    تفعيل العرض
+                ================================================== */}
+
+                <div className="form-group">
+
+                  <label>
+                    حالة العرض
                   </label>
 
                   <label className="admin-checkbox">
@@ -6120,21 +7154,33 @@ const saveStoreSettings =
                     <input
                       type="checkbox"
                       checked={
-                        wheelSettings?.enabled || false
+                        prize?.enabled !==
+                        false
                       }
-                      onChange={(event) =>
+                      onChange={(event) => {
+
+                        const prizes = [
+                          ...(wheelSettings?.prizes || []),
+                        ];
+
+                        prizes[index] = {
+                          ...prizes[index],
+                          enabled:
+                            event.target.checked,
+                        };
+
                         setWheelSettings(
                           (previous) => ({
                             ...previous,
-                            enabled:
-                              event.target.checked,
+                            prizes,
                           })
-                        )
-                      }
+                        );
+
+                      }}
                     />
 
                     <span>
-                      تفعيل عجلة الحظ للعملاء
+                      العرض متاح
                     </span>
 
                   </label>
@@ -6142,488 +7188,92 @@ const saveStoreSettings =
                 </div>
 
 
-                {/* عنوان العجلة */}
-
-                <div className="form-group">
-
-                  <label>
-                    عنوان العجلة
-                  </label>
-
-                  <input
-                    type="text"
-                    value={
-                      wheelSettings?.title ||
-                      "🎡 جرب حظك!"
-                    }
-                    onChange={(event) =>
-                      setWheelSettings(
-                        (previous) => ({
-                          ...previous,
-                          title:
-                            event.target.value,
-                        })
-                      )
-                    }
-                    placeholder="مثال: جرب حظك واكسب!"
-                  />
-
-                </div>
-
-
-                {/* الوصف */}
-
-                <div className="form-group">
-
-                  <label>
-                    وصف العجلة
-                  </label>
-
-                  <input
-                    type="text"
-                    value={
-                      wheelSettings?.description ||
-                      "لف العجلة واكسب عرضك"
-                    }
-                    onChange={(event) =>
-                      setWheelSettings(
-                        (previous) => ({
-                          ...previous,
-                          description:
-                            event.target.value,
-                        })
-                      )
-                    }
-                    placeholder="وصف يظهر أسفل العنوان"
-                  />
-
-                </div>
-
-
-                {/* عدد المحاولات */}
-
-                <div className="form-group">
-
-                  <label>
-                    عدد المحاولات لكل عميل
-                  </label>
-
-                  <input
-                    type="number"
-                    min="1"
-                    value={
-                      wheelSettings?.attemptsPerUser ||
-                      1
-                    }
-                    onChange={(event) =>
-                      setWheelSettings(
-                        (previous) => ({
-                          ...previous,
-                          attemptsPerUser:
-                            Number(
-                              event.target.value
-                            ),
-                        })
-                      )
-                    }
-                  />
-
-                </div>
-
-              </div>
-
-
-              {/* ====================================================
-                  PRIZES
-              ==================================================== */}
-
-              <div className="section-header">
-
-                <div>
-                  <h2>
-                    🎁 جوائز عجلة الحظ
-                  </h2>
-
-                  <p>
-                    أضف العروض التي تريد أن يفوز بها العميل
-                  </p>
-                </div>
+                {/* ==================================================
+                    حذف
+                ================================================== */}
 
                 <button
                   type="button"
-                  className="save-btn"
-                  onClick={() =>
+                  className="delete-btn"
+                  onClick={() => {
+
+                    const prizes =
+                      (
+                        wheelSettings?.prizes ||
+                        []
+                      ).filter(
+                        (_, prizeIndex) =>
+                          prizeIndex !==
+                          index
+                      );
+
                     setWheelSettings(
                       (previous) => ({
                         ...previous,
-
-                        prizes: [
-                          ...(previous?.prizes || []),
-                          {
-                            id:
-                              Date.now().toString(),
-                            title: "خصم 10%",
-                            type: "discount",
-                            value: 10,
-                            color: "#F68B1E",
-                            enabled: true,
-                          },
-                        ],
+                        prizes,
                       })
-                    )
-                  }
+                    );
+
+                  }}
                 >
-                  ➕ إضافة جائزة
+                  🗑️ حذف
                 </button>
 
               </div>
 
+            )
+          )}
 
-              <div className="wheel-prizes-list">
 
-                {(wheelSettings?.prizes || [])
-                  .map(
-                    (prize, index) => (
+        {/* ==================================================
+            EMPTY
+        ================================================== */}
 
-                      <div
-                        className="wheel-prize-card"
-                        key={
-                          prize?.id ||
-                          index
-                        }
-                      >
+        {(wheelSettings?.prizes || [])
+          .length === 0 && (
 
-                        {/* اسم الجائزة */}
+          <div className="empty-state">
 
-                        <div className="form-group">
-
-                          <label>
-                            اسم العرض
-                          </label>
-
-                          <input
-                            type="text"
-                            value={
-                              prize?.title ||
-                              ""
-                            }
-                            onChange={(event) => {
-
-                              const prizes = [
-                                ...(
-                                  wheelSettings?.prizes ||
-                                  []
-                                ),
-                              ];
-
-                              prizes[index] = {
-                                ...prizes[index],
-                                title:
-                                  event.target.value,
-                              };
-
-                              setWheelSettings(
-                                (previous) => ({
-                                  ...previous,
-                                  prizes,
-                                })
-                              );
-
-                            }}
-                            placeholder="مثال: خصم 20%"
-                          />
-
-                        </div>
-
-
-                        {/* نوع العرض */}
-
-                        <div className="form-group">
-
-                          <label>
-                            نوع العرض
-                          </label>
-
-                          <select
-                            value={
-                              prize?.type ||
-                              "discount"
-                            }
-                            onChange={(event) => {
-
-                              const prizes = [
-                                ...(
-                                  wheelSettings?.prizes ||
-                                  []
-                                ),
-                              ];
-
-                              prizes[index] = {
-                                ...prizes[index],
-                                type:
-                                  event.target.value,
-                              };
-
-                              setWheelSettings(
-                                (previous) => ({
-                                  ...previous,
-                                  prizes,
-                                })
-                              );
-
-                            }}
-                          >
-
-                            <option value="discount">
-                              نسبة خصم
-                            </option>
-
-                            <option value="fixed">
-                              خصم مبلغ
-                            </option>
-
-                            <option value="free-shipping">
-                              شحن مجاني
-                            </option>
-
-                            <option value="gift">
-                              هدية
-                            </option>
-
-                            <option value="nothing">
-                              حظ أوفر
-                            </option>
-
-                          </select>
-
-                        </div>
-
-
-                        {/* قيمة العرض */}
-
-                        {prize?.type !==
-                          "free-shipping" &&
-                          prize?.type !==
-                            "nothing" && (
-
-                          <div className="form-group">
-
-                            <label>
-                              قيمة العرض
-                            </label>
-
-                            <input
-                              type="number"
-                              min="0"
-                              value={
-                                prize?.value ??
-                                ""
-                              }
-                              onChange={(event) => {
-
-                                const prizes = [
-                                  ...(
-                                    wheelSettings?.prizes ||
-                                    []
-                                  ),
-                                ];
-
-                                prizes[index] = {
-                                  ...prizes[index],
-                                  value:
-                                    Number(
-                                      event.target.value
-                                    ),
-                                };
-
-                                setWheelSettings(
-                                  (previous) => ({
-                                    ...previous,
-                                    prizes,
-                                  })
-                                );
-
-                              }}
-                            />
-
-                          </div>
-
-                        )}
-
-
-                        {/* اللون */}
-
-                        <div className="form-group">
-
-                          <label>
-                            لون الجزء
-                          </label>
-
-                          <input
-                            type="color"
-                            value={
-                              prize?.color ||
-                              "#F68B1E"
-                            }
-                            onChange={(event) => {
-
-                              const prizes = [
-                                ...(
-                                  wheelSettings?.prizes ||
-                                  []
-                                ),
-                              ];
-
-                              prizes[index] = {
-                                ...prizes[index],
-                                color:
-                                  event.target.value,
-                              };
-
-                              setWheelSettings(
-                                (previous) => ({
-                                  ...previous,
-                                  prizes,
-                                })
-                              );
-
-                            }}
-                          />
-
-                        </div>
-
-
-                        {/* تفعيل */}
-
-                        <div className="form-group">
-
-                          <label>
-                            حالة العرض
-                          </label>
-
-                          <label className="admin-checkbox">
-
-                            <input
-                              type="checkbox"
-                              checked={
-                                prize?.enabled !==
-                                false
-                              }
-                              onChange={(event) => {
-
-                                const prizes = [
-                                  ...(
-                                    wheelSettings?.prizes ||
-                                    []
-                                  ),
-                                ];
-
-                                prizes[index] = {
-                                  ...prizes[index],
-                                  enabled:
-                                    event.target
-                                      .checked,
-                                };
-
-                                setWheelSettings(
-                                  (previous) => ({
-                                    ...previous,
-                                    prizes,
-                                  })
-                                );
-
-                              }}
-                            />
-
-                            <span>
-                              العرض متاح
-                            </span>
-
-                          </label>
-
-                        </div>
-
-
-                        {/* حذف */}
-
-                        <button
-                          type="button"
-                          className="delete-btn"
-                          onClick={() => {
-
-                            const prizes =
-                              (
-                                wheelSettings?.prizes ||
-                                []
-                              ).filter(
-                                (_, prizeIndex) =>
-                                  prizeIndex !==
-                                  index
-                              );
-
-                            setWheelSettings(
-                              (previous) => ({
-                                ...previous,
-                                prizes,
-                              })
-                            );
-
-                          }}
-                        >
-                          🗑️ حذف
-                        </button>
-
-                      </div>
-
-                    )
-                  )}
-
-
-                {(wheelSettings?.prizes || [])
-                  .length === 0 && (
-
-                  <div className="empty-state">
-
-                    <div>
-                      🎁
-                    </div>
-
-                    <h3>
-                      لا توجد جوائز
-                    </h3>
-
-                    <p>
-                      أضف العروض التي تريد ظهورها في عجلة الحظ
-                    </p>
-
-                  </div>
-
-                )}
-
-              </div>
-
-
-              {/* ====================================================
-                  SAVE
-              ==================================================== */}
-
-              <div className="admin-form-actions">
-
-                <button
-                  type="button"
-                  className="save-btn"
-                  onClick={saveWheelSettings}
-                >
-                  💾 حفظ إعدادات عجلة الحظ
-                </button>
-
-              </div>
-
+            <div>
+              🎁
             </div>
+
+            <h3>
+              لا توجد جوائز
+            </h3>
+
+            <p>
+              أضف العروض التي تريد ظهورها في عجلة الحظ
+            </p>
 
           </div>
 
         )}
+
+      </div>
+
+
+      {/* ====================================================
+          SAVE
+      ==================================================== */}
+
+      <div className="admin-form-actions">
+
+        <button
+          type="button"
+          className="save-btn"
+          onClick={saveWheelSettings}
+        >
+          💾 حفظ إعدادات عجلة الحظ
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
 
         {/* ====================================================
             PRODUCTS
@@ -14187,7 +14837,153 @@ const saveStoreSettings =
                 )}
 
               </div>
+{/* =================================================
+    COUPON PROMO SETTINGS
+================================================= */}
 
+<div
+  className="admin-form-card"
+  style={{
+    marginTop: "20px",
+  }}
+>
+
+  <h3>
+    🏷️ إعلان أكواد الخصم
+  </h3>
+
+  <div className="form-grid">
+
+    {/* ================================
+        العنوان
+    ================================= */}
+
+    <label>
+
+      <span>
+        عنوان الإعلان
+      </span>
+
+      <input
+        type="text"
+        value={
+          storeSettings.couponPromoTitle ||
+          "ألحق أكواد الخصم!"
+        }
+        onChange={(event) =>
+          setStoreSettings(
+            (previous) => ({
+              ...previous,
+              couponPromoTitle:
+                event.target.value,
+            })
+          )
+        }
+        placeholder="ألحق أكواد الخصم!"
+      />
+
+    </label>
+
+
+    {/* ================================
+        الوصف
+    ================================= */}
+
+    <label>
+
+      <span>
+        وصف الإعلان
+      </span>
+
+      <input
+        type="text"
+        value={
+          storeSettings.couponPromoDescription ||
+          "وفر أكتر مع العروض والكوبونات"
+        }
+        onChange={(event) =>
+          setStoreSettings(
+            (previous) => ({
+              ...previous,
+              couponPromoDescription:
+                event.target.value,
+            })
+          )
+        }
+        placeholder="وفر أكتر مع العروض والكوبونات"
+      />
+
+    </label>
+
+
+    {/* ================================
+        نص الزر
+    ================================= */}
+
+    <label>
+
+      <span>
+        نص زر الإعلان
+      </span>
+
+      <input
+        type="text"
+        value={
+          storeSettings.couponPromoButton ||
+          "تسوق الآن"
+        }
+        onChange={(event) =>
+          setStoreSettings(
+            (previous) => ({
+              ...previous,
+              couponPromoButton:
+                event.target.value,
+            })
+          )
+        }
+        placeholder="تسوق الآن"
+      />
+
+    </label>
+
+  </div>
+<label>
+
+  <span>
+    رابط زر الإعلان
+  </span>
+
+  <input
+    type="text"
+    dir="ltr"
+    value={
+      storeSettings.couponPromoLink ||
+      ""
+    }
+    onChange={(event) =>
+      setStoreSettings(
+        (previous) => ({
+          ...previous,
+          couponPromoLink:
+            event.target.value,
+        })
+      )
+    }
+    placeholder="/offers أو https://example.com"
+  />
+
+  <small
+    style={{
+      display: "block",
+      marginTop: "6px",
+      color: "#777",
+    }}
+  >
+    اكتب رابط الصفحة التي تريد فتحها عند الضغط على زر تسوق الآن
+  </small>
+
+</label>
+</div>
             </div>
 
 

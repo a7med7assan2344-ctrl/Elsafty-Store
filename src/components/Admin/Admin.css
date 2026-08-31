@@ -990,109 +990,504 @@
     font-size: 8px;
   }
 }
-
 /* =========================================================
    CATEGORY TREE
-========================================================= */
+   ========================================================= */
 
 .category-tree-root {
   width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 18px;
+
+  /* مهم للـ overflow داخل لوحة الأدمن */
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-/* كل قسم رئيسي */
+
+/* =========================================================
+   CATEGORY NODE
+   ========================================================= */
 
 .category-tree-node {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+
+  box-sizing: border-box;
 }
 
-/*
-   الأقسام الفرعية جنب بعض
-   مهم: نخلي كل ابن عنصر مستقل داخل Grid
-*/
 
-.category-tree-node > .category-tree-children {
-  width: 100%;
-  display: grid;
-
-  /*
-    الأقسام الفرعية جنب بعض
-    وكل كارت يأخذ مساحة مناسبة
-  */
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(220px, 1fr)
-  );
-
-  gap: 12px;
-
-  margin-top: 12px;
-  padding-right: 24px;
-
-  align-items: start;
-}
-
-/* العنصر نفسه */
+/* =========================================================
+   CATEGORY ITEM
+   ========================================================= */
 
 .category-tree-item {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
 
   display: flex;
   align-items: center;
+  justify-content: space-between;
+
   gap: 12px;
-  flex-wrap: wrap;
+
+  padding: 12px 14px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #e1e6ed;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  overflow: hidden;
 }
 
-/*
-   منع الـ padding من تكسير شكل الشبكة
-*/
 
-.category-tree-children .category-tree-item {
+/* =========================================================
+   CATEGORY INFO
+   ========================================================= */
+
+.category-tree-info {
+  min-width: 0;
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+
+  overflow: hidden;
+}
+
+
+.category-tree-info strong {
+  min-width: 0;
+
+  max-width: 100%;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #071a36;
+}
+
+
+/* =========================================================
+   CATEGORY NUMBER
+   ========================================================= */
+
+.category-number {
+  flex-shrink: 0;
+
+  padding: 4px 8px;
+
+  border-radius: 6px;
+
+  background: #f1f4f8;
+
+  color: #555;
+
+  font-size: 12px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   ACTIVE / INACTIVE
+   ========================================================= */
+
+.category-status {
+  flex-shrink: 0;
+
+  padding: 4px 8px;
+
+  border-radius: 6px;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+
+.category-status.active {
+  background: #e8f7ee;
+  color: #16803c;
+}
+
+
+.category-status.inactive {
+  background: #fbeaea;
+  color: #b42318;
+}
+
+
+/* =========================================================
+   CATEGORY ACTIONS
+   ========================================================= */
+
+.category-actions {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   DIRECT CHILDREN
+   ========================================================= */
+
+.category-tree-node > .category-tree-children {
+  width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px, 1fr)
+    );
+
+  gap: 12px;
+
+  margin-top: 12px;
+
+  padding-right: 24px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CHILD NODE
+   ========================================================= */
+
+.category-tree-children
+  > .category-tree-node {
+
+  width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CHILD CATEGORY ITEM
+   ========================================================= */
+
+.category-tree-children
+  .category-tree-item {
+
+  width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
   padding-right: 12px !important;
 }
 
-/*
-   لو القسم الفرعي نفسه عنده أقسام فرعية:
-   يفضل كل Node مستقل داخل الـ Grid
-*/
 
-.category-tree-children > .category-tree-node {
-  width: 100%;
-  min-width: 0;
-}
-
-/*
-   الأقسام الفرعية المتداخلة أيضًا جنب بعض
-*/
+/* =========================================================
+   NESTED CHILDREN
+   ========================================================= */
 
 .category-tree-children
   > .category-tree-node
   > .category-tree-children {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(200px, 1fr)
-  );
-  gap: 10px;
+
   width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(200px, 1fr)
+    );
+
+  gap: 10px;
+
   margin-top: 10px;
+
   padding-right: 18px;
+
+  box-sizing: border-box;
 }
 
-/*
-   منع الـ Node الداخلي من فرض عرض كبير
-*/
+
+/* =========================================================
+   DEEP NESTING
+   ========================================================= */
 
 .category-tree-children
   .category-tree-node
   .category-tree-node {
+
+  width: 100%;
+  max-width: 100%;
+
   min-width: 0;
+
+  box-sizing: border-box;
 }
 
+
+/* =========================================================
+   TABLE ACTIONS
+   ========================================================= */
+
+.category-tree-item
+  .table-actions {
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  min-width: fit-content;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.category-tree-item
+  .table-actions button {
+
+  flex-shrink: 0;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   SCROLL CONTAINER
+   ========================================================= */
+
+/*
+   لو قائمة الأقسام كبيرة جدًا،
+   الـ Scroll يكون داخل القائمة بدل ما الصفحة كلها تتمدد.
+*/
+
+.categories-list,
+.category-tree-container {
+
+  width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+
+  max-height: 65vh;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  box-sizing: border-box;
+
+  padding-left: 4px;
+  padding-right: 4px;
+
+  scroll-behavior: smooth;
+
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* =========================================================
+   CUSTOM SCROLLBAR
+   ========================================================= */
+
+.categories-list::-webkit-scrollbar,
+.category-tree-container::-webkit-scrollbar {
+
+  width: 8px;
+}
+
+
+.categories-list::-webkit-scrollbar-track,
+.category-tree-container::-webkit-scrollbar-track {
+
+  background: #f1f3f6;
+
+  border-radius: 10px;
+}
+
+
+.categories-list::-webkit-scrollbar-thumb,
+.category-tree-container::-webkit-scrollbar-thumb {
+
+  background: #b7c0cc;
+
+  border-radius: 10px;
+}
+
+
+.categories-list::-webkit-scrollbar-thumb:hover,
+.category-tree-container::-webkit-scrollbar-thumb:hover {
+
+  background: #071a36;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .category-tree-root {
+
+    gap: 12px;
+
+  }
+
+
+  .category-tree-item {
+
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    padding: 11px;
+
+  }
+
+
+  .category-tree-info {
+
+    width: 100%;
+
+  }
+
+
+  .category-tree-info strong {
+
+    white-space: normal;
+
+    overflow: visible;
+
+    text-overflow: unset;
+
+    word-break: break-word;
+
+  }
+
+
+  .category-tree-item
+    .table-actions {
+
+    width: 100%;
+
+    display: flex;
+
+  }
+
+
+  .category-tree-item
+    .table-actions button {
+
+    flex: 1;
+
+  }
+
+
+  .category-tree-node
+    > .category-tree-children {
+
+    grid-template-columns: 1fr;
+
+    padding-right: 12px;
+
+    gap: 10px;
+
+  }
+
+
+  .category-tree-children
+    > .category-tree-node
+    > .category-tree-children {
+
+    grid-template-columns: 1fr;
+
+    padding-right: 10px;
+
+  }
+
+
+  .categories-list,
+  .category-tree-container {
+
+    max-height: 60vh;
+
+    overflow-y: auto;
+
+    overflow-x: hidden;
+
+  }
+
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+  .category-tree-item {
+
+    padding: 10px;
+
+  }
+
+
+  .category-tree-children
+    .category-tree-item {
+
+    padding-right: 8px !important;
+
+  }
+
+
+  .category-tree-node
+    > .category-tree-children {
+
+    padding-right: 8px;
+
+  }
+
+}
 /* =========================================================
    CATEGORY TREE - TABLET
 ========================================================= */
@@ -1932,4 +2327,579 @@
   .admin-form img {
     max-width: 100% !important;
   }
+}
+/* =========================================================
+   ADMIN - HORIZONTAL SCROLL
+   Products / Categories / Banners / Tables
+   ========================================================= */
+
+.admin-table-wrapper,
+.table-wrapper,
+.data-table-wrapper,
+.products-table-wrapper,
+.categories-table-wrapper,
+.banners-table-wrapper,
+.orders-table-wrapper,
+.admin-table-container {
+  width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+
+  overflow-x: auto;
+  overflow-y: visible;
+
+  -webkit-overflow-scrolling: touch;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.admin-table-wrapper table,
+.table-wrapper table,
+.data-table-wrapper table,
+.products-table-wrapper table,
+.categories-table-wrapper table,
+.banners-table-wrapper table,
+.orders-table-wrapper table,
+.admin-table-container table {
+  width: max-content;
+  min-width: 100%;
+
+  border-collapse: collapse;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   CELLS
+   ========================================================= */
+
+.admin-table-wrapper th,
+.admin-table-wrapper td,
+.table-wrapper th,
+.table-wrapper td,
+.data-table-wrapper th,
+.data-table-wrapper td,
+.products-table-wrapper th,
+.products-table-wrapper td,
+.categories-table-wrapper th,
+.categories-table-wrapper td,
+.banners-table-wrapper th,
+.banners-table-wrapper td,
+.orders-table-wrapper th,
+.orders-table-wrapper td,
+.admin-table-container th,
+.admin-table-container td {
+  white-space: nowrap;
+
+  min-width: max-content;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   HORIZONTAL SCROLLBAR
+   ========================================================= */
+
+.admin-table-wrapper::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar,
+.data-table-wrapper::-webkit-scrollbar,
+.products-table-wrapper::-webkit-scrollbar,
+.categories-table-wrapper::-webkit-scrollbar,
+.banners-table-wrapper::-webkit-scrollbar,
+.orders-table-wrapper::-webkit-scrollbar,
+.admin-table-container::-webkit-scrollbar {
+  height: 10px;
+}
+
+
+.admin-table-wrapper::-webkit-scrollbar-track,
+.table-wrapper::-webkit-scrollbar-track,
+.data-table-wrapper::-webkit-scrollbar-track,
+.products-table-wrapper::-webkit-scrollbar-track,
+.categories-table-wrapper::-webkit-scrollbar-track,
+.banners-table-wrapper::-webkit-scrollbar-track,
+.orders-table-wrapper::-webkit-scrollbar-track,
+.admin-table-container::-webkit-scrollbar-track {
+  background: #eef1f5;
+  border-radius: 10px;
+}
+
+
+.admin-table-wrapper::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb,
+.data-table-wrapper::-webkit-scrollbar-thumb,
+.products-table-wrapper::-webkit-scrollbar-thumb,
+.categories-table-wrapper::-webkit-scrollbar-thumb,
+.banners-table-wrapper::-webkit-scrollbar-thumb,
+.orders-table-wrapper::-webkit-scrollbar-thumb,
+.admin-table-container::-webkit-scrollbar-thumb {
+  background: #8b96a5;
+  border-radius: 10px;
+}
+
+
+.admin-table-wrapper::-webkit-scrollbar-thumb:hover,
+.table-wrapper::-webkit-scrollbar-thumb:hover,
+.data-table-wrapper::-webkit-scrollbar-thumb:hover,
+.products-table-wrapper::-webkit-scrollbar-thumb:hover,
+.categories-table-wrapper::-webkit-scrollbar-thumb:hover,
+.banners-table-wrapper::-webkit-scrollbar-thumb:hover,
+.orders-table-wrapper::-webkit-scrollbar-thumb:hover,
+.admin-table-container::-webkit-scrollbar-thumb:hover {
+  background: #071a36;
+}
+
+
+/* =========================================================
+   FIREFOX
+   ========================================================= */
+
+.admin-table-wrapper,
+.table-wrapper,
+.data-table-wrapper,
+.products-table-wrapper,
+.categories-table-wrapper,
+.banners-table-wrapper,
+.orders-table-wrapper,
+.admin-table-container {
+  scrollbar-width: auto;
+}
+
+
+/* =========================================================
+   IMPORTANT:
+   منع الـ parent من قص الـ table
+   ========================================================= */
+
+.admin-content,
+.admin-main,
+.admin-panel,
+.admin-page,
+.admin-dashboard,
+.admin-section,
+.tab-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .admin-table-wrapper,
+  .table-wrapper,
+  .data-table-wrapper,
+  .products-table-wrapper,
+  .categories-table-wrapper,
+  .banners-table-wrapper,
+  .orders-table-wrapper,
+  .admin-table-container {
+    overflow-x: auto;
+
+    width: 100%;
+    max-width: 100%;
+
+    padding-bottom: 8px;
+  }
+
+}
+/* =========================================================
+   GLOBAL HORIZONTAL SCROLLBAR
+   ========================================================= */
+
+.admin-table-wrapper::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar,
+.table-container::-webkit-scrollbar,
+.data-table-wrapper::-webkit-scrollbar,
+.data-table-container::-webkit-scrollbar,
+.admin-table-container::-webkit-scrollbar,
+.products-table-wrapper::-webkit-scrollbar,
+.products-table-container::-webkit-scrollbar,
+.categories-table-wrapper::-webkit-scrollbar,
+.categories-table-container::-webkit-scrollbar,
+.banners-table-wrapper::-webkit-scrollbar,
+.banners-table-container::-webkit-scrollbar,
+.orders-table-wrapper::-webkit-scrollbar,
+.orders-table-container::-webkit-scrollbar,
+.users-table-wrapper::-webkit-scrollbar,
+.users-table-container::-webkit-scrollbar {
+  height: 10px;
+}
+
+
+.admin-table-wrapper::-webkit-scrollbar-track,
+.table-wrapper::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track,
+.data-table-wrapper::-webkit-scrollbar-track,
+.data-table-container::-webkit-scrollbar-track,
+.admin-table-container::-webkit-scrollbar-track,
+.products-table-wrapper::-webkit-scrollbar-track,
+.products-table-container::-webkit-scrollbar-track,
+.categories-table-wrapper::-webkit-scrollbar-track,
+.categories-table-container::-webkit-scrollbar-track,
+.banners-table-wrapper::-webkit-scrollbar-track,
+.banners-table-container::-webkit-scrollbar-track,
+.orders-table-wrapper::-webkit-scrollbar-track,
+.orders-table-container::-webkit-scrollbar-track,
+.users-table-wrapper::-webkit-scrollbar-track,
+.users-table-container::-webkit-scrollbar-track {
+  background: #eef1f5;
+
+  border-radius: 10px;
+}
+
+
+.admin-table-wrapper::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb,
+.data-table-wrapper::-webkit-scrollbar-thumb,
+.data-table-container::-webkit-scrollbar-thumb,
+.admin-table-container::-webkit-scrollbar-thumb,
+.products-table-wrapper::-webkit-scrollbar-thumb,
+.products-table-container::-webkit-scrollbar-thumb,
+.categories-table-wrapper::-webkit-scrollbar-thumb,
+.categories-table-container::-webkit-scrollbar-thumb,
+.banners-table-wrapper::-webkit-scrollbar-thumb,
+.banners-table-container::-webkit-scrollbar-thumb,
+.orders-table-wrapper::-webkit-scrollbar-thumb,
+.orders-table-container::-webkit-scrollbar-thumb,
+.users-table-wrapper::-webkit-scrollbar-thumb,
+.users-table-container::-webkit-scrollbar-thumb {
+  background: #8b96a5;
+
+  border-radius: 10px;
+}
+
+
+.admin-table-wrapper::-webkit-scrollbar-thumb:hover,
+.table-wrapper::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover,
+.data-table-wrapper::-webkit-scrollbar-thumb:hover,
+.data-table-container::-webkit-scrollbar-thumb:hover,
+.admin-table-container::-webkit-scrollbar-thumb:hover,
+.products-table-wrapper::-webkit-scrollbar-thumb:hover,
+.products-table-container::-webkit-scrollbar-thumb:hover,
+.categories-table-wrapper::-webkit-scrollbar-thumb:hover,
+.categories-table-container::-webkit-scrollbar-thumb:hover,
+.banners-table-wrapper::-webkit-scrollbar-thumb:hover,
+.banners-table-container::-webkit-scrollbar-thumb:hover,
+.orders-table-wrapper::-webkit-scrollbar-thumb:hover,
+.orders-table-container::-webkit-scrollbar-thumb:hover,
+.users-table-wrapper::-webkit-scrollbar-thumb:hover,
+.users-table-container::-webkit-scrollbar-thumb:hover {
+  background: #071a36;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .admin-table-wrapper,
+  .table-wrapper,
+  .table-container,
+  .data-table-wrapper,
+  .data-table-container,
+  .admin-table-container,
+  .products-table-wrapper,
+  .products-table-container,
+  .categories-table-wrapper,
+  .categories-table-container,
+  .banners-table-wrapper,
+  .banners-table-container,
+  .orders-table-wrapper,
+  .orders-table-container,
+  .users-table-wrapper,
+  .users-table-container {
+
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding-bottom: 12px;
+  }
+
+
+  .admin-page table,
+  .admin-panel table,
+  .admin-content table,
+  .admin-main table,
+  .tab-content table {
+
+    width: max-content;
+
+  
+  }
+
+}
+/* =========================================================
+   CELLS - NORMAL SIZE
+   ========================================================= */
+
+.admin-page table th,
+.admin-page table td,
+.admin-panel table th,
+.admin-panel table td,
+.admin-content table th,
+.admin-content table td,
+.admin-main table th,
+.admin-main table td,
+.tab-content table th,
+.tab-content table td {
+  font-size: 14px;
+
+  padding: 10px 12px;
+
+  box-sizing: border-box;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   ACTION BUTTONS
+   ========================================================= */
+
+.admin-page .table-actions,
+.admin-panel .table-actions,
+.admin-content .table-actions,
+.admin-main .table-actions,
+.tab-content .table-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  flex-wrap: nowrap;
+
+  white-space: nowrap;
+}
+
+
+.admin-page .table-actions button,
+.admin-panel .table-actions button,
+.admin-content .table-actions button,
+.admin-main .table-actions button,
+.tab-content .table-actions button {
+  font-size: 13px;
+
+  padding: 7px 10px;
+
+  min-height: 34px;
+
+  white-space: nowrap;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   IMAGE - NORMAL SIZE
+   ========================================================= */
+
+.admin-page table img,
+.admin-panel table img,
+.admin-content table img,
+.admin-main table img,
+.tab-content table img {
+  max-width: 100px;
+
+  max-height: 80px;
+
+  width: auto;
+
+  height: auto;
+
+  object-fit: contain;
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 769px) {
+
+  .admin-page table,
+  .admin-panel table,
+  .admin-content table,
+  .admin-main table,
+  .tab-content table {
+    width: 100%;
+
+    min-width: 0;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .admin-page table,
+  .admin-panel table,
+  .admin-content table,
+  .admin-main table,
+  .tab-content table {
+
+    /*
+      الجدول ياخد حجمه الطبيعي.
+      لو محتواه أكبر من الشاشة يظهر Scroll
+      بدون تصغير الصفحة.
+    */
+
+    width: max-content;
+
+    min-width: 100%;
+
+    font-size: 13px;
+  }
+
+
+  .admin-page table th,
+  .admin-page table td,
+  .admin-panel table th,
+  .admin-panel table td,
+  .admin-content table th,
+  .admin-content table td,
+  .admin-main table th,
+  .admin-main table td,
+  .tab-content table th,
+  .tab-content table td {
+
+    font-size: 13px;
+
+    padding: 9px 10px;
+  }
+
+
+  .admin-page table img,
+  .admin-panel table img,
+  .admin-content table img,
+  .admin-main table img,
+  .tab-content table img {
+
+    max-width: 80px;
+
+    max-height: 65px;
+  }
+
+
+  .admin-page .table-actions button,
+  .admin-panel .table-actions button,
+  .admin-content .table-actions button,
+  .admin-main .table-actions button,
+  .tab-content .table-actions button {
+
+    font-size: 12px;
+
+    padding: 6px 9px;
+
+    min-height: 32px;
+  }
+
+}
+
+
+/* =========================================================
+   PREVENT PAGE-LEVEL ZOOM / OVERFLOW
+   ========================================================= */
+
+.admin-page,
+.admin-panel,
+.admin-content,
+.admin-main,
+.tab-content {
+
+  max-width: 100%;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  overflow-x: hidden;
+}
+/* =========================================================
+   ADMIN - HORIZONTAL SCROLL ONLY
+   لا يغير الحجم أو الخطوط
+   ========================================================= */
+
+.admin-table-wrapper,
+.table-wrapper,
+.table-container,
+.data-table-wrapper,
+.data-table-container,
+.admin-table-container {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* أي جدول أكبر من المساحة يظهر Scroll فقط */
+
+.admin-table-wrapper > table,
+.table-wrapper > table,
+.table-container > table,
+.data-table-wrapper > table,
+.data-table-container > table,
+.admin-table-container > table {
+  min-width: max-content;
+}
+
+
+/* منع أزرار التعديل من النزول لسطر جديد */
+
+.admin-table-wrapper .table-actions,
+.table-wrapper .table-actions,
+.table-container .table-actions,
+.data-table-wrapper .table-actions,
+.data-table-container .table-actions,
+.admin-table-container .table-actions {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+
+/* Scrollbar */
+
+.admin-table-wrapper::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar,
+.table-container::-webkit-scrollbar,
+.data-table-wrapper::-webkit-scrollbar,
+.data-table-container::-webkit-scrollbar,
+.admin-table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+
+.admin-table-wrapper::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb,
+.data-table-wrapper::-webkit-scrollbar-thumb,
+.data-table-container::-webkit-scrollbar-thumb,
+.admin-table-container::-webkit-scrollbar-thumb {
+  background: #999;
+  border-radius: 8px;
 }
