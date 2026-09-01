@@ -38,6 +38,8 @@ import "./Navbar.css";
 const defaultStoreSettings = {
   storeName: "Elsafty Store",
 
+  logo: "/logo/logo.png",
+
   theme: {
     primary: "#071A36",
     secondary: "#0B1F3A",
@@ -78,6 +80,33 @@ const defaultStoreSettings = {
 };
 
 // =====================================================
+// 🎡 DEFAULT WHEEL SETTINGS
+// =====================================================
+
+const defaultWheelSettings = {
+  enabled: false,
+
+  // store = العجلة الثابتة فقط
+  // popup = Popup فقط
+  // both = العجلة الثابتة + Popup
+  displayMode: "store",
+
+  title: "🎡 جرب حظك!",
+
+  description: "لف العجلة واكسب عرضك",
+
+  attemptsPerUser: 1,
+
+  popupDelay: 3,
+
+  showOncePerDay: true,
+
+  allowClose: true,
+
+  prizes: [],
+};
+
+// =====================================================
 // COMPONENT
 // =====================================================
 
@@ -100,16 +129,27 @@ function Navbar({
   // =====================================================
 
   const [user, setUser] = useState(null);
-  const [accountName, setAccountName] = useState("");
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [logoZoom, setLogoZoom] = useState(false);
+  const [accountName, setAccountName] =
+    useState("");
 
-  const [categories, setCategories] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
+  const [menuOpen, setMenuOpen] =
+    useState(false);
 
-  const [openCategory, setOpenCategory] = useState(null);
-  const [mobileCategory, setMobileCategory] = useState(null);
+  const [logoZoom, setLogoZoom] =
+    useState(false);
+
+  const [categories, setCategories] =
+    useState([]);
+
+  const [suggestions, setSuggestions] =
+    useState([]);
+
+  const [openCategory, setOpenCategory] =
+    useState(null);
+
+  const [mobileCategory, setMobileCategory] =
+    useState(null);
 
   const [openSubCategories, setOpenSubCategories] =
     useState([]);
@@ -118,12 +158,25 @@ function Navbar({
     useState(defaultStoreSettings);
 
   // =====================================================
+  // 🎡 WHEEL STATE
+  // =====================================================
+
+  const [wheelSettings, setWheelSettings] =
+    useState(defaultWheelSettings);
+
+  const [showWheelPopup, setShowWheelPopup] =
+    useState(false);
+
+  // =====================================================
   // REFS
   // =====================================================
 
   const menuRef = useRef(null);
+
   const searchRef = useRef(null);
+
   const categoryMenuRef = useRef(null);
+
   const categoryBarRef = useRef(null);
 
   // =====================================================
@@ -139,6 +192,73 @@ function Navbar({
     defaultStoreSettings.topStrip;
 
   // =====================================================
+  // DYNAMIC LOGO
+  // =====================================================
+
+  const getStoreLogo = () => {
+    const savedLogo =
+      storeSettings?.logo;
+
+    if (
+      typeof savedLogo === "string" &&
+      savedLogo.trim()
+    ) {
+      return savedLogo.trim();
+    }
+
+    if (
+      savedLogo &&
+      typeof savedLogo === "object"
+    ) {
+      if (
+        typeof savedLogo.url === "string" &&
+        savedLogo.url.trim()
+      ) {
+        return savedLogo.url.trim();
+      }
+
+      if (
+        typeof savedLogo.secure_url === "string" &&
+        savedLogo.secure_url.trim()
+      ) {
+        return savedLogo.secure_url.trim();
+      }
+
+      if (
+        typeof savedLogo.src === "string" &&
+        savedLogo.src.trim()
+      ) {
+        return savedLogo.src.trim();
+      }
+    }
+
+    if (
+      typeof storeSettings?.logoUrl === "string" &&
+      storeSettings.logoUrl.trim()
+    ) {
+      return storeSettings.logoUrl.trim();
+    }
+
+    if (
+      typeof storeSettings?.logoURL === "string" &&
+      storeSettings.logoURL.trim()
+    ) {
+      return storeSettings.logoURL.trim();
+    }
+
+    if (
+      typeof storeSettings?.storeLogo === "string" &&
+      storeSettings.storeLogo.trim()
+    ) {
+      return storeSettings.storeLogo.trim();
+    }
+
+    return defaultStoreSettings.logo;
+  };
+
+  const storeLogo = getStoreLogo();
+
+  // =====================================================
   // LOAD STORE SETTINGS
   // =====================================================
 
@@ -149,93 +269,556 @@ function Navbar({
       "store"
     );
 
-    const unsubscribe = onSnapshot(
-      settingsRef,
-      (snapshot) => {
-        if (!snapshot.exists()) {
+    const unsubscribe =
+      onSnapshot(
+        settingsRef,
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            return;
+          }
+
+          const data =
+            snapshot.data();
+
+          console.log(
+            "STORE SETTINGS UPDATED:",
+            data
+          );
+
+          setStoreSettings(
+            (previous) => ({
+              ...previous,
+              ...data,
+
+              theme: {
+                ...previous.theme,
+                ...(data.theme || {}),
+              },
+
+              topStrip: {
+                ...previous.topStrip,
+                ...(data.topStrip || {}),
+              },
+            })
+          );
+        },
+        (error) => {
+          console.error(
+            "Store Settings Error:",
+            error
+          );
+        }
+      );
+
+    return () =>
+      unsubscribe();
+  }, []);
+
+  // =====================================================
+  // 🎡 LOAD WHEEL SETTINGS
+  // settings/wheel
+  // =====================================================
+
+  useEffect(() => {
+    const wheelRef =
+      doc(
+        db,
+        "settings",
+        "wheel"
+      );
+
+    const unsubscribe =
+      onSnapshot(
+        wheelRef,
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            console.log(
+              "Wheel settings document does not exist."
+            );
+
+            const fallback = {
+              ...defaultWheelSettings,
+            };
+
+            setWheelSettings(fallback);
+
+            setShowWheelPopup(false);
+
+            // إرسال الحالة لباقي المتجر
+            window.dispatchEvent(
+              new CustomEvent(
+                "wheelDisplayModeChanged",
+                {
+                  detail: fallback,
+                }
+              )
+            );
+
+            return;
+          }
+
+          const data =
+            snapshot.data();
+
+          console.log(
+            "WHEEL SETTINGS UPDATED:",
+            data
+          );
+
+          // =================================================
+          // NORMALIZE DISPLAY MODE
+          // =================================================
+
+          let displayMode =
+            data.displayMode;
+
+          if (
+            displayMode !== "store" &&
+            displayMode !== "popup" &&
+            displayMode !== "both"
+          ) {
+            displayMode = "store";
+          }
+
+          // =================================================
+          // NORMALIZED SETTINGS
+          // =================================================
+
+          const normalizedSettings = {
+            ...defaultWheelSettings,
+
+            ...data,
+
+            enabled:
+              data.enabled === true,
+
+            displayMode,
+
+            popupDelay:
+              Math.max(
+                0,
+                Number(
+                  data.popupDelay ?? 3
+                )
+              ),
+
+            showOncePerDay:
+              data.showOncePerDay !== false,
+
+            allowClose:
+              data.allowClose !== false,
+
+            attemptsPerUser:
+              Math.max(
+                1,
+                Number(
+                  data.attemptsPerUser ?? 1
+                )
+              ),
+
+            title:
+              data.title ||
+              "🎡 جرب حظك!",
+
+            description:
+              data.description ||
+              "لف العجلة واكسب عرضك",
+
+            prizes:
+              Array.isArray(
+                data.prizes
+              )
+                ? data.prizes
+                : [],
+          };
+
+          console.log(
+            "NORMALIZED WHEEL SETTINGS:",
+            normalizedSettings
+          );
+
+          setWheelSettings(
+            normalizedSettings
+          );
+
+          // =================================================
+          // 🔥 IMPORTANT
+          // إرسال الإعداد الحقيقي لمكون العجلة الثابتة
+          // =================================================
+
+          window.dispatchEvent(
+            new CustomEvent(
+              "wheelDisplayModeChanged",
+              {
+                detail:
+                  normalizedSettings,
+              }
+            )
+          );
+
+          // =================================================
+          // إذا العجلة مقفولة
+          // =================================================
+
+          if (
+            normalizedSettings.enabled !== true
+          ) {
+            setShowWheelPopup(false);
+          }
+
+          // =================================================
+          // إذا الوضع ليس Popup
+          // =================================================
+
+          if (
+            normalizedSettings.displayMode !==
+              "popup" &&
+            normalizedSettings.displayMode !==
+              "both"
+          ) {
+            setShowWheelPopup(false);
+          }
+        },
+
+        (error) => {
+          console.error(
+            "Wheel Settings Error:",
+            error
+          );
+
+          const fallback = {
+            ...defaultWheelSettings,
+          };
+
+          setWheelSettings(
+            fallback
+          );
+
+          setShowWheelPopup(false);
+
+          window.dispatchEvent(
+            new CustomEvent(
+              "wheelDisplayModeChanged",
+              {
+                detail: fallback,
+              }
+            )
+          );
+        }
+      );
+
+    return () =>
+      unsubscribe();
+  }, []);
+
+  // =====================================================
+  // 🎡 DISPLAY MODES
+  // =====================================================
+
+  const wheelEnabled =
+    wheelSettings?.enabled === true;
+
+  // العجلة الثابتة تظهر فقط في store أو both
+  const shouldShowWheelInStore =
+    wheelEnabled &&
+    (
+      wheelSettings?.displayMode ===
+        "store" ||
+      wheelSettings?.displayMode ===
+        "both"
+    );
+
+  // الـ Popup يظهر فقط في popup أو both
+  const shouldShowWheelAsPopup =
+    wheelEnabled &&
+    (
+      wheelSettings?.displayMode ===
+        "popup" ||
+      wheelSettings?.displayMode ===
+        "both"
+    );
+
+  // =====================================================
+  // 🎡 POPUP STORAGE KEY
+  // =====================================================
+
+  const wheelPopupStorageKey =
+    "elsafty_wheel_popup_date";
+
+  // =====================================================
+  // 🎡 GET LOCAL DATE
+  // =====================================================
+
+  const getTodayLocalDate = () => {
+    const now =
+      new Date();
+
+    const year =
+      now.getFullYear();
+
+    const month =
+      String(
+        now.getMonth() + 1
+      ).padStart(2, "0");
+
+    const day =
+      String(
+        now.getDate()
+      ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  // =====================================================
+  // 🎡 WHEEL POPUP TIMER
+  // =====================================================
+
+  useEffect(() => {
+    // =================================================
+    // لا Popup إذا العجلة غير مفعلة
+    // =================================================
+
+    if (
+      wheelEnabled !== true
+    ) {
+      setShowWheelPopup(false);
+      return;
+    }
+
+    // =================================================
+    // لا Popup إذا الوضع Store فقط
+    // =================================================
+
+    if (
+      shouldShowWheelAsPopup !== true
+    ) {
+      setShowWheelPopup(false);
+      return;
+    }
+
+    // =================================================
+    // LOCAL STORAGE
+    // =================================================
+
+    let lastShown = null;
+
+    try {
+      lastShown =
+        localStorage.getItem(
+          wheelPopupStorageKey
+        );
+    } catch (error) {
+      console.warn(
+        "Wheel popup localStorage read error:",
+        error
+      );
+    }
+
+    const today =
+      getTodayLocalDate();
+
+    // =================================================
+    // مرة واحدة يوميًا
+    // =================================================
+
+    if (
+      wheelSettings?.showOncePerDay ===
+        true &&
+      lastShown === today
+    ) {
+      return;
+    }
+
+    // =================================================
+    // DELAY
+    // =================================================
+
+    const delay =
+      Math.max(
+        0,
+        Number(
+          wheelSettings?.popupDelay ?? 3
+        )
+      ) * 1000;
+
+    // =================================================
+    // SHOW POPUP
+    // =================================================
+
+    const timer =
+      setTimeout(() => {
+        // إعادة التحقق
+        if (
+          wheelSettings?.enabled !== true
+        ) {
           return;
         }
 
-        const data = snapshot.data();
+        if (
+          wheelSettings?.displayMode !==
+            "popup" &&
+          wheelSettings?.displayMode !==
+            "both"
+        ) {
+          return;
+        }
 
-        setStoreSettings((previous) => ({
-          ...previous,
-          ...data,
+        setShowWheelPopup(true);
 
-          theme: {
-            ...previous.theme,
-            ...(data.theme || {}),
-          },
+        // حفظ الظهور اليومي
+        if (
+          wheelSettings?.showOncePerDay ===
+            true
+        ) {
+          try {
+            localStorage.setItem(
+              wheelPopupStorageKey,
+              today
+            );
+          } catch (error) {
+            console.warn(
+              "Wheel popup localStorage write error:",
+              error
+            );
+          }
+        }
+      }, delay);
 
-          topStrip: {
-            ...previous.topStrip,
-            ...(data.topStrip || {}),
-          },
-        }));
-      },
-      (error) => {
-        console.error(
-          "Store Settings Error:",
-          error
-        );
-      }
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [
+    wheelEnabled,
+    wheelSettings?.displayMode,
+    wheelSettings?.popupDelay,
+    wheelSettings?.showOncePerDay,
+    shouldShowWheelAsPopup,
+  ]);
+
+  // =====================================================
+  // 🎡 OPEN EXISTING WHEEL
+  // =====================================================
+
+  const openExistingWheel = () => {
+    if (
+      wheelSettings?.enabled !== true
+    ) {
+      return;
+    }
+
+    setShowWheelPopup(false);
+
+    // إرسال الحدث للعجلة الموجودة
+    window.dispatchEvent(
+      new CustomEvent(
+        "openWheel"
+      )
+    );
+  };
+
+  // =====================================================
+  // 🎡 LISTEN FOR OPEN WHEEL POPUP EVENT
+  // =====================================================
+
+  useEffect(() => {
+    const handleOpenWheelPopup =
+      () => {
+        if (
+          wheelSettings?.enabled !== true
+        ) {
+          return;
+        }
+
+        // لا نسمح بفتح العجلة من حدث المتجر
+        // إذا كانت Popup فقط
+        if (
+          wheelSettings?.displayMode !==
+            "store" &&
+          wheelSettings?.displayMode !==
+            "both"
+        ) {
+          return;
+        }
+
+        openExistingWheel();
+      };
+
+    window.addEventListener(
+      "openWheelPopup",
+      handleOpenWheelPopup
     );
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      window.removeEventListener(
+        "openWheelPopup",
+        handleOpenWheelPopup
+      );
+    };
+  }, [
+    wheelSettings?.enabled,
+    wheelSettings?.displayMode,
+  ]);
 
   // =====================================================
   // FIREBASE USER
   // =====================================================
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (currentUser) => {
-        setUser(currentUser);
+    const unsubscribe =
+      onAuthStateChanged(
+        auth,
+        async (currentUser) => {
+          setUser(currentUser);
 
-        if (!currentUser) {
-          setAccountName("");
-          return;
-        }
-
-        let name =
-          currentUser.displayName || "";
-
-        try {
-          const userRef = doc(
-            db,
-            "users",
-            currentUser.uid
-          );
-
-          const userSnap =
-            await getDoc(userRef);
-
-          if (userSnap.exists()) {
-            const data =
-              userSnap.data();
-
-            name =
-              data.name ||
-              data.displayName ||
-              currentUser.displayName ||
-              "حسابي";
+          if (!currentUser) {
+            setAccountName("");
+            return;
           }
-        } catch (error) {
-          console.error(
-            "Error loading account name:",
-            error
+
+          let name =
+            currentUser.displayName ||
+            "";
+
+          try {
+            const userRef =
+              doc(
+                db,
+                "users",
+                currentUser.uid
+              );
+
+            const userSnap =
+              await getDoc(
+                userRef
+              );
+
+            if (
+              userSnap.exists()
+            ) {
+              const data =
+                userSnap.data();
+
+              name =
+                data.name ||
+                data.displayName ||
+                currentUser.displayName ||
+                "حسابي";
+            }
+          } catch (error) {
+            console.error(
+              "Error loading account name:",
+              error
+            );
+          }
+
+          setAccountName(
+            name || "حسابي"
           );
         }
+      );
 
-        setAccountName(
-          name || "حسابي"
-        );
-      }
-    );
-
-    return () => unsubscribe();
+    return () =>
+      unsubscribe();
   }, []);
 
   // =====================================================
@@ -243,29 +826,30 @@ function Navbar({
   // =====================================================
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data =
-          await getCategories();
+    const fetchCategories =
+      async () => {
+        try {
+          const data =
+            await getCategories();
 
-        const activeCategories =
-          (data || []).filter(
-            (category) =>
-              category?.active === true
+          const activeCategories =
+            (data || []).filter(
+              (category) =>
+                category?.active === true
+            );
+
+          setCategories(
+            activeCategories
+          );
+        } catch (error) {
+          console.error(
+            "Categories Error:",
+            error
           );
 
-        setCategories(
-          activeCategories
-        );
-      } catch (error) {
-        console.error(
-          "Categories Error:",
-          error
-        );
-
-        setCategories([]);
-      }
-    };
+          setCategories([]);
+        }
+      };
 
     fetchCategories();
   }, []);
@@ -367,18 +951,28 @@ function Navbar({
   // =====================================================
 
   useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key !== "Escape") {
-        return;
-      }
+    const handleEscape =
+      (event) => {
+        if (
+          event.key !== "Escape"
+        ) {
+          return;
+        }
 
-      setMenuOpen(false);
-      setSuggestions([]);
-      setOpenCategory(null);
-      setMobileCategory(null);
-      setOpenSubCategories([]);
-      setLogoZoom(false);
-    };
+        setMenuOpen(false);
+        setSuggestions([]);
+        setOpenCategory(null);
+        setMobileCategory(null);
+        setOpenSubCategories([]);
+        setLogoZoom(false);
+
+        if (
+          wheelSettings?.allowClose !==
+            false
+        ) {
+          setShowWheelPopup(false);
+        }
+      };
 
     document.addEventListener(
       "keydown",
@@ -391,7 +985,9 @@ function Navbar({
         handleEscape
       );
     };
-  }, []);
+  }, [
+    wheelSettings?.allowClose,
+  ]);
 
   // =====================================================
   // LOGOUT
@@ -1393,6 +1989,28 @@ function Navbar({
   };
 
   // =====================================================
+  // LOGO ERROR HANDLER
+  // =====================================================
+
+  const handleLogoError =
+    (event) => {
+      if (
+        event.currentTarget.src.endsWith(
+          "/logo/logo.png"
+        )
+      ) {
+        return;
+      }
+
+      console.warn(
+        "Store logo failed to load. Falling back to default logo."
+      );
+
+      event.currentTarget.src =
+        "/logo/logo.png";
+    };
+
+  // =====================================================
   // RENDER
   // =====================================================
 
@@ -1401,12 +2019,19 @@ function Navbar({
       className="store-navbar-theme"
       style={navbarStyle}
       dir="rtl"
+      data-wheel-enabled={
+        wheelEnabled
+          ? "true"
+          : "false"
+      }
+      data-wheel-display-mode={
+        wheelSettings?.displayMode ||
+        "store"
+      }
     >
 
       {/* =================================================
           TOP ANNOUNCEMENT
-          NORMAL FLOW
-          NOT STICKY
       ================================================= */}
 
       {topStrip.enabled !== false &&
@@ -1482,12 +2107,7 @@ function Navbar({
         )}
 
       {/* =================================================
-          STICKY HEADER SHELL
-          MAIN HEADER + CATEGORY BAR
-          
-          IMPORTANT:
-          هذا الجزء ثابت أثناء التمرير.
-          الـ TOP OFFER BAR يظل Normal Flow.
+          STICKY HEADER
       ================================================= */}
 
       <div
@@ -1540,10 +2160,13 @@ function Navbar({
 
           <div className="nav-logo">
             <img
-              src="/logo/logo.png"
+              src={storeLogo}
               alt={
                 storeSettings.storeName ||
                 "Elsafty Store"
+              }
+              onError={
+                handleLogoError
               }
               onClick={(event) => {
                 event.stopPropagation();
@@ -1740,6 +2363,7 @@ function Navbar({
                         }}
                       >
                         <span>🔑</span>
+
                         <span>
                           تسجيل الدخول
                         </span>
@@ -1753,6 +2377,7 @@ function Navbar({
                         }}
                       >
                         <span>➕</span>
+
                         <span>
                           إنشاء حساب
                         </span>
@@ -1779,6 +2404,7 @@ function Navbar({
                         }}
                       >
                         <span>👤</span>
+
                         <span>
                           حسابي
                         </span>
@@ -1792,6 +2418,7 @@ function Navbar({
                         }}
                       >
                         <span>📦</span>
+
                         <span>
                           طلباتي
                         </span>
@@ -1802,6 +2429,7 @@ function Navbar({
                         onClick={logout}
                       >
                         <span>🚪</span>
+
                         <span>
                           تسجيل الخروج
                         </span>
@@ -1857,6 +2485,7 @@ function Navbar({
                 السلة
               </small>
             </button>
+
           </div>
         </header>
 
@@ -1888,8 +2517,6 @@ function Navbar({
           }}
         >
 
-          {/* LEFT ARROW */}
-
           <button
             type="button"
             className="category-arrow"
@@ -1900,8 +2527,6 @@ function Navbar({
           >
             ❮
           </button>
-
-          {/* CATEGORY NAV */}
 
           <nav
             className="navbar-bottom"
@@ -2088,8 +2713,6 @@ function Navbar({
 
           </nav>
 
-          {/* RIGHT ARROW */}
-
           <button
             type="button"
             className="category-arrow"
@@ -2130,10 +2753,13 @@ function Navbar({
           </button>
 
           <img
-            src="/logo/logo.png"
+            src={storeLogo}
             alt={
               storeSettings.storeName ||
               "Elsafty Store"
+            }
+            onError={
+              handleLogoError
             }
             onClick={(event) =>
               event.stopPropagation()
@@ -2141,6 +2767,87 @@ function Navbar({
           />
         </div>
       )}
+
+      {/* =================================================
+          🎡 WHEEL POPUP
+      ================================================= */}
+
+      {showWheelPopup &&
+        shouldShowWheelAsPopup &&
+        wheelSettings?.enabled === true && (
+          <div
+            className="wheel-popup-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="عجلة الحظ"
+            onClick={() => {
+              if (
+                wheelSettings?.allowClose !==
+                false
+              ) {
+                setShowWheelPopup(false);
+              }
+            }}
+          >
+
+            <div
+              className="wheel-popup"
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
+
+              {/* CLOSE */}
+
+              {wheelSettings?.allowClose !==
+                false && (
+                <button
+                  type="button"
+                  className="wheel-popup-close"
+                  aria-label="إغلاق"
+                  onClick={() =>
+                    setShowWheelPopup(false)
+                  }
+                >
+                  ✕
+                </button>
+              )}
+
+              {/* ICON */}
+
+              <div className="wheel-popup-icon">
+                🎡
+              </div>
+
+              {/* TITLE */}
+
+              <h2>
+                {wheelSettings?.title ||
+                  "🎡 جرب حظك!"}
+              </h2>
+
+              {/* DESCRIPTION */}
+
+              <p>
+                {wheelSettings?.description ||
+                  "لف العجلة واكسب عرضك"}
+              </p>
+
+              {/* BUTTON */}
+
+              <button
+                type="button"
+                className="wheel-popup-button"
+                onClick={
+                  openExistingWheel
+                }
+              >
+                🎡 جرب حظك الآن
+              </button>
+
+            </div>
+          </div>
+        )}
 
     </div>
   );

@@ -10,7 +10,9 @@
    GLOBAL BOX SIZING
 ===================================================== */
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -41,8 +43,6 @@
 
 /* =====================================================
    ANNOUNCEMENT AREA
-   NORMAL FLOW
-   NOT FIXED
 ===================================================== */
 
 .navbar-announcement-area {
@@ -75,7 +75,6 @@
   position: absolute;
   top: 0;
   right: 0;
-
   height: 100%;
   width: max-content;
   min-width: max-content;
@@ -441,6 +440,7 @@
 .admin-btn {
   border: 0;
   background: transparent;
+
   color: inherit;
 
   cursor: pointer;
@@ -515,6 +515,7 @@
 
   font-size: 10px;
   font-weight: 800;
+
   line-height: 1;
 }
 
@@ -535,10 +536,13 @@
 
   width: 230px;
 
-  border: 1px solid;
+  border: 1px solid #dddddd;
   border-radius: 8px;
 
   overflow: hidden;
+
+  background: #ffffff;
+  color: #313133;
 
   box-shadow:
     0 10px 30px rgba(0, 0, 0, 0.18);
@@ -571,6 +575,10 @@
   text-align: right;
 }
 
+.account-dropdown button:last-child {
+  border-bottom: 0;
+}
+
 .account-dropdown button:hover {
   background: #f7f7f7;
 }
@@ -591,8 +599,9 @@
 }
 
 .account-user-info span {
-  font-size: 11px;
   color: #777777;
+
+  font-size: 11px;
 
   direction: ltr;
   text-align: right;
@@ -623,6 +632,7 @@
 
 .admin-btn span {
   font-size: 19px;
+  line-height: 1;
 }
 
 .admin-btn small {
@@ -685,6 +695,7 @@
 
   font-size: 10px;
   font-weight: 800;
+
   line-height: 1;
 }
 
@@ -737,6 +748,7 @@
   flex-shrink: 0;
 
   border-top: 1px solid rgba(0, 0, 0, 0.06);
+
   border-bottom: 1px solid var(--border, #d9dfe8);
 }
 
@@ -819,7 +831,6 @@
   cursor: pointer;
 
   font-family: "Cairo", "Tahoma", sans-serif;
-
   font-size: 13px;
 
   position: relative;
@@ -832,6 +843,7 @@
 .nav-category-item:hover,
 .nav-category-item.active-category {
   background: rgba(212, 175, 55, 0.10);
+
   color: var(--accent, #d4af37);
 }
 
@@ -890,6 +902,7 @@
   overflow-x: hidden;
 
   background: #ffffff;
+
   color: #313133;
 
   border-top:
@@ -1037,6 +1050,7 @@
 
 .mega-column-title {
   width: 100%;
+
   min-height: 58px;
 
   border: 0;
@@ -1098,12 +1112,15 @@
 
 .mega-link {
   width: 100%;
+
   min-height: 39px;
 
   border: 0;
+
   border-bottom: 1px solid #eeeeee;
 
   background: transparent;
+
   color: #4b4b4b;
 
   display: flex;
@@ -1125,6 +1142,7 @@
 .mega-link:hover,
 .mega-link.active-subcategory {
   color: var(--accent, #d4af37);
+
   background: #fffaf2;
 }
 
@@ -1152,6 +1170,7 @@
 
 .mega-arrow {
   margin-right: auto;
+
   font-size: 17px;
 }
 
@@ -1170,6 +1189,7 @@
 
 .mega-deep-children .mega-link {
   min-height: 37px;
+
   font-size: 11px;
 }
 
@@ -1180,6 +1200,7 @@
 
 .mega-single-link {
   border-top: 1px dashed #eeeeee;
+
   border-bottom: 0;
 
   color: var(--accent, #d4af37);
@@ -1205,6 +1226,7 @@
   border-radius: 7px;
 
   background: #fffaf2;
+
   color: var(--accent, #d4af37);
 
   cursor: pointer;
@@ -1212,6 +1234,7 @@
   font-family: "Cairo", "Tahoma", sans-serif;
 
   font-size: 13px;
+
   font-weight: 700;
 }
 
@@ -1428,7 +1451,7 @@ body {
 
   /* ===================================================
      ACTIONS
-     ACCOUNT + ADMIN + CART VISIBLE ON MOBILE
+     ACCOUNT + ADMIN + CART
   =================================================== */
 
   .nav-actions {
@@ -1443,10 +1466,9 @@ body {
   }
 
 
-  /* ---------------------------------------------------
+  /* ===================================================
      ACCOUNT
-     لا نخفي الحساب على الموبايل
-  --------------------------------------------------- */
+  =================================================== */
 
   .account-menu {
     display: block;
@@ -1480,14 +1502,14 @@ body {
     max-width: 38px;
 
     overflow: hidden;
+
     text-overflow: ellipsis;
   }
 
 
-  /* ---------------------------------------------------
+  /* ===================================================
      ADMIN
-     لا نخفي الإدارة على الموبايل
-  --------------------------------------------------- */
+  =================================================== */
 
   .admin-btn {
     display: flex;
@@ -1507,6 +1529,7 @@ body {
 
   .admin-btn span {
     font-size: 17px;
+
     line-height: 1;
   }
 
@@ -1522,23 +1545,23 @@ body {
     max-width: 38px;
 
     overflow: hidden;
+
     text-overflow: ellipsis;
   }
 
 
-  /* ---------------------------------------------------
+  /* ===================================================
      WISHLIST
-     تظل مخفية على الموبايل
-  --------------------------------------------------- */
+  =================================================== */
 
   .wishlist-icon {
     display: none;
   }
 
 
-  /* ---------------------------------------------------
+  /* ===================================================
      CART
-  --------------------------------------------------- */
+  =================================================== */
 
   .cart-icon {
     min-width: 38px;
@@ -1775,6 +1798,7 @@ body {
 
   .nav-logo {
     width: 68px;
+
     flex-basis: 68px;
   }
 
@@ -1797,9 +1821,9 @@ body {
   }
 
 
-  /* ---------------------------------------------------
-     ACCOUNT - SMALL MOBILE
-  --------------------------------------------------- */
+  /* ===================================================
+     ACCOUNT
+  =================================================== */
 
   .account-menu > .nav-icon {
     width: 35px;
@@ -1820,9 +1844,9 @@ body {
   }
 
 
-  /* ---------------------------------------------------
-     ADMIN - SMALL MOBILE
-  --------------------------------------------------- */
+  /* ===================================================
+     ADMIN
+  =================================================== */
 
   .admin-btn {
     width: 35px;
@@ -1843,9 +1867,9 @@ body {
   }
 
 
-  /* ---------------------------------------------------
-     CART - SMALL MOBILE
-  --------------------------------------------------- */
+  /* ===================================================
+     CART
+  =================================================== */
 
   .cart-icon {
     width: 35px;
@@ -1867,7 +1891,6 @@ body {
 
 /* =====================================================
    EXTRA SMALL MOBILE
-   Prevent search/header overflow
 ===================================================== */
 
 @media (max-width: 360px) {
@@ -1890,6 +1913,7 @@ body {
 
   .nav-logo {
     width: 58px;
+
     flex-basis: 58px;
   }
 
@@ -1904,9 +1928,9 @@ body {
   }
 
 
-  /* ---------------------------------------------------
-     ACCOUNT - EXTRA SMALL
-  --------------------------------------------------- */
+  /* ===================================================
+     ACCOUNT
+  =================================================== */
 
   .account-menu > .nav-icon {
     width: 32px;
@@ -1927,9 +1951,9 @@ body {
   }
 
 
-  /* ---------------------------------------------------
-     ADMIN - EXTRA SMALL
-  --------------------------------------------------- */
+  /* ===================================================
+     ADMIN
+  =================================================== */
 
   .admin-btn {
     width: 32px;
@@ -1950,9 +1974,9 @@ body {
   }
 
 
-  /* ---------------------------------------------------
-     CART - EXTRA SMALL
-  --------------------------------------------------- */
+  /* ===================================================
+     CART
+  =================================================== */
 
   .cart-icon {
     width: 32px;
@@ -1978,7 +2002,9 @@ body {
   .announcement-track,
   .announcement-bar-track {
     animation: none !important;
+
     transform: none !important;
+
     right: 0;
   }
 
@@ -1986,6 +2012,8 @@ body {
     animation: none !important;
   }
 }
+
+
 /* =====================================================
    MOBILE ACCOUNT DROPDOWN FIX
 ===================================================== */
@@ -2001,9 +2029,12 @@ body {
     left: 8px !important;
 
     width: auto !important;
-    max-width: calc(100vw - 16px) !important;
 
-    max-height: calc(100vh - 70px);
+    max-width:
+      calc(100vw - 16px) !important;
+
+    max-height:
+      calc(100vh - 70px);
 
     overflow-y: auto;
     overflow-x: hidden;
@@ -2013,6 +2044,7 @@ body {
     border-radius: 8px;
 
     background: #ffffff;
+
     color: #313133;
 
     box-shadow:
@@ -2045,6 +2077,7 @@ body {
     font-size: 14px;
 
     white-space: normal;
+
     word-break: break-word;
   }
 
@@ -2052,9 +2085,11 @@ body {
     font-size: 11px;
 
     white-space: normal;
+
     word-break: break-word;
 
     overflow: visible;
+
     text-overflow: unset;
   }
 }
@@ -2072,7 +2107,8 @@ body {
     right: 6px !important;
     left: 6px !important;
 
-    max-width: calc(100vw - 12px) !important;
+    max-width:
+      calc(100vw - 12px) !important;
   }
 
   .account-dropdown button {

@@ -118,8 +118,23 @@ const defaultStoreSettings = {
 const defaultWheelSettings = {
   enabled: false,
 
-  title: "🎡 جرب حظك!",
+  // =================================================
+  // DISPLAY MODE
+  // store = داخل المتجر
+  // popup = منبثق فقط
+  // both = داخل المتجر + منبثق
+  // =================================================
+  displayMode: "store",
 
+  // =================================================
+  // POPUP SETTINGS
+  // =================================================
+  popupEnabled: false,
+  popupDelay: 1500,
+  popupClosable: true,
+  popupShowOncePerDay: false,
+
+  title: "🎡 جرب حظك!",
   description: "لف العجلة واكسب عرضك",
 
   attemptsPerUser: 2,
@@ -259,8 +274,24 @@ function Home({
   // WHEEL STATES
   // ===================================================
 
-  const [wheelSettings, setWheelSettings] =
-    useState(defaultWheelSettings);
+  const [wheelSettings, setWheelSettings] = useState({
+    enabled: false,
+    displayMode: "store",
+    popupEnabled: false,
+    popupDelay: 1500,
+    popupClosable: true,
+    popupShowOncePerDay: false,
+    title: "🎡 جرب حظك!",
+    description: "لف العجلة واكسب عرضك",
+    attemptsPerUser: 1,
+    prizes: [],
+  });
+
+  const [showWheelPopup, setShowWheelPopup] =
+    useState(false);
+
+  const [popupReady, setPopupReady] =
+    useState(false);
 
   const [isSpinning, setIsSpinning] =
     useState(false);
@@ -398,36 +429,118 @@ const DAILY_WHEEL_ATTEMPTS =
       onSnapshot(
         wheelRef,
         (snapshot) => {
-          if (!snapshot.exists()) {
-            setWheelSettings(
-              defaultWheelSettings
+          try {
+            if (!snapshot.exists()) {
+              setWheelSettings({
+                ...defaultWheelSettings,
+                enabled:
+                  defaultWheelSettings?.enabled ??
+                  false,
+                displayMode:
+                  defaultWheelSettings?.displayMode ||
+                  "store",
+                popupEnabled:
+                  defaultWheelSettings?.popupEnabled ??
+                  false,
+                popupDelay:
+                  Math.max(
+                    0,
+                    Number(
+                      defaultWheelSettings?.popupDelay ??
+                        1500
+                    )
+                  ),
+                popupClosable:
+                  defaultWheelSettings?.popupClosable ??
+                  true,
+                popupShowOncePerDay:
+                  defaultWheelSettings?.popupShowOncePerDay ??
+                  false,
+                attemptsPerUser:
+                  Math.max(
+                    1,
+                    Number(
+                      defaultWheelSettings?.attemptsPerUser ??
+                        1
+                    )
+                  ),
+                prizes: Array.isArray(
+                  defaultWheelSettings?.prizes
+                )
+                  ? defaultWheelSettings.prizes
+                  : [],
+              });
+
+              return;
+            }
+
+            const data =
+              snapshot.data() || {};
+
+            setWheelSettings({
+              ...defaultWheelSettings,
+              ...data,
+
+              enabled:
+                data.enabled === true,
+
+              displayMode:
+                ["store", "popup", "both"].includes(
+                  data.displayMode
+                )
+                  ? data.displayMode
+                  : "store",
+
+              popupEnabled:
+                data.popupEnabled === true,
+
+              popupDelay:
+                Math.max(
+                  0,
+                  Number(
+                    data.popupDelay ?? 1500
+                  )
+                ),
+
+              popupClosable:
+                data.popupClosable !== false,
+
+              popupShowOncePerDay:
+                data.popupShowOncePerDay === true,
+
+              attemptsPerUser:
+                Math.max(
+                  1,
+                  Number(
+                    data.attemptsPerUser ??
+                      defaultWheelSettings?.attemptsPerUser ??
+                      1
+                  )
+                ),
+
+              prizes: Array.isArray(
+                data.prizes
+              )
+                ? data.prizes
+                : [],
+            });
+          } catch (error) {
+            console.error(
+              "Wheel Settings Parse Error:",
+              error
             );
 
-            return;
+            setWheelSettings({
+              ...defaultWheelSettings,
+              enabled: false,
+              displayMode: "store",
+              popupEnabled: false,
+              popupClosable: true,
+              popupShowOncePerDay: false,
+              popupDelay: 1500,
+              prizes: [],
+            });
           }
-
-          const data =
-            snapshot.data() || {};
-
-          setWheelSettings({
-            ...defaultWheelSettings,
-            ...data,
-
-            attemptsPerUser:
-              Math.max(
-                1,
-                Number(
-                  data.attemptsPerUser ||
-                    defaultWheelSettings.attemptsPerUser
-                )
-              ),
-
-            prizes: Array.isArray(
-              data.prizes
-            )
-              ? data.prizes
-              : [],
-          });
         },
         (error) => {
           console.error(
@@ -435,14 +548,127 @@ const DAILY_WHEEL_ATTEMPTS =
             error
           );
 
-          setWheelSettings(
-            defaultWheelSettings
-          );
+          setWheelSettings({
+            ...defaultWheelSettings,
+            enabled: false,
+            displayMode: "store",
+            popupEnabled: false,
+            popupClosable: true,
+            popupShowOncePerDay: false,
+            popupDelay: 1500,
+            prizes: [],
+          });
         }
       );
 
     return () => unsubscribe();
   }, []);
+
+  // ===================================================
+  // WHEEL DISPLAY MODES
+  // ===================================================
+
+  const shouldShowWheelInStore =
+    wheelSettings?.enabled === true &&
+    (
+      wheelSettings?.displayMode === "store" ||
+      wheelSettings?.displayMode === "both"
+    );
+
+  const shouldShowWheelAsPopup =
+    wheelSettings?.enabled === true &&
+    wheelSettings?.popupEnabled === true &&
+    (
+      wheelSettings?.displayMode === "popup" ||
+      wheelSettings?.displayMode === "both"
+    );
+
+  // ===================================================
+  // POPUP STORAGE KEY
+  // ===================================================
+
+  const getWheelPopupStorageKey = () => {
+    const today = getLocalDateKey();
+    return `elsafty_wheel_popup_${today}`;
+  };
+
+  // ===================================================
+  // OPEN WHEEL POPUP
+  // ===================================================
+
+  useEffect(() => {
+    let timer = null;
+
+    if (!shouldShowWheelAsPopup) {
+      setShowWheelPopup(false);
+      setPopupReady(false);
+      return undefined;
+    }
+
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    if (wheelSettings?.popupShowOncePerDay === true) {
+      const storageKey = getWheelPopupStorageKey();
+      const alreadyShown =
+        localStorage.getItem(storageKey);
+
+      if (alreadyShown === "1") {
+        setShowWheelPopup(false);
+        setPopupReady(false);
+        return undefined;
+      }
+    }
+
+    const delay = Math.max(
+      0,
+      Number(wheelSettings?.popupDelay ?? 1500)
+    );
+
+    setPopupReady(false);
+
+    timer = setTimeout(() => {
+      setPopupReady(true);
+      setShowWheelPopup(true);
+
+      if (wheelSettings?.popupShowOncePerDay === true) {
+        try {
+          localStorage.setItem(
+            getWheelPopupStorageKey(),
+            "1"
+          );
+        } catch (error) {
+          console.warn(
+            "Wheel Popup localStorage Error:",
+            error
+          );
+        }
+      }
+    }, delay);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [
+    wheelSettings?.enabled,
+    wheelSettings?.displayMode,
+    wheelSettings?.popupEnabled,
+    wheelSettings?.popupDelay,
+    wheelSettings?.popupShowOncePerDay,
+    shouldShowWheelAsPopup,
+  ]);
+
+  // ===================================================
+  // CLOSE WHEEL POPUP
+  // ===================================================
+
+  const closeWheelPopup = () => {
+    setShowWheelPopup(false);
+    setPopupReady(false);
+  };
 
   // ===================================================
   // LOAD DAILY WHEEL ATTEMPTS
@@ -1824,8 +2050,7 @@ const spinWheel = async () => {
             WHEEL OF FORTUNE
         ================================================= */}
 
-        {wheelSettings?.enabled ===
-          true &&
+        {shouldShowWheelInStore &&
           activeWheelPrizes.length >
             0 && (
             <section
@@ -2921,6 +3146,7 @@ const spinWheel = async () => {
             </section>
           )}
 
+
         {/* =================================================
             TODAY OFFERS
         ================================================= */}
@@ -2980,15 +3206,12 @@ const spinWheel = async () => {
 ================================================= */}
 
 <section className="jumia-promo-strip">
-
   <div className="promo-content">
-
     <span className="promo-icon">
       🏷️
     </span>
 
     <div>
-
       <h2>
         {storeSettings?.couponPromoTitle ||
           "ألحق أكواد الخصم!"}
@@ -2998,67 +3221,39 @@ const spinWheel = async () => {
         {storeSettings?.couponPromoDescription ||
           "وفر أكتر مع العروض والكوبونات"}
       </p>
-
     </div>
-
   </div>
-
 
   <button
     type="button"
     onClick={() => {
+      const link = String(
+        storeSettings?.couponPromoLink || ""
+      ).trim();
 
-      const link =
-        storeSettings?.couponPromoLink?.trim();
-
-
-      /* ==========================================
-         لو مفيش لينك → السلوك القديم
-      ========================================== */
-
+      // لو مفيش رابط → يروح لعروض اليوم
       if (!link) {
-
-        scrollToSection(
-          "#today-offers"
-        );
-
+        scrollToSection("#today-offers");
         return;
       }
 
-
-      /* ==========================================
-         رابط خارجي
-      ========================================== */
-
+      // رابط خارجي
       if (
         link.startsWith("http://") ||
         link.startsWith("https://")
       ) {
-
-        window.location.href =
-          link;
-
+        window.location.href = link;
         return;
       }
 
-
-      /* ==========================================
-         رابط داخلي داخل المتجر
-         مثال: /offers
-      ========================================== */
-
+      // رابط داخلي
       navigate(link);
-
     }}
   >
-
     {storeSettings?.couponPromoButton ||
       "تسوق الآن"}
-
   </button>
-
 </section>
-
         {/* =================================================
             NEW ARRIVALS
         ================================================= */}
@@ -3315,75 +3510,6 @@ const spinWheel = async () => {
               }
             />
           </section>
-        )}
-
-        {/* =================================================
-            CATEGORY PRODUCT SECTIONS
-        ================================================= */}
-
-        {rootCategories.map(
-          (category) => {
-            const categoryProducts =
-              getCategoryProducts(
-                category
-              );
-
-            if (
-              categoryProducts.length ===
-              0
-            ) {
-              return null;
-            }
-
-            return (
-              <section
-                key={
-                  `products-${category?.id}`
-                }
-                className="jumia-section category-products-section"
-              >
-                <div className="jumia-section-title">
-                  <div>
-                    <h2>
-                      {category?.name ||
-                        "منتجات"}
-                    </h2>
-
-                    <p>
-                      اكتشف أفضل المنتجات
-                      في هذا القسم
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openCategory(
-                        category
-                      )
-                    }
-                  >
-                    عرض الكل
-                  </button>
-                </div>
-
-                <ProductsSlider
-                  title=""
-                  products={
-                    categoryProducts
-                  }
-                  addToCart={
-                    addToCart
-                  }
-                  onTitleClick={() =>
-                    openCategory(
-                      category
-                    )
-                  }
-                />
-              </section>
-            );
-          }
         )}
 
         {/* =================================================
@@ -3781,11 +3907,438 @@ const spinWheel = async () => {
       </footer>
 
       {/* =================================================
+          WHEEL POPUP
+      ================================================= */}
+
+      {showWheelPopup &&
+        popupReady &&
+        shouldShowWheelAsPopup &&
+        activeWheelPrizes.length > 0 && (
+          <div
+            className="wheel-popup-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="عجلة الحظ"
+          >
+            <div className="wheel-popup-container">
+              {wheelSettings?.popupClosable !== false && (
+                <button
+                  type="button"
+                  className="wheel-popup-close"
+                  onClick={closeWheelPopup}
+                  aria-label="إغلاق"
+                >
+                  ×
+                </button>
+              )}
+
+              <div className="wheel-header wheel-popup-header">
+                <div className="wheel-popup-badge">🎁 SPIN & WIN</div>
+                <h2>
+                  {wheelSettings?.title || "🎡 جرب حظك!"}
+                </h2>
+                <p>
+                  {wheelSettings?.description || "لف العجلة واكسب عرضك"}
+                </p>
+              </div>
+
+              <div className="wheel-game-area wheel-popup-game-area">
+                <div className="wheel-popup-wheel-wrap">
+                  <div className="wheel-pointer wheel-popup-pointer" />
+                  <div className="wheel-popup-outer-rim">
+                    <div
+                      className="wheel-circle wheel-popup-circle"
+                      style={{
+                        background: wheelGradient,
+                        transform: `rotate(${wheelRotation}deg)`,
+                        transition: isSpinning
+                          ? `transform ${SPIN_DURATION}s cubic-bezier(.17,.67,.12,.99)`
+                          : "none",
+                      }}
+                    >
+                      {activeWheelPrizes.map((prize, index) => {
+                        const angle =
+                          (360 / activeWheelPrizes.length) * index;
+                        return (
+                          <div
+                            key={`popup-line-${prize?.id || index}`}
+                            className="wheel-popup-separator"
+                            style={{
+                              transform: `translateX(-50%) rotate(${angle}deg)`,
+                            }}
+                          />
+                        );
+                      })}
+
+                      {activeWheelPrizes.map((prize, index) => {
+                        const count = activeWheelPrizes.length;
+                        const prizeColor = getWheelPrizeColor(prize, index);
+                        const textColor = getContrastTextColor(prizeColor);
+                        return (
+                          <div
+                            key={`popup-prize-${prize?.id || index}`}
+                            className="wheel-popup-prize-label"
+                            style={{
+                              color: textColor,
+                              fontSize:
+                                count > 10
+                                  ? "9px"
+                                  : count > 8
+                                    ? "10px"
+                                    : count > 6
+                                      ? "11px"
+                                      : "12px",
+                              ...getWheelLabelStyle(prize, index),
+                            }}
+                          >
+                            {prize?.title || "جائزة"}
+                          </div>
+                        );
+                      })}
+
+                      <div className="wheel-popup-center">
+                        <strong>SPIN</strong>
+                        <span>& WIN</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {!wheelResult && (
+                  <>
+                    <button
+                      type="button"
+                      className="wheel-spin-btn wheel-popup-spin-btn"
+                      onClick={spinWheel}
+                      disabled={
+                        isSpinning ||
+                        wheelAttempts >= DAILY_WHEEL_ATTEMPTS
+                      }
+                    >
+                      {isSpinning
+                        ? `🎡 جاري الدوران... ${spinCountdown}`
+                        : wheelAttempts >= DAILY_WHEEL_ATTEMPTS
+                          ? "⏳ انتهت محاولات اليوم"
+                          : "🎯 لف العجلة"}
+                    </button>
+
+                    <div className="wheel-attempts wheel-popup-attempts">
+                      🎯 المحاولات:
+                      <strong>{wheelAttempts}</strong>
+                      <span>/</span>
+                      <strong>{DAILY_WHEEL_ATTEMPTS}</strong>
+                    </div>
+                  </>
+                )}
+
+                {wheelResult && (
+                  <div className="wheel-result wheel-popup-result">
+                    <div className="wheel-popup-result-icon">🎉</div>
+                    <h3>مبروك!</h3>
+                    <p>لقد فزت بـ</p>
+                    <strong>{wheelResult?.title || "جائزة"}</strong>
+
+                    {wheelResult?.type === "discount" && (
+                      <small>خصم {wheelResult?.value || 0}%</small>
+                    )}
+
+                    {wheelResult?.type === "fixed" && (
+                      <small>خصم {wheelResult?.value || 0} ج.م</small>
+                    )}
+
+                    {wheelResult?.type === "free-shipping" && (
+                      <small>شحن مجاني 🚚</small>
+                    )}
+
+                    {wheelResult?.type === "gift" && (
+                      <small>هدية 🎁</small>
+                    )}
+
+                    {wheelResult?.type === "nothing" && (
+                      <small>حظ أوفر المرة القادمة ❤️</small>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setWheelResult(null)}
+                    >
+                      تمام
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+      {/* =================================================
           WHEEL + FLASH TIMER ANIMATIONS
       ================================================= */}
 
       <style>
         {`
+          /* ===============================================
+             WHEEL POPUP
+          =============================================== */
+
+          .wheel-popup-overlay {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 999999;
+            overflow-y: auto;
+            isolation: isolate;
+          }
+
+          .wheel-popup-container {
+            position: relative;
+            width: min(520px, 100%);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 20px;
+            padding: 25px 15px 30px;
+            box-sizing: border-box;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+            animation: wheelPopupIn 0.3s ease;
+            direction: rtl;
+          }
+
+          .wheel-popup-close {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 50%;
+            background: #313133;
+            color: #fff;
+            font-size: 28px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 100;
+          }
+
+          .wheel-popup-close:hover {
+            transform: scale(1.05);
+          }
+
+          .wheel-popup-header {
+            text-align: center;
+            margin-bottom: 18px;
+          }
+
+          .wheel-popup-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #313133;
+            color: #fff;
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 8px;
+          }
+
+          .wheel-popup-header h2 {
+            margin: 4px 0;
+            font-size: 28px;
+            font-weight: 900;
+            color: #313133;
+          }
+
+          .wheel-popup-header p {
+            margin: 5px 0 0;
+            color: #75757A;
+            font-size: 15px;
+          }
+
+          .wheel-popup-game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+          }
+
+          .wheel-popup-wheel-wrap {
+            position: relative;
+            width: 330px;
+            height: 365px;
+            max-width: 92vw;
+            display: flex;
+            justify-content: center;
+            padding-top: 10px;
+            box-sizing: border-box;
+          }
+
+          .wheel-popup-pointer {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            width: 0;
+            height: 0;
+            border-left: 17px solid transparent;
+            border-right: 17px solid transparent;
+            border-top: 34px solid #313133;
+            filter: drop-shadow(0 3px 3px rgba(0,0,0,.25));
+          }
+
+          .wheel-popup-outer-rim {
+            width: 330px;
+            height: 330px;
+            max-width: 88vw;
+            max-height: 88vw;
+            border-radius: 50%;
+            padding: 12px;
+            box-sizing: border-box;
+            background: linear-gradient(145deg,#f7c948,#d4af37,#9b7410,#f7d774);
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            position: relative;
+          }
+
+          .wheel-popup-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 3px rgba(255,255,255,.35), inset 0 0 25px rgba(0,0,0,.35);
+          }
+
+          .wheel-popup-separator {
+            position: absolute;
+            width: 2px;
+            height: 50%;
+            background: rgba(255,255,255,.82);
+            left: 50%;
+            top: 0;
+            transform-origin: bottom center;
+            z-index: 2;
+          }
+
+          .wheel-popup-prize-label {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 105px;
+            margin-left: -52.5px;
+            margin-top: -14px;
+            text-align: center;
+            font-weight: 900;
+            line-height: 1.12;
+            white-space: normal;
+            word-break: break-word;
+            z-index: 5;
+            pointer-events: none;
+          }
+
+          .wheel-popup-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #555, #171717 60%, #050505);
+            border: 5px solid #F68B1E;
+            box-shadow: 0 3px 12px rgba(0,0,0,.5), inset 0 0 10px rgba(255,255,255,.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #fff;
+            z-index: 15;
+          }
+
+          .wheel-popup-center strong {
+            font-size: 17px;
+            line-height: 17px;
+          }
+
+          .wheel-popup-center span {
+            font-size: 12px;
+            font-weight: 900;
+            color: #F68B1E;
+          }
+
+          .wheel-popup-spin-btn {
+            margin-top: 8px;
+          }
+
+          .wheel-popup-attempts {
+            margin-top: 12px;
+          }
+
+          .wheel-popup-result {
+            width: min(420px, 92%);
+            text-align: center;
+            box-sizing: border-box;
+          }
+
+          .wheel-popup-result h3 {
+            margin: 0 0 6px;
+            color: #313133;
+            font-size: 24px;
+            font-weight: 900;
+          }
+
+          .wheel-popup-result p {
+            margin: 0 0 5px;
+            color: #75757A;
+          }
+
+          .wheel-popup-result > strong {
+            display: block;
+            font-size: 21px;
+            color: #F68B1E;
+          }
+
+          .wheel-popup-result small {
+            display: block;
+            margin-top: 5px;
+            font-weight: 800;
+          }
+
+          .wheel-popup-result button {
+            margin-top: 15px;
+            border: none;
+            border-radius: 7px;
+            padding: 10px 35px;
+            background: #313133;
+            color: #fff;
+            font-weight: 800;
+            cursor: pointer;
+          }
+
+          .wheel-popup-result-icon {
+            font-size: 45px;
+            margin-bottom: 5px;
+          }
+
+          @keyframes wheelPopupIn {
+            from {
+              opacity: 0;
+              transform: scale(0.92);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+
           @keyframes wheelResultPop {
             0% {
               opacity: 0;
