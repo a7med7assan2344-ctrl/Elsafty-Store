@@ -40,9 +40,7 @@ import "./HeroSlider.css";
 // ============================================================
 
 const defaultStoreSettings = {
-
   theme: {
-
     primary: "#071A36",
     secondary: "#0B1F3A",
     accent: "#D4AF37",
@@ -69,51 +67,31 @@ const defaultStoreSettings = {
 
     footerBackground: "#071A36",
     footerText: "#FFFFFF",
-
   },
 
-
-  // ==========================================================
-  // BANNER SETTINGS
-  // ==========================================================
-
   bannerSettings: {
-
     heightDesktop: 420,
     heightTablet: 350,
     heightMobile: 240,
 
     borderRadius: 0,
-
     overlayOpacity: 0.35,
-
   },
 
-
-  // ==========================================================
-  // FEATURES BAR
-  // ==========================================================
-
   featuresBar: {
-
     enabled: true,
 
     background: "#FFFFFF",
-
     color: "#071A36",
-
     accentColor: "#D4AF37",
 
     height: 80,
-
     fontSize: 16,
 
     direction: "rtl",
-
     speed: 40,
 
     items: [
-
       {
         icon: "🚚",
         title: "شحن سريع",
@@ -141,11 +119,8 @@ const defaultStoreSettings = {
         text: "اختيارات تناسبك",
         active: true,
       },
-
     ],
-
   },
-
 };
 
 
@@ -154,121 +129,121 @@ const defaultStoreSettings = {
 // ============================================================
 
 const fallbackSlides = [
-
   {
     id: "fallback-1",
-
     image: "/banners/banner1.jpg",
 
     title: "خصومات حتى 50%",
-
     text: "أفضل الأسعار على آلاف المنتجات",
 
     tag: "🔥 عروض خاصة",
-
     buttonText: "تسوق الآن",
 
     link: "/",
 
     active: true,
-
     order: 1,
 
     fontFamily: "Cairo",
-
     textColor: "#ffffff",
 
     titleFontSize: 42,
-
     descriptionFontSize: 20,
 
     fontWeight: "700",
 
     textAlign: "right",
-
     textPositionX: "right",
-
     textPositionY: "center",
-
   },
-
 
   {
     id: "fallback-2",
-
     image: "/banners/banner2.jpg",
 
     title: "وصل حديثًا",
-
     text: "اكتشف أحدث المنتجات بأفضل الأسعار.",
 
     tag: "🆕 وصل حديثًا",
-
     buttonText: "اكتشف الآن",
 
     link: "/",
 
     active: true,
-
     order: 2,
 
     fontFamily: "Cairo",
-
     textColor: "#ffffff",
 
     titleFontSize: 42,
-
     descriptionFontSize: 20,
 
     fontWeight: "700",
 
     textAlign: "right",
-
     textPositionX: "right",
-
     textPositionY: "center",
-
   },
-
 
   {
     id: "fallback-3",
-
     image: "/banners/banner3.jpg",
 
     title: "شحن سريع",
-
     text: "توصيل لجميع المحافظات في أسرع وقت.",
 
     tag: "🚚 شحن سريع",
-
     buttonText: "تسوق الآن",
 
     link: "/",
 
     active: true,
-
     order: 3,
 
     fontFamily: "Cairo",
-
     textColor: "#ffffff",
 
     titleFontSize: 42,
-
     descriptionFontSize: 20,
 
     fontWeight: "700",
 
     textAlign: "right",
-
     textPositionX: "right",
-
     textPositionY: "center",
-
   },
-
 ];
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+const getTimestampVersion = (timestamp) => {
+  if (!timestamp) {
+    return Date.now();
+  }
+
+  if (
+    typeof timestamp.toMillis === "function"
+  ) {
+    return timestamp.toMillis();
+  }
+
+  if (
+    typeof timestamp.seconds === "number"
+  ) {
+    return timestamp.seconds * 1000;
+  }
+
+  if (
+    typeof timestamp._seconds === "number"
+  ) {
+    return timestamp._seconds * 1000;
+  }
+
+  return Date.now();
+};
 
 
 // ============================================================
@@ -276,208 +251,301 @@ const fallbackSlides = [
 // ============================================================
 
 export default function HeroSlider() {
+  const navigate = useNavigate();
 
-  const navigate =
-    useNavigate();
-
-
-  const [slides, setSlides] =
-    useState(
-      fallbackSlides
-    );
-
+  const [slides, setSlides] = useState(
+    fallbackSlides
+  );
 
   const [storeSettings, setStoreSettings] =
     useState(
       defaultStoreSettings
     );
 
-
   const [loading, setLoading] =
     useState(true);
+
+  // ==========================================================
+  // مهم جدًا:
+  // كل تغيير في Firestore يغير الرقم
+  // وبالتالي Swiper يتم إعادة تركيبه
+  // ==========================================================
+
+  const [bannerVersion, setBannerVersion] =
+    useState(0);
 
 
   // ==========================================================
   // LOAD BANNERS
+  // REALTIME FIRESTORE
   // ==========================================================
 
   useEffect(() => {
+    const bannersRef = collection(
+      db,
+      "banners"
+    );
 
-    const bannersRef =
-      collection(
-        db,
-        "banners"
-      );
+    const unsubscribe = onSnapshot(
+      bannersRef,
+
+      (snapshot) => {
+        try {
+          const rawBanners =
+            snapshot.docs.map(
+              (snapshotDoc) => ({
+                id: snapshotDoc.id,
+                ...snapshotDoc.data(),
+              })
+            );
 
 
-    const unsubscribe =
-      onSnapshot(
+          // ==================================================
+          // ACTIVE BANNERS ONLY
+          // ==================================================
 
-        bannersRef,
-
-        (snapshot) => {
-
-          const firebaseBanners =
-            snapshot.docs
-
-              .map(
-                (item) => ({
-                  id: item.id,
-                  ...item.data(),
-                })
-              )
-
+          const activeBanners =
+            rawBanners
               .filter(
                 (banner) =>
-                  banner.active !== false &&
-                  banner.image
+                  banner?.active !== false &&
+                  String(
+                    banner?.image || ""
+                  ).trim() !== ""
               )
-
               .sort(
                 (a, b) =>
                   Number(
-                    a.order || 0
+                    a?.order ?? 0
                   ) -
                   Number(
-                    b.order || 0
+                    b?.order ?? 0
                   )
               );
 
 
+          // ==================================================
+          // FIREBASE HAS NO ACTIVE BANNERS
+          // ==================================================
+
           if (
-            firebaseBanners.length > 0
+            activeBanners.length === 0
           ) {
-
-            const formattedBanners =
-              firebaseBanners.map(
-                (banner) => ({
-
-                  id:
-                    banner.id,
-
-                  image:
-                    banner.image,
-
-                  title:
-                    banner.title ||
-                    "",
-
-                  text:
-                    banner.text ||
-                    banner.description ||
-                    "",
-
-                  tag:
-                    banner.tag ||
-                    banner.badge ||
-                    "🔥 عرض خاص",
-
-                  buttonText:
-                    banner.buttonText ||
-                    banner.button ||
-                    "تسوق الآن",
-
-                  link:
-                    banner.link ||
-                    "/",
-
-                  active:
-                    banner.active !== false,
-
-                  order:
-                    Number(
-                      banner.order || 0
-                    ),
-
-                  fontFamily:
-                    banner.fontFamily ||
-                    "Cairo",
-
-                  textColor:
-                    banner.textColor ||
-                    "#ffffff",
-
-                  titleFontSize:
-                    Number(
-                      banner.titleFontSize ||
-                      42
-                    ),
-
-                  descriptionFontSize:
-                    Number(
-                      banner.descriptionFontSize ||
-                      20
-                    ),
-
-                  fontWeight:
-                    String(
-                      banner.fontWeight ||
-                      "700"
-                    ),
-
-                  textAlign:
-                    banner.textAlign ||
-                    "right",
-
-                  textPositionX:
-                    banner.textPositionX ||
-                    "right",
-
-                  textPositionY:
-                    banner.textPositionY ||
-                    "center",
-
-                })
-              );
-
-
-            setSlides(
-              formattedBanners
-            );
-
-          } else {
-
             setSlides(
               fallbackSlides
             );
 
+            setBannerVersion(
+              (previous) =>
+                previous + 1
+            );
+
+            setLoading(false);
+
+            return;
           }
 
 
-          setLoading(
-            false
+          // ==================================================
+          // NORMALIZE FIREBASE BANNERS
+          // ==================================================
+
+          const normalizedBanners =
+            activeBanners.map(
+              (banner) => {
+
+                const originalImage =
+                  String(
+                    banner?.image || ""
+                  ).trim();
+
+
+                const timestampVersion =
+                  getTimestampVersion(
+                    banner?.updatedAt
+                  );
+
+
+                /*
+                  مهم:
+                  إضافة version للصورة تمنع Cache
+                  من إظهار الصورة القديمة بعد التعديل.
+                */
+
+                const imageUrl =
+                  originalImage
+                    ? `${
+                        originalImage
+                      }${
+                        originalImage.includes(
+                          "?"
+                        )
+                          ? "&"
+                          : "?"
+                      }v=${timestampVersion}`
+                    : "";
+
+
+                return {
+                  id:
+                    String(
+                      banner.id
+                    ),
+
+                  image:
+                    imageUrl,
+
+                  title:
+                    String(
+                      banner?.title || ""
+                    ),
+
+                  text:
+                    String(
+                      banner?.text ||
+                      banner?.description ||
+                      ""
+                    ),
+
+                  tag:
+                    String(
+                      banner?.tag ||
+                      banner?.badge ||
+                      "🔥 عرض خاص"
+                    ),
+
+                  buttonText:
+                    String(
+                      banner?.buttonText ||
+                      banner?.button ||
+                      "تسوق الآن"
+                    ),
+
+                  link:
+                    String(
+                      banner?.link ||
+                      "/"
+                    ),
+
+                  active:
+                    banner?.active !== false,
+
+                  order:
+                    Number(
+                      banner?.order ?? 0
+                    ),
+
+                  fontFamily:
+                    banner?.fontFamily ||
+                    "Cairo",
+
+                  textColor:
+                    banner?.textColor ||
+                    "#ffffff",
+
+                  titleFontSize:
+                    Math.max(
+                      16,
+                      Number(
+                        banner?.titleFontSize ??
+                        42
+                      )
+                    ),
+
+                  descriptionFontSize:
+                    Math.max(
+                      10,
+                      Number(
+                        banner?.descriptionFontSize ??
+                        20
+                      )
+                    ),
+
+                  fontWeight:
+                    String(
+                      banner?.fontWeight ||
+                      "700"
+                    ),
+
+                  textAlign:
+                    banner?.textAlign ||
+                    "right",
+
+                  textPositionX:
+                    banner?.textPositionX ||
+                    "right",
+
+                  textPositionY:
+                    banner?.textPositionY ||
+                    "center",
+                };
+              }
+            );
+
+
+          // ==================================================
+          // UPDATE SLIDES
+          // ==================================================
+
+          setSlides(
+            normalizedBanners
           );
 
-        },
 
-        (error) => {
+          // ==================================================
+          // FORCE SWIPER REBUILD
+          // ==================================================
 
+          setBannerVersion(
+            (previous) =>
+              previous + 1
+          );
+
+
+          setLoading(false);
+
+        } catch (error) {
           console.error(
-            "❌ Banners Error:",
+            "❌ Banner normalization error:",
             error
           );
-
 
           setSlides(
             fallbackSlides
           );
 
-
-          setLoading(
-            false
+          setBannerVersion(
+            (previous) =>
+              previous + 1
           );
 
+          setLoading(false);
         }
+      },
 
-      );
+      (error) => {
+        console.error(
+          "❌ Banners realtime error:",
+          error
+        );
+
+        setSlides(
+          fallbackSlides
+        );
+
+        setBannerVersion(
+          (previous) =>
+            previous + 1
+        );
+
+        setLoading(false);
+      }
+    );
 
 
     return () => {
-
       unsubscribe();
-
     };
-
   }, []);
 
 
@@ -486,33 +554,30 @@ export default function HeroSlider() {
   // ==========================================================
 
   useEffect(() => {
+    const settingsRef = doc(
+      db,
+      "settings",
+      "store"
+    );
 
-    const settingsRef =
-      doc(
-        db,
-        "settings",
-        "store"
-      );
+    const unsubscribe = onSnapshot(
+      settingsRef,
 
-
-    const unsubscribe =
-      onSnapshot(
-
-        settingsRef,
-
-        (snapshot) => {
-
+      (snapshot) => {
+        try {
           if (
             !snapshot.exists()
           ) {
+            setStoreSettings(
+              defaultStoreSettings
+            );
 
             return;
-
           }
 
 
           const data =
-            snapshot.data();
+            snapshot.data() || {};
 
 
           // ==================================================
@@ -520,44 +585,35 @@ export default function HeroSlider() {
           // ==================================================
 
           const firebaseFeaturesBar =
-            data.featuresBar || {};
+            data?.featuresBar || {};
 
 
           const firebaseFeatureItems =
             Array.isArray(
-              firebaseFeaturesBar.items
+              firebaseFeaturesBar?.items
             )
               ? firebaseFeaturesBar.items
-              : defaultStoreSettings.featuresBar.items;
+              : defaultStoreSettings
+                  .featuresBar
+                  .items;
 
 
           setStoreSettings({
-
             ...defaultStoreSettings,
 
             ...data,
 
-
             theme: {
-
               ...defaultStoreSettings.theme,
-
-              ...(data.theme || {}),
-
+              ...(data?.theme || {}),
             },
-
 
             bannerSettings: {
-
               ...defaultStoreSettings.bannerSettings,
-
-              ...(data.bannerSettings || {}),
-
+              ...(data?.bannerSettings || {}),
             },
 
-
             featuresBar: {
-
               ...defaultStoreSettings.featuresBar,
 
               ...firebaseFeaturesBar,
@@ -565,7 +621,6 @@ export default function HeroSlider() {
               items:
                 firebaseFeatureItems.map(
                   (item) => ({
-
                     icon:
                       item?.icon ??
                       "⭐",
@@ -580,34 +635,31 @@ export default function HeroSlider() {
 
                     active:
                       item?.active !== false,
-
                   })
                 ),
-
             },
-
           });
 
-        },
-
-        (error) => {
-
+        } catch (error) {
           console.error(
-            "❌ Store Settings Error:",
+            "❌ Store settings normalize error:",
             error
           );
-
         }
+      },
 
-      );
+      (error) => {
+        console.error(
+          "❌ Store Settings Error:",
+          error
+        );
+      }
+    );
 
 
     return () => {
-
       unsubscribe();
-
     };
-
   }, []);
 
 
@@ -628,13 +680,8 @@ export default function HeroSlider() {
         !target ||
         target === "#"
       ) {
-
-        navigate(
-          "/"
-        );
-
+        navigate("/");
         return;
-
       }
 
 
@@ -646,30 +693,29 @@ export default function HeroSlider() {
           "https://"
         )
       ) {
-
         window.location.href =
           target;
 
         return;
-
       }
 
 
       navigate(
         target
       );
-
     };
 
 
   // ==========================================================
-  // POSITION HELPERS
+  // HORIZONTAL POSITION
   // ==========================================================
 
   const getHorizontalPosition =
     (position) => {
 
-      switch (position) {
+      switch (
+        position
+      ) {
 
         case "left":
           return "flex-start";
@@ -680,16 +726,20 @@ export default function HeroSlider() {
         case "right":
         default:
           return "flex-end";
-
       }
-
     };
 
+
+  // ==========================================================
+  // VERTICAL POSITION
+  // ==========================================================
 
   const getVerticalPosition =
     (position) => {
 
-      switch (position) {
+      switch (
+        position
+      ) {
 
         case "top":
           return "flex-start";
@@ -700,9 +750,7 @@ export default function HeroSlider() {
         case "center":
         default:
           return "center";
-
       }
-
     };
 
 
@@ -711,62 +759,60 @@ export default function HeroSlider() {
   // ==========================================================
 
   const bannerSettings =
-    storeSettings.bannerSettings ||
+    storeSettings?.bannerSettings ||
     defaultStoreSettings.bannerSettings;
 
 
   const featuresBar =
-    storeSettings.featuresBar ||
+    storeSettings?.featuresBar ||
     defaultStoreSettings.featuresBar;
 
 
   const theme =
-    storeSettings.theme ||
+    storeSettings?.theme ||
     defaultStoreSettings.theme;
 
 
   // ==========================================================
-  // FEATURES ITEMS
+  // FEATURE ITEMS
   // ==========================================================
 
   const featureItems =
     Array.isArray(
-      featuresBar.items
+      featuresBar?.items
     )
-
       ? featuresBar.items.filter(
           (item) =>
             item &&
             item.active !== false
         )
-
       : [];
 
 
   // ==========================================================
-  // FEATURES SPEED
+  // FEATURE SPEED
   // ==========================================================
 
   const featuresSpeed =
     Math.max(
       5,
       Number(
-        featuresBar.speed ?? 40
+        featuresBar?.speed ?? 40
       )
     );
 
 
   // ==========================================================
-  // FEATURES DIRECTION
+  // FEATURE DIRECTION
   // ==========================================================
 
   const featuresDirection =
-    featuresBar.direction ||
+    featuresBar?.direction ||
     "rtl";
 
 
   // ==========================================================
-  // FEATURES LOOP ITEMS
+  // DUPLICATE FEATURES
   // ==========================================================
 
   const duplicatedFeatureItems =
@@ -779,6 +825,51 @@ export default function HeroSlider() {
 
 
   // ==========================================================
+  // HERO STYLE
+  // ==========================================================
+
+  const heroStyle = {
+    "--hero-desktop-height":
+      `${Number(
+        bannerSettings?.heightDesktop ?? 420
+      )}px`,
+
+    "--hero-tablet-height":
+      `${Number(
+        bannerSettings?.heightTablet ?? 350
+      )}px`,
+
+    "--hero-mobile-height":
+      `${Number(
+        bannerSettings?.heightMobile ?? 240
+      )}px`,
+
+    "--hero-border-radius":
+      `${Number(
+        bannerSettings?.borderRadius ?? 0
+      )}px`,
+
+    "--hero-overlay-opacity":
+      Number(
+        bannerSettings?.overlayOpacity ?? 0.35
+      ),
+
+    "--features-height":
+      `${Number(
+        featuresBar?.height ?? 80
+      )}px`,
+
+    "--features-font-size":
+      `${Number(
+        featuresBar?.fontSize ?? 16
+      )}px`,
+
+    "--features-duration":
+      `${featuresSpeed}s`,
+  };
+
+
+  // ==========================================================
   // LOADING
   // ==========================================================
 
@@ -786,62 +877,8 @@ export default function HeroSlider() {
     loading &&
     slides.length === 0
   ) {
-
     return null;
-
   }
-
-
-  // ==========================================================
-  // HERO CSS VARIABLES
-  // ==========================================================
-
-  const heroStyle = {
-
-    "--hero-desktop-height":
-      `${Number(
-        bannerSettings.heightDesktop || 420
-      )}px`,
-
-    "--hero-tablet-height":
-      `${Number(
-        bannerSettings.heightTablet || 350
-      )}px`,
-
-    "--hero-mobile-height":
-      `${Number(
-        bannerSettings.heightMobile || 240
-      )}px`,
-
-    "--hero-border-radius":
-      `${Number(
-        bannerSettings.borderRadius || 0
-      )}px`,
-
-    "--hero-overlay-opacity":
-      Number(
-        bannerSettings.overlayOpacity ?? 0.35
-      ),
-
-
-    // ========================================================
-    // FEATURES
-    // ========================================================
-
-    "--features-height":
-      `${Number(
-        featuresBar.height || 80
-      )}px`,
-
-    "--features-font-size":
-      `${Number(
-        featuresBar.fontSize || 16
-      )}px`,
-
-    "--features-duration":
-      `${featuresSpeed}s`,
-
-  };
 
 
   // ==========================================================
@@ -849,7 +886,6 @@ export default function HeroSlider() {
   // ==========================================================
 
   return (
-
     <section
       className="hero-section"
       dir="rtl"
@@ -857,36 +893,38 @@ export default function HeroSlider() {
         ...heroStyle,
 
         background:
-          theme.pageBackground,
+          theme?.pageBackground ||
+          "#F0F4F8",
 
         marginTop: 0,
         paddingTop: 0,
       }}
     >
 
-
       {/* ====================================================
-          HERO
+          HERO WRAPPER
       ==================================================== */}
 
       <div
         className="hero-slider-wrapper"
         style={{
-
           borderRadius:
             `${Number(
-              bannerSettings.borderRadius || 0
+              bannerSettings?.borderRadius ?? 0
             )}px`,
 
           overflow:
             "hidden",
 
-          marginTop: 0,
-
+          marginTop:
+            0,
         }}
       >
 
         <Swiper
+          key={
+            `hero-swiper-${bannerVersion}`
+          }
 
           modules={[
             Autoplay,
@@ -905,13 +943,19 @@ export default function HeroSlider() {
             dynamicBullets: true,
           }}
 
-          navigation
+          navigation={true}
 
           loop={
             slides.length > 1
           }
 
           speed={800}
+
+          observer={true}
+
+          observeParents={true}
+
+          resizeObserver={true}
 
           className="hero-swiper"
         >
@@ -922,188 +966,231 @@ export default function HeroSlider() {
               index
             ) => {
 
-              const contentPosition = {
-
-                justifyContent:
-                  getVerticalPosition(
-                    slide.textPositionY
-                  ),
-
-                alignItems:
-                  getHorizontalPosition(
-                    slide.textPositionX
-                  ),
-
-              };
+              const horizontal =
+                getHorizontalPosition(
+                  slide?.textPositionX
+                );
 
 
-              const textStyle = {
+              const vertical =
+                getVerticalPosition(
+                  slide?.textPositionY
+                );
 
-                fontFamily:
-                  slide.fontFamily ||
-                  "Cairo",
 
-                color:
-                  slide.textColor ||
-                  "#ffffff",
+              const fontFamily =
+                slide?.fontFamily ||
+                "Cairo";
 
-                textAlign:
-                  slide.textAlign ||
-                  "right",
 
-              };
+              const textColor =
+                slide?.textColor ||
+                "#ffffff";
+
+
+              const fontWeight =
+                slide?.fontWeight ||
+                "700";
 
 
               return (
-
                 <SwiperSlide
                   key={
-                    slide.id ||
-                    `slide-${index}`
+                    `${slide?.id || "slide"}-${bannerVersion}-${index}`
                   }
                 >
+
+                  {/* =================================================
+                      SLIDE
+                  ================================================= */}
 
                   <div
                     className="hero-slide"
                     style={{
-
                       backgroundImage:
-                        `url("${slide.image}")`,
+                        slide?.image
+                          ? `url("${slide.image}")`
+                          : "none",
 
                       borderRadius:
                         `${Number(
-                          bannerSettings.borderRadius || 0
+                          bannerSettings?.borderRadius ?? 0
                         )}px`,
 
+                      backgroundPosition:
+                        "center",
+
+                      backgroundSize:
+                        "cover",
+
+                      backgroundRepeat:
+                        "no-repeat",
                     }}
                   >
+
+                    {/* ==============================================
+                        OVERLAY
+                    ============================================== */}
 
                     <div
                       className="hero-overlay"
                       style={{
                         background:
-                          `rgba(0, 0, 0, ${Number(
-                            bannerSettings.overlayOpacity ?? 0.35
+                          `rgba(0, 0, 0, ${Math.max(
+                            0,
+                            Math.min(
+                              1,
+                              Number(
+                                bannerSettings?.overlayOpacity ?? 0.35
+                              )
+                            )
                           )})`,
                       }}
                     >
 
+                      {/* ============================================
+                          CONTENT
+                      ============================================ */}
+
                       <div
                         className="hero-content"
                         style={{
-
-                          ...contentPosition,
-
                           height:
+                            "100%",
+
+                          width:
                             "100%",
 
                           display:
                             "flex",
 
-                          width:
-                            "100%",
+                          justifyContent:
+                            vertical,
+
+                          alignItems:
+                            horizontal,
+
+                          boxSizing:
+                            "border-box",
 
                           padding:
                             "30px 6%",
-
                         }}
                       >
 
                         <div
                           className="hero-text"
                           style={{
-
-                            ...textStyle,
-
                             width:
                               "100%",
 
+                            maxWidth:
+                              "100%",
+
+                            fontFamily,
+                            color:
+                              textColor,
+
+                            textAlign:
+                              slide?.textAlign ||
+                              "right",
                           }}
                         >
 
-                          <span
-                            className="hero-tag"
-                            style={{
+                          {/* ======================================
+                              TAG
+                          ====================================== */}
 
-                              fontFamily:
-                                slide.fontFamily ||
-                                "Cairo",
+                          {slide?.tag && (
+                            <span
+                              className="hero-tag"
+                              style={{
+                                display:
+                                  "inline-block",
 
-                              color:
-                                slide.textColor ||
-                                "#ffffff",
+                                fontFamily,
 
-                              fontWeight:
-                                slide.fontWeight ||
-                                "700",
+                                color:
+                                  textColor,
 
-                              textAlign:
-                                slide.textAlign ||
-                                "right",
+                                fontWeight,
 
-                            }}
-                          >
-
-                            {
-                              slide.tag ||
-                              "🔥 عرض خاص"
-                            }
-
-                          </span>
+                                textAlign:
+                                  slide?.textAlign ||
+                                  "right",
+                              }}
+                            >
+                              {
+                                slide.tag
+                              }
+                            </span>
+                          )}
 
 
-                          {slide.title && (
+                          {/* ======================================
+                              TITLE
+                          ====================================== */}
 
+                          {slide?.title && (
                             <h1
                               className="hero-title"
                               style={{
+                                fontFamily,
 
-                                ...textStyle,
+                                color:
+                                  textColor,
+
+                                textAlign:
+                                  slide?.textAlign ||
+                                  "right",
 
                                 fontSize:
                                   `${Math.max(
                                     16,
                                     Number(
-                                      slide.titleFontSize ||
+                                      slide?.titleFontSize ??
                                       42
                                     )
                                   )}px`,
 
-                                fontWeight:
-                                  slide.fontWeight ||
-                                  "700",
+                                fontWeight,
 
                                 lineHeight:
                                   "1.25",
 
                                 margin:
                                   "10px 0",
-
                               }}
                             >
-
                               {
                                 slide.title
                               }
-
                             </h1>
-
                           )}
 
 
-                          {slide.text && (
+                          {/* ======================================
+                              DESCRIPTION
+                          ====================================== */}
 
+                          {slide?.text && (
                             <p
                               className="hero-description"
                               style={{
+                                fontFamily,
 
-                                ...textStyle,
+                                color:
+                                  textColor,
+
+                                textAlign:
+                                  slide?.textAlign ||
+                                  "right",
 
                                 fontSize:
                                   `${Math.max(
                                     10,
                                     Number(
-                                      slide.descriptionFontSize ||
+                                      slide?.descriptionFontSize ??
                                       20
                                     )
                                   )}px`,
@@ -1116,42 +1203,41 @@ export default function HeroSlider() {
 
                                 margin:
                                   "8px 0 18px",
-
                               }}
                             >
-
                               {
                                 slide.text
                               }
-
                             </p>
-
                           )}
 
+
+                          {/* ======================================
+                              BUTTON
+                          ====================================== */}
 
                           <button
                             type="button"
                             className="hero-button"
+
                             onClick={() =>
                               handleBannerClick(
-                                slide.link
+                                slide?.link
                               )
                             }
+
                             style={{
+                              fontFamily,
 
-                              fontFamily:
-                                slide.fontFamily ||
-                                "Cairo",
+                              fontWeight,
 
-                              fontWeight:
-                                slide.fontWeight ||
-                                "700",
-
+                              cursor:
+                                "pointer",
                             }}
                           >
 
                             {
-                              slide.buttonText ||
+                              slide?.buttonText ||
                               "تسوق الآن"
                             }
 
@@ -1167,6 +1253,10 @@ export default function HeroSlider() {
 
                     </div>
 
+
+                    {/* ============================================
+                        SIDE BADGE
+                    ============================================ */}
 
                     <div
                       className="hero-side-badge"
@@ -1189,9 +1279,7 @@ export default function HeroSlider() {
                   </div>
 
                 </SwiperSlide>
-
               );
-
             }
           )}
 
@@ -1204,28 +1292,26 @@ export default function HeroSlider() {
           FEATURES BAR
       ==================================================== */}
 
-      {featuresBar.enabled !== false && (
-
+      {featuresBar?.enabled !== false && (
         <div
           className="hero-features"
           style={{
-
             height:
               `${Number(
-                featuresBar.height || 80
+                featuresBar?.height ?? 80
               )}px`,
 
             background:
-              featuresBar.background ||
+              featuresBar?.background ||
               "#FFFFFF",
 
             color:
-              featuresBar.color ||
+              featuresBar?.color ||
               "#071A36",
 
             fontSize:
               `${Number(
-                featuresBar.fontSize || 16
+                featuresBar?.fontSize ?? 16
               )}px`,
 
             overflow:
@@ -1245,19 +1331,12 @@ export default function HeroSlider() {
 
             marginTop:
               0,
-
           }}
         >
 
           <div
             className="hero-features-track"
             style={{
-
-              /*
-                بنثبت اتجاه الـ track على LTR
-                عشان حركة CSS تكون مستقرة.
-                اتجاه الموقع نفسه يفضل RTL.
-              */
               direction:
                 "ltr",
 
@@ -1284,7 +1363,6 @@ export default function HeroSlider() {
 
               willChange:
                 "transform",
-
             }}
           >
 
@@ -1297,36 +1375,30 @@ export default function HeroSlider() {
                 <div
                   className="hero-feature"
                   key={
-                    `feature-${index}`
+                    `feature-${bannerVersion}-${index}`
                   }
                   style={{
-
                     color:
-                      featuresBar.color ||
+                      featuresBar?.color ||
                       "#071A36",
 
                     flexShrink:
                       0,
-
                   }}
                 >
 
                   <span
                     className="hero-feature-icon"
                     style={{
-
                       color:
-                        featuresBar.accentColor ||
+                        featuresBar?.accentColor ||
                         "#D4AF37",
-
                     }}
                   >
-
                     {
-                      item.icon ||
+                      item?.icon ||
                       "⭐"
                     }
-
                   </span>
 
 
@@ -1334,62 +1406,48 @@ export default function HeroSlider() {
 
                     <strong
                       style={{
-
                         color:
-                          featuresBar.color ||
+                          featuresBar?.color ||
                           "#071A36",
 
                         fontSize:
                           `${Number(
-                            featuresBar.fontSize || 16
+                            featuresBar?.fontSize ?? 16
                           )}px`,
-
                       }}
                     >
-
                       {
-                        item.title ||
+                        item?.title ||
                         ""
                       }
-
                     </strong>
 
 
-                    {item.text && (
-
+                    {item?.text && (
                       <small
                         style={{
-
                           color:
-                            featuresBar.color ||
+                            featuresBar?.color ||
                             "#071A36",
-
                         }}
                       >
-
                         {
                           item.text
                         }
-
                       </small>
-
                     )}
 
                   </div>
 
                 </div>
-
               )
             )}
 
           </div>
 
         </div>
-
       )}
 
     </section>
-
   );
-
 }

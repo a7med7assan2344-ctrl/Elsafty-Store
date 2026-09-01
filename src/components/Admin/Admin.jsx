@@ -9674,444 +9674,2444 @@ function Admin() {
             </div>
           </div>
         )}
+{/* ====================================================
+    BANNERS
+==================================================== */}
 
-        {/* ====================================================
-            BANNERS
-        ==================================================== */}
+{tab === "banners" && (
 
-        {tab ===
-          "banners" && (
-          <div
-            className="table-container"
-          >
-            <div
-              className="section-header"
-            >
-              <div>
-                <h2>
-                  🖼️ إدارة البانرات
-                </h2>
+  <div className="table-container">
 
-                <p>
-                  إدارة البانرات الرئيسية للمتجر.
-                </p>
-              </div>
+    {/* ==================================================
+        HEADER
+    ================================================== */}
 
-              <button
-                type="button"
-                className="add-btn"
-                onClick={() =>
-                  openGenericForm(
-                    "banners",
-                    null
-                  )
-                }
-              >
-                ➕ إضافة بانر
-              </button>
+    <div className="section-header">
+
+      <div>
+
+        <h2>
+          🖼️ إدارة البانرات الاحترافية
+        </h2>
+
+        <p>
+          تحكم كامل في الصور والنصوص والألوان والخطوط
+          ومظهر البانر ومكان المحتوى.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        className="add-btn"
+        onClick={() => {
+
+          setGenericType("banners");
+
+          setGenericEditingId(null);
+
+          setGenericForm({
+
+            // ==============================
+            // BASIC
+            // ==============================
+
+            title: "",
+            text: "",
+            link: "/",
+            tag: "🔥 عرض خاص",
+            buttonText: "تسوق الآن",
+
+            // ==============================
+            // ORDER / STATUS
+            // ==============================
+
+            order: 0,
+            active: true,
+
+            // ==============================
+            // IMAGE
+            // ==============================
+
+            image: "",
+            imageFile: null,
+            imagePreview: "",
+
+            imageFit: "contain",
+            imagePosition: "center",
+
+            // ==============================
+            // FONT
+            // ==============================
+
+            fontFamily: "Cairo",
+            fontWeight: "700",
+
+            titleFontSize: 42,
+            descriptionFontSize: 20,
+
+            textAlign: "right",
+
+            textPositionX: "right",
+            textPositionY: "center",
+
+            // ==============================
+            // TEXT COLORS
+            // ==============================
+
+            titleColor: "#ffffff",
+            descriptionColor: "#ffffff",
+            tagColor: "#ffffff",
+
+            // backward compatibility
+            textColor: "#ffffff",
+
+            // ==============================
+            // TEXT PANEL
+            // ==============================
+
+            textPanelEnabled: true,
+
+            textPanelBackground: "#071A36",
+
+            textPanelOpacity: 0.72,
+
+            textPanelBorderRadius: 16,
+
+            textPanelPadding: 24,
+
+            textPanelWidth: 520,
+
+            // ==============================
+            // OVERLAY
+            // ==============================
+
+            overlayEnabled: true,
+            overlayColor: "#000000",
+            overlayOpacity: 0.35,
+
+            // ==============================
+            // BUTTON COLORS
+            // ==============================
+
+            buttonBackground: "#D4AF37",
+            buttonTextColor: "#071A36",
+
+          });
+
+          setShowGenericForm(true);
+
+        }}
+      >
+        ➕ إضافة بانر
+      </button>
+
+    </div>
+
+
+    {/* ==================================================
+        BANNER FORM
+    ================================================== */}
+
+    {showGenericForm &&
+      genericType === "banners" && (
+
+        <form
+          className="admin-form"
+          onSubmit={handleGenericSubmit}
+        >
+
+          {/* ==================================================
+              FORM TITLE
+          ================================================== */}
+
+          <h3>
+
+            {genericEditingId
+              ? "✏️ تعديل البانر"
+              : "➕ إضافة بانر جديد"}
+
+          </h3>
+
+
+          {/* ==================================================
+              BASIC CONTENT
+          ================================================== */}
+
+          <div className="admin-form-card">
+
+            <h3>
+              📝 محتوى البانر
+            </h3>
+
+
+            <div className="form-grid">
+
+              {/* ================================
+                  TITLE
+              ================================= */}
+
+              <label>
+
+                <span>
+                  عنوان البانر
+                </span>
+
+                <input
+                  type="text"
+                  name="title"
+                  value={
+                    genericForm.title || ""
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                  placeholder="مثال: خصومات حتى 50%"
+                />
+
+              </label>
+
+
+              {/* ================================
+                  DESCRIPTION
+              ================================= */}
+
+              <label>
+
+                <span>
+                  الوصف الرئيسي
+                </span>
+
+                <textarea
+                  name="text"
+                  rows="3"
+                  value={
+                    genericForm.text || ""
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                  placeholder="أفضل الأسعار على آلاف المنتجات"
+                />
+
+              </label>
+
+
+              {/* ================================
+                  TAG
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🏷️ الشارة
+                </span>
+
+                <input
+                  type="text"
+                  name="tag"
+                  value={
+                    genericForm.tag || ""
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                  placeholder="🔥 عرض خاص"
+                />
+
+              </label>
+
+
+              {/* ================================
+                  BUTTON TEXT
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🔘 نص الزر
+                </span>
+
+                <input
+                  type="text"
+                  name="buttonText"
+                  value={
+                    genericForm.buttonText || ""
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                  placeholder="تسوق الآن"
+                />
+
+              </label>
+
+
+              {/* ================================
+                  LINK
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🔗 الرابط
+                </span>
+
+                <input
+                  type="text"
+                  name="link"
+                  dir="ltr"
+                  value={
+                    genericForm.link || ""
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                  placeholder="/ أو /category/..."
+                />
+
+              </label>
+
+
+              {/* ================================
+                  ORDER
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🔢 ترتيب البانر
+                </span>
+
+                <input
+                  type="number"
+                  name="order"
+                  min="0"
+                  value={
+                    genericForm.order ?? 0
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
             </div>
 
-            {showGenericForm &&
-              genericType ===
-                "banners" && (
-                <form
-                  className="admin-form"
-                  onSubmit={
-                    handleGenericSubmit
+          </div>
+
+
+          {/* ==================================================
+              IMAGE
+          ================================================== */}
+
+          <div className="admin-form-card">
+
+            <h3>
+              🖼️ صورة البانر
+            </h3>
+
+
+            <div className="form-grid">
+
+              {/* ================================
+                  UPLOAD
+              ================================= */}
+
+              <label className="form-group-full">
+
+                <span>
+                  اختيار صورة البانر
+                </span>
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/jpg"
+                  onChange={(event) => {
+
+                    const file =
+                      event.target.files?.[0];
+
+                    if (!file) {
+                      return;
+                    }
+
+                    if (
+                      ![
+                        "image/jpeg",
+                        "image/jpg",
+                        "image/png",
+                        "image/webp",
+                      ].includes(file.type)
+                    ) {
+
+                      alert(
+                        "من فضلك اختر JPG أو PNG أو WEBP فقط."
+                      );
+
+                      event.target.value = "";
+
+                      return;
+                    }
+
+                    if (
+                      file.size >
+                      10 * 1024 * 1024
+                    ) {
+
+                      alert(
+                        "حجم الصورة يجب ألا يتجاوز 10MB."
+                      );
+
+                      event.target.value = "";
+
+                      return;
+                    }
+
+                    const preview =
+                      URL.createObjectURL(file);
+
+                    setGenericForm(
+                      (previous) => ({
+
+                        ...previous,
+
+                        imageFile:
+                          file,
+
+                        imagePreview:
+                          preview,
+
+                      })
+                    );
+
+                  }}
+                />
+
+                <small
+                  style={{
+                    display: "block",
+                    marginTop: "7px",
+                    color: "#666",
+                  }}
+                >
+                  الصورة سيتم رفعها تلقائيًا إلى Cloudinary.
+                  يدعم JPG / PNG / WEBP حتى 10MB.
+                </small>
+
+              </label>
+
+
+              {/* ================================
+                  FIT
+              ================================= */}
+
+              <label>
+
+                <span>
+                  📐 طريقة احتواء الصورة
+                </span>
+
+                <select
+                  name="imageFit"
+                  value={
+                    genericForm.imageFit ||
+                    "contain"
+                  }
+                  onChange={
+                    handleGenericChange
                   }
                 >
-                  <h3>
-                    {genericEditingId
-                      ? "✏️ تعديل البانر"
-                      : "➕ إضافة بانر"}
-                  </h3>
 
-                  <div
-                    className="form-grid"
-                  >
-                    {[
-                      [
-                        "title",
-                        "عنوان البانر",
-                        "text",
-                      ],
-                      [
-                        "text",
-                        "وصف البانر",
-                        "text",
-                      ],
-                      [
-                        "link",
-                        "الرابط",
-                        "text",
-                      ],
-                      [
-                        "tag",
-                        "الشارة",
-                        "text",
-                      ],
-                      [
-                        "buttonText",
-                        "نص الزر",
-                        "text",
-                      ],
-                      [
-                        "order",
-                        "الترتيب",
-                        "number",
-                      ],
-                      [
-                        "fontFamily",
-                        "الخط",
-                        "text",
-                      ],
-                      [
-                        "titleFontSize",
-                        "حجم العنوان",
-                        "number",
-                      ],
-                      [
-                        "descriptionFontSize",
-                        "حجم الوصف",
-                        "number",
-                      ],
-                      [
-                        "fontWeight",
-                        "وزن الخط",
-                        "text",
-                      ],
-                      [
-                        "textAlign",
-                        "محاذاة النص",
-                        "text",
-                      ],
-                      [
-                        "textPositionX",
-                        "الموضع الأفقي",
-                        "text",
-                      ],
-                      [
-                        "textPositionY",
-                        "الموضع الرأسي",
-                        "text",
-                      ],
-                    ].map(
-                      (
-                        [
-                          name,
-                          label,
-                          type,
-                        ]
-                      ) => (
-                        <label
-                          key={
-                            name
-                          }
-                        >
-                          <span>
-                            {label}
-                          </span>
+                  <option value="contain">
+                    إظهار الصورة كاملة
+                  </option>
 
-                          <input
-                            type={
-                              type
-                            }
-                            name={
-                              name
-                            }
-                            value={
-                              genericForm[
-                                name
-                              ] ?? ""
-                            }
-                            onChange={
-                              handleGenericChange
-                            }
-                          />
-                        </label>
-                      )
-                    )}
+                  <option value="cover">
+                    ملء البانر بالكامل
+                  </option>
 
-                    <label>
-                      <span>
-                        🎨 لون النص
-                      </span>
+                </select>
 
-                      <input
-                        type="color"
-                        name="textColor"
-                        value={
+                <small
+                  style={{
+                    display: "block",
+                    marginTop: "6px",
+                    color: "#777",
+                  }}
+                >
+                  اختر "إظهار الصورة كاملة" لعرض الصورة كاملة
+                  مهما كان مقاسها الأصلي.
+                </small>
+
+              </label>
+
+
+              {/* ================================
+                  POSITION
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🎯 موضع الصورة
+                </span>
+
+                <select
+                  name="imagePosition"
+                  value={
+                    genericForm.imagePosition ||
+                    "center"
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                >
+
+                  <option value="center">
+                    المنتصف
+                  </option>
+
+                  <option value="top">
+                    أعلى
+                  </option>
+
+                  <option value="bottom">
+                    أسفل
+                  </option>
+
+                  <option value="left">
+                    يسار
+                  </option>
+
+                  <option value="right">
+                    يمين
+                  </option>
+
+                </select>
+
+              </label>
+
+            </div>
+
+
+            {/* ================================
+                IMAGE PREVIEW
+            ================================= */}
+
+            {(genericForm.image ||
+              genericForm.imagePreview) && (
+
+              <div
+                style={{
+                  marginTop: "20px",
+                  padding: "15px",
+                  border:
+                    "1px solid #e5e7eb",
+                  borderRadius: "14px",
+                  background: "#f8fafc",
+                }}
+              >
+
+                <strong
+                  style={{
+                    display: "block",
+                    marginBottom: "10px",
+                  }}
+                >
+                  👁️ معاينة الصورة
+                </strong>
+
+                <div
+                  style={{
+                    width: "100%",
+                    minHeight: "220px",
+                    maxHeight: "420px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                    borderRadius: "12px",
+                    background: "#111827",
+                  }}
+                >
+
+                  <img
+                    src={
+                      genericForm.imagePreview ||
+                      genericForm.image
+                    }
+                    alt="معاينة البانر"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      maxHeight: "400px",
+                      objectFit:
+                        genericForm.imageFit ||
+                        "contain",
+                      objectPosition:
+                        genericForm.imagePosition ||
+                        "center",
+                      display: "block",
+                    }}
+                  />
+
+                </div>
+
+              </div>
+
+            )}
+
+          </div>
+
+
+          {/* ==================================================
+              TYPOGRAPHY
+          ================================================== */}
+
+          <div className="admin-form-card">
+
+            <h3>
+              🔤 إعدادات الخطوط والنصوص
+            </h3>
+
+
+            <div className="form-grid">
+
+              {/* ================================
+                  FONT FAMILY
+              ================================= */}
+
+              <label>
+
+                <span>
+                  ✏️ نوع الخط
+                </span>
+
+                <select
+                  name="fontFamily"
+                  value={
+                    genericForm.fontFamily ||
+                    "Cairo"
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                >
+
+                  <option value="Cairo">
+                    Cairo
+                  </option>
+
+                  <option value="Tahoma">
+                    Tahoma
+                  </option>
+
+                  <option value="Arial">
+                    Arial
+                  </option>
+
+                  <option value="Verdana">
+                    Verdana
+                  </option>
+
+                  <option value="Trebuchet MS">
+                    Trebuchet MS
+                  </option>
+
+                  <option value="Georgia">
+                    Georgia
+                  </option>
+
+                  <option value="Times New Roman">
+                    Times New Roman
+                  </option>
+
+                  <option value="sans-serif">
+                    Sans Serif
+                  </option>
+
+                </select>
+
+              </label>
+
+
+              {/* ================================
+                  FONT WEIGHT
+              ================================= */}
+
+              <label>
+
+                <span>
+                  ⚖️ وزن الخط
+                </span>
+
+                <select
+                  name="fontWeight"
+                  value={
+                    genericForm.fontWeight ||
+                    "700"
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                >
+
+                  <option value="400">
+                    عادي
+                  </option>
+
+                  <option value="500">
+                    متوسط
+                  </option>
+
+                  <option value="600">
+                    شبه عريض
+                  </option>
+
+                  <option value="700">
+                    عريض
+                  </option>
+
+                  <option value="800">
+                    عريض جدًا
+                  </option>
+
+                  <option value="900">
+                    ثقيل
+                  </option>
+
+                </select>
+
+              </label>
+
+
+              {/* ================================
+                  TITLE SIZE
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🔠 حجم العنوان
+                </span>
+
+                <input
+                  type="number"
+                  name="titleFontSize"
+                  min="16"
+                  max="100"
+                  value={
+                    genericForm.titleFontSize ??
+                    42
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
+
+              {/* ================================
+                  DESCRIPTION SIZE
+              ================================= */}
+
+              <label>
+
+                <span>
+                  📝 حجم الوصف
+                </span>
+
+                <input
+                  type="number"
+                  name="descriptionFontSize"
+                  min="10"
+                  max="60"
+                  value={
+                    genericForm.descriptionFontSize ??
+                    20
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
+
+              {/* ================================
+                  TEXT ALIGN
+              ================================= */}
+
+              <label>
+
+                <span>
+                  ↔️ محاذاة النص
+                </span>
+
+                <select
+                  name="textAlign"
+                  value={
+                    genericForm.textAlign ||
+                    "right"
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                >
+
+                  <option value="right">
+                    يمين
+                  </option>
+
+                  <option value="center">
+                    منتصف
+                  </option>
+
+                  <option value="left">
+                    يسار
+                  </option>
+
+                </select>
+
+              </label>
+
+
+              {/* ================================
+                  HORIZONTAL POSITION
+              ================================= */}
+
+              <label>
+
+                <span>
+                  ↔️ موضع المحتوى أفقيًا
+                </span>
+
+                <select
+                  name="textPositionX"
+                  value={
+                    genericForm.textPositionX ||
+                    "right"
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                >
+
+                  <option value="right">
+                    يمين
+                  </option>
+
+                  <option value="center">
+                    منتصف
+                  </option>
+
+                  <option value="left">
+                    يسار
+                  </option>
+
+                </select>
+
+              </label>
+
+
+              {/* ================================
+                  VERTICAL POSITION
+              ================================= */}
+
+              <label>
+
+                <span>
+                  ↕️ موضع المحتوى رأسيًا
+                </span>
+
+                <select
+                  name="textPositionY"
+                  value={
+                    genericForm.textPositionY ||
+                    "center"
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                >
+
+                  <option value="top">
+                    أعلى
+                  </option>
+
+                  <option value="center">
+                    منتصف
+                  </option>
+
+                  <option value="bottom">
+                    أسفل
+                  </option>
+
+                </select>
+
+              </label>
+
+            </div>
+
+          </div>
+
+
+          {/* ==================================================
+              COLORS
+          ================================================== */}
+
+          <div className="admin-form-card">
+
+            <h3>
+              🎨 التحكم الكامل في الألوان
+            </h3>
+
+
+            <div className="form-grid">
+
+              {/* ================================
+                  TITLE COLOR
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🎨 لون العنوان
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+
+                  <input
+                    type="color"
+                    name="titleColor"
+                    value={
+                      genericForm.titleColor ||
+                      "#ffffff"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                    style={{
+                      width: "60px",
+                      height: "44px",
+                      padding: "3px",
+                      cursor: "pointer",
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    name="titleColor"
+                    dir="ltr"
+                    value={
+                      genericForm.titleColor ||
+                      "#ffffff"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                  />
+
+                </div>
+
+              </label>
+
+
+              {/* ================================
+                  DESCRIPTION COLOR
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🎨 لون الوصف
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+
+                  <input
+                    type="color"
+                    name="descriptionColor"
+                    value={
+                      genericForm.descriptionColor ||
+                      "#ffffff"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                    style={{
+                      width: "60px",
+                      height: "44px",
+                      padding: "3px",
+                      cursor: "pointer",
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    name="descriptionColor"
+                    dir="ltr"
+                    value={
+                      genericForm.descriptionColor ||
+                      "#ffffff"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                  />
+
+                </div>
+
+              </label>
+
+
+              {/* ================================
+                  TAG COLOR
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🏷️ لون الشارة
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+
+                  <input
+                    type="color"
+                    name="tagColor"
+                    value={
+                      genericForm.tagColor ||
+                      "#ffffff"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                    style={{
+                      width: "60px",
+                      height: "44px",
+                      padding: "3px",
+                      cursor: "pointer",
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    name="tagColor"
+                    dir="ltr"
+                    value={
+                      genericForm.tagColor ||
+                      "#ffffff"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                  />
+
+                </div>
+
+              </label>
+
+
+              {/* ================================
+                  BUTTON BACKGROUND
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🔘 خلفية الزر
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+
+                  <input
+                    type="color"
+                    name="buttonBackground"
+                    value={
+                      genericForm.buttonBackground ||
+                      "#D4AF37"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                    style={{
+                      width: "60px",
+                      height: "44px",
+                      padding: "3px",
+                      cursor: "pointer",
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    name="buttonBackground"
+                    dir="ltr"
+                    value={
+                      genericForm.buttonBackground ||
+                      "#D4AF37"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                  />
+
+                </div>
+
+              </label>
+
+
+              {/* ================================
+                  BUTTON TEXT
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🔘 لون نص الزر
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+
+                  <input
+                    type="color"
+                    name="buttonTextColor"
+                    value={
+                      genericForm.buttonTextColor ||
+                      "#071A36"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                    style={{
+                      width: "60px",
+                      height: "44px",
+                      padding: "3px",
+                      cursor: "pointer",
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    name="buttonTextColor"
+                    dir="ltr"
+                    value={
+                      genericForm.buttonTextColor ||
+                      "#071A36"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                  />
+
+                </div>
+
+              </label>
+
+
+              {/* ================================
+                  OVERLAY COLOR
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🌑 لون طبقة الصورة
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+
+                  <input
+                    type="color"
+                    name="overlayColor"
+                    value={
+                      genericForm.overlayColor ||
+                      "#000000"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                    style={{
+                      width: "60px",
+                      height: "44px",
+                      padding: "3px",
+                      cursor: "pointer",
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    name="overlayColor"
+                    dir="ltr"
+                    value={
+                      genericForm.overlayColor ||
+                      "#000000"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                  />
+
+                </div>
+
+              </label>
+
+
+              {/* ================================
+                  OVERLAY OPACITY
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🌑 شفافية طبقة الصورة
+                </span>
+
+                <input
+                  type="number"
+                  name="overlayOpacity"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={
+                    genericForm.overlayOpacity ??
+                    0.35
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
+            </div>
+
+          </div>
+
+
+          {/* ==================================================
+              TEXT PANEL / BACKGROUND
+          ================================================== */}
+
+          <div className="admin-form-card">
+
+            <h3>
+              🪟 خلفية النص الرئيسية والثانوية
+            </h3>
+
+
+            <div className="form-grid">
+
+              {/* ================================
+                  ENABLE
+              ================================= */}
+
+              <label
+                className="admin-checkbox"
+                style={{
+                  alignSelf: "center",
+                }}
+              >
+
+                <input
+                  type="checkbox"
+                  name="textPanelEnabled"
+                  checked={
+                    genericForm.textPanelEnabled !==
+                    false
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+                <span>
+                  إظهار خلفية خلف النص
+                </span>
+
+              </label>
+
+
+              {/* ================================
+                  BACKGROUND COLOR
+              ================================= */}
+
+              <label>
+
+                <span>
+                  🎨 لون خلفية النص
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+
+                  <input
+                    type="color"
+                    name="textPanelBackground"
+                    value={
+                      genericForm.textPanelBackground ||
+                      "#071A36"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                    style={{
+                      width: "60px",
+                      height: "44px",
+                      padding: "3px",
+                      cursor: "pointer",
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    name="textPanelBackground"
+                    dir="ltr"
+                    value={
+                      genericForm.textPanelBackground ||
+                      "#071A36"
+                    }
+                    onChange={
+                      handleGenericChange
+                    }
+                  />
+
+                </div>
+
+              </label>
+
+
+              {/* ================================
+                  OPACITY
+              ================================= */}
+
+              <label>
+
+                <span>
+                  💧 شفافية خلفية النص
+                </span>
+
+                <input
+                  type="number"
+                  name="textPanelOpacity"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={
+                    genericForm.textPanelOpacity ??
+                    0.72
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
+
+              {/* ================================
+                  RADIUS
+              ================================= */}
+
+              <label>
+
+                <span>
+                  ◼️ تدوير حواف خلفية النص
+                </span>
+
+                <input
+                  type="number"
+                  name="textPanelBorderRadius"
+                  min="0"
+                  max="50"
+                  value={
+                    genericForm.textPanelBorderRadius ??
+                    16
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
+
+              {/* ================================
+                  PADDING
+              ================================= */}
+
+              <label>
+
+                <span>
+                  📦 المسافة الداخلية للنص
+                </span>
+
+                <input
+                  type="number"
+                  name="textPanelPadding"
+                  min="0"
+                  max="80"
+                  value={
+                    genericForm.textPanelPadding ??
+                    24
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
+
+              {/* ================================
+                  WIDTH
+              ================================= */}
+
+              <label>
+
+                <span>
+                  ↔️ عرض صندوق النص
+                </span>
+
+                <input
+                  type="number"
+                  name="textPanelWidth"
+                  min="200"
+                  max="900"
+                  value={
+                    genericForm.textPanelWidth ??
+                    520
+                  }
+                  onChange={
+                    handleGenericChange
+                  }
+                />
+
+              </label>
+
+            </div>
+
+
+            <div
+              style={{
+                marginTop: "15px",
+                padding: "14px 16px",
+                borderRadius: "10px",
+                background: "#f8fafc",
+                border: "1px solid #e5e7eb",
+                lineHeight: "1.8",
+                color: "#475569",
+              }}
+            >
+
+              💡 يمكنك تشغيل أو إلغاء خلفية النص،
+              واختيار لونها وشفافيتها وحجمها وحوافها
+              بشكل مستقل عن صورة البانر.
+
+            </div>
+
+          </div>
+
+
+          {/* ==================================================
+              ACTIVE
+          ================================================== */}
+
+          <div className="admin-form-card">
+
+            <h3>
+              ⚙️ حالة البانر
+            </h3>
+
+
+            <div className="form-grid">
+
+              <label>
+
+                <span>
+                  ✅ حالة البانر
+                </span>
+
+                <select
+                  name="active"
+                  value={
+                    genericForm.active !==
+                    false
+                      ? "true"
+                      : "false"
+                  }
+                  onChange={(event) => {
+
+                    setGenericForm(
+                      (previous) => ({
+
+                        ...previous,
+
+                        active:
+                          event.target.value ===
+                          "true",
+
+                      })
+                    );
+
+                  }}
+                >
+
+                  <option value="true">
+                    🟢 مفعل
+                  </option>
+
+                  <option value="false">
+                    🔴 غير مفعل
+                  </option>
+
+                </select>
+
+              </label>
+
+            </div>
+
+          </div>
+
+
+          {/* ==================================================
+              LIVE PREVIEW
+          ================================================== */}
+
+          <div className="admin-form-card">
+
+            <h3>
+              👁️ معاينة البانر
+            </h3>
+
+
+            <div
+              style={{
+                width: "100%",
+                minHeight: "280px",
+                maxHeight: "520px",
+                overflow: "hidden",
+                borderRadius:
+                  `${Math.max(
+                    0,
+                    Number(
+                      genericForm.textPanelBorderRadius ??
+                      16
+                    )
+                  )}px`,
+                position: "relative",
+                background:
+                  "#111827",
+              }}
+            >
+
+              {/* ================================
+                  IMAGE
+              ================================= */}
+
+              {(genericForm.imagePreview ||
+                genericForm.image) ? (
+
+                <img
+                  src={
+                    genericForm.imagePreview ||
+                    genericForm.image
+                  }
+                  alt="معاينة البانر"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit:
+                      genericForm.imageFit ||
+                      "contain",
+                    objectPosition:
+                      genericForm.imagePosition ||
+                      "center",
+                    display: "block",
+                    background:
+                      "#111827",
+                  }}
+                />
+
+              ) : (
+
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    background:
+                      "#1f2937",
+                    fontSize: "18px",
+                  }}
+                >
+                  🖼️ اختر صورة البانر للمعاينة
+                </div>
+
+              )}
+
+
+              {/* ================================
+                  OVERLAY
+              ================================= */}
+
+              {genericForm.overlayEnabled !==
+                false && (
+
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      genericForm.overlayColor ||
+                      "#000000",
+                    opacity:
+                      Math.min(
+                        1,
+                        Math.max(
+                          0,
+                          Number(
+                            genericForm.overlayOpacity ??
+                            0.35
+                          )
+                        )
+                      ),
+                    pointerEvents:
+                      "none",
+                  }}
+                />
+
+              )}
+
+
+              {/* ================================
+                  CONTENT
+              ================================= */}
+
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems:
+                    genericForm.textPositionY ===
+                    "top"
+                      ? "flex-start"
+                      : genericForm.textPositionY ===
+                        "bottom"
+                      ? "flex-end"
+                      : "center",
+
+                  justifyContent:
+                    genericForm.textPositionX ===
+                    "left"
+                      ? "flex-start"
+                      : genericForm.textPositionX ===
+                        "center"
+                      ? "center"
+                      : "flex-end",
+
+                  padding:
+                    "25px",
+                }}
+              >
+
+                <div
+                  style={{
+                    width:
+                      `${Math.min(
+                        900,
+                        Math.max(
+                          200,
+                          Number(
+                            genericForm.textPanelWidth ??
+                            520
+                          )
+                        )
+                      )}px`,
+
+                    maxWidth:
+                      "92%",
+
+                    padding:
+                      genericForm.textPanelEnabled !==
+                      false
+                        ? `${Math.max(
+                            0,
+                            Number(
+                              genericForm.textPanelPadding ??
+                              24
+                            )
+                          )}px`
+                        : "0",
+
+                    borderRadius:
+                      `${Math.max(
+                        0,
+                        Number(
+                          genericForm.textPanelBorderRadius ??
+                          16
+                        )
+                      )}px`,
+
+                    background:
+                      genericForm.textPanelEnabled !==
+                      false
+                        ? genericForm.textPanelBackground ||
+                          "#071A36"
+                        : "transparent",
+
+                    opacity:
+                      1,
+
+                    position:
+                      "relative",
+
+                    textAlign:
+                      genericForm.textAlign ||
+                      "right",
+
+                    direction:
+                      "rtl",
+                  }}
+                >
+
+                  {/* ================================
+                      TAG
+                  ================================= */}
+
+                  {genericForm.tag && (
+
+                    <span
+                      style={{
+                        display:
+                          "inline-block",
+
+                        color:
+                          genericForm.tagColor ||
                           genericForm.textColor ||
-                          "#ffffff"
-                        }
-                        onChange={
-                          handleGenericChange
-                        }
-                      />
-                    </label>
+                          "#ffffff",
 
-                    <label>
-                      <span>
-                        ✅ الحالة
-                      </span>
+                        fontFamily:
+                          genericForm.fontFamily ||
+                          "Cairo",
 
-                      <select
-                        name="active"
-                        value={
-                          genericForm.active !==
-                          false
-                            ? "true"
-                            : "false"
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setGenericForm(
-                            (
-                              previous
-                            ) => ({
-                              ...previous,
-                              active:
-                                event.target
-                                  .value ===
-                                "true",
-                            })
-                          )
-                        }
-                      >
-                        <option value="true">
-                          مفعل
-                        </option>
+                        fontWeight:
+                          genericForm.fontWeight ||
+                          "700",
 
-                        <option value="false">
-                          غير مفعل
-                        </option>
-                      </select>
-                    </label>
-
-                    <label
-                      className="form-group-full"
+                        marginBottom:
+                          "8px",
+                      }}
                     >
-                      <span>
-                        🖼️ صورة البانر
-                      </span>
 
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(
-                          event
-                        ) =>
-                          setGenericForm(
-                            (
-                              previous
-                            ) => ({
-                              ...previous,
-                              imageFile:
-                                event.target
-                                  .files?.[0] ||
-                                null,
-                            })
-                          )
-                        }
-                      />
-
-                      {(genericForm.image ||
-                        genericForm.imagePreview) && (
-                        <img
-                          src={
-                            genericForm.imagePreview ||
-                            genericForm.image
-                          }
-                          alt="بانر"
-                          style={{
-                            width:
-                              "100%",
-                            maxHeight:
-                              "280px",
-                            objectFit:
-                              "cover",
-                            marginTop:
-                              "12px",
-                            borderRadius:
-                              "12px",
-                          }}
-                        />
-                      )}
-                    </label>
-                  </div>
-
-                  <div
-                    className="form-actions"
-                  >
-                    <button
-                      type="submit"
-                      className="save-btn"
-                      disabled={
-                        actionLoading
+                      {
+                        genericForm.tag
                       }
+
+                    </span>
+
+                  )}
+
+
+                  {/* ================================
+                      TITLE
+                  ================================= */}
+
+                  {genericForm.title && (
+
+                    <h2
+                      style={{
+                        margin:
+                          "6px 0",
+
+                        color:
+                          genericForm.titleColor ||
+                          genericForm.textColor ||
+                          "#ffffff",
+
+                        fontFamily:
+                          genericForm.fontFamily ||
+                          "Cairo",
+
+                        fontWeight:
+                          genericForm.fontWeight ||
+                          "700",
+
+                        fontSize:
+                          `${Math.max(
+                            16,
+                            Number(
+                              genericForm.titleFontSize ??
+                              42
+                            )
+                          )}px`,
+
+                        lineHeight:
+                          "1.25",
+                      }}
                     >
-                      💾 حفظ البانر
-                    </button>
+
+                      {
+                        genericForm.title
+                      }
+
+                    </h2>
+
+                  )}
+
+
+                  {/* ================================
+                      DESCRIPTION
+                  ================================= */}
+
+                  {genericForm.text && (
+
+                    <p
+                      style={{
+                        margin:
+                          "8px 0 16px",
+
+                        color:
+                          genericForm.descriptionColor ||
+                          genericForm.textColor ||
+                          "#ffffff",
+
+                        fontFamily:
+                          genericForm.fontFamily ||
+                          "Cairo",
+
+                        fontSize:
+                          `${Math.max(
+                            10,
+                            Number(
+                              genericForm.descriptionFontSize ??
+                              20
+                            )
+                          )}px`,
+
+                        fontWeight:
+                          "400",
+
+                        lineHeight:
+                          "1.8",
+                      }}
+                    >
+
+                      {
+                        genericForm.text
+                      }
+
+                    </p>
+
+                  )}
+
+
+                  {/* ================================
+                      BUTTON
+                  ================================= */}
+
+                  {genericForm.buttonText && (
 
                     <button
                       type="button"
-                      className="cancel-btn"
-                      onClick={
-                        closeGenericForm
-                      }
+                      style={{
+                        border: "none",
+                        padding:
+                          "11px 22px",
+                        borderRadius:
+                          "8px",
+
+                        background:
+                          genericForm.buttonBackground ||
+                          "#D4AF37",
+
+                        color:
+                          genericForm.buttonTextColor ||
+                          "#071A36",
+
+                        fontFamily:
+                          genericForm.fontFamily ||
+                          "Cairo",
+
+                        fontWeight:
+                          genericForm.fontWeight ||
+                          "700",
+
+                        cursor:
+                          "default",
+                      }}
                     >
-                      إلغاء
+
+                      {
+                        genericForm.buttonText
+                      }
+
+                      {" "}
+
+                      ←
+
                     </button>
-                  </div>
-                </form>
-              )}
 
-            <div
-              className="table-scroll"
-            >
-              <table
-                className="admin-table"
-              >
-                <thead>
-                  <tr>
-                    <th>
-                      الصورة
-                    </th>
-                    <th>
-                      العنوان
-                    </th>
-                    <th>
-                      الترتيب
-                    </th>
-                    <th>
-                      الحالة
-                    </th>
-                    <th>
-                      إجراءات
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {banners.length ===
-                    0 ? (
-                    <tr>
-                      <td
-                        colSpan="5"
-                      >
-                        لا توجد بانرات.
-                      </td>
-                    </tr>
-                  ) : (
-                    banners
-                      .slice()
-                      .sort(
-                        (
-                          a,
-                          b
-                        ) =>
-                          Number(
-                            a.order ||
-                              0
-                          ) -
-                          Number(
-                            b.order ||
-                              0
-                          )
-                      )
-                      .map(
-                        (
-                          banner
-                        ) => (
-                          <tr
-                            key={
-                              banner.id
-                            }
-                          >
-                            <td>
-                              {banner.image ? (
-                                <img
-                                  src={
-                                    banner.image
-                                  }
-                                  className="table-img"
-                                  alt={
-                                    banner.title ||
-                                    "بانر"
-                                  }
-                                />
-                              ) : (
-                                "🖼️"
-                              )}
-                            </td>
-
-                            <td>
-                              <strong>
-                                {banner.title ||
-                                  "بدون عنوان"}
-                              </strong>
-                            </td>
-
-                            <td>
-                              {banner.order ??
-                                0}
-                            </td>
-
-                            <td>
-                              {banner.active !==
-                              false ? (
-                                <span className="status-active">
-                                  🟢 مفعل
-                                </span>
-                              ) : (
-                                <span className="status-inactive">
-                                  🔴 متوقف
-                                </span>
-                              )}
-                            </td>
-
-                            <td>
-                              <div
-                                className="table-actions"
-                              >
-                                <button
-                                  type="button"
-                                  className="edit-btn"
-                                  onClick={() =>
-                                    openGenericForm(
-                                      "banners",
-                                      banner
-                                    )
-                                  }
-                                >
-                                  ✏️ تعديل
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="delete-btn"
-                                  onClick={() =>
-                                    deleteGenericItem(
-                                      "banners",
-                                      banner
-                                    )
-                                  }
-                                >
-                                  🗑️ حذف
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      )
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* ==================================================
+              ACTIONS
+          ================================================== */}
+
+          <div className="form-actions">
+
+            <button
+              type="submit"
+              className="save-btn"
+              disabled={
+                actionLoading
+              }
+            >
+
+              {actionLoading
+                ? "⏳ جاري حفظ البانر..."
+                : genericEditingId
+                ? "💾 حفظ تعديلات البانر"
+                : "💾 حفظ البانر"}
+
+            </button>
+
+
+            <button
+              type="button"
+              className="cancel-btn"
+              disabled={
+                actionLoading
+              }
+              onClick={
+                closeGenericForm
+              }
+            >
+              إلغاء
+            </button>
+
+          </div>
+
+        </form>
+
+      )}
+
+
+    {/* ==================================================
+        BANNERS TABLE
+    ================================================== */}
+
+    <div className="table-scroll">
+
+      <table className="admin-table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              الصورة
+            </th>
+
+            <th>
+              البانر
+            </th>
+
+            <th>
+              الترتيب
+            </th>
+
+            <th>
+              الحالة
+            </th>
+
+            <th>
+              إجراءات
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          {banners.length === 0 ? (
+
+            <tr>
+
+              <td
+                colSpan="5"
+                style={{
+                  textAlign: "center",
+                  padding: "35px",
+                }}
+              >
+                لا توجد بانرات حاليًا.
+              </td>
+
+            </tr>
+
+          ) : (
+
+            banners
+              .slice()
+              .sort(
+                (a, b) =>
+                  Number(
+                    a?.order ?? 0
+                  ) -
+                  Number(
+                    b?.order ?? 0
+                  )
+              )
+              .map(
+                (banner) => (
+
+                  <tr
+                    key={
+                      banner.id
+                    }
+                  >
+
+                    {/* ==========================
+                        IMAGE
+                    =========================== */}
+
+                    <td>
+
+                      {banner.image ? (
+
+                        <img
+                          src={
+                            banner.image
+                          }
+                          className="table-img"
+                          alt={
+                            banner.title ||
+                            "بانر"
+                          }
+                          style={{
+                            width:
+                              "150px",
+
+                            height:
+                              "70px",
+
+                            objectFit:
+                              banner.imageFit ||
+                              "contain",
+
+                            background:
+                              "#111827",
+
+                            borderRadius:
+                              "8px",
+                          }}
+                        />
+
+                      ) : (
+
+                        <div
+                          className="table-img-placeholder"
+                        >
+                          🖼️
+                        </div>
+
+                      )}
+
+                    </td>
+
+
+                    {/* ==========================
+                        CONTENT
+                    =========================== */}
+
+                    <td>
+
+                      <strong>
+                        {
+                          banner.title ||
+                          "بدون عنوان"
+                        }
+                      </strong>
+
+                      {banner.text && (
+
+                        <small
+                          style={{
+                            display:
+                              "block",
+
+                            marginTop:
+                              "5px",
+
+                            opacity:
+                              0.7,
+                          }}
+                        >
+                          {
+                            banner.text
+                          }
+                        </small>
+
+                      )}
+
+                    </td>
+
+
+                    {/* ==========================
+                        ORDER
+                    =========================== */}
+
+                    <td>
+
+                      {
+                        banner.order ??
+                        0
+                      }
+
+                    </td>
+
+
+                    {/* ==========================
+                        STATUS
+                    =========================== */}
+
+                    <td>
+
+                      {banner.active !==
+                      false ? (
+
+                        <span
+                          className="status-active"
+                        >
+                          🟢 مفعل
+                        </span>
+
+                      ) : (
+
+                        <span
+                          className="status-inactive"
+                        >
+                          🔴 متوقف
+                        </span>
+
+                      )}
+
+                    </td>
+
+
+                    {/* ==========================
+                        ACTIONS
+                    =========================== */}
+
+                    <td>
+
+                      <div
+                        className="table-actions"
+                      >
+
+                        {/* EDIT */}
+
+                        <button
+                          type="button"
+                          className="edit-btn"
+                          onClick={() => {
+
+                            setGenericType(
+                              "banners"
+                            );
+
+                            setGenericEditingId(
+                              banner.id
+                            );
+
+                            setGenericForm({
+
+                              // ======================
+                              // BASIC
+                              // ======================
+
+                              title:
+                                banner.title ||
+                                "",
+
+                              text:
+                                banner.text ||
+                                banner.description ||
+                                "",
+
+                              link:
+                                banner.link ||
+                                "/",
+
+                              tag:
+                                banner.tag ||
+                                banner.badge ||
+                                "🔥 عرض خاص",
+
+                              buttonText:
+                                banner.buttonText ||
+                                banner.button ||
+                                "تسوق الآن",
+
+                              order:
+                                Number(
+                                  banner.order ??
+                                  0
+                                ),
+
+                              active:
+                                banner.active !==
+                                false,
+
+                              // ======================
+                              // IMAGE
+                              // ======================
+
+                              image:
+                                banner.image ||
+                                "",
+
+                              imageFile:
+                                null,
+
+                              imagePreview:
+                                "",
+
+                              imageFit:
+                                banner.imageFit ||
+                                "contain",
+
+                              imagePosition:
+                                banner.imagePosition ||
+                                "center",
+
+                              // ======================
+                              // FONT
+                              // ======================
+
+                              fontFamily:
+                                banner.fontFamily ||
+                                "Cairo",
+
+                              fontWeight:
+                                banner.fontWeight ||
+                                "700",
+
+                              titleFontSize:
+                                Number(
+                                  banner.titleFontSize ??
+                                  42
+                                ),
+
+                              descriptionFontSize:
+                                Number(
+                                  banner.descriptionFontSize ??
+                                  20
+                                ),
+
+                              textAlign:
+                                banner.textAlign ||
+                                "right",
+
+                              textPositionX:
+                                banner.textPositionX ||
+                                "right",
+
+                              textPositionY:
+                                banner.textPositionY ||
+                                "center",
+
+                              // ======================
+                              // COLORS
+                              // ======================
+
+                              titleColor:
+                                banner.titleColor ||
+                                banner.textColor ||
+                                "#ffffff",
+
+                              descriptionColor:
+                                banner.descriptionColor ||
+                                banner.textColor ||
+                                "#ffffff",
+
+                              tagColor:
+                                banner.tagColor ||
+                                banner.textColor ||
+                                "#ffffff",
+
+                              textColor:
+                                banner.textColor ||
+                                "#ffffff",
+
+                              buttonBackground:
+                                banner.buttonBackground ||
+                                "#D4AF37",
+
+                              buttonTextColor:
+                                banner.buttonTextColor ||
+                                "#071A36",
+
+                              overlayEnabled:
+                                banner.overlayEnabled !==
+                                false,
+
+                              overlayColor:
+                                banner.overlayColor ||
+                                "#000000",
+
+                              overlayOpacity:
+                                Number(
+                                  banner.overlayOpacity ??
+                                  0.35
+                                ),
+
+                              // ======================
+                              // TEXT PANEL
+                              // ======================
+
+                              textPanelEnabled:
+                                banner.textPanelEnabled !==
+                                false,
+
+                              textPanelBackground:
+                                banner.textPanelBackground ||
+                                "#071A36",
+
+                              textPanelOpacity:
+                                Number(
+                                  banner.textPanelOpacity ??
+                                  0.72
+                                ),
+
+                              textPanelBorderRadius:
+                                Number(
+                                  banner.textPanelBorderRadius ??
+                                  16
+                                ),
+
+                              textPanelPadding:
+                                Number(
+                                  banner.textPanelPadding ??
+                                  24
+                                ),
+
+                              textPanelWidth:
+                                Number(
+                                  banner.textPanelWidth ??
+                                  520
+                                ),
+
+                            });
+
+                            setShowGenericForm(
+                              true
+                            );
+
+                          }}
+                        >
+                          ✏️ تعديل
+                        </button>
+
+
+                        {/* DELETE */}
+
+                        <button
+                          type="button"
+                          className="delete-btn"
+                          onClick={() =>
+                            deleteGenericItem(
+                              "banners",
+                              banner
+                            )
+                          }
+                        >
+                          🗑️ حذف
+                        </button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                )
+              )
+
+          )}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+)}
         {/* ====================================================
             WHEEL
         ==================================================== */}
