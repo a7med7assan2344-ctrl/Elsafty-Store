@@ -19,9 +19,7 @@ import {
   where,
 } from "firebase/firestore";
 
-import {
-  onAuthStateChanged,
-} from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 
 import {
   auth,
@@ -32,523 +30,1577 @@ import {
   CartContext,
 } from "../context/CartContext";
 
+import {
+  getGovernorates,
+  getDistricts,
+} from "egypt-geo-navigator";
+
 import "./Checkout.css";
 
+/* =====================================================
+   CLOUDINARY CONFIG
+===================================================== */
 
-function Checkout() {
+const CLOUDINARY_CLOUD_NAME = "wkcpvsqi";
 
+const CLOUDINARY_UPLOAD_PRESET =
+  import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET ||
+  "elsafty_store";
+
+const CLOUDINARY_UPLOAD_URL =
+  `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+const MAX_PAYMENT_PROOF_SIZE =
+  5 * 1024 * 1024;
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+const isFirestoreFieldValue = (value) =>
+  value &&
+  typeof value === "object" &&
+  typeof value._methodName === "string";
+
+const sanitizeForFirestore = (value) => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (isFirestoreFieldValue(value)) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) =>
+        sanitizeForFirestore(item)
+      )
+      .filter(
+        (item) =>
+          item !== undefined
+      );
+  }
+
+  if (typeof value === "object") {
+    const result = {};
+
+    Object.entries(value).forEach(
+      ([key, item]) => {
+        const sanitized =
+          sanitizeForFirestore(item);
+
+        if (
+          sanitized !== undefined
+        ) {
+          result[key] = sanitized;
+        }
+      }
+    );
+
+    return result;
+  }
+
+  return value;
+};
+
+const normalizePhone = (
+  phone = ""
+) => {
+  let value = String(phone)
+    .replace(/\D/g, "");
+
+  if (value.startsWith("0020")) {
+    value = value.slice(4);
+  }
+
+  if (
+    value.startsWith("20") &&
+    value.length >= 12
+  ) {
+    value = value.slice(2);
+  }
+
+  if (value.startsWith("0")) {
+    value = value.slice(1);
+  }
+
+  return value;
+};
+
+/* =====================================================
+   EGYPT LOCATION HELPERS
+===================================================== */
+
+const getLocationId = (item) => {
+  if (
+    item === null ||
+    item === undefined
+  ) {
+    return "";
+  }
+
+  if (
+    typeof item === "string" ||
+    typeof item === "number"
+  ) {
+    return String(item).trim();
+  }
+
+  return String(
+    item.id ??
+      item.code ??
+      item.value ??
+      item.locationId ??
+      item.location_id ??
+      item.districtId ??
+      item.district_id ??
+      item.governorateId ??
+      item.governorate_id ??
+      ""
+  ).trim();
+};
+
+/* =====================================================
+   FIX ARABIC ENCODING
+===================================================== */
+
+const fixArabicEncoding = (
+  value
+) => {
+  const text =
+    String(value ?? "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  if (
+    /[\u0600-\u06FF]/.test(text) &&
+    !/[ØÙÃÂ]/.test(text)
+  ) {
+    return text;
+  }
+
+  if (/[ØÙÃÂ]/.test(text)) {
+    try {
+      const bytes =
+        Uint8Array.from(
+          Array.from(text),
+          (char) =>
+            char.charCodeAt(0) & 0xff
+        );
+
+      const decoded =
+        new TextDecoder("utf-8").decode(
+          bytes
+        );
+
+      if (
+        decoded &&
+        decoded !== text &&
+        /[\u0600-\u06FF]/.test(
+          decoded
+        )
+      ) {
+        return decoded.trim();
+      }
+    } catch (error) {
+      console.warn(
+        "SWA Arabic encoding fix failed:",
+        error
+      );
+    }
+  }
+
+  return text;
+};
+
+/* =====================================================
+   READ LOCATION NAME
+===================================================== */
+
+const getReadableLocationName = (
+  item
+) => {
+  if (
+    item === null ||
+    item === undefined
+  ) {
+    return "";
+  }
+
+  if (
+    typeof item === "string" ||
+    typeof item === "number"
+  ) {
+    return fixArabicEncoding(item);
+  }
+
+  const value =
+    item.nameAr ??
+    item.name_ar ??
+    item.arabicName ??
+    item.arabic_name ??
+    item.name ??
+    item.label ??
+    item.title ??
+    item.locationName ??
+    item.location_name ??
+    item.villageName ??
+    item.village_name ??
+    item.areaName ??
+    item.area_name ??
+    item.townName ??
+    item.town_name ??
+    item.nameEn ??
+    item.name_en ??
+    "";
+
+  return fixArabicEncoding(value);
+};
+
+/* =====================================================
+   NORMALIZE LOCATION ARRAY
+===================================================== */
+
+const normalizeLocationArray = (
+  result
+) => {
+  if (!result) {
+    return [];
+  }
+
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  const possibleKeys = [
+    "locations",
+    "villages",
+    "village",
+    "data",
+    "results",
+    "items",
+    "records",
+    "towns",
+    "areas",
+    "children",
+    "districts",
+    "governorates",
+  ];
+
+  for (const key of possibleKeys) {
+    if (
+      Array.isArray(result?.[key])
+    ) {
+      return result[key];
+    }
+  }
+
+  if (
+    typeof result === "object"
+  ) {
+    const values =
+      Object.values(result);
+
+    const arrayValue =
+      values.find((item) =>
+        Array.isArray(item)
+      );
+
+    if (arrayValue) {
+      return arrayValue;
+    }
+
+    const objectValues =
+      values.filter(
+        (item) =>
+          item &&
+          typeof item === "object"
+      );
+
+    if (objectValues.length) {
+      return objectValues;
+    }
+  }
+
+  return [];
+};
+
+/* =====================================================
+   PREPARE LOCATIONS
+===================================================== */
+
+const prepareLocations = (
+  result
+) => {
+  const source =
+    normalizeLocationArray(result);
+
+  const seenIds = new Set();
+  const seenNames = new Set();
+
+  const locations = source
+    .map((item) => {
+      if (
+        item === null ||
+        item === undefined
+      ) {
+        return null;
+      }
+
+      if (
+        typeof item === "string" ||
+        typeof item === "number"
+      ) {
+        const value =
+          String(item).trim();
+
+        if (!value) {
+          return null;
+        }
+
+        return {
+          id: value,
+          nameAr:
+            fixArabicEncoding(value),
+          name:
+            fixArabicEncoding(value),
+          nameEn: value,
+        };
+      }
+
+      const id =
+        getLocationId(item);
+
+      const name =
+        getReadableLocationName(item);
+
+      if (!id && !name) {
+        return null;
+      }
+
+      const nameAr =
+        fixArabicEncoding(
+          item.nameAr ??
+            item.name_ar ??
+            item.arabicName ??
+            item.arabic_name ??
+            item.name ??
+            name
+        );
+
+      const nameValue =
+        fixArabicEncoding(
+          item.name ??
+            item.nameAr ??
+            item.name_ar ??
+            item.arabicName ??
+            item.arabic_name ??
+            name
+        );
+
+      return {
+        ...item,
+
+        id:
+          id ||
+          name,
+
+        nameAr,
+
+        name:
+          nameValue,
+
+        nameEn:
+          item.nameEn ??
+          item.name_en ??
+          "",
+      };
+    })
+    .filter(Boolean)
+    .filter((item) => {
+      const id =
+        String(
+          item.id || ""
+        ).trim();
+
+      const name =
+        String(
+          getReadableLocationName(item) ||
+            ""
+        ).trim();
+
+      const nameKey =
+        name.toLowerCase();
+
+      if (
+        id &&
+        seenIds.has(id)
+      ) {
+        return false;
+      }
+
+      if (
+        nameKey &&
+        seenNames.has(nameKey)
+      ) {
+        return false;
+      }
+
+      if (id) {
+        seenIds.add(id);
+      }
+
+      if (nameKey) {
+        seenNames.add(nameKey);
+      }
+
+      return true;
+    });
+
+  locations.sort((a, b) => {
+    const nameA =
+      getReadableLocationName(a);
+
+    const nameB =
+      getReadableLocationName(b);
+
+    return String(nameA).localeCompare(
+      String(nameB),
+      "ar",
+      {
+        sensitivity: "base",
+      }
+    );
+  });
+
+  return locations;
+};
+
+/* =====================================================
+   MONEY
+===================================================== */
+
+const formatMoney = (
+  value
+) =>
+  `${Number(
+    value || 0
+  ).toFixed(2)} جنيه`;
+
+/* =====================================================
+   ORDER NUMBER
+===================================================== */
+
+const generateOrderNumber = () => {
+  const now = new Date();
+
+  const datePart =
+    `${now.getFullYear()}${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}${String(
+      now.getDate()
+    ).padStart(2, "0")}`;
+
+  const timePart =
+    `${String(
+      now.getHours()
+    ).padStart(2, "0")}${String(
+      now.getMinutes()
+    ).padStart(2, "0")}${String(
+      now.getSeconds()
+    ).padStart(2, "0")}`;
+
+  const randomPart =
+    Math.floor(
+      1000 +
+      Math.random() * 9000
+    );
+
+  return `SWA-${datePart}-${timePart}-${randomPart}`;
+};
+
+/* =====================================================
+   COMPONENT
+===================================================== */
+
+const Checkout = () => {
   const navigate = useNavigate();
-
   const location = useLocation();
 
+  const {
+    cart,
+    setCart,
+  } = useContext(CartContext);
 
-  // ==================================================
-  // AUTH
-  // ==================================================
+  /* =====================================================
+     AUTH
+  ===================================================== */
 
-  const [user, setUser] =
-    useState(null);
+  const [
+    user,
+    setUser,
+  ] = useState(null);
 
-  const [authLoading, setAuthLoading] =
-    useState(true);
+  const [
+    authLoading,
+    setAuthLoading,
+  ] = useState(true);
 
+  /* =====================================================
+     CUSTOMER
+  ===================================================== */
+
+  const [
+    name,
+    setName,
+  ] = useState("");
+
+  const [
+    phone,
+    setPhone,
+  ] = useState("");
+
+  const [
+    address,
+    setAddress,
+  ] = useState("");
+
+  const [
+    notes,
+    setNotes,
+  ] = useState("");
+
+  /* =====================================================
+     LOCATIONS
+  ===================================================== */
+
+  const [
+    governorates,
+    setGovernorates,
+  ] = useState([]);
+
+  const [
+    cities,
+    setCities,
+  ] = useState([]);
+
+  const [
+    villages,
+    setVillages,
+  ] = useState([]);
+
+  const [
+    selectedGovernorate,
+    setSelectedGovernorate,
+  ] = useState("");
+
+  const [
+    selectedCity,
+    setSelectedCity,
+  ] = useState("");
+
+  const [
+    selectedVillage,
+    setSelectedVillage,
+  ] = useState("");
+
+  /* =====================================================
+     SEPARATE LOCATION LOADING STATES
+===================================================== */
+
+  const [
+    governoratesLoading,
+    setGovernoratesLoading,
+  ] = useState(false);
+
+  const [
+    citiesLoading,
+    setCitiesLoading,
+  ] = useState(false);
+
+  const [
+    villagesLoading,
+    setVillagesLoading,
+  ] = useState(false);
+
+  /* =====================================================
+     FIRESTORE DATA
+===================================================== */
+
+  const [
+    categories,
+    setCategories,
+  ] = useState([]);
+
+  const [
+    paymentMethods,
+    setPaymentMethods,
+  ] = useState([]);
+
+  const [
+    shippingZones,
+    setShippingZones,
+  ] = useState([]);
+
+  const [
+    dataLoading,
+    setDataLoading,
+  ] = useState(true);
+
+  /* =====================================================
+     PAYMENT
+===================================================== */
+
+  const [
+    selectedPaymentMethod,
+    setSelectedPaymentMethod,
+  ] = useState("");
+
+  const [
+    paymentProofFile,
+    setPaymentProofFile,
+  ] = useState(null);
+
+  const [
+    paymentProofPreview,
+    setPaymentProofPreview,
+  ] = useState("");
+
+  const [
+    paymentProofUrl,
+    setPaymentProofUrl,
+  ] = useState("");
+
+  const [
+    paymentProofPublicId,
+    setPaymentProofPublicId,
+  ] = useState("");
+
+  const [
+    paymentProofAssetId,
+    setPaymentProofAssetId,
+  ] = useState("");
+
+  const [
+    paymentProofUploading,
+    setPaymentProofUploading,
+  ] = useState(false);
+
+  /* =====================================================
+     SHIPPING
+===================================================== */
+
+  const [
+    selectedShippingZone,
+    setSelectedShippingZone,
+  ] = useState("");
+
+  /* =====================================================
+     COUPON
+===================================================== */
+
+  const [
+    couponCode,
+    setCouponCode,
+  ] = useState("");
+
+  const [
+    couponData,
+    setCouponData,
+  ] = useState(null);
+
+  const [
+    couponLoading,
+    setCouponLoading,
+  ] = useState(false);
+
+  const [
+    couponError,
+    setCouponError,
+  ] = useState("");
+
+  /* =====================================================
+     ORDER
+===================================================== */
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  /* =====================================================
+     WHEEL
+===================================================== */
+
+  const [
+    wheelPrize,
+    setWheelPrize,
+  ] = useState(null);
+
+  /* =====================================================
+     AUTH LISTENER
+===================================================== */
 
   useEffect(() => {
-
     const unsubscribe =
       onAuthStateChanged(
         auth,
         (currentUser) => {
-
-          setUser(
-            currentUser || null
-          );
-
+          setUser(currentUser);
           setAuthLoading(false);
 
+          if (currentUser) {
+            setName(
+              currentUser.displayName ||
+                currentUser.email?.split(
+                  "@"
+                )[0] ||
+                ""
+            );
+          }
         }
       );
+
+    return () =>
+      unsubscribe();
+  }, []);
+
+  /* =====================================================
+     PAYMENT PREVIEW CLEANUP
+===================================================== */
+
+  useEffect(() => {
+    return () => {
+      if (paymentProofPreview) {
+        URL.revokeObjectURL(
+          paymentProofPreview
+        );
+      }
+    };
+  }, [paymentProofPreview]);
+
+  /* =====================================================
+     LOAD GOVERNORATES
+===================================================== */
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadGovernorates =
+      async () => {
+        try {
+          setGovernoratesLoading(true);
+
+          console.log(
+            "SWA loading governorates..."
+          );
+
+          const result =
+            getGovernorates();
+
+          const prepared =
+            prepareLocations(result);
+
+          console.log(
+            "SWA GOVERNORATES RAW:",
+            result
+          );
+
+          console.log(
+            "SWA GOVERNORATES:",
+            prepared
+          );
+
+          if (mounted) {
+            setGovernorates(
+              prepared
+            );
+          }
+        } catch (error) {
+          console.error(
+            "SWA GOVERNORATES ERROR:",
+            error
+          );
+
+          if (mounted) {
+            setGovernorates([]);
+          }
+        } finally {
+          if (mounted) {
+            setGovernoratesLoading(false);
+          }
+        }
+      };
+
+    loadGovernorates();
 
     return () => {
-      unsubscribe();
+      mounted = false;
     };
-
   }, []);
 
-
-  // ==================================================
-  // CART CONTEXT
-  // ==================================================
-
-  const cartContext =
-    useContext(CartContext);
-
-  const cart =
-    Array.isArray(cartContext?.cart)
-      ? cartContext.cart
-      : [];
-
-  const setCart =
-    cartContext?.setCart;
-
-
-  // ==================================================
-  // CUSTOMER DATA
-  // ==================================================
-
-  const [name, setName] =
-    useState("");
-
-  const [phone, setPhone] =
-    useState("");
-
-  const [address, setAddress] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-
-  // ==================================================
-  // FIREBASE DATA
-  // ==================================================
-
-  const [categories, setCategories] =
-    useState([]);
-
-  const [categoriesLoading, setCategoriesLoading] =
-    useState(true);
-
-  const [paymentMethods, setPaymentMethods] =
-    useState([]);
-
-  const [paymentMethodsLoading, setPaymentMethodsLoading] =
-    useState(true);
-
-  const [paymentMethod, setPaymentMethod] =
-    useState("");
-
-  const [shippingZones, setShippingZones] =
-    useState([]);
-
-  const [shippingZonesLoading, setShippingZonesLoading] =
-    useState(true);
-
-  const [selectedShippingZone, setSelectedShippingZone] =
-    useState("");
-
-
-  // ==================================================
-  // COUPON
-  // ==================================================
-
-  const [couponCode, setCouponCode] =
-    useState("");
-
-  const [appliedCoupon, setAppliedCoupon] =
-    useState(null);
-
-  const [couponLoading, setCouponLoading] =
-    useState(false);
-
-  const [couponError, setCouponError] =
-    useState("");
-
-  const [couponMessage, setCouponMessage] =
-    useState("");
-
-
-  // ==================================================
-  // WHEEL PRIZE
-  // ==================================================
-
-  const [wheelPrize, setWheelPrize] =
-    useState(null);
-
-
-  // ==================================================
-  // LOAD WHEEL PRIZE
-  // ==================================================
+  /* =====================================================
+     LOAD CITIES / DISTRICTS
+===================================================== */
 
   useEffect(() => {
+    let mounted = true;
 
-    try {
+    if (!selectedGovernorate) {
+      setCities([]);
+      setSelectedCity("");
+      setVillages([]);
+      setSelectedVillage("");
+      setCitiesLoading(false);
+      setVillagesLoading(false);
 
-      let savedPrize = null;
+      return () => {
+        mounted = false;
+      };
+    }
 
-      const statePrize =
-        location?.state?.discountData;
+    const loadCities =
+      async () => {
+        try {
+          setCitiesLoading(true);
 
-      if (
-        statePrize &&
-        typeof statePrize === "object"
-      ) {
+          setCities([]);
+          setSelectedCity("");
 
-        savedPrize =
-          statePrize;
+          setVillages([]);
+          setSelectedVillage("");
 
-      } else {
+          const governorateId =
+            String(
+              selectedGovernorate
+            ).trim();
 
-        const localPrize =
-          localStorage.getItem(
-            "elsafty_wheel_prize"
+          console.log(
+            "================================"
           );
 
-        if (localPrize) {
+          console.log(
+            "SWA LOADING DISTRICTS"
+          );
 
-          const parsedPrize =
-            JSON.parse(
-              localPrize
+          console.log(
+            "Governorate ID:",
+            governorateId
+          );
+
+          console.log(
+            "================================"
+          );
+
+          const result =
+            getDistricts(
+              governorateId
             );
 
-          if (
-            parsedPrize &&
-            typeof parsedPrize === "object"
-          ) {
+          const prepared =
+            prepareLocations(result);
 
-            savedPrize =
-              parsedPrize;
+          console.log(
+            "SWA DISTRICTS RAW:",
+            result
+          );
 
+          console.log(
+            "SWA DISTRICTS:",
+            prepared
+          );
+
+          console.log(
+            "SWA DISTRICTS COUNT:",
+            prepared.length
+          );
+
+          if (mounted) {
+            setCities(prepared);
+          }
+        } catch (error) {
+          console.error(
+            "SWA DISTRICTS ERROR:",
+            error
+          );
+
+          if (mounted) {
+            setCities([]);
+            setSelectedCity("");
+            setVillages([]);
+            setSelectedVillage("");
+          }
+        } finally {
+          if (mounted) {
+            setCitiesLoading(false);
+          }
+        }
+      };
+
+    loadCities();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedGovernorate]);
+
+  /* =====================================================
+     LOAD VILLAGES / AREAS
+     
+     لا نستخدم getLocations()
+     لأن المكتبة تستخدم require()
+     داخلياً وهذا لا يعمل بشكل صحيح
+     مع Vite.
+     
+     نقرأ ملف JSON من public مباشرة.
+===================================================== */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (
+      !selectedGovernorate ||
+      !selectedCity
+    ) {
+      setVillages([]);
+      setSelectedVillage("");
+      setVillagesLoading(false);
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadVillages =
+      async () => {
+        try {
+          setVillagesLoading(true);
+
+          setVillages([]);
+          setSelectedVillage("");
+
+          const governorateId =
+            String(
+              selectedGovernorate
+            )
+              .trim()
+              .padStart(2, "0");
+
+          const cityId =
+            String(
+              selectedCity
+            ).trim();
+
+          console.log(
+            "================================"
+          );
+
+          console.log(
+            "SWA LOAD VILLAGES"
+          );
+
+          console.log(
+            "Governorate ID:",
+            governorateId
+          );
+
+          console.log(
+            "City / District ID:",
+            cityId
+          );
+
+          console.log(
+            "================================"
+          );
+
+          /* =============================================
+             BASE URL
+          ============================================= */
+
+          const baseUrl =
+            import.meta.env.BASE_URL || "/";
+
+          const normalizedBaseUrl =
+            baseUrl.endsWith("/")
+              ? baseUrl
+              : `${baseUrl}/`;
+
+          const jsonUrl =
+            `${normalizedBaseUrl}egypt-geo/governorates/gov-${governorateId}.json`;
+
+          console.log(
+            "SWA JSON URL:",
+            jsonUrl
+          );
+
+          /* =============================================
+             FETCH JSON
+          ============================================= */
+
+          const response =
+            await fetch(
+              jsonUrl,
+              {
+                cache: "no-store",
+              }
+            );
+
+          console.log(
+            "SWA JSON STATUS:",
+            response.status
+          );
+
+          console.log(
+            "SWA JSON OK:",
+            response.ok
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              `فشل تحميل ملف المحافظة: ${response.status}`
+            );
           }
 
-        }
+          const governorateData =
+            await response.json();
 
-      }
-
-      if (savedPrize) {
-
-        setWheelPrize(
-          savedPrize
-        );
-
-      }
-
-    } catch (error) {
-
-      console.error(
-        "Wheel Prize Load Error:",
-        error
-      );
-
-      setWheelPrize(null);
-
-    }
-
-  }, [location]);
-
-
-  // ==================================================
-  // LOAD CATEGORIES
-  // ==================================================
-
-  useEffect(() => {
-
-    const loadCategories = async () => {
-
-      try {
-
-        setCategoriesLoading(true);
-
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              "categories"
-            )
+          console.log(
+            "SWA GOVERNORATE DATA:",
+            governorateData
           );
 
-        const data =
-          snapshot.docs.map(
-            (item) => ({
-              id: item.id,
-              ...item.data(),
-            })
+          /* =============================================
+             DISTRICTS
+          ============================================= */
+
+          const districts =
+            Array.isArray(
+              governorateData?.districts
+            )
+              ? governorateData.districts
+              : [];
+
+          console.log(
+            "SWA DISTRICTS COUNT:",
+            districts.length
           );
 
-        setCategories(data);
+          /* =============================================
+             FIND DISTRICT BY ID
+          ============================================= */
 
-      } catch (error) {
+          let selectedDistrict =
+            districts.find(
+              (district) =>
+                String(
+                  district?.id ?? ""
+                ).trim() === cityId
+            ) || null;
 
-        console.error(
-          "Categories Error:",
-          error
-        );
+          /* =============================================
+             FALLBACK ID SEARCH
+          ============================================= */
 
-        setCategories([]);
+          if (!selectedDistrict) {
+            selectedDistrict =
+              districts.find(
+                (district) => {
+                  const possibleIds = [
+                    district?.id,
+                    district?.code,
+                    district?.value,
+                    district?.locationId,
+                    district?.location_id,
+                    district?.districtId,
+                    district?.district_id,
+                  ]
+                    .filter(
+                      (value) =>
+                        value !==
+                          null &&
+                        value !==
+                          undefined &&
+                        String(
+                          value
+                        ).trim() !== ""
+                    )
+                    .map(
+                      (value) =>
+                        String(
+                          value
+                        ).trim()
+                    );
 
-      } finally {
+                  return possibleIds.includes(
+                    cityId
+                  );
+                }
+              ) || null;
+          }
 
-        setCategoriesLoading(false);
-
-      }
-
-    };
-
-    loadCategories();
-
-  }, []);
-
-
-  // ==================================================
-  // LOAD PAYMENT METHODS
-  // ==================================================
-
-  useEffect(() => {
-
-    const loadPaymentMethods = async () => {
-
-      try {
-
-        setPaymentMethodsLoading(true);
-
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              "paymentMethods"
-            )
+          console.log(
+            "SWA SELECTED DISTRICT:",
+            selectedDistrict
           );
 
-        const data =
-          snapshot.docs
-            .map(
-              (item) => ({
-                id: item.id,
-                ...item.data(),
-              })
-            )
-            .filter(
-              (item) =>
-                item.active !== false
+          /* =============================================
+             DISTRICT NOT FOUND
+          ============================================= */
+
+          if (!selectedDistrict) {
+            console.warn(
+              "SWA DISTRICT NOT FOUND",
+              {
+                governorateId,
+                cityId,
+
+                availableDistricts:
+                  districts.map(
+                    (district) => ({
+                      id:
+                        district?.id,
+
+                      nameAr:
+                        fixArabicEncoding(
+                          district?.nameAr
+                        ),
+
+                      nameEn:
+                        district?.nameEn,
+
+                      locationsCount:
+                        Array.isArray(
+                          district?.locations
+                        )
+                          ? district
+                              .locations
+                              .length
+                          : 0,
+                    })
+                  ),
+              }
             );
 
-        if (data.length === 0) {
+            if (!cancelled) {
+              setVillages([]);
+              setSelectedVillage("");
+            }
 
-          setPaymentMethods([
-            {
-              id: "cash_on_delivery",
-              title: "الدفع عند الاستلام",
-              name: "الدفع عند الاستلام",
-              icon: "💵",
-              number: "",
-              description:
-                "ادفع قيمة الطلب عند استلامه",
-              active: true,
-            },
-          ]);
+            return;
+          }
 
-        } else {
+          /* =============================================
+             READ LOCATIONS
+          ============================================= */
 
-          setPaymentMethods(data);
+          let locations = [];
 
+          if (
+            Array.isArray(
+              selectedDistrict.locations
+            )
+          ) {
+            locations =
+              selectedDistrict.locations;
+          } else if (
+            Array.isArray(
+              selectedDistrict.villages
+            )
+          ) {
+            locations =
+              selectedDistrict.villages;
+          } else if (
+            Array.isArray(
+              selectedDistrict.areas
+            )
+          ) {
+            locations =
+              selectedDistrict.areas;
+          } else if (
+            Array.isArray(
+              selectedDistrict.children
+            )
+          ) {
+            locations =
+              selectedDistrict.children;
+          }
+
+          console.log(
+            "SWA RAW LOCATIONS:",
+            locations
+          );
+
+          console.log(
+            "SWA RAW LOCATIONS COUNT:",
+            locations.length
+          );
+
+          /* =============================================
+             PREPARE LOCATIONS
+          ============================================= */
+
+          const prepared =
+            prepareLocations(
+              locations
+            );
+
+          console.log(
+            "SWA FINAL VILLAGES:",
+            prepared
+          );
+
+          console.log(
+            "SWA FINAL VILLAGES COUNT:",
+            prepared.length
+          );
+
+          if (!cancelled) {
+            setVillages(
+              prepared
+            );
+
+            setSelectedVillage("");
+          }
+        } catch (error) {
+          console.error(
+            "SWA VILLAGES ERROR:",
+            error
+          );
+
+          if (!cancelled) {
+            setVillages([]);
+            setSelectedVillage("");
+          }
+        } finally {
+          if (!cancelled) {
+            setVillagesLoading(false);
+          }
         }
+      };
 
-      } catch (error) {
+    loadVillages();
 
-        console.error(
-          "Payment Methods Error:",
-          error
-        );
-
-        setPaymentMethods([
-          {
-            id: "cash_on_delivery",
-            title: "الدفع عند الاستلام",
-            name: "الدفع عند الاستلام",
-            icon: "💵",
-            number: "",
-            description:
-              "ادفع قيمة الطلب عند استلامه",
-            active: true,
-          },
-        ]);
-
-      } finally {
-
-        setPaymentMethodsLoading(false);
-
-      }
-
+    return () => {
+      cancelled = true;
     };
-
-    loadPaymentMethods();
-
-  }, []);
-
-
-  // ==================================================
-  // SET DEFAULT PAYMENT METHOD
-  // ==================================================
-
-  useEffect(() => {
-
-    if (
-      paymentMethods.length === 0
-    ) {
-      return;
-    }
-
-    const exists =
-      paymentMethods.some(
-        (item) =>
-          String(item.id) ===
-          String(paymentMethod)
-      );
-
-    if (!exists) {
-
-      const cashMethod =
-        paymentMethods.find(
-          (item) =>
-            String(item.id) ===
-              "cash_on_delivery" ||
-            String(item.id) ===
-              "cash" ||
-            String(item.id) ===
-              "cod"
-        );
-
-      setPaymentMethod(
-        cashMethod?.id ||
-        paymentMethods[0].id
-      );
-
-    }
-
   }, [
-    paymentMethods,
-    paymentMethod,
+    selectedGovernorate,
+    selectedCity,
   ]);
 
-
-  // ==================================================
-  // LOAD SHIPPING ZONES
-  // ==================================================
+  /* =====================================================
+     LOAD FIRESTORE DATA
+===================================================== */
 
   useEffect(() => {
+    let mounted = true;
 
-    const loadShippingZones = async () => {
+    const loadData =
+      async () => {
+        try {
+          setDataLoading(true);
 
-      try {
+          const [
+            categoriesSnapshot,
+            paymentMethodsSnapshot,
+            shippingZonesSnapshot,
+          ] =
+            await Promise.all([
+              getDocs(
+                collection(
+                  db,
+                  "categories"
+                )
+              ),
 
-        setShippingZonesLoading(true);
+              getDocs(
+                collection(
+                  db,
+                  "paymentMethods"
+                )
+              ),
 
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              "shippingZones"
-            )
-          );
+              getDocs(
+                collection(
+                  db,
+                  "shippingZones"
+                )
+              ),
+            ]);
 
-        const data =
-          snapshot.docs
-            .map(
-              (item) => ({
-                id: item.id,
-                ...item.data(),
+          if (!mounted) {
+            return;
+          }
+
+          const loadedCategories =
+            categoriesSnapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
               })
-            )
-            .filter(
-              (item) =>
-                item.active !== false
             );
 
-        setShippingZones(data);
+          const loadedPaymentMethods =
+            paymentMethodsSnapshot.docs
+              .map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              }))
+              .filter(
+                (method) =>
+                  method.active !== false
+              );
 
-      } catch (error) {
+          const loadedShippingZones =
+            shippingZonesSnapshot.docs
+              .map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              }))
+              .filter(
+                (zone) =>
+                  zone.active !== false
+              );
 
-        console.error(
-          "Shipping Zones Error:",
-          error
-        );
+          setCategories(
+            loadedCategories
+          );
 
-        setShippingZones([]);
+          setPaymentMethods(
+            loadedPaymentMethods.length
+              ? loadedPaymentMethods
+              : [
+                  {
+                    id: "cash_on_delivery",
+                    name:
+                      "الدفع عند الاستلام",
+                    active: true,
+                  },
+                ]
+          );
 
-      } finally {
+          setShippingZones(
+            loadedShippingZones
+          );
 
-        setShippingZonesLoading(false);
+          const cashMethod =
+            loadedPaymentMethods.find(
+              (method) => {
+                const id =
+                  String(
+                    method.id || ""
+                  ).toLowerCase();
 
-      }
+                const methodName =
+                  String(
+                    method.name || ""
+                  ).toLowerCase();
 
+                return (
+                  id ===
+                    "cash_on_delivery" ||
+                  id === "cash" ||
+                  id === "cod" ||
+                  methodName.includes(
+                    "الاستلام"
+                  )
+                );
+              }
+            );
+
+          if (cashMethod) {
+            setSelectedPaymentMethod(
+              cashMethod.id
+            );
+          } else if (
+            loadedPaymentMethods.length
+          ) {
+            setSelectedPaymentMethod(
+              loadedPaymentMethods[0]
+                .id
+            );
+          } else {
+            setSelectedPaymentMethod(
+              "cash_on_delivery"
+            );
+          }
+        } catch (error) {
+          console.error(
+            "Failed to load checkout data:",
+            error
+          );
+
+          if (mounted) {
+            setPaymentMethods([
+              {
+                id: "cash_on_delivery",
+                name:
+                  "الدفع عند الاستلام",
+                active: true,
+              },
+            ]);
+
+            setSelectedPaymentMethod(
+              "cash_on_delivery"
+            );
+          }
+        } finally {
+          if (mounted) {
+            setDataLoading(false);
+          }
+        }
+      };
+
+    loadData();
+
+    return () => {
+      mounted = false;
     };
-
-    loadShippingZones();
-
   }, []);
 
+  /* =====================================================
+     LOAD WHEEL PRIZE
+===================================================== */
 
-  // ==================================================
-  // NORMALIZE PHONE
-  // ==================================================
+  useEffect(() => {
+    try {
+      const statePrize =
+        location.state?.discountData;
 
-  const normalizePhone = (
-    value
-  ) => {
-
-    let cleanPhone =
-      String(
-        value || ""
-      )
-        .replace(
-          /\D/g,
-          ""
+      if (statePrize) {
+        setWheelPrize(
+          statePrize
         );
 
-    if (
-      cleanPhone.startsWith("00")
-    ) {
+        return;
+      }
 
-      cleanPhone =
-        cleanPhone.slice(2);
+      const storedPrize =
+        localStorage.getItem(
+          "elsafty_wheel_prize"
+        );
 
+      if (storedPrize) {
+        setWheelPrize(
+          JSON.parse(
+            storedPrize
+          )
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Failed to load wheel prize:",
+        error
+      );
+    }
+  }, [location.state]);
+
+  /* =====================================================
+     SELECTED PAYMENT
+===================================================== */
+
+  const selectedPayment =
+    useMemo(() => {
+      return paymentMethods.find(
+        (method) =>
+          method.id ===
+          selectedPaymentMethod
+      );
+    }, [
+      paymentMethods,
+      selectedPaymentMethod,
+    ]);
+
+  /* =====================================================
+     CASH PAYMENT
+===================================================== */
+
+  const isCashPayment =
+    useMemo(() => {
+      if (!selectedPayment) {
+        return true;
+      }
+
+      const id =
+        String(
+          selectedPayment.id || ""
+        ).toLowerCase();
+
+      const nameValue =
+        String(
+          selectedPayment.name ||
+            ""
+        ).toLowerCase();
+
+      return (
+        id ===
+          "cash_on_delivery" ||
+        id === "cash" ||
+        id === "cod" ||
+        nameValue.includes(
+          "الدفع عند الاستلام"
+        ) ||
+        nameValue.includes(
+          "الدفع عند التسليم"
+        ) ||
+        nameValue.includes(
+          "cash on delivery"
+        )
+      );
+    }, [selectedPayment]);
+
+  /* =====================================================
+     PAYMENT NUMBER
+===================================================== */
+
+  const getPaymentNumber = (
+    method
+  ) => {
+    if (!method) {
+      return "";
     }
 
-    if (
-      cleanPhone.startsWith("0")
-    ) {
-
-      cleanPhone =
-        "20" +
-        cleanPhone.slice(1);
-
-    }
-
-    return cleanPhone;
-
+    return (
+      method.number ||
+      method.phone ||
+      method.paymentNumber ||
+      method.accountNumber ||
+      method.walletNumber ||
+      ""
+    );
   };
 
-
-  // ==================================================
-  // CATEGORY MAP
-  // ==================================================
+  /* =====================================================
+     CATEGORY MAP
+===================================================== */
 
   const categoryMap =
     useMemo(() => {
-
       const map = {};
 
       categories.forEach(
         (category) => {
-
           map[category.id] =
             category;
-
         }
       );
 
       return map;
-
     }, [categories]);
 
-
-  // ==================================================
-  // FIND CATEGORY FOR PRODUCT
-  // ==================================================
+  /* =====================================================
+     FIND PRODUCT CATEGORY
+===================================================== */
 
   const findCategoryForProduct =
     (product) => {
-
       if (!product) {
         return null;
       }
@@ -556,644 +1608,334 @@ function Checkout() {
       const categoryId =
         product.categoryId ||
         product.categoryID ||
-        product.category_id ||
-        product.category?.id ||
-        product.category?.categoryId ||
-        null;
-
+        product.category ||
+        product.category_id;
 
       if (
-        categoryId
+        categoryId &&
+        categoryMap[categoryId]
       ) {
-
-        const directCategory =
-          categories.find(
-            (item) =>
-              String(item.id) ===
-              String(categoryId)
-          );
-
-        if (
-          directCategory
-        ) {
-
-          return directCategory;
-
-        }
-
+        return categoryMap[
+          categoryId
+        ];
       }
 
+      const categoryName =
+        product.categoryName ||
+        product.categoryTitle ||
+        product.category_name;
 
-      if (
-        typeof product.category ===
-        "string"
-      ) {
-
-        const category =
+      if (categoryName) {
+        return (
           categories.find(
-            (item) =>
-              String(item.id) ===
+            (category) =>
+              String(
+                category.name || ""
+              ).trim() ===
                 String(
-                  product.category
-                ) ||
+                  categoryName
+                ).trim() ||
               String(
-                item.categoryNumber
-              ) ===
+                category.title || ""
+              ).trim() ===
                 String(
-                  product.category
-                ) ||
-              String(
-                item.name || ""
-              )
-                .trim()
-                .toLowerCase() ===
-                String(
-                  product.category || ""
-                )
-                  .trim()
-                  .toLowerCase()
-          );
-
-        if (
-          category
-        ) {
-
-          return category;
-
-        }
-
-      }
-
-
-      const categoryNumber =
-        product.categoryNumber ||
-        product.categoryNo ||
-        product.departmentNumber ||
-        null;
-
-
-      if (
-        categoryNumber !== null &&
-        categoryNumber !== undefined &&
-        categoryNumber !== ""
-      ) {
-
-        const category =
-          categories.find(
-            (item) =>
-              String(
-                item.categoryNumber
-              ) ===
-              String(
-                categoryNumber
-              )
-          );
-
-        if (
-          category
-        ) {
-
-          return category;
-
-        }
-
+                  categoryName
+                ).trim()
+          ) || null
+        );
       }
 
       return null;
-
     };
 
-
-  // ==================================================
-  // GET CATEGORY WHATSAPP
-  // القسم ثم الأب ثم الجد
-  // ==================================================
+  /* =====================================================
+     CATEGORY WHATSAPP
+===================================================== */
 
   const getCategoryWhatsapp =
-    (product) => {
-
-      let category =
-        findCategoryForProduct(
-          product
-        );
-
-      const visited =
-        new Set();
-
-      while (
-        category &&
-        !visited.has(
-          category.id
-        )
-      ) {
-
-        visited.add(
-          category.id
-        );
-
-        const rawWhatsapp =
-          category.whatsapp ||
-          category.whatsappPhone ||
-          category.whatsappNumber ||
-          category.phone ||
-          category.phoneNumber ||
-          category.contactPhone ||
-          "";
-
-        const whatsapp =
-          normalizePhone(
-            rawWhatsapp
-          );
-
-        if (
-          whatsapp
-        ) {
-
-          return {
-            id:
-              category.id,
-
-            name:
-              category.name ||
-              "قسم",
-
-            whatsapp,
-          };
-
-        }
-
-
-        if (
-          category.parentId
-        ) {
-
-          category =
-            categoryMap[
-              category.parentId
-            ] ||
-            categories.find(
-              (item) =>
-                String(item.id) ===
-                String(
-                  category.parentId
-                )
-            );
-
-        } else {
-
-          category = null;
-
-        }
-
+    (category) => {
+      if (!category) {
+        return "";
       }
 
-      return null;
-
+      return (
+        category.whatsapp ||
+        category.whatsApp ||
+        category.whatsappNumber ||
+        category.phone ||
+        category.phoneNumber ||
+        ""
+      );
     };
 
-
-  // ==================================================
-  // GET ALL DEPARTMENTS USED BY CART
-  // ==================================================
+  /* =====================================================
+     ORDER DEPARTMENTS
+===================================================== */
 
   const getDepartmentsForOrder =
     () => {
+      const departments = [];
 
-      const departmentMap =
-        new Map();
+      cart.forEach(
+        (product) => {
+          const category =
+            findCategoryForProduct(
+              product
+            );
 
-      for (
-        const item of cart
-      ) {
+          const whatsapp =
+            getCategoryWhatsapp(
+              category
+            );
 
-        const department =
-          getCategoryWhatsapp(
-            item
-          );
+          if (!whatsapp) {
+            return;
+          }
 
-        if (
-          !department
-        ) {
+          const normalized =
+            normalizePhone(
+              whatsapp
+            );
 
-          continue;
+          if (!normalized) {
+            return;
+          }
 
+          const existing =
+            departments.find(
+              (department) =>
+                department.whatsapp ===
+                normalized
+            );
+
+          if (!existing) {
+            departments.push({
+              id:
+                category?.id ||
+                "",
+              name:
+                category?.name ||
+                category?.title ||
+                "قسم الطلبات",
+              whatsapp:
+                normalized,
+            });
+          }
         }
-
-        if (
-          !departmentMap.has(
-            department.id
-          )
-        ) {
-
-          departmentMap.set(
-            department.id,
-            department
-          );
-
-        }
-
-      }
-
-      return Array.from(
-        departmentMap.values()
       );
 
+      return departments;
     };
 
-
-  // ==================================================
-  // PAYMENT HELPERS
-  // ==================================================
-
-  const getPaymentMethodText =
-    (methodId) => {
-
-      const method =
-        paymentMethods.find(
-          (item) =>
-            String(item.id) ===
-            String(methodId)
-        );
-
-      if (
-        method?.title
-      ) {
-
-        return method.title;
-
-      }
-
-      const value =
-        String(
-          methodId || ""
-        )
-          .toLowerCase()
-          .trim();
-
-      const fallback = {
-
-        cash_on_delivery:
-          "الدفع عند الاستلام",
-
-        cash:
-          "الدفع عند الاستلام",
-
-        cod:
-          "الدفع عند الاستلام",
-
-        vodafone_cash:
-          "Vodafone Cash",
-
-        we_pay:
-          "WE Pay",
-
-        instapay:
-          "InstaPay",
-
-        card:
-          "الدفع الإلكتروني",
-
-        online:
-          "الدفع الإلكتروني",
-      };
-
-      return (
-        fallback[value] ||
-        methodId ||
-        "غير محدد"
-      );
-
-    };
-
-
-  const getPaymentNumber =
-    (methodId) => {
-
-      const method =
-        paymentMethods.find(
-          (item) =>
-            String(item.id) ===
-            String(methodId)
-        );
-
-      return (
-        method?.number ||
-        method?.phone ||
-        method?.paymentNumber ||
-        ""
-      );
-
-    };
-
-
-  const isCashPayment =
-    [
-      "cash_on_delivery",
-      "cash",
-      "cod",
-    ].includes(
-      String(
-        paymentMethod || ""
-      ).toLowerCase()
-    );
-
-
-  // ==================================================
-  // TOTALS
-  // ==================================================
+  /* =====================================================
+     SUBTOTAL
+===================================================== */
 
   const subtotal =
-    cart.reduce(
-      (sum, item) => {
+    useMemo(() => {
+      return cart.reduce(
+        (total, product) => {
+          const price =
+            Number(
+              product.salePrice ??
+                product.discountPrice ??
+                product.price ??
+                0
+            );
 
-        const price =
-          Number(
-            item?.price || 0
+          const quantity =
+            Number(
+              product.quantity ??
+                product.qty ??
+                product.count ??
+                1
+            );
+
+          return (
+            total +
+            price * quantity
           );
+        },
+        0
+      );
+    }, [cart]);
 
-        const quantity =
-          Number(
-            item?.quantity || 0
-          );
-
-        return (
-          sum +
-          price * quantity
-        );
-
-      },
-      0
-    );
-
-
-  // ==================================================
-  // WHEEL PRIZE TYPE
-  // ==================================================
-
-  const wheelPrizeType =
-    String(
-      wheelPrize?.type ||
-      ""
-    )
-      .toLowerCase()
-      .trim();
-
-
-  // ==================================================
-  // WHEEL DISCOUNT
-  // ==================================================
+  /* =====================================================
+     WHEEL DISCOUNT
+===================================================== */
 
   const wheelDiscount =
     useMemo(() => {
-
-      if (
-        !wheelPrize
-      ) {
-
+      if (!wheelPrize) {
         return 0;
-
       }
 
+      const value =
+        Number(
+          wheelPrize.discount ??
+            wheelPrize.discountValue ??
+            wheelPrize.value ??
+            0
+        );
+
+      const type =
+        String(
+          wheelPrize.type ||
+            wheelPrize.discountType ||
+            ""
+        ).toLowerCase();
 
       if (
-        wheelPrizeType ===
-          "discount" ||
-        wheelPrizeType ===
-          "percentage"
+        type.includes("percent") ||
+        type.includes("percentage") ||
+        type.includes("نسبة")
       ) {
-
-        const percentage =
-          Number(
-            wheelPrize.value || 0
-          );
-
-        if (
-          percentage <= 0
-        ) {
-
-          return 0;
-
-        }
-
         return Math.min(
           subtotal,
-          (
-            subtotal *
-            percentage
-          ) /
+          (subtotal * value) /
             100
         );
-
       }
 
-
-      if (
-        wheelPrizeType ===
-        "fixed"
-      ) {
-
-        const fixedAmount =
-          Number(
-            wheelPrize.value || 0
-          );
-
-        if (
-          fixedAmount <= 0
-        ) {
-
-          return 0;
-
-        }
-
+      if (value > 0) {
         return Math.min(
           subtotal,
-          fixedAmount
+          value
         );
-
       }
 
-
       return 0;
-
     }, [
       wheelPrize,
-      wheelPrizeType,
       subtotal,
     ]);
 
+  const subtotalAfterWheel =
+    Math.max(
+      0,
+      subtotal - wheelDiscount
+    );
 
-  // ==================================================
-  // SELECTED SHIPPING ZONE
-  // ==================================================
+  /* =====================================================
+     SHIPPING ZONE
+===================================================== */
 
   const selectedZone =
-    shippingZones.find(
-      (zone) =>
-        String(zone.id) ===
-        String(
+    useMemo(() => {
+      return shippingZones.find(
+        (zone) =>
+          zone.id ===
           selectedShippingZone
-        )
-    ) || null;
+      );
+    }, [
+      shippingZones,
+      selectedShippingZone,
+    ]);
 
-
-  // ==================================================
-  // NORMAL SHIPPING COST
-  // ==================================================
-
-  const normalShippingCost =
-    selectedZone
-      ? Math.max(
-          Number(
-            selectedZone.price ??
-            selectedZone.shippingCost ??
-            selectedZone.cost ??
-            selectedZone.amount ??
-            0
-          ),
-          0
-        )
-      : 0;
-
-
-  // ==================================================
-  // FREE SHIPPING FROM WHEEL
-  // ==================================================
-
-  const hasFreeShippingPrize =
-    wheelPrizeType ===
-    "free-shipping";
-
-
-  // ==================================================
-  // FINAL SHIPPING COST
-  // ==================================================
+  /* =====================================================
+     SHIPPING COST
+===================================================== */
 
   const shippingCost =
-    hasFreeShippingPrize
-      ? 0
-      : normalShippingCost;
+    useMemo(() => {
+      if (!selectedZone) {
+        return 0;
+      }
 
+      return Number(
+        selectedZone.price ??
+          selectedZone.shippingCost ??
+          selectedZone.cost ??
+          0
+      );
+    }, [selectedZone]);
 
-  // ==================================================
-  // SHIPPING ZONE NAME
-  // ==================================================
-
-  const shippingZoneName =
-    selectedZone?.name ||
-    selectedZone?.title ||
-    "";
-
-
-  // ==================================================
-  // COUPON DISCOUNT
-  // ==================================================
+  /* =====================================================
+     COUPON DISCOUNT
+===================================================== */
 
   const couponDiscount =
-    appliedCoupon
-      ? String(
-          appliedCoupon.type ||
-          ""
-        )
-          .toLowerCase()
-          .trim() ===
-        "percentage"
+    useMemo(() => {
+      if (!couponData) {
+        return 0;
+      }
 
-        ? Math.min(
-            subtotal,
-            subtotal *
-              (
-                Number(
-                  appliedCoupon.value ||
-                  0
-                ) /
-                100
-              )
-          )
+      const value =
+        Number(
+          couponData.value ??
+            couponData.discount ??
+            couponData.amount ??
+            0
+        );
 
-        : Math.min(
-            subtotal,
-            Number(
-              appliedCoupon.value ||
-              0
-            )
-          )
+      const type =
+        String(
+          couponData.type ||
+            couponData.discountType ||
+            "fixed"
+        ).toLowerCase();
 
-      : 0;
+      if (
+        type === "percentage" ||
+        type === "percent" ||
+        type === "نسبة"
+      ) {
+        return Math.min(
+          subtotalAfterWheel,
+          (subtotalAfterWheel *
+            value) /
+            100
+        );
+      }
 
+      return Math.min(
+        subtotalAfterWheel,
+        value
+      );
+    }, [
+      couponData,
+      subtotalAfterWheel,
+    ]);
 
-  // ==================================================
-  // TOTAL DISCOUNTS
-  // ==================================================
+  /* =====================================================
+     TOTALS
+===================================================== */
 
   const totalDiscount =
-    Math.min(
-      subtotal,
-      couponDiscount +
-        wheelDiscount
-    );
-
-
-  // ==================================================
-  // TOTAL BEFORE SHIPPING
-  // ==================================================
-
-  const totalBeforeShipping =
-    Math.max(
-      subtotal -
-        totalDiscount,
-      0
-    );
-
-
-  // ==================================================
-  // FINAL TOTAL
-  // ==================================================
+    wheelDiscount +
+    couponDiscount;
 
   const finalTotal =
     Math.max(
-      totalBeforeShipping +
-        shippingCost,
-      0
+      0,
+      subtotal +
+        shippingCost -
+        totalDiscount
     );
 
+  /* =====================================================
+     APPLY COUPON
+===================================================== */
 
-  // ==================================================
-  // APPLY COUPON
-  // ==================================================
-
-  const handleApplyCoupon =
+  const applyCoupon =
     async () => {
-
-      const cleanCode =
+      const code =
         couponCode
           .trim()
           .toUpperCase();
 
-      if (
-        !cleanCode
-      ) {
-
+      if (!code) {
         setCouponError(
-          "اكتب كود الخصم أولًا."
+          "اكتب كود الخصم أولاً."
         );
 
-        setCouponMessage("");
-
         return;
-
       }
 
-      setCouponLoading(
-        true
-      );
-
-      setCouponError("");
-      setCouponMessage("");
-      setAppliedCoupon(
-        null
-      );
-
       try {
+        setCouponLoading(true);
+        setCouponError("");
+        setCouponData(null);
 
         const couponQuery =
           query(
@@ -1204,7 +1946,7 @@ function Checkout() {
             where(
               "code",
               "==",
-              cleanCode
+              code
             )
           );
 
@@ -1213,1283 +1955,1119 @@ function Checkout() {
             couponQuery
           );
 
-
-        if (
-          snapshot.empty
-        ) {
-
+        if (snapshot.empty) {
           setCouponError(
             "كود الخصم غير صحيح."
           );
 
           return;
-
         }
-
-
-        const couponDoc =
-          snapshot.docs[0];
-
 
         const coupon = {
           id:
-            couponDoc.id,
-          ...couponDoc.data(),
+            snapshot.docs[0].id,
+          ...snapshot.docs[0].data(),
         };
-
 
         if (
           coupon.active === false
         ) {
-
           setCouponError(
             "كود الخصم غير مفعل."
           );
 
           return;
-
         }
 
+        if (
+          coupon.expiresAt &&
+          typeof coupon.expiresAt
+            .toDate ===
+            "function"
+        ) {
+          if (
+            coupon.expiresAt.toDate() <
+            new Date()
+          ) {
+            setCouponError(
+              "كود الخصم منتهي."
+            );
+
+            return;
+          }
+        }
 
         const minOrder =
           Number(
-            coupon.minOrder ||
-            coupon.minimumOrder ||
-            0
+            coupon.minOrder ??
+              coupon.minimumOrder ??
+              coupon.minPurchase ??
+              0
           );
 
-
         if (
-          subtotal <
+          subtotalAfterWheel <
           minOrder
         ) {
-
           setCouponError(
-            `الحد الأدنى لاستخدام الكوبون هو ${minOrder.toLocaleString(
-              "ar-EG"
-            )} ج.م`
+            `الحد الأدنى لاستخدام الكود هو ${formatMoney(
+              minOrder
+            )}.`
           );
 
           return;
-
         }
 
-
-        const value =
-          Number(
-            coupon.value || 0
-          );
-
-
-        if (
-          value <= 0
-        ) {
-
-          setCouponError(
-            "قيمة الخصم غير صحيحة."
-          );
-
-          return;
-
-        }
-
-
-        const type =
-          String(
-            coupon.type ||
-            "percentage"
-          )
-            .toLowerCase()
-            .trim();
-
-
-        if (
-          type !== "percentage" &&
-          type !== "fixed"
-        ) {
-
-          setCouponError(
-            "نوع الخصم غير صحيح."
-          );
-
-          return;
-
-        }
-
-
-        if (
-          type === "percentage" &&
-          value > 100
-        ) {
-
-          setCouponError(
-            "نسبة الخصم لا يمكن أن تتجاوز 100%."
-          );
-
-          return;
-
-        }
-
-
-        setAppliedCoupon({
-
-          ...coupon,
-
-          type,
-
-          value,
-
-        });
-
-
-        setCouponMessage(
-          `✅ تم تطبيق الكوبون ${coupon.code} بنجاح.`
-        );
-
+        setCouponData(coupon);
       } catch (error) {
-
         console.error(
-          "Coupon Error:",
+          "Coupon error:",
           error
         );
 
         setCouponError(
           "حدث خطأ أثناء التحقق من كود الخصم."
         );
-
       } finally {
-
-        setCouponLoading(
-          false
-        );
-
+        setCouponLoading(false);
       }
-
     };
 
-
-  // ==================================================
-  // REMOVE COUPON
-  // ==================================================
+  /* =====================================================
+     REMOVE COUPON
+===================================================== */
 
   const removeCoupon =
     () => {
-
-      setAppliedCoupon(
-        null
-      );
-
-      setCouponCode(
-        ""
-      );
-
-      setCouponError(
-        ""
-      );
-
-      setCouponMessage(
-        ""
-      );
-
+      setCouponCode("");
+      setCouponData(null);
+      setCouponError("");
     };
 
+  /* =====================================================
+     PAYMENT PROOF SELECT
+===================================================== */
 
-  // ==================================================
-  // REMOVE WHEEL PRIZE
-  // ==================================================
+  const handlePaymentProofChange =
+    (event) => {
+      const file =
+        event.target.files?.[0];
 
-  const removeWheelPrize =
+      if (!file) {
+        return;
+      }
+
+      setPaymentProofUrl("");
+      setPaymentProofPublicId("");
+      setPaymentProofAssetId("");
+
+      if (
+        !file.type.startsWith(
+          "image/"
+        )
+      ) {
+        alert(
+          "من فضلك اختر صورة فقط لإثبات الدفع."
+        );
+
+        event.target.value = "";
+        return;
+      }
+
+      if (
+        file.size >
+        MAX_PAYMENT_PROOF_SIZE
+      ) {
+        alert(
+          "حجم صورة إثبات الدفع يجب ألا يتجاوز 5 ميجابايت."
+        );
+
+        event.target.value = "";
+        return;
+      }
+
+      if (
+        paymentProofPreview
+      ) {
+        URL.revokeObjectURL(
+          paymentProofPreview
+        );
+      }
+
+      const previewUrl =
+        URL.createObjectURL(
+          file
+        );
+
+      setPaymentProofFile(
+        file
+      );
+
+      setPaymentProofPreview(
+        previewUrl
+      );
+    };
+
+  /* =====================================================
+     REMOVE PAYMENT PROOF
+===================================================== */
+
+  const removePaymentProof =
     () => {
+      if (
+        paymentProofPreview
+      ) {
+        URL.revokeObjectURL(
+          paymentProofPreview
+        );
+      }
 
-      setWheelPrize(
+      setPaymentProofFile(
         null
       );
+
+      setPaymentProofPreview(
+        ""
+      );
+
+      setPaymentProofUrl(
+        ""
+      );
+
+      setPaymentProofPublicId(
+        ""
+      );
+
+      setPaymentProofAssetId(
+        ""
+      );
+    };
+
+  /* =====================================================
+     UPLOAD PAYMENT PROOF
+===================================================== */
+
+  const uploadPaymentProof =
+    async (
+      file,
+      orderNumber
+    ) => {
+      if (
+        !CLOUDINARY_CLOUD_NAME
+      ) {
+        throw new Error(
+          "Cloudinary Cloud Name غير موجود."
+        );
+      }
+
+      if (
+        !CLOUDINARY_UPLOAD_PRESET
+      ) {
+        throw new Error(
+          "Cloudinary Upload Preset غير موجود."
+        );
+      }
+
+      if (!file) {
+        throw new Error(
+          "لم يتم اختيار صورة إثبات الدفع."
+        );
+      }
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "file",
+        file
+      );
+
+      formData.append(
+        "upload_preset",
+        CLOUDINARY_UPLOAD_PRESET
+      );
+
+      const response =
+        await fetch(
+          CLOUDINARY_UPLOAD_URL,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+      let data = null;
 
       try {
-
-        localStorage.removeItem(
-          "elsafty_wheel_prize"
+        data =
+          await response.json();
+      } catch {
+        throw new Error(
+          "Cloudinary أرسل استجابة غير مفهومة."
         );
-
-      } catch (error) {
-
-        console.error(
-          "Wheel Prize Remove Error:",
-          error
-        );
-
       }
 
+      if (!response.ok) {
+        throw new Error(
+          data?.error?.message ||
+            "فشل رفع الصورة إلى Cloudinary."
+        );
+      }
+
+      if (!data?.secure_url) {
+        throw new Error(
+          "تم الرفع ولكن لم يتم الحصول على رابط الصورة."
+        );
+      }
+
+      return {
+        url: data.secure_url,
+        publicId:
+          data.public_id || "",
+        assetId:
+          data.asset_id || "",
+        orderNumber,
+      };
     };
 
-
-  // ==================================================
-  // CREATE ORDER NUMBER
-  // ==================================================
-
-  const createOrderNumber =
-    () => {
-
-      const now =
-        Date.now().toString();
-
-      return Number(
-        now.slice(-8)
-      );
-
-    };
-
-
-  // ==================================================
-  // BUILD WHATSAPP MESSAGE
-  // ==================================================
+  /* =====================================================
+     BUILD WHATSAPP MESSAGE
+===================================================== */
 
   const buildWhatsappMessage =
-    (
+    ({
       orderNumber,
-      departmentName
-    ) => {
+      departmentName,
+      paymentProof,
+    }) => {
+      const governorateObject =
+        governorates.find(
+          (item) =>
+            String(
+              item.id
+            ) ===
+            String(
+              selectedGovernorate
+            )
+        ) || null;
 
-      let message =
-        "🛒 *طلب جديد من Elsafty Store*\n\n";
+      const cityObject =
+        cities.find(
+          (item) =>
+            String(
+              item.id
+            ) ===
+            String(
+              selectedCity
+            )
+        ) || null;
 
+      const villageObject =
+        villages.find(
+          (item) =>
+            String(
+              item.id
+            ) ===
+            String(
+              selectedVillage
+            )
+        ) || null;
+
+      let message = "";
 
       message +=
-        `🔢 *رقم الطلب: #${orderNumber}*\n\n`;
+        "🛒 *طلب جديد من ســــَـــــوا*\n\n";
 
+      message +=
+        `📦 *رقم الطلب:* ${orderNumber}\n`;
 
-      if (
-        departmentName
-      ) {
-
+      if (departmentName) {
         message +=
-          `🏷️ *القسم: ${departmentName}*\n\n`;
-
+          `🏢 *القسم:* ${departmentName}\n`;
       }
 
+      message += "\n";
 
       message +=
-        `👤 *اسم العميل:*\n${name.trim()}\n\n`;
-
-
-      message +=
-        `📱 *رقم العميل:*\n${phone.trim()}\n\n`;
-
+        "👤 *بيانات العميل*\n";
 
       message +=
-        `📍 *العنوان:*\n${address.trim()}\n\n`;
+        `الاسم: ${name.trim()}\n`;
 
+      message +=
+        `الهاتف: ${phone.trim()}\n`;
 
       if (
-        shippingZoneName
+        governorateObject
       ) {
-
         message +=
-          `🚚 *منطقة الشحن:*\n${shippingZoneName}\n\n`;
-
+          `المحافظة: ${getReadableLocationName(
+            governorateObject
+          )}\n`;
       }
 
-
-      // ==================================================
-      // WHEEL PRIZE
-      // ==================================================
-
-      if (
-        wheelPrize
-      ) {
-
+      if (cityObject) {
         message +=
-          "🎡 *جائزة عجلة الحظ:*\n";
-
-
-        message +=
-          `${wheelPrize.title || "جائزة"}\n`;
-
-
-        if (
-          wheelPrize.code
-        ) {
-
-          message +=
-            `🎟️ كود الجائزة: ${wheelPrize.code}\n`;
-
-        }
-
-
-        if (
-          wheelPrizeType ===
-            "discount" ||
-          wheelPrizeType ===
-            "percentage"
-        ) {
-
-          message +=
-            `🏷️ خصم العجلة: ${Number(
-              wheelPrize.value || 0
-            )}%\n`;
-
-        }
-
-
-        if (
-          wheelPrizeType ===
-          "fixed"
-        ) {
-
-          message +=
-            `🏷️ خصم العجلة: ${Number(
-              wheelPrize.value || 0
-            )} جنيه\n`;
-
-        }
-
-
-        if (
-          wheelPrizeType ===
-          "free-shipping"
-        ) {
-
-          message +=
-            "🚚 الجائزة: شحن مجاني\n";
-
-        }
-
-
-        if (
-          wheelPrizeType ===
-          "gift"
-        ) {
-
-          message +=
-            "🎁 الجائزة: هدية مجانية\n";
-
-        }
-
-
-        message +=
-          "\n";
-
+          `المدينة / المركز: ${getReadableLocationName(
+            cityObject
+          )}\n`;
       }
 
-
-      // ==================================================
-      // PRODUCTS
-      // ==================================================
+      if (villageObject) {
+        message +=
+          `القرية / المنطقة: ${getReadableLocationName(
+            villageObject
+          )}\n`;
+      }
 
       message +=
-        "📦 *المنتجات:*\n\n";
+        `العنوان بالتفصيل: ${address.trim()}\n`;
 
+      if (notes.trim()) {
+        message +=
+          `ملاحظات: ${notes.trim()}\n`;
+      }
+
+      message += "\n";
+
+      message +=
+        "🛍️ *المنتجات*\n";
 
       cart.forEach(
-        (
-          item,
-          index
-        ) => {
-
-          const itemName =
-            item?.title ||
-            item?.name ||
-            "منتج";
-
-
-          const variantName =
-            item?.selectedVariant?.name ||
-            item?.variantName ||
-            "";
-
-
-          const price =
+        (product, index) => {
+          const productPrice =
             Number(
-              item?.price || 0
+              product.salePrice ??
+                product.discountPrice ??
+                product.price ??
+                0
             );
-
 
           const quantity =
             Number(
-              item?.quantity || 0
+              product.quantity ??
+                product.qty ??
+                product.count ??
+                1
             );
 
+          const productName =
+            product.name ||
+            product.title ||
+            "منتج";
 
-          const itemTotal =
-            price *
+          const lineTotal =
+            productPrice *
             quantity;
 
+          message +=
+            `${index + 1}. ${productName}\n`;
 
           message +=
-            `${index + 1}- *${itemName}*\n`;
-
-
-          if (
-            item?.category ||
-            item?.categoryName
-          ) {
-
-            message +=
-              `🏷️ القسم: ${
-                item?.category ||
-                item?.categoryName
-              }\n`;
-
-          }
-
-
-          if (
-            variantName
-          ) {
-
-            message +=
-              `🔀 النوع: ${variantName}\n`;
-
-          }
-
+            `   الكمية: ${quantity}\n`;
 
           message +=
-            `🔢 الكمية: ${quantity}\n`;
-
-
-          message +=
-            `💵 سعر الوحدة: ${price} جنيه\n`;
-
+            `   السعر: ${formatMoney(
+              productPrice
+            )}\n`;
 
           message +=
-            `💰 إجمالي المنتج: ${itemTotal} جنيه\n\n`;
-
+            `   الإجمالي: ${formatMoney(
+              lineTotal
+            )}\n`;
         }
       );
 
-
-      // ==================================================
-      // TOTALS
-      // ==================================================
+      message += "\n";
 
       message +=
-        "━━━━━━━━━━━━━━━━\n";
-
+        "💰 *ملخص الطلب*\n";
 
       message +=
-        `💰 إجمالي المنتجات: ${subtotal} جنيه\n`;
-
+        `الإجمالي قبل الخصم: ${formatMoney(
+          subtotal
+        )}\n`;
 
       if (
         wheelDiscount > 0
       ) {
-
         message +=
-          `🎡 خصم عجلة الحظ: -${wheelDiscount} جنيه\n`;
-
+          `خصم عجلة الحظ: -${formatMoney(
+            wheelDiscount
+          )}\n`;
       }
-
 
       if (
         couponDiscount > 0
       ) {
-
         message +=
-          `🎟️ كود الخصم: ${
-            appliedCoupon?.code ||
-            ""
-          }\n`;
-
-        message +=
-          `💸 خصم الكوبون: -${couponDiscount} جنيه\n`;
-
+          `خصم الكوبون: -${formatMoney(
+            couponDiscount
+          )}\n`;
       }
-
-
-      if (
-        hasFreeShippingPrize
-      ) {
-
-        message +=
-          "🚚 الشحن: مجاني 🎉\n";
-
-      } else if (
-        shippingCost > 0
-      ) {
-
-        message +=
-          `🚚 الشحن: ${shippingCost} جنيه\n`;
-
-      }
-
-
-      if (
-        wheelPrizeType ===
-        "gift"
-      ) {
-
-        message +=
-          `🎁 الهدية: ${
-            wheelPrize?.title ||
-            "هدية مجانية"
-          }\n`;
-
-      }
-
 
       message +=
-        `💰 *الإجمالي النهائي: ${finalTotal} جنيه*\n\n`;
-
+        `الشحن: ${formatMoney(
+          shippingCost
+        )}\n`;
 
       message +=
-        `💳 *طريقة الدفع: ${getPaymentMethodText(
-          paymentMethod
+        `*الإجمالي النهائي: ${formatMoney(
+          finalTotal
         )}*\n`;
 
+      message += "\n";
+
+      message +=
+        `💳 *طريقة الدفع:* ${
+          selectedPayment?.name ||
+          "الدفع عند الاستلام"
+        }\n`;
 
       const paymentNumber =
         getPaymentNumber(
-          paymentMethod
+          selectedPayment
         );
 
-
       if (
-        paymentNumber
+        paymentNumber &&
+        !isCashPayment
       ) {
-
         message +=
-          `📱 رقم التحويل: ${paymentNumber}\n`;
-
+          `رقم التحويل / الحساب: ${paymentNumber}\n`;
       }
 
+      if (!isCashPayment) {
+        message += "\n";
+
+        message +=
+          "📎 *إثبات الدفع:*\n";
+
+        if (
+          paymentProof?.url
+        ) {
+          message +=
+            `${paymentProof.url}\n`;
+        } else {
+          message +=
+            "تم رفع إثبات الدفع على الموقع.\n";
+        }
+
+        message += "\n";
+
+        message +=
+          "⚠️ تم رفع صورة إثبات الدفع على الموقع، يرجى مراجعة الرابط أعلاه.\n";
+
+        message +=
+          "📸 ويمكن للعميل أيضًا إرفاق صورة الإثبات يدويًا داخل محادثة واتساب إذا لزم الأمر.\n";
+      }
+
+      message += "\n";
 
       message +=
-        "\n🌐 تم تسجيل الطلب على الموقع.";
+        "شكراً لاختياركم ســــَـــــوا ❤️";
 
       return message;
-
     };
 
+  /* =====================================================
+     FORM VALIDATION
+===================================================== */
 
-  // ==================================================
-  // SEND ORDER
-  // ==================================================
+  const isFormValid =
+    useMemo(() => {
+      const basicValid =
+        name.trim().length >= 2 &&
+        phone.trim().length >= 8 &&
+        address.trim().length >= 3 &&
+        Boolean(
+          selectedGovernorate
+        ) &&
+        Boolean(
+          selectedCity
+        ) &&
+        Boolean(
+          selectedPaymentMethod
+        ) &&
+        cart.length > 0 &&
+        !couponError &&
+        !couponLoading;
+
+      if (!basicValid) {
+        return false;
+      }
+
+      if (!isCashPayment) {
+        return Boolean(
+          paymentProofFile ||
+            paymentProofUrl
+        );
+      }
+
+      return true;
+    }, [
+      name,
+      phone,
+      address,
+      selectedGovernorate,
+      selectedCity,
+      selectedPaymentMethod,
+      cart,
+      couponError,
+      couponLoading,
+      isCashPayment,
+      paymentProofFile,
+      paymentProofUrl,
+    ]);
+
+  /* =====================================================
+     SEND ORDER
+===================================================== */
 
   const sendOrder =
     async () => {
-
-      if (
-        loading
-      ) {
-
+      if (loading) {
         return;
-
       }
 
-
-      // --------------------------------------------
-      // AUTH LOADING
-      // --------------------------------------------
-
-      if (
-        authLoading
-      ) {
-
+      if (!user) {
         alert(
-          "جاري التحقق من تسجيل الدخول، حاول مرة أخرى."
+          "يجب تسجيل الدخول أولاً لإتمام الطلب."
         );
 
         return;
-
       }
 
-
-      // --------------------------------------------
-      // AUTH
-      // --------------------------------------------
-
-      if (
-        !user?.uid
-      ) {
-
-        alert(
-          "يجب تسجيل الدخول أولًا لإتمام الطلب."
-        );
-
-        navigate(
-          "/login"
-        );
-
-        return;
-
-      }
-
-
-      // --------------------------------------------
-      // CUSTOMER DATA
-      // --------------------------------------------
-
-      const cleanName =
-        name.trim();
-
-      const cleanPhone =
-        phone.trim();
-
-      const cleanAddress =
-        address.trim();
-
-
-      if (
-        !cleanName ||
-        !cleanPhone ||
-        !cleanAddress
-      ) {
-
-        alert(
-          "من فضلك اكتب الاسم ورقم الهاتف والعنوان."
-        );
-
-        return;
-
-      }
-
-
-      // --------------------------------------------
-      // CART
-      // --------------------------------------------
-
-      if (
-        cart.length === 0
-      ) {
-
+      if (!cart.length) {
         alert(
           "السلة فارغة."
         );
 
-        navigate(
-          "/"
+        return;
+      }
+
+      if (!name.trim()) {
+        alert(
+          "من فضلك اكتب الاسم."
         );
 
         return;
-
       }
 
+      if (!phone.trim()) {
+        alert(
+          "من فضلك اكتب رقم الهاتف."
+        );
 
-      // --------------------------------------------
-      // PAYMENT
-      // --------------------------------------------
+        return;
+      }
 
       if (
-        !paymentMethod
+        normalizePhone(
+          phone
+        ).length < 10
       ) {
-
         alert(
-          "برجاء اختيار طريقة الدفع."
+          "من فضلك أدخل رقم هاتف مصري صحيح."
         );
 
         return;
-
       }
-
-
-      // --------------------------------------------
-      // LOADING STATES
-      // --------------------------------------------
 
       if (
-        categoriesLoading
+        !selectedGovernorate
       ) {
-
         alert(
-          "جاري تحميل الأقسام، حاول مرة أخرى."
+          "من فضلك اختر المحافظة."
         );
 
         return;
-
       }
 
+      if (!selectedCity) {
+        alert(
+          "من فضلك اختر المدينة / المركز."
+        );
+
+        return;
+      }
+
+      if (!address.trim()) {
+        alert(
+          "من فضلك اكتب العنوان بالتفصيل."
+        );
+
+        return;
+      }
+
+      if (!selectedPayment) {
+        alert(
+          "من فضلك اختر طريقة الدفع."
+        );
+
+        return;
+      }
+
+      if (couponError) {
+        alert(
+          "من فضلك صحح مشكلة كود الخصم أولاً."
+        );
+
+        return;
+      }
 
       if (
-        paymentMethodsLoading
+        !isCashPayment &&
+        !paymentProofFile &&
+        !paymentProofUrl
       ) {
-
         alert(
-          "جاري تحميل طرق الدفع، حاول مرة أخرى."
+          "من فضلك ارفع صورة إثبات الدفع أولاً."
         );
 
         return;
-
       }
 
+      const departments =
+        getDepartmentsForOrder();
+
+      if (!departments.length) {
+        alert(
+          "لم يتم العثور على رقم واتساب للقسم الخاص بالمنتجات."
+        );
+
+        return;
+      }
+
+      const targetDepartment =
+        departments[0];
 
       if (
-        shippingZonesLoading
+        !targetDepartment.whatsapp
       ) {
-
         alert(
-          "جاري تحميل بيانات الشحن، حاول مرة أخرى."
+          "رقم واتساب القسم غير موجود."
         );
 
         return;
-
       }
 
+      setLoading(true);
 
-      // --------------------------------------------
-      // CART CONTEXT
-      // --------------------------------------------
-
-      if (
-        typeof setCart !==
-        "function"
-      ) {
-
-        alert(
-          "حدث خطأ في السلة، برجاء إعادة تحميل الصفحة."
-        );
-
-        return;
-
-      }
-
-
-      // --------------------------------------------
-      // PHONE VALIDATION
-      // --------------------------------------------
-
-      const phoneDigits =
-        cleanPhone.replace(
-          /\D/g,
-          ""
-        );
-
-
-      if (
-        phoneDigits.length < 10 ||
-        phoneDigits.length > 15
-      ) {
-
-        alert(
-          "برجاء إدخال رقم هاتف صحيح."
-        );
-
-        return;
-
-      }
-
-
-      setLoading(
-        true
-      );
-
+      let uploadedPaymentProof =
+        null;
 
       try {
-
-        // ==================================================
-        // DEPARTMENTS
-        // ==================================================
-
-        const departments =
-          getDepartmentsForOrder();
-
-
-        if (
-          departments.length ===
-          0
-        ) {
-
-          alert(
-            "لا يمكن إتمام الطلب.\n\n" +
-            "لا يوجد رقم واتساب صالح للقسم المرتبط بالمنتجات.\n\n" +
-            "أضف رقم واتساب للقسم أو القسم الأب من لوحة الأدمن."
-          );
-
-          return;
-
-        }
-
-
-        const firstDepartment =
-          departments[0];
-
-
-        const departmentWhatsapp =
-          normalizePhone(
-            firstDepartment?.whatsapp
-          );
-
-
-        if (
-          !departmentWhatsapp
-        ) {
-
-          alert(
-            "لا يوجد رقم واتساب صالح للقسم."
-          );
-
-          return;
-
-        }
-
-
-        // ==================================================
-        // ORDER NUMBER
-        // ==================================================
-
         const orderNumber =
-          createOrderNumber();
+          generateOrderNumber();
 
+        /* =============================================
+           PAYMENT PROOF UPLOAD
+        ============================================= */
 
-        // ==================================================
-        // PRODUCTS
-        // ==================================================
+        if (!isCashPayment) {
+          setPaymentProofUploading(
+            true
+          );
+
+          uploadedPaymentProof =
+            await uploadPaymentProof(
+              paymentProofFile,
+              orderNumber
+            );
+
+          setPaymentProofUrl(
+            uploadedPaymentProof.url
+          );
+
+          setPaymentProofPublicId(
+            uploadedPaymentProof.publicId
+          );
+
+          setPaymentProofAssetId(
+            uploadedPaymentProof.assetId
+          );
+
+          setPaymentProofUploading(
+            false
+          );
+        }
+
+        /* =============================================
+           PRODUCTS
+        ============================================= */
 
         const orderProducts =
           cart.map(
-            (item) => {
-
-              const productId =
-                item?.id ||
-                item?._id ||
-                item?.productId ||
-                null;
-
-
-              const selectedVariant =
-                item?.selectedVariant
-                  ? {
-                      ...item.selectedVariant,
-                    }
-                  : null;
-
+            (product) => {
+              const price =
+                Number(
+                  product.salePrice ??
+                    product.discountPrice ??
+                    product.price ??
+                    0
+                );
 
               const quantity =
                 Number(
-                  item?.quantity || 0
+                  product.quantity ??
+                    product.qty ??
+                    product.count ??
+                    1
                 );
-
-
-              const price =
-                Number(
-                  item?.price || 0
-                );
-
 
               const category =
                 findCategoryForProduct(
-                  item
+                  product
                 );
 
-
               return {
-
                 id:
-                  productId,
+                  product.id ||
+                  product.productId ||
+                  "",
 
                 productId:
-                  productId,
-
-                cartId:
-                  item?.cartId ||
-                  productId ||
-                  null,
-
-                title:
-                  item?.title ||
-                  item?.name ||
-                  "منتج",
+                  product.productId ||
+                  product.id ||
+                  "",
 
                 name:
-                  item?.name ||
-                  item?.title ||
+                  product.name ||
+                  product.title ||
                   "منتج",
 
                 image:
-                  item?.image ||
-                  item?.images?.[0] ||
+                  product.image ||
+                  product.imageUrl ||
+                  product.thumbnail ||
                   "",
 
                 price,
 
-                oldPrice:
-                  Number(
-                    item?.oldPrice || 0
-                  ),
-
                 quantity,
 
-                stock:
-                  Number(
-                    item?.stock || 0
-                  ),
-
                 total:
-                  price *
-                  quantity,
+                  price * quantity,
 
                 categoryId:
+                  product.categoryId ||
                   category?.id ||
-                  item?.categoryId ||
-                  "",
-
-                categoryNumber:
-                  category?.categoryNumber ||
-                  item?.categoryNumber ||
                   "",
 
                 categoryName:
+                  product.categoryName ||
                   category?.name ||
-                  item?.categoryName ||
-                  item?.category ||
-                  "",
-
-                category:
-                  category?.name ||
-                  item?.categoryName ||
-                  item?.category ||
-                  "",
-
-                selectedVariant,
-
-                variantId:
-                  item?.variantId ||
-                  selectedVariant?.id ||
-                  null,
-
-                variantName:
-                  selectedVariant?.name ||
-                  item?.variantName ||
+                  category?.title ||
                   "",
               };
-
             }
           );
 
+        /* =============================================
+           LOCATION OBJECTS
+        ============================================= */
 
-        // ==================================================
-        // PAYMENT
-        // ==================================================
+        const governorateObject =
+          governorates.find(
+            (item) =>
+              String(
+                item.id
+              ) ===
+              String(
+                selectedGovernorate
+              )
+          ) || null;
 
-        const paymentNumber =
-          getPaymentNumber(
-            paymentMethod
+        const cityObject =
+          cities.find(
+            (item) =>
+              String(
+                item.id
+              ) ===
+              String(
+                selectedCity
+              )
+          ) || null;
+
+        const villageObject =
+          villages.find(
+            (item) =>
+              String(
+                item.id
+              ) ===
+              String(
+                selectedVillage
+              )
+          ) || null;
+
+        const governorateName =
+          getReadableLocationName(
+            governorateObject
           );
 
-        const paymentTitle =
-          getPaymentMethodText(
-            paymentMethod
+        const cityName =
+          getReadableLocationName(
+            cityObject
           );
 
+        const villageName =
+          getReadableLocationName(
+            villageObject
+          );
 
-        // ==================================================
-        // WHEEL PRIZE DATA
-        // ==================================================
+        /* =============================================
+           STATUS
+        ============================================= */
 
-        const wheelPrizeData =
-          wheelPrize
-            ? {
-                title:
-                  wheelPrize.title ||
-                  "جائزة",
+        const paymentStatus =
+          isCashPayment
+            ? "pending"
+            : "proof_uploaded";
 
-                code:
-                  wheelPrize.code ||
-                  "",
+        const orderStatus =
+          isCashPayment
+            ? "pending"
+            : "pending_payment";
 
-                type:
-                  wheelPrize.type ||
-                  "",
-
-                value:
-                  Number(
-                    wheelPrize.value || 0
-                  ),
-
-                discount:
-                  Number(
-                    wheelDiscount.toFixed(2)
-                  ),
-
-                freeShipping:
-                  hasFreeShippingPrize,
-
-                gift:
-                  wheelPrizeType ===
-                  "gift",
-              }
-            : null;
-
-
-        // ==================================================
-        // ORDER DATA
-        // ==================================================
+        /* =============================================
+           ORDER DATA
+        ============================================= */
 
         const orderData = {
-
           orderNumber,
 
-          orderNumberText:
-            `#${orderNumber}`,
-
+          storeName:
+            "ســــَـــــوا",
 
           userId:
-            user.uid,
-
-          uid:
             user.uid,
 
           customerId:
             user.uid,
 
-          userUID:
-            user.uid,
-
-
           customerName:
-            cleanName,
-
-          name:
-            cleanName,
-
-
-          email:
-            user.email ||
-            "",
-
-          customerEmail:
-            user.email ||
-            "",
-
-
-          phone:
-            cleanPhone,
+            name.trim(),
 
           customerPhone:
-            cleanPhone,
+            phone.trim(),
 
+          customerEmail:
+            user.email || "",
 
           address:
-            cleanAddress,
+            address.trim(),
 
+          notes:
+            notes.trim(),
+
+          governorateId:
+            selectedGovernorate ||
+            "",
+
+          governorateName,
+
+          cityId:
+            selectedCity ||
+            "",
+
+          cityName,
+
+          villageId:
+            selectedVillage ||
+            "",
+
+          villageName,
+
+          village:
+            villageObject
+              ? {
+                  id:
+                    villageObject.id ||
+                    "",
+
+                  name:
+                    villageName ||
+                    "",
+
+                  nameAr:
+                    villageObject.nameAr ||
+                    villageName ||
+                    "",
+
+                  nameEn:
+                    villageObject.nameEn ||
+                    "",
+
+                  type:
+                    villageObject.type ||
+                    "",
+                }
+              : null,
 
           products:
             orderProducts,
 
-
           departments,
 
-
           departmentId:
-            firstDepartment?.id ||
+            targetDepartment.id ||
             "",
-
-
-          departmentNumber:
-            firstDepartment?.categoryNumber ||
-            "",
-
 
           departmentName:
-            departments
-              .map(
-                (item) =>
-                  item.name
-              )
-              .join("، "),
-
+            targetDepartment.name ||
+            "",
 
           departmentWhatsapp:
-            departmentWhatsapp,
-
-
-          whatsappPhone:
-            departmentWhatsapp,
-
-
-          whatsappSent:
-            false,
-
-
-          // ==================================================
-          // SHIPPING
-          // ==================================================
+            targetDepartment.whatsapp ||
+            "",
 
           shippingZoneId:
-            selectedZone?.id ||
+            selectedShippingZone ||
             "",
-
 
           shippingZoneName:
-            shippingZoneName,
+            selectedZone?.name ||
+            selectedZone?.title ||
+            "",
 
+          shippingCost,
 
-          shippingCost:
-            Number(
-              shippingCost.toFixed(2)
-            ),
+          subtotal,
 
+          wheelDiscount,
 
-          shipping:
-            Number(
-              shippingCost.toFixed(2)
-            ),
+          couponDiscount,
 
-
-          freeShipping:
-            hasFreeShippingPrize,
-
-
-          // ==================================================
-          // TOTALS
-          // ==================================================
-
-          subtotal:
-            Number(
-              subtotal.toFixed(2)
-            ),
-
-
-          discount:
-            Number(
-              totalDiscount.toFixed(2)
-            ),
-
-
-          couponDiscount:
-            Number(
-              couponDiscount.toFixed(2)
-            ),
-
-
-          wheelDiscount:
-            Number(
-              wheelDiscount.toFixed(2)
-            ),
-
+          totalDiscount,
 
           total:
-            Number(
-              finalTotal.toFixed(2)
-            ),
+            finalTotal,
 
-
-          totalPrice:
-            Number(
-              finalTotal.toFixed(2)
-            ),
-
-
-          // ==================================================
-          // COUPON
-          // ==================================================
-
-          couponId:
-            appliedCoupon?.id ||
-            "",
-
+          finalTotal,
 
           couponCode:
-            appliedCoupon?.code ||
+            couponData?.code ||
+            couponCode
+              .trim()
+              .toUpperCase() ||
             "",
 
+          coupon:
+            couponData
+              ? {
+                  id:
+                    couponData.id ||
+                    "",
 
-          couponType:
-            appliedCoupon?.type ||
-            "",
+                  code:
+                    couponData.code ||
+                    couponCode
+                      .trim()
+                      .toUpperCase(),
 
+                  value:
+                    couponData.value ??
+                    couponData.discount ??
+                    0,
 
-          couponValue:
-            Number(
-              appliedCoupon?.value ||
-              0
-            ),
-
-
-          // ==================================================
-          // WHEEL
-          // ==================================================
+                  type:
+                    couponData.type ||
+                    couponData.discountType ||
+                    "fixed",
+                }
+              : null,
 
           wheelPrize:
-            wheelPrizeData,
-
-
-          wheelPrizeCode:
-            wheelPrize?.code ||
-            "",
-
-
-          wheelPrizeTitle:
-            wheelPrize?.title ||
-            "",
-
-
-          wheelPrizeType:
-            wheelPrize?.type ||
-            "",
-
-
-          wheelPrizeValue:
-            Number(
-              wheelPrize?.value ||
-              0
-            ),
-
-
-          // ==================================================
-          // GIFT
-          // ==================================================
-
-          giftPrize:
-            wheelPrizeType ===
-            "gift"
-              ? (
-                  wheelPrize?.title ||
-                  "هدية مجانية"
-                )
-              : "",
-
-
-          // ==================================================
-          // PAYMENT
-          // ==================================================
+            wheelPrize || null,
 
           paymentMethod:
-            paymentMethod,
-
+            selectedPayment.id,
 
           paymentMethodName:
-            paymentTitle,
-
+            selectedPayment.name ||
+            selectedPayment.title ||
+            "",
 
           paymentNumber:
-            paymentNumber,
+            getPaymentNumber(
+              selectedPayment
+            ),
 
+          paymentStatus,
 
-          paymentStatus:
-            "pending",
+          paymentVerificationStatus:
+            isCashPayment
+              ? "not_required"
+              : "pending",
 
+          requiresPaymentProof:
+            !isCashPayment,
+
+          paymentProofStatus:
+            isCashPayment
+              ? "not_required"
+              : "pending_review",
+
+          paymentProofUploaded:
+            !isCashPayment &&
+            Boolean(
+              uploadedPaymentProof?.url
+            ),
+
+          paymentProofUrl:
+            uploadedPaymentProof?.url ||
+            "",
+
+          paymentProofPublicId:
+            uploadedPaymentProof?.publicId ||
+            "",
+
+          paymentProofAssetId:
+            uploadedPaymentProof?.assetId ||
+            "",
+
+          paymentProofUploadedAt:
+            uploadedPaymentProof?.url
+              ? serverTimestamp()
+              : null,
+
+          paidAmount:
+            0,
+
+          remainingAmount:
+            finalTotal,
 
           status:
-            "pending",
+            orderStatus,
 
+          orderStatus,
 
-          orderStatus:
-            "pending",
+          whatsappMessageSent:
+            false,
 
+          whatsappTarget:
+            targetDepartment.whatsapp,
 
-          // ==================================================
-          // DATES
-          // ==================================================
+          whatsappDepartment:
+            targetDepartment.name ||
+            "",
 
           createdAt:
             serverTimestamp(),
 
-
           updatedAt:
             serverTimestamp(),
-
         };
 
+        /* =============================================
+           SAVE FIRESTORE
+        ============================================= */
 
-        // ==================================================
-        // SAVE ORDER
-        // ==================================================
-
-        console.log(
-          "Saving Order:",
-          orderData
-        );
-
+        const sanitizedOrder =
+          sanitizeForFirestore(
+            orderData
+          );
 
         const orderRef =
           await addDoc(
@@ -2497,1367 +3075,1569 @@ function Checkout() {
               db,
               "orders"
             ),
-            orderData
+            sanitizedOrder
           );
 
-
-        console.log(
-          "✅ Order Saved:",
-          orderRef.id
-        );
-
-
-        // ==================================================
-        // WHATSAPP
-        // ==================================================
+        /* =============================================
+           WHATSAPP
+        ============================================= */
 
         const whatsappMessage =
-          buildWhatsappMessage(
+          buildWhatsappMessage({
             orderNumber,
-            firstDepartment?.name
-          );
-
+            departmentName:
+              targetDepartment.name,
+            paymentProof:
+              uploadedPaymentProof,
+          });
 
         const whatsappUrl =
-          `https://wa.me/${departmentWhatsapp}?text=${encodeURIComponent(
+          `https://wa.me/${targetDepartment.whatsapp}?text=${encodeURIComponent(
             whatsappMessage
           )}`;
 
+        console.log(
+          "Order created successfully:",
+          orderRef.id
+        );
 
-        // ==================================================
-        // CLEAR CART
-        // ==================================================
+        /* =============================================
+           CLEAR CART
+        ============================================= */
 
         setCart([]);
 
-
-        // ==================================================
-        // REMOVE WHEEL PRIZE
-        // ==================================================
-
         try {
-
           localStorage.removeItem(
             "elsafty_wheel_prize"
           );
-
         } catch (error) {
-
-          console.error(
-            "Wheel Prize Clear Error:",
+          console.warn(
+            "Could not clear wheel prize:",
             error
           );
-
         }
 
-
-        // ==================================================
-        // OPEN WHATSAPP
-        // ==================================================
+        /* =============================================
+           OPEN WHATSAPP
+        ============================================= */
 
         window.location.href =
           whatsappUrl;
-
       } catch (error) {
-
         console.error(
-          "Order Error:",
+          "SEND ORDER ERROR:",
           error
         );
 
-
-        if (
-          error?.code ===
-          "permission-denied"
-        ) {
-
-          alert(
-            "فشل حفظ الطلب في لوحة الأدمن.\n\n" +
-            "تم إيقاف إرسال واتساب لأن حفظ الطلب لم ينجح.\n\n" +
-            "راجع Firestore Rules."
-          );
-
-        } else {
-
-          alert(
-            error?.message ||
-            "حدث خطأ أثناء تسجيل الطلب."
-          );
-
-        }
-
+        alert(
+          error?.message ||
+            "حدث خطأ أثناء تسجيل الطلب. حاول مرة أخرى."
+        );
       } finally {
-
         setLoading(false);
 
+        setPaymentProofUploading(
+          false
+        );
       }
-
     };
 
-
-  // ==================================================
-  // EMPTY CART
-  // ==================================================
+  /* =====================================================
+     EMPTY CART
+===================================================== */
 
   if (
-    cart.length === 0
+    !authLoading &&
+    !cart.length
   ) {
-
     return (
-
       <div
         className="checkout-page"
         dir="rtl"
       >
+        <div className="checkout-empty">
 
-        <div
-          className="checkout-empty"
-        >
+          <div className="checkout-empty-icon">
+            🛒
+          </div>
+
+          <span className="checkout-empty-badge">
+            ســــَـــــوا
+          </span>
 
           <h2>
-            لا يوجد منتجات لإتمام الطلب 🛒
+            السلة فارغة
           </h2>
 
+          <p>
+            أضف منتجات إلى السلة أولاً
+            لإتمام طلبك.
+          </p>
 
           <button
             type="button"
-            className="back-btn"
             onClick={() =>
               navigate("/")
             }
           >
-            ⬅ العودة للمتجر
+            🛍️ العودة للمتجر
           </button>
 
         </div>
-
       </div>
-
     );
-
   }
 
-
-  // ==================================================
-  // CHECKOUT PAGE
-  // ==================================================
+  /* =====================================================
+     MAIN RENDER
+===================================================== */
 
   return (
-
     <div
       className="checkout-page"
       dir="rtl"
     >
 
-      <h2>
-        إتمام الطلب 🛒
-      </h2>
+      <div className="checkout-container">
 
+        {/* =================================================
+            TOP HEADER
+        ================================================= */}
 
-      <div
-        className="checkout-form"
-      >
+        <header className="checkout-header">
 
-        {/* ==================================================
-            CUSTOMER NAME
-        ================================================== */}
-
-        <input
-          type="text"
-          placeholder="الاسم بالكامل"
-          value={name}
-          onChange={(e) =>
-            setName(
-              e.target.value
-            )
-          }
-          disabled={loading}
-          required
-        />
-
-
-        {/* ==================================================
-            PHONE
-        ================================================== */}
-
-        <input
-          type="tel"
-          placeholder="رقم الهاتف"
-          value={phone}
-          onChange={(e) =>
-            setPhone(
-              e.target.value
-            )
-          }
-          disabled={loading}
-          required
-        />
-
-
-        {/* ==================================================
-            ADDRESS
-        ================================================== */}
-
-        <textarea
-          placeholder="العنوان بالتفصيل"
-          value={address}
-          onChange={(e) =>
-            setAddress(
-              e.target.value
-            )
-          }
-          disabled={loading}
-          required
-        />
-
-
-        {/* ==================================================
-            SHIPPING
-        ================================================== */}
-
-        {!shippingZonesLoading &&
-          shippingZones.length > 0 && (
-
-            <div
-              className="form-group"
-            >
-
-              <label>
-                🚚 منطقة الشحن
-              </label>
-
-
-              <select
-                value={
-                  selectedShippingZone
-                }
-                onChange={(e) =>
-                  setSelectedShippingZone(
-                    e.target.value
-                  )
-                }
-                disabled={loading}
-              >
-
-                <option value="">
-                  اختر منطقة الشحن
-                </option>
-
-
-                {shippingZones.map(
-                  (zone) => {
-
-                    const price =
-                      Number(
-                        zone.price ??
-                        zone.shippingCost ??
-                        zone.cost ??
-                        zone.amount ??
-                        0
-                      );
-
-                    return (
-
-                      <option
-                        key={
-                          zone.id
-                        }
-                        value={
-                          zone.id
-                        }
-                      >
-
-                        {
-                          zone.name ||
-                          zone.title ||
-                          "منطقة شحن"
-                        }
-
-                        {" - "}
-
-                        {
-                          price.toLocaleString(
-                            "ar-EG"
-                          )
-                        }
-
-                        {" ج.م"}
-
-                      </option>
-
-                    );
-
-                  }
-                )}
-
-              </select>
-
-
-              {hasFreeShippingPrize && (
-
-                <div
-                  style={{
-                    marginTop:
-                      "8px",
-                    padding:
-                      "10px",
-                    borderRadius:
-                      "8px",
-                    background:
-                      "#F0FDF4",
-                    color:
-                      "#166534",
-                    fontWeight:
-                      "700",
-                  }}
-                >
-                  🎉 لديك جائزة شحن مجاني من عجلة الحظ
-                </div>
-
-              )}
-
-            </div>
-
-          )}
-
-
-        {/* ==================================================
-            WHEEL PRIZE
-        ================================================== */}
-
-        {wheelPrize && (
-
-          <div
-            className="wheel-prize-checkout"
-            style={{
-              margin:
-                "20px 0",
-              padding:
-                "18px",
-              borderRadius:
-                "14px",
-              background:
-                "linear-gradient(135deg, #fff8e1, #fff)",
-              border:
-                "2px solid #D4AF37",
-              textAlign:
-                "center",
-            }}
+          <button
+            type="button"
+            className="checkout-back-button"
+            onClick={() =>
+              navigate(-1)
+            }
           >
+            <span>→</span>
+            العودة
+          </button>
 
-            <div
-              style={{
-                fontSize:
-                  "30px",
-                marginBottom:
-                  "8px",
-              }}
-            >
-              🎡🎉
+          <div className="checkout-header-center">
+
+            <span className="checkout-header-icon">
+              🛒
+            </span>
+
+            <div>
+              <span className="checkout-header-mini">
+                ســــَـــــوا
+              </span>
+
+              <h1>
+                إتمام الطلب
+              </h1>
             </div>
-
-
-            <h3
-              style={{
-                margin:
-                  "0 0 8px",
-                color:
-                  "#0B1F3A",
-              }}
-            >
-              جائزة عجلة الحظ
-            </h3>
-
-
-            <strong
-              style={{
-                display:
-                  "block",
-                fontSize:
-                  "20px",
-                marginBottom:
-                  "8px",
-              }}
-            >
-              {
-                wheelPrize.title ||
-                "جائزة"
-              }
-            </strong>
-
-
-            {wheelPrize.code && (
-
-              <div
-                style={{
-                  marginTop:
-                    "8px",
-                  fontWeight:
-                    "800",
-                }}
-              >
-
-                🎟️ كود الجائزة:{" "}
-
-                <span
-                  style={{
-                    letterSpacing:
-                      "2px",
-                  }}
-                >
-                  {
-                    wheelPrize.code
-                  }
-                </span>
-
-              </div>
-
-            )}
-
-
-            {(
-              wheelPrizeType ===
-                "discount" ||
-              wheelPrizeType ===
-                "percentage"
-            ) && (
-
-              <p>
-                🏷️ خصم{" "}
-                {
-                  Number(
-                    wheelPrize.value ||
-                    0
-                  )
-                }
-                %
-                {" "}
-                ={" "}
-                {
-                  wheelDiscount.toLocaleString(
-                    "ar-EG"
-                  )
-                }
-                {" "}
-                جنيه
-              </p>
-
-            )}
-
-
-            {wheelPrizeType ===
-              "fixed" && (
-
-              <p>
-                🏷️ خصم{" "}
-                {
-                  Number(
-                    wheelPrize.value ||
-                    0
-                  ).toLocaleString(
-                    "ar-EG"
-                  )
-                }
-                {" "}
-                جنيه
-              </p>
-
-            )}
-
-
-            {hasFreeShippingPrize && (
-
-              <p>
-                🚚 شحن مجاني
-              </p>
-
-            )}
-
-
-            {wheelPrizeType ===
-              "gift" && (
-
-              <p>
-                🎁 هدية مجانية
-              </p>
-
-            )}
-
-
-            <button
-              type="button"
-              onClick={
-                removeWheelPrize
-              }
-              disabled={
-                loading
-              }
-              style={{
-                marginTop:
-                  "8px",
-                border:
-                  "none",
-                background:
-                  "transparent",
-                color:
-                  "#d32f2f",
-                cursor:
-                  "pointer",
-              }}
-            >
-              إزالة الجائزة
-            </button>
 
           </div>
 
-        )}
+          <div className="checkout-secure">
 
+            <span>
+              🔒
+            </span>
 
-        {/* ==================================================
-            PAYMENT METHODS
-        ================================================== */}
+            <div>
+              <strong>
+                طلب آمن
+              </strong>
 
-        <div
-          className="payment-method-section"
-        >
-
-          <h3>
-            💳 اختر طريقة الدفع
-          </h3>
-
-
-          {paymentMethodsLoading ? (
-
-            <div
-              className="empty-state"
-            >
-              ⏳ جاري تحميل طرق الدفع...
+              <small>
+                بياناتك محمية
+              </small>
             </div>
 
-          ) : (
+          </div>
 
-            <div
-              className="payment-methods"
-            >
+        </header>
 
-              {paymentMethods.map(
-                (method) => {
+        {/* =================================================
+            PROGRESS
+        ================================================= */}
 
-                  const selected =
-                    String(
-                      paymentMethod
-                    ) ===
-                    String(
-                      method.id
-                    );
+        <div className="checkout-progress">
 
+          <div className="checkout-progress-step active">
+            <span>1</span>
 
-                  const number =
-                    method.number ||
-                    method.phone ||
-                    method.paymentNumber ||
-                    "";
+            <strong>
+              بيانات الطلب
+            </strong>
+          </div>
 
+          <div className="checkout-progress-line" />
 
-                  return (
+          <div className="checkout-progress-step active">
+            <span>2</span>
 
-                    <label
-                      key={
-                        method.id
+            <strong>
+              الدفع
+            </strong>
+          </div>
+
+          <div className="checkout-progress-line" />
+
+          <div className="checkout-progress-step">
+            <span>3</span>
+
+            <strong>
+              تأكيد الطلب
+            </strong>
+          </div>
+
+        </div>
+
+        {/* =================================================
+            MAIN GRID
+        ================================================= */}
+
+        <div className="checkout-grid">
+
+          {/* =================================================
+              LEFT / MAIN
+          ================================================= */}
+
+          <main className="checkout-main">
+
+            {/* CUSTOMER */}
+
+            <section className="checkout-card">
+
+              <div className="checkout-card-title">
+
+                <div className="checkout-section-icon">
+                  👤
+                </div>
+
+                <div>
+                  <h2>
+                    بيانات العميل
+                  </h2>
+
+                  <p>
+                    أدخل بيانات التواصل الخاصة بك
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="checkout-form-grid">
+
+                <div className="checkout-field">
+
+                  <label>
+                    الاسم الكامل
+                    <span>*</span>
+                  </label>
+
+                  <div className="checkout-input-wrapper">
+
+                    <span>
+                      👤
+                    </span>
+
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) =>
+                        setName(
+                          e.target.value
+                        )
                       }
-                      className={
-                        `payment-method-card ${
-                          selected
+                      placeholder="اكتب اسمك بالكامل"
+                      autoComplete="name"
+                    />
+
+                  </div>
+
+                </div>
+
+                <div className="checkout-field">
+
+                  <label>
+                    رقم الهاتف
+                    <span>*</span>
+                  </label>
+
+                  <div className="checkout-input-wrapper">
+
+                    <span>
+                      📱
+                    </span>
+
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) =>
+                        setPhone(
+                          e.target.value
+                        )
+                      }
+                      placeholder="01xxxxxxxxx"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                    />
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            {/* ADDRESS */}
+
+            <section className="checkout-card">
+
+              <div className="checkout-card-title">
+
+                <div className="checkout-section-icon">
+                  📍
+                </div>
+
+                <div>
+                  <h2>
+                    عنوان التوصيل
+                  </h2>
+
+                  <p>
+                    اختر موقعك واكتب العنوان بالتفصيل
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="checkout-form-grid">
+
+                {/* GOVERNORATE */}
+
+                <div className="checkout-field">
+
+                  <label>
+                    المحافظة
+                    <span>*</span>
+                  </label>
+
+                  <select
+                    value={
+                      selectedGovernorate
+                    }
+                    onChange={(e) => {
+                      const value =
+                        e.target.value;
+
+                      setSelectedGovernorate(
+                        value
+                      );
+
+                      setSelectedCity("");
+                      setSelectedVillage("");
+
+                      setCities([]);
+                      setVillages([]);
+                    }}
+                    disabled={
+                      governoratesLoading
+                    }
+                  >
+
+                    <option value="">
+                      {governoratesLoading
+                        ? "جاري تحميل المحافظات..."
+                        : "اختر المحافظة"}
+                    </option>
+
+                    {governorates.map(
+                      (item) => (
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
+                        >
+                          {getReadableLocationName(
+                            item
+                          )}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+                {/* CITY */}
+
+                <div className="checkout-field">
+
+                  <label>
+                    المدينة / المركز
+                    <span>*</span>
+                  </label>
+
+                  <select
+                    value={
+                      selectedCity
+                    }
+                    onChange={(e) => {
+                      const value =
+                        e.target.value;
+
+                      setSelectedCity(
+                        value
+                      );
+
+                      setSelectedVillage(
+                        ""
+                      );
+
+                      setVillages([]);
+                    }}
+                    disabled={
+                      !selectedGovernorate ||
+                      citiesLoading
+                    }
+                  >
+
+                    <option value="">
+                      {!selectedGovernorate
+                        ? "اختر المحافظة أولاً"
+                        : citiesLoading
+                        ? "جاري تحميل المدن..."
+                        : cities.length
+                        ? "اختر المدينة / المركز"
+                        : "لا توجد مدن متاحة"}
+                    </option>
+
+                    {cities.map(
+                      (item) => (
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
+                        >
+                          {getReadableLocationName(
+                            item
+                          )}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+                {/* VILLAGE / AREA */}
+
+                <div className="checkout-field">
+
+                  <label>
+                    القرية / المنطقة
+                  </label>
+
+                  <select
+                    value={
+                      selectedVillage
+                    }
+                    onChange={(e) => {
+                      const value =
+                        e.target.value;
+
+                      console.log(
+                        "SWA SELECTED VILLAGE:",
+                        value
+                      );
+
+                      setSelectedVillage(
+                        value
+                      );
+                    }}
+                    disabled={
+                      !selectedCity ||
+                      villagesLoading
+                    }
+                  >
+
+                    <option value="">
+                      {!selectedCity
+                        ? "اختر المدينة أولاً"
+                        : villagesLoading
+                        ? "جاري تحميل القرى والمناطق..."
+                        : villages.length
+                        ? "اختر القرية / المنطقة"
+                        : "لا توجد قرى / مناطق متاحة"}
+                    </option>
+
+                    {villages.map(
+                      (item, index) => {
+                        const villageId =
+                          getLocationId(
+                            item
+                          );
+
+                        const villageName =
+                          getReadableLocationName(
+                            item
+                          );
+
+                        if (
+                          !villageId ||
+                          !villageName
+                        ) {
+                          return null;
+                        }
+
+                        return (
+                          <option
+                            key={`${villageId}-${index}`}
+                            value={
+                              villageId
+                            }
+                          >
+                            {villageName}
+                          </option>
+                        );
+                      }
+                    )}
+
+                  </select>
+
+                  {selectedCity &&
+                    !villagesLoading &&
+                    villages.length ===
+                      0 && (
+                      <small
+                        style={{
+                          display:
+                            "block",
+                          marginTop:
+                            "8px",
+                          color:
+                            "#b45309",
+                          fontSize:
+                            "12px",
+                        }}
+                      >
+                        لم يتم العثور على قرى لهذه المدينة / المركز.
+                      </small>
+                    )}
+
+                </div>
+
+                {/* DETAILED ADDRESS */}
+
+                <div className="checkout-field checkout-field-full">
+
+                  <label>
+                    العنوان بالتفصيل
+                    <span>*</span>
+                  </label>
+
+                  <textarea
+                    value={
+                      address
+                    }
+                    onChange={(e) =>
+                      setAddress(
+                        e.target.value
+                      )
+                    }
+                    placeholder="اسم الشارع، رقم العقار، الدور، الشقة، وأي علامة مميزة..."
+                    rows={4}
+                  />
+
+                </div>
+
+                {/* NOTES */}
+
+                <div className="checkout-field checkout-field-full">
+
+                  <label>
+                    ملاحظات على الطلب
+                  </label>
+
+                  <textarea
+                    value={
+                      notes
+                    }
+                    onChange={(e) =>
+                      setNotes(
+                        e.target.value
+                      )
+                    }
+                    placeholder="أي ملاحظات إضافية تريد إخبارنا بها..."
+                    rows={3}
+                  />
+
+                </div>
+
+              </div>
+
+            </section>
+
+            {/* SHIPPING */}
+
+            {shippingZones.length >
+              0 && (
+              <section className="checkout-card">
+
+                <div className="checkout-card-title">
+
+                  <div className="checkout-section-icon">
+                    🚚
+                  </div>
+
+                  <div>
+                    <h2>
+                      طريقة الشحن
+                    </h2>
+
+                    <p>
+                      اختر طريقة التوصيل المناسبة
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="checkout-shipping-list">
+
+                  {shippingZones.map(
+                    (zone) => (
+                      <label
+                        key={
+                          zone.id
+                        }
+                        className={`checkout-shipping-option ${
+                          selectedShippingZone ===
+                          zone.id
                             ? "selected"
                             : ""
-                        }`
-                      }
-                    >
-
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={
-                          method.id
-                        }
-                        checked={
-                          selected
-                        }
-                        onChange={() =>
-                          setPaymentMethod(
-                            method.id
-                          )
-                        }
-                        disabled={
-                          loading
-                        }
-                      />
-
-
-                      <div
-                        className="payment-method-content"
+                        }`}
                       >
 
-                        <div
-                          className="payment-method-title"
-                        >
+                        <input
+                          type="radio"
+                          name="shippingZone"
+                          value={
+                            zone.id
+                          }
+                          checked={
+                            selectedShippingZone ===
+                            zone.id
+                          }
+                          onChange={(e) =>
+                            setSelectedShippingZone(
+                              e.target.value
+                            )
+                          }
+                        />
 
-                          <span
-                            className="payment-icon"
-                          >
-                            {
-                              method.icon ||
-                              "💳"
-                            }
-                          </span>
+                        <div className="checkout-radio-mark">
+                          <span />
+                        </div>
 
+                        <div className="checkout-shipping-content">
 
                           <strong>
-                            {
-                              method.title ||
-                              method.name ||
-                              "طريقة دفع"
-                            }
+                            {zone.name ||
+                              zone.title ||
+                              "الشحن"}
+                          </strong>
+
+                          <small>
+                            توصيل للعنوان المحدد
+                          </small>
+
+                        </div>
+
+                        <div className="checkout-shipping-price">
+
+                          <strong>
+                            {formatMoney(
+                              zone.price ??
+                                zone.shippingCost ??
+                                zone.cost ??
+                                0
+                            )}
                           </strong>
 
                         </div>
 
+                      </label>
+                    )
+                  )}
 
-                        <p>
-                          {
-                            method.description ||
-                            "متاح للدفع عند إتمام الطلب"
-                          }
-                        </p>
+                </div>
 
+              </section>
+            )}
 
-                        {number && (
+            {/* PAYMENT */}
 
-                          <div
-                            className="payment-number"
-                          >
+            <section className="checkout-card">
 
-                            📱{" "}
+              <div className="checkout-card-title">
 
-                            <strong>
-                              {
-                                number
-                              }
-                            </strong>
+                <div className="checkout-section-icon">
+                  💳
+                </div>
 
-                          </div>
+                <div>
+                  <h2>
+                    طريقة الدفع
+                  </h2>
 
-                        )}
-
-                      </div>
-
-                    </label>
-
-                  );
-
-                }
-              )}
-
-            </div>
-
-          )}
-
-
-          {!isCashPayment &&
-            paymentMethod && (
-
-              <div
-                className="payment-notice"
-              >
-
-                ⚠️{" "}
-                <strong>
-                  تنبيه:
-                </strong>
-
-                <br />
-
-                بعد تحويل قيمة الطلب على الرقم
-                الموضح، يرجى الاحتفاظ بإثبات الدفع.
+                  <p>
+                    اختر طريقة الدفع المناسبة لك
+                  </p>
+                </div>
 
               </div>
 
-            )}
+              <div className="checkout-payment-list">
 
-        </div>
+                {paymentMethods.map(
+                  (method) => {
+                    const methodId =
+                      method.id;
 
+                    const selected =
+                      selectedPaymentMethod ===
+                      methodId;
 
-        {/* ==================================================
-            COUPON
-        ================================================== */}
+                    const methodNumber =
+                      getPaymentNumber(
+                        method
+                      );
 
-        <div
-          className="coupon-section"
-          style={{
-            display: "block",
-            visibility: "visible",
-            opacity: 1,
-            width: "100%",
-            margin: "20px 0",
-            padding: "20px",
-            background: "#f8fafc",
-            border: "2px solid #D4AF37",
-            borderRadius: "15px",
-            boxSizing: "border-box",
-          }}
-        >
-
-          <h3
-            style={{
-              margin:
-                "0 0 15px",
-              color:
-                "#0B1F3A",
-              fontSize:
-                "20px",
-              fontWeight:
-                "800",
-            }}
-          >
-            🎟️ لديك كود خصم؟
-          </h3>
-
-
-          <div
-            style={{
-              display:
-                "flex",
-              gap:
-                "10px",
-              width:
-                "100%",
-              alignItems:
-                "stretch",
-            }}
-          >
-
-            <input
-              type="text"
-              placeholder="أدخل كود الخصم"
-              value={
-                couponCode
-              }
-              onChange={(e) => {
-
-                setCouponCode(
-                  e.target.value
-                    .toUpperCase()
-                );
-
-                setCouponError(
-                  ""
-                );
-
-                setCouponMessage(
-                  ""
-                );
-
-              }}
-              disabled={
-                loading ||
-                couponLoading ||
-                !!appliedCoupon
-              }
-              style={{
-                flex:
-                  1,
-                width:
-                  "100%",
-                minWidth:
-                  0,
-                padding:
-                  "14px",
-                border:
-                  "1px solid #d9dfe8",
-                borderRadius:
-                  "10px",
-                background:
-                  "#fff",
-                color:
-                  "#071A36",
-                fontSize:
-                  "16px",
-                fontFamily:
-                  "inherit",
-                outline:
-                  "none",
-                direction:
-                  "ltr",
-                textAlign:
-                  "left",
-                boxSizing:
-                  "border-box",
-              }}
-            />
-
-
-            {!appliedCoupon ? (
-
-              <button
-                type="button"
-                onClick={
-                  handleApplyCoupon
-                }
-                disabled={
-                  loading ||
-                  couponLoading
-                }
-                style={{
-                  minWidth:
-                    "120px",
-                  padding:
-                    "14px 20px",
-                  border:
-                    "none",
-                  borderRadius:
-                    "10px",
-                  background:
-                    "#0B1F3A",
-                  color:
-                    "#fff",
-                  fontSize:
-                    "15px",
-                  fontWeight:
-                    "800",
-                  fontFamily:
-                    "inherit",
-                  cursor:
-                    "pointer",
-                }}
-              >
-
-                {
-                  couponLoading
-                    ? "⏳ جاري التحقق..."
-                    : "تطبيق"
-                }
-
-              </button>
-
-            ) : (
-
-              <button
-                type="button"
-                onClick={
-                  removeCoupon
-                }
-                disabled={
-                  loading
-                }
-                style={{
-                  minWidth:
-                    "120px",
-                  padding:
-                    "14px 20px",
-                  border:
-                    "1px solid #D4AF37",
-                  borderRadius:
-                    "10px",
-                  background:
-                    "#fff",
-                  color:
-                    "#0B1F3A",
-                  fontSize:
-                    "15px",
-                  fontWeight:
-                    "800",
-                  fontFamily:
-                    "inherit",
-                  cursor:
-                    "pointer",
-                }}
-              >
-
-                إزالة الكوبون
-
-              </button>
-
-            )}
-
-          </div>
-
-
-          {couponError && (
-
-            <div
-              style={{
-                display:
-                  "block",
-                marginTop:
-                  "10px",
-                padding:
-                  "10px 12px",
-                borderRadius:
-                  "8px",
-                background:
-                  "#FEF2F2",
-                border:
-                  "1px solid #FECACA",
-                color:
-                  "#991B1B",
-                fontSize:
-                  "14px",
-              }}
-            >
-
-              ❌{" "}
-              {
-                couponError
-              }
-
-            </div>
-
-          )}
-
-
-          {couponMessage && (
-
-            <div
-              style={{
-                display:
-                  "block",
-                marginTop:
-                  "10px",
-                padding:
-                  "10px 12px",
-                borderRadius:
-                  "8px",
-                background:
-                  "#F0FDF4",
-                border:
-                  "1px solid #BBF7D0",
-                color:
-                  "#166534",
-                fontSize:
-                  "14px",
-                fontWeight:
-                  "700",
-              }}
-            >
-
-              {
-                couponMessage
-              }
-
-            </div>
-
-          )}
-
-        </div>
-
-
-        {/* ==================================================
-            ORDER SUMMARY
-        ================================================== */}
-
-        <div
-          className="checkout-summary"
-        >
-
-          <h3>
-            ملخص الطلب
-          </h3>
-
-
-          {cart.map(
-            (
-              item,
-              index
-            ) => {
-
-              const itemId =
-                item?.cartId ||
-                item?.id ||
-                item?._id ||
-                `checkout-item-${index}`;
-
-
-              const price =
-                Number(
-                  item?.price || 0
-                );
-
-
-              const quantity =
-                Number(
-                  item?.quantity || 0
-                );
-
-
-              const itemTotal =
-                price *
-                quantity;
-
-
-              const variantName =
-                item?.selectedVariant?.name ||
-                item?.variantName ||
-                "";
-
-
-              return (
-
-                <div
-                  className="checkout-item"
-                  key={
-                    itemId
-                  }
-                >
-
-                  <div
-                    className="checkout-item-info"
-                  >
-
-                    <strong>
-                      {
-                        item?.title ||
-                        item?.name ||
-                        "منتج"
-                      }
-                    </strong>
-
-
-                    {(
-                      item?.category ||
-                      item?.categoryName
-                    ) && (
-
-                      <small>
-
-                        🏷️ القسم:{" "}
-
-                        {
-                          item?.category ||
-                          item?.categoryName
+                    return (
+                      <label
+                        key={
+                          methodId
                         }
+                        className={`checkout-payment-option ${
+                          selected
+                            ? "selected"
+                            : ""
+                        }`}
+                      >
 
-                      </small>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={
+                            methodId
+                          }
+                          checked={
+                            selected
+                          }
+                          onChange={() => {
 
+                            setSelectedPaymentMethod(
+                              methodId
+                            );
+
+                            if (
+                              methodId !==
+                              selectedPaymentMethod
+                            ) {
+                              removePaymentProof();
+                            }
+
+                          }}
+                        />
+
+                        <div className="checkout-payment-radio">
+                          <span />
+                        </div>
+
+                        <div className="checkout-payment-content">
+
+                          <div className="checkout-payment-name">
+
+                            <strong>
+                              {method.name ||
+                                method.title ||
+                                "طريقة دفع"}
+                            </strong>
+
+                            {method.description && (
+                              <small>
+                                {
+                                  method.description
+                                }
+                              </small>
+                            )}
+
+                          </div>
+
+                          {!isCashPayment &&
+                            selected &&
+                            methodNumber && (
+                              <div className="checkout-payment-number">
+
+                                <span>
+                                  رقم التحويل
+                                </span>
+
+                                <strong>
+                                  {
+                                    methodNumber
+                                  }
+                                </strong>
+
+                              </div>
+                            )}
+
+                        </div>
+
+                        {selected && (
+                          <div className="checkout-payment-check">
+                            ✓
+                          </div>
+                        )}
+
+                      </label>
+                    );
+                  }
+                )}
+
+              </div>
+
+              {/* PAYMENT PROOF */}
+
+              {!isCashPayment &&
+                selectedPayment && (
+                  <div className="payment-proof-box">
+
+                    <div className="payment-proof-top">
+
+                      <div className="payment-proof-icon">
+                        📸
+                      </div>
+
+                      <div>
+
+                        <h3>
+                          إثبات الدفع مطلوب
+                        </h3>
+
+                        <p>
+                          بعد تحويل المبلغ، ارفع صورة واضحة للإيصال أو شاشة نجاح عملية الدفع.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    {getPaymentNumber(
+                      selectedPayment
+                    ) && (
+                      <div className="payment-proof-payment-number">
+
+                        <div>
+                          <span>
+                            رقم التحويل / الحساب
+                          </span>
+
+                          <strong>
+                            {getPaymentNumber(
+                              selectedPayment
+                            )}
+                          </strong>
+                        </div>
+
+                        <span className="payment-proof-copy-hint">
+                          استخدم هذا الرقم لإتمام التحويل
+                        </span>
+
+                      </div>
                     )}
 
+                    {!paymentProofFile ? (
+                      <div className="payment-proof-upload">
 
-                    {variantName && (
+                        <input
+                          id="payment-proof-input"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/*"
+                          onChange={
+                            handlePaymentProofChange
+                          }
+                          disabled={
+                            paymentProofUploading ||
+                            loading
+                          }
+                        />
 
+                        <label
+                          htmlFor="payment-proof-input"
+                          className="payment-proof-label"
+                        >
+
+                          <span className="payment-proof-upload-icon">
+                            ⬆️
+                          </span>
+
+                          <strong>
+                            اضغط لاختيار صورة إثبات الدفع
+                          </strong>
+
+                          <small>
+                            JPG / PNG / WEBP
+                            <br />
+                            الحد الأقصى 5 ميجابايت
+                          </small>
+
+                        </label>
+
+                      </div>
+                    ) : (
+                      <div className="payment-proof-preview-box">
+
+                        <div className="payment-proof-file-header">
+
+                          <div>
+                            <span className="payment-proof-file-icon">
+                              🖼️
+                            </span>
+
+                            <div>
+                              <strong>
+                                تم اختيار إثبات الدفع
+                              </strong>
+
+                              <small>
+                                {
+                                  paymentProofFile.name
+                                }
+                              </small>
+                            </div>
+                          </div>
+
+                          <span className="payment-proof-file-size">
+                            {(
+                              paymentProofFile.size /
+                              1024 /
+                              1024
+                            ).toFixed(
+                              2
+                            )}{" "}
+                            MB
+                          </span>
+
+                        </div>
+
+                        {paymentProofPreview && (
+                          <div className="payment-proof-image-wrapper">
+
+                            <img
+                              src={
+                                paymentProofPreview
+                              }
+                              alt="معاينة إثبات الدفع"
+                              className="payment-proof-image"
+                            />
+
+                            <div className="payment-proof-image-overlay">
+                              ✓ صورة جاهزة للرفع
+                            </div>
+
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          className="payment-proof-remove"
+                          onClick={
+                            removePaymentProof
+                          }
+                          disabled={
+                            paymentProofUploading ||
+                            loading
+                          }
+                        >
+                          🗑️ تغيير / حذف الصورة
+                        </button>
+
+                      </div>
+                    )}
+
+                    {paymentProofUploading && (
+                      <div className="payment-proof-uploading">
+
+                        <span className="payment-proof-spinner">
+                          ⏳
+                        </span>
+
+                        <div>
+                          <strong>
+                            جاري رفع إثبات الدفع...
+                          </strong>
+
+                          <small>
+                            لا تغلق الصفحة حتى يكتمل الرفع
+                          </small>
+                        </div>
+
+                      </div>
+                    )}
+
+                    <div className="payment-proof-note">
+
+                      <span>
+                        🔒
+                      </span>
+
+                      <p>
+                        سيتم رفع صورة الإثبات بشكل آمن إلى Cloudinary وربطها بالطلب داخل Firestore، وبعد نجاح التسجيل سيتم فتح محادثة واتساب الخاصة بالقسم.
+                      </p>
+
+                    </div>
+
+                  </div>
+                )}
+
+            </section>
+
+            {/* COUPON */}
+
+            <section className="checkout-card">
+
+              <div className="checkout-card-title">
+
+                <div className="checkout-section-icon">
+                  🎟️
+                </div>
+
+                <div>
+                  <h2>
+                    كود الخصم
+                  </h2>
+
+                  <p>
+                    لديك كوبون؟ استخدمه الآن
+                  </p>
+                </div>
+
+              </div>
+
+              {!couponData ? (
+                <div className="checkout-coupon">
+
+                  <div className="checkout-coupon-input">
+
+                    <span>
+                      %
+                    </span>
+
+                    <input
+                      type="text"
+                      value={
+                        couponCode
+                      }
+                      onChange={(e) => {
+                        setCouponCode(
+                          e.target.value.toUpperCase()
+                        );
+
+                        setCouponError(
+                          ""
+                        );
+                      }}
+                      placeholder="اكتب كود الخصم"
+                    />
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={
+                      applyCoupon
+                    }
+                    disabled={
+                      couponLoading
+                    }
+                  >
+                    {couponLoading
+                      ? "جاري التحقق..."
+                      : "تطبيق الكود"}
+                  </button>
+
+                </div>
+              ) : (
+                <div className="checkout-coupon-success">
+
+                  <div>
+
+                    <span>
+                      ✓
+                    </span>
+
+                    <div>
                       <small>
-
-                        🔀 النوع:{" "}
-                        {
-                          variantName
-                        }
-
+                        تم تطبيق الكود بنجاح
                       </small>
 
+                      <strong>
+                        {
+                          couponData.code
+                        }
+                      </strong>
+                    </div>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={
+                      removeCoupon
+                    }
+                  >
+                    إزالة
+                  </button>
+
+                </div>
+              )}
+
+              {couponError && (
+                <div className="checkout-error">
+                  ⚠️{" "}
+                  {couponError}
+                </div>
+              )}
+
+            </section>
+
+            {/* WHEEL */}
+
+            {wheelPrize && (
+              <section className="checkout-card checkout-wheel-card">
+
+                <div className="checkout-card-title">
+
+                  <div className="checkout-section-icon">
+                    🎡
+                  </div>
+
+                  <div>
+                    <h2>
+                      خصم عجلة الحظ
+                    </h2>
+
+                    <p>
+                      تم تطبيق الجائزة على طلبك
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="checkout-wheel-prize">
+
+                  <div className="checkout-wheel-prize-icon">
+                    🎁
+                  </div>
+
+                  <div>
+
+                    <strong>
+                      {wheelPrize.title ||
+                        wheelPrize.name ||
+                        "تم الحصول على خصم"}
+                    </strong>
+
+                    {wheelDiscount >
+                      0 && (
+                      <span>
+                        خصم{" "}
+                        {formatMoney(
+                          wheelDiscount
+                        )}
+                      </span>
                     )}
 
                   </div>
 
+                </div>
 
-                  <span>
+              </section>
+            )}
 
-                    {
-                      quantity
-                    }
+          </main>
 
-                    {" × "}
+          {/* =================================================
+              SIDEBAR
+          ================================================= */}
 
-                    {
-                      price.toLocaleString(
-                        "ar-EG"
-                      )
-                    }
+          <aside className="checkout-sidebar">
 
-                    {" جنيه = "}
+            <section className="checkout-card checkout-summary-card">
 
-                    {
-                      itemTotal.toLocaleString(
-                        "ar-EG"
-                      )
-                    }
+              <div className="checkout-summary-header">
 
-                    {" جنيه"}
+                <div className="checkout-card-title">
 
-                  </span>
+                  <div className="checkout-section-icon">
+                    🧾
+                  </div>
+
+                  <div>
+                    <h2>
+                      ملخص الطلب
+                    </h2>
+
+                    <p>
+                      {cart.length}{" "}
+                      منتج في السلة
+                    </p>
+                  </div>
 
                 </div>
 
-              );
+              </div>
 
-            }
-          )}
+              {/* PRODUCTS */}
 
+              <div className="checkout-products-summary">
 
-          <div
-            className="checkout-total"
-          >
+                {cart.map(
+                  (
+                    product,
+                    index
+                  ) => {
+                    const price =
+                      Number(
+                        product.salePrice ??
+                          product.discountPrice ??
+                          product.price ??
+                          0
+                      );
 
-            <strong>
-              إجمالي المنتجات:
-            </strong>
+                    const quantity =
+                      Number(
+                        product.quantity ??
+                          product.qty ??
+                          product.count ??
+                          1
+                      );
 
-            <strong>
-              {
-                subtotal.toLocaleString(
-                  "ar-EG"
-                )
-              }{" "}
-              جنيه
-            </strong>
+                    const image =
+                      product.image ||
+                      product.imageUrl ||
+                      product.thumbnail;
 
-          </div>
+                    return (
+                      <div
+                        className="checkout-summary-product"
+                        key={
+                          product.id ||
+                          product.productId ||
+                          index
+                        }
+                      >
 
+                        <div className="checkout-summary-product-image">
 
-          {/* WHEEL DISCOUNT */}
+                          {image ? (
+                            <img
+                              src={
+                                image
+                              }
+                              alt={
+                                product.name ||
+                                product.title ||
+                                "منتج"
+                              }
+                            />
+                          ) : (
+                            <span>
+                              📦
+                            </span>
+                          )}
 
-          {wheelDiscount > 0 && (
+                          <b>
+                            {quantity}
+                          </b>
 
-            <div
-              className="checkout-total"
-              style={{
-                color:
-                  "#198754",
-              }}
-            >
+                        </div>
 
-              <strong>
-                🎡 خصم عجلة الحظ:
-              </strong>
+                        <div className="checkout-summary-product-info">
 
-              <strong>
-                -{" "}
-                {
-                  wheelDiscount.toLocaleString(
-                    "ar-EG"
-                  )
-                }{" "}
-                جنيه
-              </strong>
+                          <strong>
+                            {product.name ||
+                              product.title ||
+                              "منتج"}
+                          </strong>
 
-            </div>
+                          <span>
+                            الكمية:{" "}
+                            {quantity}
+                          </span>
 
-          )}
+                          <b>
+                            {formatMoney(
+                              price *
+                                quantity
+                            )}
+                          </b>
 
+                        </div>
 
-          {/* COUPON DISCOUNT */}
+                      </div>
+                    );
+                  }
+                )}
 
-          {couponDiscount > 0 && (
+              </div>
 
-            <div
-              className="checkout-total"
-              style={{
-                color:
-                  "#198754",
-              }}
-            >
+              {/* SUMMARY LINES */}
 
-              <strong>
-                🎟️ خصم الكوبون:
-              </strong>
+              <div className="checkout-summary-lines">
 
-              <strong>
-                -{" "}
-                {
-                  couponDiscount.toLocaleString(
-                    "ar-EG"
-                  )
-                }{" "}
-                جنيه
-              </strong>
+                <div>
+                  <span>
+                    إجمالي المنتجات
+                  </span>
 
-            </div>
+                  <strong>
+                    {formatMoney(
+                      subtotal
+                    )}
+                  </strong>
+                </div>
 
-          )}
+                {wheelDiscount >
+                  0 && (
+                  <div className="discount-line">
 
+                    <span>
+                      🎡 خصم عجلة الحظ
+                    </span>
 
-          {/* FREE SHIPPING */}
+                    <strong>
+                      -
+                      {formatMoney(
+                        wheelDiscount
+                      )}
+                    </strong>
 
-          {hasFreeShippingPrize ? (
+                  </div>
+                )}
 
-            <div
-              className="checkout-total"
-              style={{
-                color:
-                  "#198754",
-              }}
-            >
+                {couponDiscount >
+                  0 && (
+                  <div className="discount-line">
 
-              <strong>
-                🚚 الشحن:
-              </strong>
+                    <span>
+                      🎟️ خصم الكوبون
+                    </span>
 
-              <strong>
-                مجاني 🎉
-              </strong>
+                    <strong>
+                      -
+                      {formatMoney(
+                        couponDiscount
+                      )}
+                    </strong>
 
-            </div>
+                  </div>
+                )}
 
-          ) : (
+                <div>
 
-            shippingCost > 0 && (
+                  <span>
+                    🚚 الشحن
+                  </span>
 
-              <div
-                className="checkout-total"
-              >
+                  <strong>
+                    {formatMoney(
+                      shippingCost
+                    )}
+                  </strong>
+
+                </div>
+
+              </div>
+
+              {/* TOTAL */}
+
+              <div className="checkout-total-row">
+
+                <div>
+
+                  <span>
+                    الإجمالي النهائي
+                  </span>
+
+                  <small>
+                    شامل الخصومات والشحن
+                  </small>
+
+                </div>
 
                 <strong>
-                  🚚 الشحن:
-                </strong>
-
-                <strong>
-                  {
-                    shippingCost.toLocaleString(
-                      "ar-EG"
-                    )
-                  }{" "}
-                  جنيه
+                  {formatMoney(
+                    finalTotal
+                  )}
                 </strong>
 
               </div>
 
-            )
+              {/* PAYMENT */}
 
-          )}
+              <div className="checkout-payment-summary">
 
+                <span>
+                  💳 طريقة الدفع
+                </span>
 
-          {/* GIFT */}
+                <strong>
+                  {selectedPayment?.name ||
+                    "لم يتم الاختيار"}
+                </strong>
 
-          {wheelPrizeType ===
-            "gift" && (
+              </div>
 
-            <div
-              className="checkout-total"
-              style={{
-                color:
-                  "#198754",
-              }}
+              {/* PAYMENT PROOF STATUS */}
+
+              {!isCashPayment && (
+                <div
+                  className={`checkout-proof-summary ${
+                    paymentProofFile
+                      ? "ready"
+                      : "required"
+                  }`}
+                >
+
+                  <div>
+
+                    <span>
+                      📸 إثبات الدفع
+                    </span>
+
+                    <small>
+                      {paymentProofFile
+                        ? "جاهز للرفع"
+                        : "مطلوب قبل تأكيد الطلب"}
+                    </small>
+
+                  </div>
+
+                  <strong>
+                    {paymentProofFile
+                      ? "✓"
+                      : "!"}
+                  </strong>
+
+                </div>
+              )}
+
+              {/* CONFIRM */}
+
+              <button
+                type="button"
+                className="checkout-confirm-button"
+                onClick={
+                  sendOrder
+                }
+                disabled={
+                  loading ||
+                  authLoading ||
+                  dataLoading ||
+                  governoratesLoading ||
+                  citiesLoading ||
+                  villagesLoading ||
+                  paymentProofUploading ||
+                  !isFormValid
+                }
+              >
+
+                <span className="checkout-confirm-icon">
+                  {paymentProofUploading
+                    ? "⏳"
+                    : loading
+                    ? "⏳"
+                    : !isCashPayment &&
+                      !paymentProofFile &&
+                      !paymentProofUrl
+                    ? "📸"
+                    : "✓"}
+                </span>
+
+                <span>
+                  {paymentProofUploading
+                    ? "جاري رفع إثبات الدفع..."
+                    : loading
+                    ? "جاري تسجيل الطلب..."
+                    : !isCashPayment &&
+                      !paymentProofFile &&
+                      !paymentProofUrl
+                    ? "ارفع إثبات الدفع أولاً"
+                    : "تأكيد الطلب وإرسال واتساب"}
+                </span>
+
+              </button>
+
+              {/* SECURITY */}
+
+              <div className="checkout-security-note">
+
+                <span>
+                  🔐
+                </span>
+
+                <div>
+
+                  <strong>
+                    عملية دفع آمنة
+                  </strong>
+
+                  <small>
+                    يتم حفظ بيانات طلبك بشكل آمن
+                  </small>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            {/* BACK TO STORE */}
+
+            <button
+              type="button"
+              className="checkout-back-store-button"
+              onClick={() =>
+                navigate("/")
+              }
             >
 
-              <strong>
-                🎁 الهدية:
-              </strong>
+              <span>
+                ←
+              </span>
 
-              <strong>
-                {
-                  wheelPrize?.title ||
-                  "هدية مجانية"
-                }
-              </strong>
+              العودة للتسوق
 
-            </div>
+            </button>
 
-          )}
-
-
-          {/* FINAL TOTAL */}
-
-          <div
-            className="checkout-total"
-            style={{
-              borderTop:
-                "2px solid #D4AF37",
-              marginTop:
-                "10px",
-              paddingTop:
-                "15px",
-            }}
-          >
-
-            <strong>
-              💰 الإجمالي النهائي:
-            </strong>
-
-            <strong>
-              {
-                finalTotal.toLocaleString(
-                  "ar-EG"
-                )
-              }{" "}
-              جنيه
-            </strong>
-
-          </div>
+          </aside>
 
         </div>
-
-
-        {/* ==================================================
-            CONFIRM ORDER
-        ================================================== */}
-
-        <button
-          type="button"
-          className="checkout-btn"
-          onClick={
-            sendOrder
-          }
-          disabled={
-            loading ||
-            authLoading ||
-            paymentMethodsLoading ||
-            categoriesLoading ||
-            shippingZonesLoading
-          }
-        >
-
-          {loading
-
-            ? "⏳ جاري تسجيل الطلب وفتح واتساب..."
-
-            : authLoading
-
-              ? "⏳ جاري التحقق من الحساب..."
-
-              : paymentMethodsLoading
-
-                ? "⏳ جاري تحميل طرق الدفع..."
-
-                : categoriesLoading
-
-                  ? "⏳ جاري تحميل الأقسام..."
-
-                  : shippingZonesLoading
-
-                    ? "⏳ جاري تحميل الشحن..."
-
-                    : "📦 تأكيد الطلب وإرسال واتساب"
-
-          }
-
-        </button>
-
-
-        {/* ==================================================
-            BACK TO CART
-        ================================================== */}
-
-        <button
-          type="button"
-          className="back-btn"
-          onClick={() =>
-            navigate(
-              "/cart"
-            )
-          }
-          disabled={
-            loading
-          }
-        >
-
-          ⬅ الرجوع للسلة
-
-        </button>
 
       </div>
 
     </div>
-
   );
-
-}
-
+};
 
 export default Checkout;

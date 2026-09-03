@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import {
   signInWithEmailAndPassword,
-  sendEmailVerification
+  sendEmailVerification,
 } from "firebase/auth";
 
 import {
@@ -11,14 +11,12 @@ import {
   getDoc,
   updateDoc,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
 
-
 function Login() {
-
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -28,15 +26,13 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const login = async (e) => {
-
     e.preventDefault();
 
     if (loading) {
       return;
     }
 
-    const cleanEmail =
-      email.trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
 
     if (!cleanEmail || !password) {
       alert(
@@ -46,7 +42,6 @@ function Login() {
     }
 
     try {
-
       setLoading(true);
 
       // ==========================================
@@ -73,18 +68,13 @@ function Login() {
       // ==========================================
 
       if (!user.emailVerified) {
-
         try {
-
           await sendEmailVerification(user);
-
         } catch (verificationError) {
-
           console.error(
             "Verification Email Error:",
             verificationError
           );
-
         }
 
         alert(
@@ -102,28 +92,21 @@ function Login() {
       // FIRESTORE USER
       // ==========================================
 
-      const userRef =
-        doc(
-          db,
-          "users",
-          user.uid
-        );
+      const userRef = doc(
+        db,
+        "users",
+        user.uid
+      );
 
-      const userSnap =
-        await getDoc(userRef);
+      const userSnap = await getDoc(userRef);
 
       // ==========================================
       // LOGIN VISIT
       // ==========================================
 
       const loginVisit = {
-
-        date:
-          new Date().toISOString(),
-
-        type:
-          "login"
-
+        date: new Date().toISOString(),
+        type: "login",
       };
 
       // ==========================================
@@ -131,21 +114,17 @@ function Login() {
       // ==========================================
 
       if (userSnap.exists()) {
+        const userData = userSnap.data();
 
-        const userData =
-          userSnap.data();
-
-        const oldVisits =
-          Array.isArray(
-            userData.visits
-          )
-            ? userData.visits
-            : [];
+        const oldVisits = Array.isArray(
+          userData.visits
+        )
+          ? userData.visits
+          : [];
 
         await updateDoc(
           userRef,
           {
-
             lastLoginAt:
               serverTimestamp(),
 
@@ -156,15 +135,13 @@ function Login() {
 
             visits: [
               ...oldVisits,
-              loginVisit
+              loginVisit,
             ],
 
             updatedAt:
-              serverTimestamp()
-
+              serverTimestamp(),
           }
         );
-
       }
 
       // ==========================================
@@ -173,13 +150,10 @@ function Login() {
       // ==========================================
 
       else {
-
         await setDoc(
           userRef,
           {
-
-            uid:
-              user.uid,
+            uid: user.uid,
 
             name:
               user.displayName || "",
@@ -193,23 +167,19 @@ function Login() {
             phone:
               user.phoneNumber || "",
 
-            role:
-              "user",
+            role: "user",
 
-            active:
-              true,
+            active: true,
 
-            emailVerified:
-              true,
+            emailVerified: true,
 
-            loginCount:
-              1,
+            loginCount: 1,
 
             lastLoginAt:
               serverTimestamp(),
 
             visits: [
-              loginVisit
+              loginVisit,
             ],
 
             createdAt:
@@ -218,30 +188,22 @@ function Login() {
             registeredAt:
               serverTimestamp(),
 
-            address:
-              "",
+            address: "",
 
-            whatsapp:
-              "",
+            whatsapp: "",
 
-            gender:
-              "",
+            gender: "",
 
-            favoriteCategories:
-              [],
+            favoriteCategories: [],
 
-            interests:
-              [],
+            interests: [],
 
-            discoverySource:
-              "",
+            discoverySource: "",
 
             updatedAt:
-              serverTimestamp()
-
+              serverTimestamp(),
           }
         );
-
       }
 
       // ==========================================
@@ -249,18 +211,15 @@ function Login() {
       // ==========================================
 
       navigate("/");
-
     }
 
     catch (err) {
-
       console.error(
         "Login Error:",
         err
       );
 
       switch (err?.code) {
-
         case "auth/invalid-credential":
 
         case "auth/wrong-password":
@@ -310,272 +269,344 @@ function Login() {
           alert(
             "حدث خطأ أثناء تسجيل الدخول"
           );
-
       }
-
     }
 
     finally {
-
       setLoading(false);
-
     }
-
   };
 
   return (
-
     <main
       className="auth-page"
       dir="rtl"
     >
-
       {/* ==========================================
-          BACKGROUND DECORATION
+          BACKGROUND
       ========================================== */}
 
-      <div className="auth-bg-circle auth-bg-circle-one" />
-      <div className="auth-bg-circle auth-bg-circle-two" />
+      <div className="auth-bg">
+        <div className="auth-glow auth-glow-one" />
+        <div className="auth-glow auth-glow-two" />
+        <div className="auth-grid" />
+      </div>
 
       {/* ==========================================
-          LOGIN CARD
+          AUTH LAYOUT
       ========================================== */}
 
-      <section className="auth-card">
+      <div className="auth-container">
 
         {/* ========================================
-            BRAND
+            BRAND / HERO
         ======================================== */}
 
-        <div className="auth-brand">
+        <aside className="auth-hero">
 
-          <Link
-            to="/"
-            className="auth-logo"
-            aria-label="Elsafty Store"
-          >
-
-            <span className="auth-logo-main">
-              ELSAFTY
-            </span>
-
-            <span className="auth-logo-sub">
-              STORE
-            </span>
-
-          </Link>
-
-          <div className="auth-brand-line" />
-
-        </div>
-
-
-        {/* ========================================
-            HEADER
-        ======================================== */}
-
-        <div className="auth-header">
-
-          <div className="auth-icon">
-            <span>👤</span>
-          </div>
-
-          <h1>
-            تسجيل الدخول
-          </h1>
-
-          <p>
-            أهلاً بيك في Elsafty Store
-          </p>
-
-          <small>
-            سجل دخولك للوصول إلى حسابك وطلباتك
-          </small>
-
-        </div>
-
-
-        {/* ========================================
-            FORM
-        ======================================== */}
-
-        <form
-          className="auth-form"
-          onSubmit={login}
-        >
-
-          {/* EMAIL */}
-
-          <div className="auth-field">
-
-            <label htmlFor="login-email">
-              البريد الإلكتروني
-            </label>
-
-            <div className="auth-input-wrap">
-
-              <span className="auth-input-icon">
-                ✉
-              </span>
-
-              <input
-                id="login-email"
-                type="email"
-                placeholder="example@gmail.com"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                disabled={loading}
-                autoComplete="email"
-                required
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* PASSWORD */}
-
-          <div className="auth-field">
-
-            <label htmlFor="login-password">
-              كلمة المرور
-            </label>
-
-            <div className="auth-input-wrap">
-
-              <span className="auth-input-icon">
-                🔒
-              </span>
-
-              <input
-                id="login-password"
-                type={
-                  showPassword
-                    ? "text"
-                    : "password"
-                }
-                placeholder="أدخل كلمة المرور"
-                value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                disabled={loading}
-                autoComplete="current-password"
-                required
-              />
-
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() =>
-                  setShowPassword(
-                    !showPassword
-                  )
-                }
-                disabled={loading}
-                aria-label={
-                  showPassword
-                    ? "إخفاء كلمة المرور"
-                    : "إظهار كلمة المرور"
-                }
-              >
-
-                {showPassword
-                  ? "🙈"
-                  : "👁️"}
-
-              </button>
-
-            </div>
-
-          </div>
-
-
-          {/* FORGOT PASSWORD */}
-
-          <div className="auth-options">
+          <div className="auth-hero-content">
 
             <Link
-              to="/forgot-password"
-              className="auth-forgot"
+              to="/"
+              className="auth-brand"
+              aria-label="ســـــَــــــــوا"
             >
-              نسيت كلمة المرور؟
+              <span className="auth-brand-mark">
+                س
+              </span>
+
+              <span className="auth-brand-name">
+                ســـــَــــــــوا
+              </span>
+            </Link>
+
+            <div className="auth-hero-badge">
+              ✦ تجربة تسوق مختلفة
+            </div>
+
+            <h2>
+              كل اللي بتحبه...
+              <br />
+              <span>في مكان واحد</span>
+            </h2>
+
+            <p>
+              سجّل دخولك واستمتع بتجربة
+              تسوق أسهل وأسرع مع ســـــَــــــــوا.
+            </p>
+
+            <div className="auth-benefits">
+
+              <div className="auth-benefit">
+                <span className="auth-benefit-icon">
+                  🛍️
+                </span>
+
+                <div>
+                  <strong>
+                    اختيارات أكتر
+                  </strong>
+
+                  <small>
+                    منتجات تناسب احتياجاتك
+                  </small>
+                </div>
+              </div>
+
+              <div className="auth-benefit">
+                <span className="auth-benefit-icon">
+                  ⚡
+                </span>
+
+                <div>
+                  <strong>
+                    تجربة أسرع
+                  </strong>
+
+                  <small>
+                    تابع طلباتك بسهولة
+                  </small>
+                </div>
+              </div>
+
+              <div className="auth-benefit">
+                <span className="auth-benefit-icon">
+                  🔒
+                </span>
+
+                <div>
+                  <strong>
+                    حسابك في أمان
+                  </strong>
+
+                  <small>
+                    حماية وخصوصية أفضل
+                  </small>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="auth-hero-footer">
+            © ســـــَــــــــوا — كل الحقوق محفوظة
+          </div>
+
+        </aside>
+
+        {/* ========================================
+            LOGIN CARD
+        ======================================== */}
+
+        <section className="auth-card">
+
+          {/* MOBILE BRAND */}
+
+          <div className="auth-mobile-brand">
+
+            <Link
+              to="/"
+              className="auth-mobile-logo"
+            >
+              <span>
+                س
+              </span>
+
+              ســـــَــــــــوا
             </Link>
 
           </div>
 
+          {/* HEADER */}
 
-          {/* LOGIN */}
+          <div className="auth-header">
 
-          <button
-            type="submit"
-            className="auth-submit"
-            disabled={loading}
+            <div className="auth-welcome-icon">
+              👋
+            </div>
+
+            <div>
+
+              <div className="auth-eyebrow">
+                مرحباً بعودتك
+              </div>
+
+              <h1>
+                تسجيل الدخول
+              </h1>
+
+              <p>
+                ادخل بياناتك للوصول إلى حسابك
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* FORM */}
+
+          <form
+            className="auth-form"
+            onSubmit={login}
           >
 
-            {loading ? (
+            {/* EMAIL */}
 
-              <>
+            <div className="auth-field">
 
-                <span className="auth-spinner" />
+              <label htmlFor="login-email">
+                البريد الإلكتروني
+              </label>
 
-                جاري تسجيل الدخول...
+              <div className="auth-input-wrap">
 
-              </>
-
-            ) : (
-
-              <>
-                تسجيل الدخول
-                <span className="auth-submit-arrow">
-                  ←
+                <span className="auth-input-icon">
+                  ✉
                 </span>
-              </>
 
-            )}
+                <input
+                  id="login-email"
+                  type="email"
+                  placeholder="example@gmail.com"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  disabled={loading}
+                  autoComplete="email"
+                  required
+                />
 
-          </button>
+              </div>
 
-        </form>
+            </div>
 
+            {/* PASSWORD */}
 
-        {/* ========================================
-            REGISTER
-        ======================================== */}
+            <div className="auth-field">
 
-        <div className="auth-register">
+              <div className="auth-label-row">
 
-          <span>
-            ليس لديك حساب؟
-          </span>
+                <label htmlFor="login-password">
+                  كلمة المرور
+                </label>
 
-          <Link to="/register">
-            إنشاء حساب جديد
+                <Link
+                  to="/forgot-password"
+                  className="auth-forgot"
+                >
+                  نسيت كلمة المرور؟
+                </Link>
+
+              </div>
+
+              <div className="auth-input-wrap">
+
+                <span className="auth-input-icon">
+                  🔒
+                </span>
+
+                <input
+                  id="login-password"
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
+                  placeholder="أدخل كلمة المرور"
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
+                  disabled={loading}
+                  autoComplete="current-password"
+                  required
+                />
+
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() =>
+                    setShowPassword(
+                      !showPassword
+                    )
+                  }
+                  disabled={loading}
+                  aria-label={
+                    showPassword
+                      ? "إخفاء كلمة المرور"
+                      : "إظهار كلمة المرور"
+                  }
+                >
+                  {showPassword
+                    ? "🙈"
+                    : "👁️"}
+                </button>
+
+              </div>
+
+            </div>
+
+            {/* LOGIN BUTTON */}
+
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={loading}
+            >
+
+              {loading ? (
+                <>
+                  <span className="auth-spinner" />
+                  جاري تسجيل الدخول...
+                </>
+              ) : (
+                <>
+                  <span>
+                    تسجيل الدخول
+                  </span>
+
+                  <span className="auth-submit-arrow">
+                    ←
+                  </span>
+                </>
+              )}
+
+            </button>
+
+          </form>
+
+          {/* REGISTER */}
+
+          <div className="auth-register">
+
+            <span>
+              لسه معندكش حساب؟
+            </span>
+
+            <Link to="/register">
+              إنشاء حساب جديد
+            </Link>
+
+          </div>
+
+          {/* BACK */}
+
+          <Link
+            to="/"
+            className="auth-back"
+          >
+            <span>←</span>
+            العودة إلى المتجر
           </Link>
 
-        </div>
+        </section>
 
-
-        {/* ========================================
-            BACK TO STORE
-        ======================================== */}
-
-        <Link
-          to="/"
-          className="auth-back"
-        >
-          ← العودة إلى المتجر
-        </Link>
-
-      </section>
+      </div>
 
     </main>
-
   );
-
 }
 
 export default Login;

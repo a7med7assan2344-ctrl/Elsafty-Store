@@ -3984,180 +3984,351 @@ function Admin() {
       );
     };
 
-  const handleGenericSubmit =
-    async (
-      event
-    ) => {
-      event.preventDefault();
+ const handleGenericSubmit = async (event) => {
+  event.preventDefault();
 
-      if (actionLoading) {
-        return;
+  if (actionLoading) {
+    return;
+  }
+
+  const collectionName = getGenericCollection(genericType);
+
+  if (!collectionName) {
+    alert("❌ لم يتم تحديد مجموعة البيانات.");
+    return;
+  }
+
+  setActionLoading(true);
+
+  try {
+    /*
+     * =====================================================
+     * تجهيز البيانات
+     * =====================================================
+     */
+
+    const data = {
+      ...genericForm,
+    };
+
+
+const imageFile = data.imageFile;
+
+delete data.id;
+delete data.createdAt;
+delete data.updatedAt;
+delete data.imageFile;
+delete data.imagePreview;
+    /*
+     * =====================================================
+     * تحويل القيم الرقمية
+     * =====================================================
+     */
+
+    const numericFields = [
+      "value",
+      "minOrder",
+      "price",
+      "speed",
+      "fontSize",
+      "height",
+      "sortOrder",
+      "order",
+      "titleFontSize",
+      "descriptionFontSize",
+      "textPanelOpacity",
+      "textPanelBorderRadius",
+      "textPanelPadding",
+      "textPanelWidth",
+      "overlayOpacity",
+    ];
+
+    numericFields.forEach((key) => {
+      if (key in data) {
+        const value = Number(data[key]);
+
+        data[key] = Number.isFinite(value) ? value : 0;
+      }
+    });
+
+    /*
+     * =====================================================
+     * Boolean fields
+     * =====================================================
+     */
+
+    if ("active" in data) {
+      data.active = data.active !== false;
+    }
+
+    if ("enabled" in data) {
+      data.enabled = data.enabled !== false;
+    }
+
+    if ("blocked" in data) {
+      data.blocked = data.blocked !== false;
+    }
+
+    /*
+     * =====================================================
+     * رفع صورة البنر الجديدة
+     * =====================================================
+     *
+     * مهم جدًا:
+     * لو genericType = banners واختار المستخدم صورة جديدة،
+     * يتم رفعها إلى Cloudinary ثم حفظ الرابط فقط في Firestore.
+     *
+     * لو لم يختار صورة جديدة، يتم الاحتفاظ بالصورة القديمة.
+     */
+
+    if (
+      genericType === "banners" &&
+      imageFile instanceof File
+    ) {
+      console.log("📤 جاري رفع صورة البنر...");
+
+      const uploadedImageUrl =
+        await uploadFileToCloudinary(imageFile);
+
+      if (!uploadedImageUrl) {
+        throw new Error(
+          "❌ فشل رفع صورة البنر."
+        );
       }
 
-      const collectionName =
-        getGenericCollection(
-          genericType
+      data.image = uploadedImageUrl;
+
+      console.log(
+        "✅ تم رفع صورة البنر:",
+        uploadedImageUrl
+      );
+    }
+
+    /*
+     * =====================================================
+     * Store Menu image
+     * =====================================================
+     */
+if (
+  genericType === "banners" &&
+  imageFile instanceof File
+) {
+  const uploadedImageUrl =
+    await uploadFileToCloudinary(imageFile);
+
+  if (!uploadedImageUrl) {
+    throw new Error(
+      "❌ فشل رفع صورة البنر."
+    );
+  }
+
+  data.image = uploadedImageUrl;
+}    /*
+     * =====================================================
+     * تنظيف بيانات البنرات
+     * =====================================================
+     */
+
+    if (genericType === "banners") {
+      data.title = data.title || "";
+      data.text = data.text || "";
+      data.tag = data.tag || "";
+      data.buttonText =
+        data.buttonText || "";
+
+      data.link =
+        data.link || "/";
+
+      data.image =
+        data.image || "";
+
+      data.imageFit =
+        data.imageFit || "contain";
+
+      data.imagePosition =
+        data.imagePosition || "center";
+
+      data.fontFamily =
+        data.fontFamily || "Cairo";
+
+      data.fontWeight =
+        String(
+          data.fontWeight || "700"
         );
 
-      if (!collectionName) {
-        return;
-      }
+      data.titleFontSize =
+        Number(
+          data.titleFontSize ?? 42
+        );
 
-      setActionLoading(
-        true
+      data.descriptionFontSize =
+        Number(
+          data.descriptionFontSize ?? 20
+        );
+
+      data.textAlign =
+        data.textAlign || "right";
+
+      data.textPositionX =
+        data.textPositionX || "right";
+
+      data.textPositionY =
+        data.textPositionY || "center";
+
+      data.titleColor =
+        data.titleColor || "#ffffff";
+
+      data.descriptionColor =
+        data.descriptionColor ||
+        "#ffffff";
+
+      data.tagColor =
+        data.tagColor || "#ffffff";
+
+      data.textColor =
+        data.textColor || "#ffffff";
+
+      data.textPanelEnabled =
+        data.textPanelEnabled !== false;
+
+      data.textPanelBackground =
+        data.textPanelBackground ||
+        "#071A36";
+
+      data.textPanelOpacity =
+        Number(
+          data.textPanelOpacity ?? 0.72
+        );
+
+      data.textPanelBorderRadius =
+        Number(
+          data.textPanelBorderRadius ?? 16
+        );
+
+      data.textPanelPadding =
+        Number(
+          data.textPanelPadding ?? 24
+        );
+
+      data.textPanelWidth =
+        Number(
+          data.textPanelWidth ?? 520
+        );
+
+      data.overlayEnabled =
+        data.overlayEnabled !== false;
+
+      data.overlayColor =
+        data.overlayColor || "#000000";
+
+      data.overlayOpacity =
+        Number(
+          data.overlayOpacity ?? 0.35
+        );
+
+      data.buttonBackground =
+        data.buttonBackground ||
+        "#D4AF37";
+
+      data.buttonTextColor =
+        data.buttonTextColor ||
+        "#071A36";
+
+      data.order =
+        Number(data.order) || 0;
+
+      data.active =
+        data.active !== false;
+    }
+
+    /*
+     * =====================================================
+     * حفظ / تعديل
+     * =====================================================
+     */
+
+    if (genericEditingId) {
+      console.log(
+        "✏️ تعديل:",
+        collectionName,
+        genericEditingId,
+        data
       );
 
-      try {
-        const data = {
-          ...genericForm,
-        };
-
-        delete data.id;
-        delete data.createdAt;
-        delete data.updatedAt;
-        delete data.imageFile;
-        delete data.imagePreview;
-
-        if (
-          [
-            "value",
-            "minOrder",
-            "price",
-            "speed",
-            "fontSize",
-            "height",
-            "sortOrder",
-            "order",
-          ].some(
-            (key) =>
-              key in data
-          )
-        ) {
-          [
-            "value",
-            "minOrder",
-            "price",
-            "speed",
-            "fontSize",
-            "height",
-            "sortOrder",
-            "order",
-          ].forEach(
-            (key) => {
-              if (
-                key in data
-              ) {
-                data[key] =
-                  Number(
-                    data[key] || 0
-                  );
-              }
-            }
-          );
-        }
-
-        if (
-          "active" in data
-        ) {
-          data.active =
-            data.active !==
-            false;
-        }
-
-        if (
-          "enabled" in data
-        ) {
-          data.enabled =
-            data.enabled !==
-            false;
-        }
-
-        if (
-          genericType ===
-          "blocked-users"
-        ) {
-          data.blocked =
-            data.blocked !==
-            false;
-        }
-
-        if (
-          genericType ===
-          "store-menu" &&
-          data.imageFile
-        ) {
-          data.image =
-            await uploadFileToCloudinary(
-              data.imageFile
-            );
-        }
-
-        if (
+      await updateDoc(
+        doc(
+          db,
+          collectionName,
           genericEditingId
-        ) {
-          await updateDoc(
-            doc(
-              db,
-              collectionName,
-              genericEditingId
-            ),
-            {
-              ...data,
-              updatedAt:
-                serverTimestamp(),
-            }
-          );
-
-          await addActivityLog(
-            "تعديل بيانات",
-            `تم تعديل بيانات قسم ${genericType}`
-          );
-
-          alert(
-            "✅ تم التعديل بنجاح."
-          );
-        } else {
-          await addDoc(
-            collection(
-              db,
-              collectionName
-            ),
-            {
-              ...data,
-              createdAt:
-                serverTimestamp(),
-              updatedAt:
-                serverTimestamp(),
-            }
-          );
-
-          await addActivityLog(
-            "إضافة بيانات",
-            `تم إضافة بيانات إلى قسم ${genericType}`
-          );
-
-          alert(
-            "✅ تمت الإضافة بنجاح."
-          );
+        ),
+        {
+          ...data,
+          updatedAt:
+            serverTimestamp(),
         }
+      );
 
-        closeGenericForm();
-      } catch (error) {
-        console.error(
-          "Generic save error:",
-          error
-        );
+      await addActivityLog(
+        "تعديل بيانات",
+        `تم تعديل بيانات قسم ${genericType}`
+      );
 
-        alert(
-          error?.message ||
-          "❌ حدث خطأ أثناء الحفظ."
-        );
-      } finally {
-        setActionLoading(
-          false
-        );
-      }
-    };
+      alert(
+        "✅ تم تعديل البنر بنجاح."
+      );
+    } else {
+      console.log(
+        "➕ إضافة:",
+        collectionName,
+        data
+      );
+
+      await addDoc(
+        collection(
+          db,
+          collectionName
+        ),
+        {
+          ...data,
+          createdAt:
+            serverTimestamp(),
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+      await addActivityLog(
+        "إضافة بيانات",
+        `تم إضافة بيانات إلى قسم ${genericType}`
+      );
+
+      alert(
+        "✅ تمت إضافة البنر بنجاح."
+      );
+    }
+
+    /*
+     * =====================================================
+     * إغلاق الفورم
+     * =====================================================
+     */
+
+    closeGenericForm();
+
+  } catch (error) {
+    console.error(
+      "❌ Generic save error:",
+      error
+    );
+
+    alert(
+      error?.message ||
+      "❌ حدث خطأ أثناء حفظ البيانات."
+    );
+  } finally {
+    setActionLoading(false);
+  }
+};
 
   const deleteGenericItem =
     async (

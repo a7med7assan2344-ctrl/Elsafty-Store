@@ -1,0 +1,1171 @@
+{
+  "id": "27",
+  "nameAr": "شمال سيناء",
+  "nameEn": "North Sinai",
+  "districts": [
+    {
+      "id": "8601177",
+      "nameAr": "العريش",
+      "nameEn": "Al Arish",
+      "coordinates": {
+        "lat": 31.01963,
+        "lng": 33.76607
+      },
+      "locations": [
+        {
+          "id": "351373",
+          "nameAr": "نخل أبو سقل",
+          "nameEn": "Nakhl Abu Saqal",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.1399,
+            "lng": 33.83205
+          }
+        },
+        {
+          "id": "355399",
+          "nameAr": "أبي صقل",
+          "nameEn": "Abi Suql",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.14555,
+            "lng": 33.82078
+          }
+        },
+        {
+          "id": "357790",
+          "nameAr": "القشلاقات",
+          "nameEn": "El-Qushlaqat",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.13333,
+            "lng": 33.81667
+          }
+        },
+        {
+          "id": "357797",
+          "nameAr": "القطافييا",
+          "nameEn": "El-Qatafiya",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.1562,
+            "lng": 33.88724
+          }
+        },
+        {
+          "id": "358784",
+          "nameAr": "الحسنة",
+          "nameEn": "Al Hasanah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.46548,
+            "lng": 33.78431
+          }
+        },
+        {
+          "id": "360360",
+          "nameAr": "قلعه النخل",
+          "nameEn": "Qalat An Nakhl",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.91073,
+            "lng": 33.74923
+          }
+        },
+        {
+          "id": "361546",
+          "nameAr": "عریش",
+          "nameEn": "Arish",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.13159,
+            "lng": 33.79844
+          }
+        },
+        {
+          "id": "449749",
+          "nameAr": "بغدد",
+          "nameEn": "Baghdad",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.65933,
+            "lng": 33.7126
+          }
+        },
+        {
+          "id": "449800",
+          "nameAr": "جردا",
+          "nameEn": "Garada",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.14692,
+            "lng": 33.89111
+          }
+        },
+        {
+          "id": "449801",
+          "nameAr": "السكاسكة",
+          "nameEn": "As Sakasikah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.14462,
+            "lng": 33.88361
+          }
+        },
+        {
+          "id": "449802",
+          "nameAr": "الريسة",
+          "nameEn": "Ar Risah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.14821,
+            "lng": 33.83434
+          }
+        },
+        {
+          "id": "8622488",
+          "nameAr": "السلايمة",
+          "nameEn": "As Salayimah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.11841,
+            "lng": 33.80403
+          }
+        },
+        {
+          "id": "8622489",
+          "nameAr": "الصفا",
+          "nameEn": "As Safa",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.115,
+            "lng": 33.79412
+          }
+        },
+        {
+          "id": "8623429",
+          "nameAr": "الرميلي",
+          "nameEn": "Ar Rumayli",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.13089,
+            "lng": 33.77736
+          }
+        }
+      ]
+    },
+    {
+      "id": "8601178",
+      "nameAr": "الشيخ زويد",
+      "nameEn": "Ash Shaykh Zuwayd",
+      "coordinates": {
+        "lat": 31.077,
+        "lng": 34.06778
+      },
+      "locations": [
+        {
+          "id": "353471",
+          "nameAr": "الشيخ زويد",
+          "nameEn": "Ash Shaykh Zuwayd",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.2163,
+            "lng": 34.11074
+          }
+        },
+        {
+          "id": "359742",
+          "nameAr": "التمد",
+          "nameEn": "At Tamad",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.67149,
+            "lng": 34.3041
+          }
+        },
+        {
+          "id": "360752",
+          "nameAr": "المقضبة",
+          "nameEn": "Al Maqdabah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.89577,
+            "lng": 34.02461
+          }
+        },
+        {
+          "id": "361965",
+          "nameAr": "أبو عويقية",
+          "nameEn": "Abu Uwayqiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.8457,
+            "lng": 34.08355
+          }
+        },
+        {
+          "id": "449769",
+          "nameAr": "أبو فرج",
+          "nameEn": "Abu Forag",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.19435,
+            "lng": 34.0937
+          }
+        },
+        {
+          "id": "449771",
+          "nameAr": "الشلاق",
+          "nameEn": "Ash Shalaq",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.20742,
+            "lng": 34.06801
+          }
+        },
+        {
+          "id": "449772",
+          "nameAr": "التومة",
+          "nameEn": "At Tumah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.16999,
+            "lng": 34.08705
+          }
+        },
+        {
+          "id": "449773",
+          "nameAr": "منكا",
+          "nameEn": "Manaka",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.19837,
+            "lng": 34.05812
+          }
+        },
+        {
+          "id": "449775",
+          "nameAr": "قبر عمير",
+          "nameEn": "Qabr Umayr",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.18678,
+            "lng": 34.00906
+          }
+        },
+        {
+          "id": "449778",
+          "nameAr": "قرية اللفيتات",
+          "nameEn": "El Fitat",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.11124,
+            "lng": 34.08942
+          }
+        },
+        {
+          "id": "449792",
+          "nameAr": "أجلن",
+          "nameEn": "Agalin",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.18393,
+            "lng": 33.9952
+          }
+        },
+        {
+          "id": "449793",
+          "nameAr": "الخروبة",
+          "nameEn": "Al Kharubah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.16137,
+            "lng": 33.95408
+          }
+        },
+        {
+          "id": "449794",
+          "nameAr": "القودس",
+          "nameEn": "El Qawadis",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.12215,
+            "lng": 33.98518
+          }
+        },
+        {
+          "id": "449795",
+          "nameAr": "ابو الفيتة",
+          "nameEn": "Abu Al Fitah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.10369,
+            "lng": 33.97983
+          }
+        },
+        {
+          "id": "449796",
+          "nameAr": "الطويل",
+          "nameEn": "At Tawil",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.10971,
+            "lng": 33.93242
+          }
+        },
+        {
+          "id": "449797",
+          "nameAr": "هوسينت",
+          "nameEn": "Houseinat",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.13026,
+            "lng": 33.97792
+          }
+        },
+        {
+          "id": "449798",
+          "nameAr": "أبيدت",
+          "nameEn": "Obeidot",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.1678,
+            "lng": 33.98194
+          }
+        },
+        {
+          "id": "8622994",
+          "nameAr": "حي القواسمة",
+          "nameEn": "Hayy Al Qawasimah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.21242,
+            "lng": 34.11249
+          }
+        },
+        {
+          "id": "8623003",
+          "nameAr": "حي ابو خوار",
+          "nameEn": "Hayy Abu Khawar",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.20861,
+            "lng": 34.10551
+          }
+        },
+        {
+          "id": "8623006",
+          "nameAr": "حي الزهور",
+          "nameEn": "Hayy Az Zuhur",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.23243,
+            "lng": 34.11028
+          }
+        },
+        {
+          "id": "8623013",
+          "nameAr": "قرية ابو شنار الخرافين",
+          "nameEn": "Qaryat Abu Shanar Al Kharafin",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.24601,
+            "lng": 34.09621
+          }
+        },
+        {
+          "id": "8623017",
+          "nameAr": "الجميزة",
+          "nameEn": "Madinat Al Jumayzah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.14652,
+            "lng": 34.1164
+          }
+        }
+      ]
+    },
+    {
+      "id": "8601180",
+      "nameAr": "بئر العبد",
+      "nameEn": "Bir Al Abd",
+      "coordinates": {
+        "lat": 30.93304,
+        "lng": 33.09015
+      },
+      "locations": [
+        {
+          "id": "355054",
+          "nameAr": "جلبنا",
+          "nameEn": "Gilbana",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.93333,
+            "lng": 32.75
+          }
+        },
+        {
+          "id": "358763",
+          "nameAr": "حوض قاطية",
+          "nameEn": "Hawd Qatiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.95861,
+            "lng": 32.74778
+          }
+        },
+        {
+          "id": "360607",
+          "nameAr": "القنطرة الشرقية",
+          "nameEn": "Al Qantarah Ash Sharqiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.84738,
+            "lng": 32.32318
+          }
+        },
+        {
+          "id": "360705",
+          "nameAr": "مزار",
+          "nameEn": "Mazar",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.04154,
+            "lng": 33.38114
+          }
+        },
+        {
+          "id": "410142",
+          "nameAr": "بئر العبد",
+          "nameEn": "Bir Al Abd",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.01887,
+            "lng": 33.0098
+          }
+        },
+        {
+          "id": "410144",
+          "nameAr": "مصفق",
+          "nameEn": "Misfaq",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.03493,
+            "lng": 33.16658
+          }
+        },
+        {
+          "id": "410169",
+          "nameAr": "قرية التلول",
+          "nameEn": "Qaryat At Tulul",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.05454,
+            "lng": 33.2281
+          }
+        },
+        {
+          "id": "410171",
+          "nameAr": "قرية الروضة",
+          "nameEn": "Qaryat Ar Rawdah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.04032,
+            "lng": 33.35098
+          }
+        },
+        {
+          "id": "410172",
+          "nameAr": "قرية سلمانة",
+          "nameEn": "Qaryat Salmanah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.03436,
+            "lng": 33.09923
+          }
+        },
+        {
+          "id": "410173",
+          "nameAr": "قرية السادات",
+          "nameEn": "Qaryat As Sadat",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.03066,
+            "lng": 33.0812
+          }
+        },
+        {
+          "id": "410488",
+          "nameAr": "النجيلة",
+          "nameEn": "Al Najilah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.00283,
+            "lng": 32.82782
+          }
+        },
+        {
+          "id": "410501",
+          "nameAr": "الخربة",
+          "nameEn": "Al Kharbah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.01937,
+            "lng": 32.88531
+          }
+        },
+        {
+          "id": "410504",
+          "nameAr": "أبو سهت",
+          "nameEn": "Abu Saht",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.00916,
+            "lng": 32.90748
+          }
+        },
+        {
+          "id": "449789",
+          "nameAr": "المليز",
+          "nameEn": "Al Mulayz",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.42662,
+            "lng": 33.14865
+          }
+        },
+        {
+          "id": "449804",
+          "nameAr": "بلزا",
+          "nameEn": "Baluza",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.00501,
+            "lng": 32.56648
+          }
+        },
+        {
+          "id": "6412830",
+          "nameAr": "أط طاسة",
+          "nameEn": "At Tasah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.55917,
+            "lng": 32.63778
+          }
+        },
+        {
+          "id": "6413476",
+          "nameAr": "رمانة",
+          "nameEn": "Rumanah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.01121,
+            "lng": 32.6638
+          }
+        },
+        {
+          "id": "6413480",
+          "nameAr": "بوغاز رقمان",
+          "nameEn": "Bughaz Raqman",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.14167,
+            "lng": 32.93111
+          }
+        },
+        {
+          "id": "6413482",
+          "nameAr": "الوسبية",
+          "nameEn": "Al Wasabiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.06222,
+            "lng": 32.8675
+          }
+        },
+        {
+          "id": "6413483",
+          "nameAr": "هيشة أض ضيزا",
+          "nameEn": "Hayshah Ad Dayza",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.01,
+            "lng": 32.995
+          }
+        },
+        {
+          "id": "8594874",
+          "nameAr": "الخشوم",
+          "nameEn": "Al Khushum",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.04496,
+            "lng": 33.10784
+          }
+        },
+        {
+          "id": "8594878",
+          "nameAr": "الحثانة",
+          "nameEn": "Al Hathanah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.03089,
+            "lng": 33.00501
+          }
+        },
+        {
+          "id": "8594879",
+          "nameAr": "ابو ترافي",
+          "nameEn": "Abu Tarafi",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.02042,
+            "lng": 33.0572
+          }
+        },
+        {
+          "id": "8623246",
+          "nameAr": "حي الاربعين",
+          "nameEn": "Hayy Al Arbain",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.033,
+            "lng": 33.09413
+          }
+        },
+        {
+          "id": "8623247",
+          "nameAr": "حي المصابحة",
+          "nameEn": "Hayy Al Musabahah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.01567,
+            "lng": 33.00901
+          }
+        },
+        {
+          "id": "8623268",
+          "nameAr": "حي العقايلة",
+          "nameEn": "Hayy Al Aqayilah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.02342,
+            "lng": 33.00502
+          }
+        },
+        {
+          "id": "8623269",
+          "nameAr": "حي العشرين",
+          "nameEn": "Hayy Al Ishrin",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.03057,
+            "lng": 33.09023
+          }
+        },
+        {
+          "id": "8623270",
+          "nameAr": "حي السراحين",
+          "nameEn": "Hayy As Sarahin",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.01833,
+            "lng": 33.0101
+          }
+        },
+        {
+          "id": "8623271",
+          "nameAr": "حي الرجاوين",
+          "nameEn": "Hayy Ar Rajawin",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.02275,
+            "lng": 33.0721
+          }
+        },
+        {
+          "id": "8623272",
+          "nameAr": "حي احبينة",
+          "nameEn": "Hayy Ahubaynah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.03109,
+            "lng": 33.10489
+          }
+        },
+        {
+          "id": "8623276",
+          "nameAr": "قرية الحرية",
+          "nameEn": "Qaryat Al Huriyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.05526,
+            "lng": 33.0796
+          }
+        },
+        {
+          "id": "8623287",
+          "nameAr": "حي الطاونة",
+          "nameEn": "Hayy At Tawinah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.01346,
+            "lng": 33.01221
+          }
+        },
+        {
+          "id": "8623311",
+          "nameAr": "منطقة الزعابطة",
+          "nameEn": "Mintaqat Az Zaabitah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.0289,
+            "lng": 33.08615
+          }
+        },
+        {
+          "id": "8623312",
+          "nameAr": "منطقة الغرابات",
+          "nameEn": "Mintaqat Al Gharabat",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.02697,
+            "lng": 33.07814
+          }
+        }
+      ]
+    },
+    {
+      "id": "8601179",
+      "nameAr": "رفح",
+      "nameEn": "Rafah",
+      "coordinates": {
+        "lat": 31.11538,
+        "lng": 34.23865
+      },
+      "locations": [
+        {
+          "id": "345953",
+          "nameAr": "نهل دقلا",
+          "nameEn": "Nahal Diqla",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.23333,
+            "lng": 34.11667
+          }
+        },
+        {
+          "id": "350350",
+          "nameAr": "رفح",
+          "nameEn": "Rafah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.28204,
+            "lng": 34.23869
+          }
+        },
+        {
+          "id": "354091",
+          "nameAr": "كفر شن",
+          "nameEn": "Kafr Shan",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.21037,
+            "lng": 34.14024
+          }
+        },
+        {
+          "id": "360532",
+          "nameAr": "القصيمة",
+          "nameEn": "Al Qusaymah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.666,
+            "lng": 34.36894
+          }
+        },
+        {
+          "id": "360870",
+          "nameAr": "الكنتلة",
+          "nameEn": "Al Kuntilah",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.00296,
+            "lng": 34.68193
+          }
+        },
+        {
+          "id": "361821",
+          "nameAr": "الضهير",
+          "nameEn": "Az Zuhayr",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.15661,
+            "lng": 34.16434
+          }
+        },
+        {
+          "id": "414674",
+          "nameAr": "أبو جرييان",
+          "nameEn": "Abu Jurayyan",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.7727,
+            "lng": 34.32312
+          }
+        },
+        {
+          "id": "449753",
+          "nameAr": "وادي الجميل",
+          "nameEn": "Wadi Al Jameel",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.92685,
+            "lng": 34.32432
+          }
+        },
+        {
+          "id": "449754",
+          "nameAr": "الأفا",
+          "nameEn": "El Avoa",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.8858,
+            "lng": 34.38023
+          }
+        },
+        {
+          "id": "449755",
+          "nameAr": "وادي الأكسا",
+          "nameEn": "Wadi Al Akisa",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.88514,
+            "lng": 34.36507
+          }
+        },
+        {
+          "id": "449756",
+          "nameAr": "أم قتف",
+          "nameEn": "Um Qataf",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.83343,
+            "lng": 34.25881
+          }
+        },
+        {
+          "id": "449760",
+          "nameAr": "المسرا",
+          "nameEn": "El Masara",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.22764,
+            "lng": 34.232
+          }
+        },
+        {
+          "id": "449761",
+          "nameAr": "سادات",
+          "nameEn": "Sadat",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.22371,
+            "lng": 34.20837
+          }
+        },
+        {
+          "id": "449763",
+          "nameAr": "جوز ابو رعد",
+          "nameEn": "Jawz Abu Rad",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.19603,
+            "lng": 34.22683
+          }
+        },
+        {
+          "id": "449764",
+          "nameAr": "المطلة",
+          "nameEn": "Al Matalah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.21907,
+            "lng": 34.18406
+          }
+        },
+        {
+          "id": "449765",
+          "nameAr": "الوفاق",
+          "nameEn": "Al Wifaq",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.21802,
+            "lng": 34.16088
+          }
+        },
+        {
+          "id": "449766",
+          "nameAr": "أبو طويلة",
+          "nameEn": "Abu Tawilah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.2127,
+            "lng": 34.14752
+          }
+        },
+        {
+          "id": "449767",
+          "nameAr": "الكوثر",
+          "nameEn": "Kowthaf",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.21723,
+            "lng": 34.12552
+          }
+        },
+        {
+          "id": "449768",
+          "nameAr": "أبو هلو",
+          "nameEn": "Abu Halo",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.18935,
+            "lng": 34.13753
+          }
+        },
+        {
+          "id": "449770",
+          "nameAr": "وههي",
+          "nameEn": "Wahahee",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.18881,
+            "lng": 34.16626
+          }
+        },
+        {
+          "id": "449781",
+          "nameAr": "ملفي",
+          "nameEn": "Melafi",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.12132,
+            "lng": 34.1469
+          }
+        },
+        {
+          "id": "449782",
+          "nameAr": "أبو زمت",
+          "nameEn": "Abu Zamat",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.1585,
+            "lng": 34.18385
+          }
+        },
+        {
+          "id": "449783",
+          "nameAr": "نجع شبانة",
+          "nameEn": "Naj Shabanah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.14867,
+            "lng": 34.24163
+          }
+        },
+        {
+          "id": "449784",
+          "nameAr": "المهدية",
+          "nameEn": "Al Mahdiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.17296,
+            "lng": 34.22191
+          }
+        },
+        {
+          "id": "449785",
+          "nameAr": "قرية المواسيين",
+          "nameEn": "Mowasi",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.18348,
+            "lng": 34.23458
+          }
+        },
+        {
+          "id": "449786",
+          "nameAr": "سلة أ دين",
+          "nameEn": "Salah A Deen",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.04955,
+            "lng": 34.1969
+          }
+        },
+        {
+          "id": "6413241",
+          "nameAr": "مصافق العز",
+          "nameEn": "Masafiq Al Iz",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.04915,
+            "lng": 34.19227
+          }
+        },
+        {
+          "id": "8411887",
+          "nameAr": "سكن أبو رجيا",
+          "nameEn": "Sakan Abu Ragia",
+          "type": "village",
+          "coordinates": {
+            "lat": 30.62845,
+            "lng": 34.48663
+          }
+        },
+        {
+          "id": "8594860",
+          "nameAr": "الجهامات",
+          "nameEn": "Al Jahamat",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.15616,
+            "lng": 34.21713
+          }
+        },
+        {
+          "id": "8605270",
+          "nameAr": "المدفونة",
+          "nameEn": "Al Madfunah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.20942,
+            "lng": 34.24618
+          }
+        },
+        {
+          "id": "8623000",
+          "nameAr": "حي ابو خساير",
+          "nameEn": "Hayy Abu Khasayir",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.20369,
+            "lng": 34.12866
+          }
+        },
+        {
+          "id": "8623001",
+          "nameAr": "حي ابو حازم",
+          "nameEn": "Hayy Abu Hazim",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.21295,
+            "lng": 34.14302
+          }
+        },
+        {
+          "id": "8623002",
+          "nameAr": "حي اجهينة ابو خرفان",
+          "nameEn": "Hayy Ajuhaynah Abu Khirfan",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.24046,
+            "lng": 34.19321
+          }
+        },
+        {
+          "id": "8623004",
+          "nameAr": "حي الشيخ زايد الهشة",
+          "nameEn": "Hayy Ash Shaykh Zayid Al Hashshah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.1992,
+            "lng": 34.12382
+          }
+        },
+        {
+          "id": "8623005",
+          "nameAr": "حي القاضي الخرافين",
+          "nameEn": "Hayy Al Qadi Al Kharafin",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.20626,
+            "lng": 34.21306
+          }
+        },
+        {
+          "id": "8623007",
+          "nameAr": "حي السكادرة",
+          "nameEn": "Hayy As Sakadirah",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.25079,
+            "lng": 34.1114
+          }
+        },
+        {
+          "id": "8623008",
+          "nameAr": "حي خليل ابو بتوم",
+          "nameEn": "Hayy Khalil Abu Butum",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.22908,
+            "lng": 34.20488
+          }
+        },
+        {
+          "id": "8623009",
+          "nameAr": "حي فريح ابو نوفل",
+          "nameEn": "Hayy Furayh Abu Nawfal",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.23693,
+            "lng": 34.18812
+          }
+        },
+        {
+          "id": "8623010",
+          "nameAr": "قرية ابو زرعي",
+          "nameEn": "Qaryat Abu Zari",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 31.21014,
+            "lng": 34.12011
+          }
+        },
+        {
+          "id": "8623012",
+          "nameAr": "قرية ابلال الترابين",
+          "nameEn": "Qaryat Iblal At Tarabin",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.06935,
+            "lng": 34.18707
+          }
+        },
+        {
+          "id": "8623014",
+          "nameAr": "قرية المعنية",
+          "nameEn": "Qaryat Al Maniyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.19811,
+            "lng": 34.14346
+          }
+        },
+        {
+          "id": "8624811",
+          "nameAr": "المقاطعة",
+          "nameEn": "Al Muqataah",
+          "type": "village",
+          "coordinates": {
+            "lat": 31.17241,
+            "lng": 34.19684
+          }
+        }
+      ]
+    }
+  ]
+}

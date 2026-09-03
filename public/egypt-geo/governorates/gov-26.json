@@ -1,0 +1,298 @@
+{
+  "id": "26",
+  "nameAr": "جنوب سيناء",
+  "nameEn": "South Sinai",
+  "districts": [
+    {
+      "id": "10371116",
+      "nameAr": "أطفيح",
+      "nameEn": "Atfih",
+      "coordinates": {
+        "lat": 29.36025,
+        "lng": 31.25478
+      },
+      "locations": [
+        {
+          "id": "346315",
+          "nameAr": "وست",
+          "nameEn": "Wasit",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.03043,
+            "lng": 34.66938
+          }
+        },
+        {
+          "id": "347702",
+          "nameAr": "طابا",
+          "nameEn": "Taba",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.49199,
+            "lng": 34.89572
+          }
+        },
+        {
+          "id": "349340",
+          "nameAr": "شرم الشيخ",
+          "nameEn": "Sharm El-Sheikh",
+          "type": "village",
+          "coordinates": {
+            "lat": 27.91582,
+            "lng": 34.32995
+          }
+        },
+        {
+          "id": "350192",
+          "nameAr": "رءس متارمة",
+          "nameEn": "Ras Matarimah",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.43333,
+            "lng": 32.76667
+          }
+        },
+        {
+          "id": "350892",
+          "nameAr": "نيبا مزينا",
+          "nameEn": "Nueibaa Mezeina",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.97391,
+            "lng": 34.65238
+          }
+        },
+        {
+          "id": "350893",
+          "nameAr": "نويبع",
+          "nameEn": "Nuwaybia",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.04681,
+            "lng": 34.6634
+          }
+        },
+        {
+          "id": "353015",
+          "nameAr": "مكمن التيها",
+          "nameEn": "Makman El Tiyaha",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.26111,
+            "lng": 32.96778
+          }
+        },
+        {
+          "id": "355005",
+          "nameAr": "الجبيل",
+          "nameEn": "Al Jubayl",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.1984,
+            "lng": 33.63137
+          }
+        },
+        {
+          "id": "357902",
+          "nameAr": "الغرقانة",
+          "nameEn": "Al Gharqanah",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.11667,
+            "lng": 34.35
+          }
+        },
+        {
+          "id": "358245",
+          "nameAr": "دهب",
+          "nameEn": "Dahab",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.48208,
+            "lng": 34.49505
+          }
+        },
+        {
+          "id": "359678",
+          "nameAr": "الطور",
+          "nameEn": "El-Tor",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.24168,
+            "lng": 33.6222
+          }
+        },
+        {
+          "id": "361930",
+          "nameAr": "أبو زنيمة",
+          "nameEn": "Abu Zanimah",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.0475,
+            "lng": 33.11034
+          }
+        },
+        {
+          "id": "362208",
+          "nameAr": "أبو رديس‎",
+          "nameEn": "Abu Rudays",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.89955,
+            "lng": 33.18601
+          }
+        },
+        {
+          "id": "362723",
+          "nameAr": "أبو دربة",
+          "nameEn": "Abu Durbah",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.47442,
+            "lng": 33.32849
+          }
+        },
+        {
+          "id": "414338",
+          "nameAr": "عقرت صفحة",
+          "nameEn": "Uqrat Safhah",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.66472,
+            "lng": 33.87167
+          }
+        },
+        {
+          "id": "449808",
+          "nameAr": "سدر",
+          "nameEn": "Sudr",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.59023,
+            "lng": 32.71537
+          }
+        },
+        {
+          "id": "6413284",
+          "nameAr": "الحميمات",
+          "nameEn": "Al Hamimat",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.45168,
+            "lng": 34.58879
+          }
+        },
+        {
+          "id": "8521413",
+          "nameAr": "سنت كثرن",
+          "nameEn": "Saint Catherine",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.56191,
+            "lng": 33.94934
+          }
+        },
+        {
+          "id": "10235493",
+          "nameAr": "تر نيغبرهود",
+          "nameEn": "Tor Neighborhood",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 28.23676,
+            "lng": 33.62319
+          }
+        },
+        {
+          "id": "11054349",
+          "nameAr": "رس نسرني",
+          "nameEn": "Ras Nasrani",
+          "type": "neighborhood",
+          "coordinates": {
+            "lat": 27.96567,
+            "lng": 34.41636
+          }
+        },
+        {
+          "id": "11398362",
+          "nameAr": "نبق",
+          "nameEn": "Nabq",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.03971,
+            "lng": 34.42845
+          }
+        },
+        {
+          "id": "12202276",
+          "nameAr": "القري",
+          "nameEn": "Al Qari",
+          "type": "village",
+          "coordinates": {
+            "lat": 29.09755,
+            "lng": 33.33086
+          }
+        },
+        {
+          "id": "12536488",
+          "nameAr": "سانت كاترين",
+          "nameEn": "Santkatrina",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.56199,
+            "lng": 33.95005
+          }
+        },
+        {
+          "id": "12553311",
+          "nameAr": "فرن",
+          "nameEn": "Feran",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.70502,
+            "lng": 33.63714
+          }
+        },
+        {
+          "id": "12606680",
+          "nameAr": "الرسيس",
+          "nameEn": "Elrasees",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.55943,
+            "lng": 33.95077
+          }
+        },
+        {
+          "id": "12606682",
+          "nameAr": "الشميا",
+          "nameEn": "Elshameya",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.56578,
+            "lng": 33.95174
+          }
+        },
+        {
+          "id": "12606684",
+          "nameAr": "الملجا",
+          "nameEn": "Elmilga",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.5602,
+            "lng": 33.94479
+          }
+        },
+        {
+          "id": "12606687",
+          "nameAr": "الترفا فلج",
+          "nameEn": "Eltarfavilage",
+          "type": "village",
+          "coordinates": {
+            "lat": 28.69443,
+            "lng": 33.93692
+          }
+        }
+      ]
+    }
+  ]
+}

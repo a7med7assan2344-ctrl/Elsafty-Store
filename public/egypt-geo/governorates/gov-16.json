@@ -1,0 +1,1831 @@
+{
+  "id": "16",
+  "nameAr": "أسوان",
+  "nameEn": "Aswan",
+  "districts": [
+    {
+      "id": "359788",
+      "nameAr": "أسوان",
+      "nameEn": "Aswan",
+      "coordinates": {
+        "lat": 24.05599,
+        "lng": 32.88491
+      },
+      "locations": [
+        {
+          "id": "351388",
+          "nameAr": "نجع تنجار",
+          "nameEn": "Naj Tinjar",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.99813,
+            "lng": 32.86001
+          }
+        },
+        {
+          "id": "351390",
+          "nameAr": "نجع سهيل غرب",
+          "nameEn": "Naj Suhayl Gharb",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.0548,
+            "lng": 32.86004
+          }
+        },
+        {
+          "id": "351395",
+          "nameAr": "نجع رزق ألاة",
+          "nameEn": "Naj Rizq Alah",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.86667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351398",
+          "nameAr": "نجع قرطاسي",
+          "nameEn": "Naj Qirtasi",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.68333,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351411",
+          "nameAr": "نجع كلدول",
+          "nameEn": "Naj Kuludul",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.88333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351412",
+          "nameAr": "نجع كبوش",
+          "nameEn": "Naj Kubush",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.43333,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351416",
+          "nameAr": "نجع خور رحمة القبلي",
+          "nameEn": "Naj Khawr Rahmah Al Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.53333,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351421",
+          "nameAr": "نجع جامع الجزيرة",
+          "nameEn": "Naj Jami Al Jazirah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.11667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351437",
+          "nameAr": "نجع برين",
+          "nameEn": "Naj Birayn",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.88333,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351449",
+          "nameAr": "نجع الشلاباب",
+          "nameEn": "Naj Ash Shalabab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.13233,
+            "lng": 32.89829
+          }
+        },
+        {
+          "id": "351450",
+          "nameAr": "نجع الشديد",
+          "nameEn": "Naj Ash Shadid",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.11667,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351471",
+          "nameAr": "نجع العشباب",
+          "nameEn": "Naj Al Ushbab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.11667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351474",
+          "nameAr": "نجع القرود",
+          "nameEn": "Naj Al Qarwad",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.15,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351480",
+          "nameAr": "نجع المحططة",
+          "nameEn": "Naj Al Mahatah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.06667,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351482",
+          "nameAr": "نجع المداب",
+          "nameEn": "Naj Al Madab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.11667,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351495",
+          "nameAr": "نجع الحجاب الفوقاني",
+          "nameEn": "Naj Al Hijab Al Fawqani",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.15,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351499",
+          "nameAr": "نجع الغلالاب",
+          "nameEn": "Naj Al Ghalalab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.13333,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351506",
+          "nameAr": "نجع العمراب",
+          "nameEn": "Naj Al Amrab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.11667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351547",
+          "nameAr": "نجع قرتلا",
+          "nameEn": "Nag Qaratla",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.23333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351602",
+          "nameAr": "نجع الرملا",
+          "nameEn": "Nag El-Ramla",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.08333,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351607",
+          "nameAr": "نجع القبا",
+          "nameEn": "Nag El-Qaba",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.1,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351618",
+          "nameAr": "نجع الخيرلاب",
+          "nameEn": "Nag El-Kheiralab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.13333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351633",
+          "nameAr": "نجع الحجر",
+          "nameEn": "Nag El-Hagar",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.22605,
+            "lng": 32.85799
+          }
+        },
+        {
+          "id": "351636",
+          "nameAr": "نجع الجعلب",
+          "nameEn": "Nag El-Gulab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.11667,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351645",
+          "nameAr": "نجع الفقاهي",
+          "nameEn": "Nag El-Fuqahi",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.21765,
+            "lng": 32.85579
+          }
+        },
+        {
+          "id": "351656",
+          "nameAr": "نجع البليدا",
+          "nameEn": "Nag El-Balida",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.15,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351823",
+          "nameAr": "مرواو",
+          "nameEn": "Murwaw",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.4,
+            "lng": 32.93333
+          }
+        },
+        {
+          "id": "352875",
+          "nameAr": "منشيت السيل الجديدة",
+          "nameEn": "Manshiyat As Sayl Al Jadidah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.08333,
+            "lng": 32.91667
+          }
+        },
+        {
+          "id": "353620",
+          "nameAr": "خور رحمة",
+          "nameEn": "Khawr Rahmah",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.55,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "358419",
+          "nameAr": "دندور",
+          "nameEn": "Dandur",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.38333,
+            "lng": 32.95
+          }
+        },
+        {
+          "id": "359786",
+          "nameAr": "أسوان رسرفر كلني",
+          "nameEn": "Aswan Reservoir Colony",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.01667,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "359792",
+          "nameAr": "أسوان",
+          "nameEn": "Aswan",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.09082,
+            "lng": 32.89942
+          }
+        },
+        {
+          "id": "360033",
+          "nameAr": "الشلال",
+          "nameEn": "Ash Shalal",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.03685,
+            "lng": 32.91078
+          }
+        },
+        {
+          "id": "360665",
+          "nameAr": "الملقطة",
+          "nameEn": "Al Mulaqatah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.18333,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "360682",
+          "nameAr": "المقلة",
+          "nameEn": "Al Miqalah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.21667,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "360771",
+          "nameAr": "المنشية",
+          "nameEn": "Al Manshiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.08333,
+            "lng": 32.91667
+          }
+        },
+        {
+          "id": "360876",
+          "nameAr": "الكوبانية",
+          "nameEn": "Al Kubaniyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.25,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "360915",
+          "nameAr": "الخططارة",
+          "nameEn": "Al Khatarah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.20748,
+            "lng": 32.87913
+          }
+        },
+        {
+          "id": "361567",
+          "nameAr": "العقبة أص صغيرة",
+          "nameEn": "Al Aqabah As Saghirah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.23649,
+            "lng": 32.88086
+          }
+        },
+        {
+          "id": "361571",
+          "nameAr": "الأعقاب",
+          "nameEn": "Al Aqab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.25,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "362579",
+          "nameAr": "أبو هور",
+          "nameEn": "Abu Hawr",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.48333,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "362849",
+          "nameAr": "أبو الريش قبلي",
+          "nameEn": "Abu Ar Rish Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.13974,
+            "lng": 32.89655
+          }
+        },
+        {
+          "id": "362850",
+          "nameAr": "أبو الريش بحري",
+          "nameEn": "Abu Ar Rish Bahri",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.18611,
+            "lng": 32.88475
+          }
+        }
+      ]
+    },
+    {
+      "id": "355633",
+      "nameAr": "إدفو",
+      "nameEn": "Idfu",
+      "coordinates": {
+        "lat": 25.00736,
+        "lng": 32.84827
+      },
+      "locations": [
+        {
+          "id": "347663",
+          "nameAr": "تفتيش عطية",
+          "nameEn": "Taftish Atiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.92446,
+            "lng": 32.87658
+          }
+        },
+        {
+          "id": "351472",
+          "nameAr": "نجع العقوبية",
+          "nameEn": "Naj Al Uqubiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.79139,
+            "lng": 32.89739
+          }
+        },
+        {
+          "id": "351475",
+          "nameAr": "نجع القنان",
+          "nameEn": "Naj Al Qanan",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.16667,
+            "lng": 32.7
+          }
+        },
+        {
+          "id": "351479",
+          "nameAr": "نجع المعمرية",
+          "nameEn": "Naj Al Mamariyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.13333,
+            "lng": 32.73333
+          }
+        },
+        {
+          "id": "351486",
+          "nameAr": "نجع الخوي",
+          "nameEn": "Naj Al Khawi",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.16667,
+            "lng": 32.75
+          }
+        },
+        {
+          "id": "351553",
+          "nameAr": "نجع خور الزق البهري",
+          "nameEn": "Nag Khor El-Ziq El-Bahari",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.9,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351575",
+          "nameAr": "نجع الزودييا",
+          "nameEn": "Nag El-Zudiya",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.11667,
+            "lng": 32.75
+          }
+        },
+        {
+          "id": "351579",
+          "nameAr": "نجع الوقاداب",
+          "nameEn": "Nag El-Waqadab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.85,
+            "lng": 32.85
+          }
+        },
+        {
+          "id": "351581",
+          "nameAr": "نجع التناب",
+          "nameEn": "Nag El Tunab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.98333,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351591",
+          "nameAr": "نجع الشتب",
+          "nameEn": "Nag El-Shatb",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.85,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351595",
+          "nameAr": "نجع الشماخية",
+          "nameEn": "Naj Ash Shamakhiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.13493,
+            "lng": 32.72643
+          }
+        },
+        {
+          "id": "351601",
+          "nameAr": "نجع الرتج البهري",
+          "nameEn": "Nag El-Ritag El-Bahari",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.88333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351605",
+          "nameAr": "نجع القارا",
+          "nameEn": "Nag El-Qara",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.89356,
+            "lng": 32.85102
+          }
+        },
+        {
+          "id": "351608",
+          "nameAr": "نجع العطواني",
+          "nameEn": "Naj Al Atwani",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.0141,
+            "lng": 32.89098
+          }
+        },
+        {
+          "id": "351609",
+          "nameAr": "نجع النسراب",
+          "nameEn": "Nag El-Nusrab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.9,
+            "lng": 32.85
+          }
+        },
+        {
+          "id": "351610",
+          "nameAr": "نجع النقبا",
+          "nameEn": "Nag El-Naqba",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.85266,
+            "lng": 32.86662
+          }
+        },
+        {
+          "id": "351611",
+          "nameAr": "نجع النخل",
+          "nameEn": "Nag El-Nakhil",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.93041,
+            "lng": 32.8394
+          }
+        },
+        {
+          "id": "351613",
+          "nameAr": "نج المسري",
+          "nameEn": "Nag El-Masri",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.03333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351625",
+          "nameAr": "نجع الهسايا الغربييا",
+          "nameEn": "Nag El-Hasaya El-Gharbiya",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.86667,
+            "lng": 32.85
+          }
+        },
+        {
+          "id": "351631",
+          "nameAr": "نجع الهج زيدن",
+          "nameEn": "Nag El Hag Zeidan",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.86667,
+            "lng": 32.83333
+          }
+        },
+        {
+          "id": "351632",
+          "nameAr": "نجع الهاج حسين",
+          "nameEn": "Nag El-Hag Husein",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.8,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351638",
+          "nameAr": "نجع الغنيمييا",
+          "nameEn": "Nag El-Ghuneimiya",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.95158,
+            "lng": 32.84563
+          }
+        },
+        {
+          "id": "351642",
+          "nameAr": "نجع الجزرا الجددا",
+          "nameEn": "Nag El-Gezira El-Gedida",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.86667,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351653",
+          "nameAr": "نجء البرج",
+          "nameEn": "Nag El-Burg",
+          "type": "village",
+          "coordinates": {
+            "lat": 26.03333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351657",
+          "nameAr": "نجع الأتاب",
+          "nameEn": "Nag El-Atab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.83333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "351678",
+          "nameAr": "نجع أمار",
+          "nameEn": "Nag Amar",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.86667,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "353503",
+          "nameAr": "الكلح",
+          "nameEn": "Al Kilh",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.07098,
+            "lng": 32.82483
+          }
+        },
+        {
+          "id": "354714",
+          "nameAr": "كفر العوضلاب",
+          "nameEn": "Kafr Al Awdalab",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.0,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "355635",
+          "nameAr": "إدفو",
+          "nameEn": "Edfu",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.97916,
+            "lng": 32.87722
+          }
+        },
+        {
+          "id": "356743",
+          "nameAr": "جزيرة الدومرييا",
+          "nameEn": "Geziret El-Dumariya",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.05,
+            "lng": 32.85
+          }
+        },
+        {
+          "id": "356751",
+          "nameAr": "جنل ال زبارا",
+          "nameEn": "Genel El- Zabara",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.9,
+            "lng": 32.95
+          }
+        },
+        {
+          "id": "356801",
+          "nameAr": "في",
+          "nameEn": "Fy",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.16667,
+            "lng": 32.7
+          }
+        },
+        {
+          "id": "357434",
+          "nameAr": "عزبة الأمدا",
+          "nameEn": "Ezbet El-Omda",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.0,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "359823",
+          "nameAr": "السباعية",
+          "nameEn": "As Sibaiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.19413,
+            "lng": 32.6771
+          }
+        },
+        {
+          "id": "359916",
+          "nameAr": "الصعايدة القبلي",
+          "nameEn": "As Saaidah Al Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.07543,
+            "lng": 32.82073
+          }
+        },
+        {
+          "id": "360141",
+          "nameAr": "الرمادي بحري",
+          "nameEn": "Ar Ramadi Bahri",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.88333,
+            "lng": 32.85
+          }
+        },
+        {
+          "id": "360160",
+          "nameAr": "الرديسية بحري",
+          "nameEn": "Ar Radisiyah Bahri",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.93857,
+            "lng": 32.89839
+          }
+        },
+        {
+          "id": "360828",
+          "nameAr": "المحاميد",
+          "nameEn": "Al Mahamid",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.13594,
+            "lng": 32.77955
+          }
+        },
+        {
+          "id": "360880",
+          "nameAr": "كلح شرق",
+          "nameEn": "Kilh Sharq",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.08707,
+            "lng": 32.84219
+          }
+        },
+        {
+          "id": "360881",
+          "nameAr": "الكلح غرب",
+          "nameEn": "Al Kilh Gharb",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.06441,
+            "lng": 32.83633
+          }
+        },
+        {
+          "id": "361246",
+          "nameAr": "الحجز قبلي",
+          "nameEn": "Al Hajz Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.13333,
+            "lng": 32.78333
+          }
+        },
+        {
+          "id": "361247",
+          "nameAr": "الحجز بحري",
+          "nameEn": "Al Hajz Bahri",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.15,
+            "lng": 32.73333
+          }
+        },
+        {
+          "id": "361404",
+          "nameAr": "البصلية قبلي",
+          "nameEn": "Al Basaliyah Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.1052,
+            "lng": 32.79113
+          }
+        },
+        {
+          "id": "361405",
+          "nameAr": "البصلية بحري",
+          "nameEn": "Al Basaliyah Bahri",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.15,
+            "lng": 32.71667
+          }
+        },
+        {
+          "id": "434519",
+          "nameAr": "نجع الشيخ",
+          "nameEn": "Naj Ash Shaykh",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.12493,
+            "lng": 32.74009
+          }
+        },
+        {
+          "id": "434520",
+          "nameAr": "نجع الحامي",
+          "nameEn": "Naj Al Hami",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.1626,
+            "lng": 32.68059
+          }
+        },
+        {
+          "id": "434521",
+          "nameAr": "نجع آدم آغا",
+          "nameEn": "Naj Adam Agha",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.17147,
+            "lng": 32.67471
+          }
+        },
+        {
+          "id": "434522",
+          "nameAr": "نجع العوينية",
+          "nameEn": "Naj Al Uwayniyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.17556,
+            "lng": 32.72834
+          }
+        },
+        {
+          "id": "434523",
+          "nameAr": "نجع سالم جودة",
+          "nameEn": "Naj Salim Judah",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.19469,
+            "lng": 32.71325
+          }
+        },
+        {
+          "id": "445082",
+          "nameAr": "نجع الخرازه",
+          "nameEn": "Naj Al Kharazah",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.01611,
+            "lng": 32.85098
+          }
+        },
+        {
+          "id": "445083",
+          "nameAr": "نجع الشيخ عامر",
+          "nameEn": "Naj Ash Shaykh Amir",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.02336,
+            "lng": 32.86852
+          }
+        },
+        {
+          "id": "445084",
+          "nameAr": "نجع القارة",
+          "nameEn": "Naj Al Qarah",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.03507,
+            "lng": 32.84929
+          }
+        },
+        {
+          "id": "445085",
+          "nameAr": "نجع الشيخ علي",
+          "nameEn": "Naj Ash Shaykh Ali",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.03598,
+            "lng": 32.88204
+          }
+        },
+        {
+          "id": "445090",
+          "nameAr": "نجع الكرنك",
+          "nameEn": "Naj Al Karnak",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.06912,
+            "lng": 32.83142
+          }
+        },
+        {
+          "id": "445091",
+          "nameAr": "نجع الهواري",
+          "nameEn": "Naj Al Hawari",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.10993,
+            "lng": 32.76659
+          }
+        },
+        {
+          "id": "445095",
+          "nameAr": "قرية وادي عبادي ٢",
+          "nameEn": "Qaryat Wadi Abadi 2",
+          "type": "village",
+          "coordinates": {
+            "lat": 25.00833,
+            "lng": 32.14722
+          }
+        }
+      ]
+    },
+    {
+      "id": "353801",
+      "nameAr": "كوم أمبو",
+      "nameEn": "Kawm Umbu",
+      "coordinates": {
+        "lat": 24.46667,
+        "lng": 32.95
+      },
+      "locations": [
+        {
+          "id": "346403",
+          "nameAr": "وادي ال أرب",
+          "nameEn": "Wadi El- Arab",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.56667,
+            "lng": 33.03333
+          }
+        },
+        {
+          "id": "346860",
+          "nameAr": "أم حامض",
+          "nameEn": "Um Hamid",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.45,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "347172",
+          "nameAr": "توشكا",
+          "nameEn": "Tushka",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.4,
+            "lng": 33.03333
+          }
+        },
+        {
+          "id": "350957",
+          "nameAr": "نجوع الرقبة",
+          "nameEn": "Nuju Ar Raqabah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.4,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "350961",
+          "nameAr": "نجوع الجزيرة",
+          "nameEn": "Nuju Al Jazirah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.36667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351448",
+          "nameAr": "نجع الشطب الكبير",
+          "nameEn": "Naj Ash Shatb Al Kabir",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.44618,
+            "lng": 32.94333
+          }
+        },
+        {
+          "id": "351484",
+          "nameAr": "نجع الخبرة التحتانية",
+          "nameEn": "Naj Al Khibrah At Tahtaniyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.43333,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351485",
+          "nameAr": "نجع الخبرة الوسطانية",
+          "nameEn": "Naj Al Khibrah Al Wastaniyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.43333,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351496",
+          "nameAr": "نجع الحوش",
+          "nameEn": "Naj Al Hawsh",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.73333,
+            "lng": 32.91667
+          }
+        },
+        {
+          "id": "351538",
+          "nameAr": "نجع تفق عبدو مهمد & برثرس",
+          "nameEn": "Nag Taufiq Abdu Muhamad & Brothers",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.31667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351590",
+          "nameAr": "نجع الشتب الساغر",
+          "nameEn": "Nag El Shatb El Saghir",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.426,
+            "lng": 32.94564
+          }
+        },
+        {
+          "id": "351592",
+          "nameAr": "نجع الشتب",
+          "nameEn": "Nag El-Shatb",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.73333,
+            "lng": 32.93333
+          }
+        },
+        {
+          "id": "351596",
+          "nameAr": "نجع السرابي",
+          "nameEn": "Nag El Sarabyi",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.31667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351598",
+          "nameAr": "نجع السيد سعد الجدد",
+          "nameEn": "Nag El-Saiyid Said El-Gedid",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.7,
+            "lng": 32.93333
+          }
+        },
+        {
+          "id": "351603",
+          "nameAr": "نجع القزز",
+          "nameEn": "Nag El-Qazaz",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.43333,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "351620",
+          "nameAr": "نجع العدوا",
+          "nameEn": "Nag El-Idwa",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.5,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351627",
+          "nameAr": "نجع الهمام",
+          "nameEn": "Nag El-Hamam",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.67187,
+            "lng": 32.92454
+          }
+        },
+        {
+          "id": "351630",
+          "nameAr": "نجع الهلفايا",
+          "nameEn": "Nag El-Halfaya",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.55,
+            "lng": 32.88333
+          }
+        },
+        {
+          "id": "351648",
+          "nameAr": "نجع الدسا",
+          "nameEn": "Nag El-Disa",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.26562,
+            "lng": 32.89194
+          }
+        },
+        {
+          "id": "351650",
+          "nameAr": "نجع الدب",
+          "nameEn": "Nag El-Dib",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.49777,
+            "lng": 32.88397
+          }
+        },
+        {
+          "id": "351662",
+          "nameAr": "نجع العبابدا",
+          "nameEn": "Nag El Ababda",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.43208,
+            "lng": 32.87864
+          }
+        },
+        {
+          "id": "351900",
+          "nameAr": "منيحة",
+          "nameEn": "Munayhah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.48282,
+            "lng": 32.88409
+          }
+        },
+        {
+          "id": "353802",
+          "nameAr": "كوم أمبو",
+          "nameEn": "Kom Ombo",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.47669,
+            "lng": 32.94626
+          }
+        },
+        {
+          "id": "355518",
+          "nameAr": "إقليت",
+          "nameEn": "Iqlit",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.52111,
+            "lng": 32.89416
+          }
+        },
+        {
+          "id": "355532",
+          "nameAr": "إنيبا",
+          "nameEn": "Ineiba",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.45915,
+            "lng": 33.05086
+          }
+        },
+        {
+          "id": "355659",
+          "nameAr": "إبرم",
+          "nameEn": "Ibrim",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.48341,
+            "lng": 33.02595
+          }
+        },
+        {
+          "id": "356904",
+          "nameAr": "فطيرة",
+          "nameEn": "Fatirah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.61344,
+            "lng": 32.92976
+          }
+        },
+        {
+          "id": "356948",
+          "nameAr": "فارس",
+          "nameEn": "Faris",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.61465,
+            "lng": 32.90163
+          }
+        },
+        {
+          "id": "357380",
+          "nameAr": "عزبة السبل قبلي",
+          "nameEn": "Ezbet El-Sibil Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.49198,
+            "lng": 32.92596
+          }
+        },
+        {
+          "id": "357440",
+          "nameAr": "عزبة النجدر",
+          "nameEn": "Ezbet El-Nagdr",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.46063,
+            "lng": 32.94296
+          }
+        },
+        {
+          "id": "357448",
+          "nameAr": "عزبة المتعنا بهر",
+          "nameEn": "Ezbet El-Matana Bahar",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.48333,
+            "lng": 32.96667
+          }
+        },
+        {
+          "id": "357449",
+          "nameAr": "عزبة المرشييا",
+          "nameEn": "Ezbet El-Marshiya",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.53333,
+            "lng": 32.93333
+          }
+        },
+        {
+          "id": "357468",
+          "nameAr": "عزبة الإسمعليا",
+          "nameEn": "Ezbet El-Ismailiya",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.43333,
+            "lng": 32.95
+          }
+        },
+        {
+          "id": "357475",
+          "nameAr": "عزبة الإبراهميا",
+          "nameEn": "Ezbet El Ibrahimiya",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.51667,
+            "lng": 32.95
+          }
+        },
+        {
+          "id": "357526",
+          "nameAr": "عزبة البوسا",
+          "nameEn": "Ezbet El Busa",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.41667,
+            "lng": 32.96667
+          }
+        },
+        {
+          "id": "358388",
+          "nameAr": "دراو",
+          "nameEn": "Daraw",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.40796,
+            "lng": 32.92324
+          }
+        },
+        {
+          "id": "358520",
+          "nameAr": "دابوب",
+          "nameEn": "Dabub",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.5708,
+            "lng": 32.94785
+          }
+        },
+        {
+          "id": "358812",
+          "nameAr": "بمبان",
+          "nameEn": "Bimban",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.44265,
+            "lng": 32.87777
+          }
+        },
+        {
+          "id": "359674",
+          "nameAr": "أط طويسة",
+          "nameEn": "At Tuwaysah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.37512,
+            "lng": 32.91389
+          }
+        },
+        {
+          "id": "359908",
+          "nameAr": "السبخاية",
+          "nameEn": "As Sabkhayah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.41667,
+            "lng": 32.9
+          }
+        },
+        {
+          "id": "360134",
+          "nameAr": "الرقبة",
+          "nameEn": "Ar Raqabah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.40566,
+            "lng": 32.88864
+          }
+        },
+        {
+          "id": "360140",
+          "nameAr": "الرمادي قبلي",
+          "nameEn": "Ar Ramadi Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.7,
+            "lng": 32.91667
+          }
+        },
+        {
+          "id": "360156",
+          "nameAr": "الرغامة",
+          "nameEn": "Ar Raghamah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.54999,
+            "lng": 32.91393
+          }
+        },
+        {
+          "id": "360165",
+          "nameAr": "أرمنا",
+          "nameEn": "Armina",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.46136,
+            "lng": 33.06002
+          }
+        },
+        {
+          "id": "360760",
+          "nameAr": "المنصورية",
+          "nameEn": "Al Mansuriyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.44552,
+            "lng": 32.91707
+          }
+        },
+        {
+          "id": "361007",
+          "nameAr": "الجزيرة",
+          "nameEn": "Al Jazirah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.4,
+            "lng": 32.91667
+          }
+        },
+        {
+          "id": "361047",
+          "nameAr": "الجعافرة",
+          "nameEn": "Al Jaafirah",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.31667,
+            "lng": 32.95
+          }
+        },
+        {
+          "id": "361803",
+          "nameAr": "أدندان",
+          "nameEn": "Adindan",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.39465,
+            "lng": 32.9749
+          }
+        },
+        {
+          "id": "361823",
+          "nameAr": "الديوان",
+          "nameEn": "Ad Diwan",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.53333,
+            "lng": 33.03333
+          }
+        },
+        {
+          "id": "11669696",
+          "nameAr": "العتمور البحري",
+          "nameEn": "Izbet Al Atmur Al Mustajada",
+          "type": "village",
+          "coordinates": {
+            "lat": 24.52358,
+            "lng": 32.99924
+          }
+        }
+      ]
+    },
+    {
+      "id": "346518",
+      "nameAr": "عنيبة",
+      "nameEn": "Unaybah",
+      "coordinates": {
+        "lat": 22.78333,
+        "lng": 32.58333
+      },
+      "locations": [
+        {
+          "id": "346407",
+          "nameAr": "وادي العرب",
+          "nameEn": "Wadi Al Arab",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.76667,
+            "lng": 32.51667
+          }
+        },
+        {
+          "id": "346520",
+          "nameAr": "عنيبة",
+          "nameEn": "Unaybah",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.63333,
+            "lng": 31.95
+          }
+        },
+        {
+          "id": "347169",
+          "nameAr": "توشكة شرق",
+          "nameEn": "Tushkah Sharq",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.5224,
+            "lng": 31.96734
+          }
+        },
+        {
+          "id": "347170",
+          "nameAr": "توشكة غرب",
+          "nameEn": "Tushkah Gharb",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.51399,
+            "lng": 31.77023
+          }
+        },
+        {
+          "id": "347199",
+          "nameAr": "تنقالة",
+          "nameEn": "Tunqalah",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.73333,
+            "lng": 32.16667
+          }
+        },
+        {
+          "id": "347215",
+          "nameAr": "توماس وا عافية",
+          "nameEn": "Tumas Wa Afiyah",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.75,
+            "lng": 32.13333
+          }
+        },
+        {
+          "id": "349521",
+          "nameAr": "سييالة",
+          "nameEn": "Sayyalah",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.98333,
+            "lng": 32.65
+          }
+        },
+        {
+          "id": "350521",
+          "nameAr": "قرشة",
+          "nameEn": "Qirshah",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.26667,
+            "lng": 32.93333
+          }
+        },
+        {
+          "id": "350612",
+          "nameAr": "قتة",
+          "nameEn": "Qatah",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.71667,
+            "lng": 32.06667
+          }
+        },
+        {
+          "id": "350634",
+          "nameAr": "قسطل",
+          "nameEn": "Qastal",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.23333,
+            "lng": 31.56667
+          }
+        },
+        {
+          "id": "351384",
+          "nameAr": "نجع عنيبة",
+          "nameEn": "Naj Unaybah",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.61667,
+            "lng": 31.95
+          }
+        },
+        {
+          "id": "351386",
+          "nameAr": "نجع أفدونيا",
+          "nameEn": "Naj Ufadunya",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.08333,
+            "lng": 32.68333
+          }
+        },
+        {
+          "id": "351401",
+          "nameAr": "نجع محرقة غرب",
+          "nameEn": "Naj Muharaqah Gharb",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.05,
+            "lng": 32.68333
+          }
+        },
+        {
+          "id": "351408",
+          "nameAr": "نجع محطة العلاقي",
+          "nameEn": "Naj Mahatat Al Alaqi",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.13333,
+            "lng": 32.75
+          }
+        },
+        {
+          "id": "351413",
+          "nameAr": "نجع كوبان",
+          "nameEn": "Naj Kuban",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.16667,
+            "lng": 32.76667
+          }
+        },
+        {
+          "id": "351414",
+          "nameAr": "نجع كبدي",
+          "nameEn": "Naj Kibdi",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.21667,
+            "lng": 31.51667
+          }
+        },
+        {
+          "id": "351512",
+          "nameAr": "نجع الدكة القبلي",
+          "nameEn": "Naj Ad Dakah Al Qibli",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.16667,
+            "lng": 32.73333
+          }
+        },
+        {
+          "id": "351513",
+          "nameAr": "نجع الدكة البحري",
+          "nameEn": "Naj Ad Dakah Al Bahri",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.16667,
+            "lng": 32.73333
+          }
+        },
+        {
+          "id": "351967",
+          "nameAr": "محرقة",
+          "nameEn": "Muharaqah",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.05,
+            "lng": 32.73333
+          }
+        },
+        {
+          "id": "353381",
+          "nameAr": "كشتمنة",
+          "nameEn": "Kushtamnah",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.2,
+            "lng": 32.83333
+          }
+        },
+        {
+          "id": "353387",
+          "nameAr": "كرسكو",
+          "nameEn": "Kurusku",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.6,
+            "lng": 32.33333
+          }
+        },
+        {
+          "id": "354926",
+          "nameAr": "جرف حسين",
+          "nameEn": "Jurf Husayn",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.28333,
+            "lng": 32.86667
+          }
+        },
+        {
+          "id": "355660",
+          "nameAr": "إبريم",
+          "nameEn": "Ibrim",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.65,
+            "lng": 32.01667
+          }
+        },
+        {
+          "id": "359808",
+          "nameAr": "السبوع",
+          "nameEn": "As Subu",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.75,
+            "lng": 32.56667
+          }
+        },
+        {
+          "id": "359814",
+          "nameAr": "السنقاري",
+          "nameEn": "As Sinqari",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.61667,
+            "lng": 32.41667
+          }
+        },
+        {
+          "id": "360796",
+          "nameAr": "المالكي",
+          "nameEn": "Al Maliki",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.65,
+            "lng": 32.38333
+          }
+        },
+        {
+          "id": "361855",
+          "nameAr": "الدكة",
+          "nameEn": "Ad Dakah",
+          "type": "village",
+          "coordinates": {
+            "lat": 23.2,
+            "lng": 32.75
+          }
+        },
+        {
+          "id": "362041",
+          "nameAr": "أبو سمبل",
+          "nameEn": "Abu Simbel",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.3457,
+            "lng": 31.61624
+          }
+        },
+        {
+          "id": "362603",
+          "nameAr": "أبو حنضل",
+          "nameEn": "Abu Handal",
+          "type": "village",
+          "coordinates": {
+            "lat": 22.63333,
+            "lng": 32.26667
+          }
+        }
+      ]
+    }
+  ]
+}
