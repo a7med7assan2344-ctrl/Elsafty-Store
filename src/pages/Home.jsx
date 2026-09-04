@@ -9,6 +9,7 @@ import React, {
 import { useNavigate } from "react-router-dom";
 
 import {
+  collection,
   doc,
   onSnapshot,
   getDoc,
@@ -30,6 +31,7 @@ import "../styles/store.css";
 import Navbar from "../components/Navbar/Navbar";
 import HeroSlider from "../components/HeroSlider";
 import ProductsSlider from "../components/ProductsSlider";
+import Footer from "../components/Footer/Footer";
 
 import { CartContext } from "../context/CartContext";
 
@@ -40,7 +42,7 @@ import { getCategories } from "../services/categoryService";
 // =====================================================
 
 const defaultStoreSettings = {
-  storeName: "Elsafty Store",
+  storeName: "ســـــَــــــــوا",
 
   phone: "",
   whatsapp: "",
@@ -80,6 +82,7 @@ const defaultStoreSettings = {
 
     footerBackground: "#313133",
     footerText: "#FFFFFF",
+    footerBrand: "#F68B1E",
   },
 
   bannerSettings: {
@@ -271,6 +274,23 @@ function Home({
     useState(defaultStoreSettings);
 
   // ===================================================
+  // THEME
+  // IMPORTANT:
+  // يجب تعريف theme قبل أي كود يستخدمه
+  // ===================================================
+
+  const theme =
+    storeSettings?.theme ||
+    defaultStoreSettings.theme;
+
+  // ===================================================
+  // ANNOUNCEMENT BARS
+  // ===================================================
+
+  const [announcementBars, setAnnouncementBars] =
+    useState([]);
+
+  // ===================================================
   // WHEEL STATES
   // ===================================================
 
@@ -325,16 +345,17 @@ function Home({
       seconds: "00",
     });
 
-const DAILY_WHEEL_ATTEMPTS =
-  Math.max(
-    1,
-    Number(
-      wheelSettings?.attemptsPerUser ??
-        defaultWheelSettings.attemptsPerUser ??
-        1
-    )
-  );
-    const SPIN_DURATION = 5;
+  const DAILY_WHEEL_ATTEMPTS =
+    Math.max(
+      1,
+      Number(
+        wheelSettings?.attemptsPerUser ??
+          defaultWheelSettings.attemptsPerUser ??
+          1
+      )
+    );
+
+  const SPIN_DURATION = 5;
 
   // ===================================================
   // CURRENT USER
@@ -413,6 +434,183 @@ const DAILY_WHEEL_ATTEMPTS =
 
     return () => unsubscribe();
   }, []);
+
+  // ===================================================
+  // LOAD ANNOUNCEMENT BARS
+  // SUPPORT:
+  // text / title / message / content
+  // active / enabled / visible
+  // ===================================================
+
+  useEffect(() => {
+    const announcementsRef = collection(
+      db,
+      "announcementBars"
+    );
+
+    const unsubscribe =
+      onSnapshot(
+        announcementsRef,
+        (snapshot) => {
+          const bars =
+            snapshot.docs
+              .map((item) => {
+                const data =
+                  item.data() || {};
+
+                // ---------------------------------------
+                // TEXT
+                // ---------------------------------------
+
+                const text =
+                  String(
+                    data.text ??
+                      data.title ??
+                      data.message ??
+                      data.content ??
+                      ""
+                  ).trim();
+
+                // ---------------------------------------
+                // ACTIVE STATUS
+                // يدعم:
+                // active
+                // enabled
+                // visible
+                // ---------------------------------------
+
+                const isActive =
+                  data.active === true ||
+                  data.enabled === true ||
+                  data.visible === true ||
+                  String(
+                    data.active ?? ""
+                  ).toLowerCase() ===
+                    "true" ||
+                  String(
+                    data.enabled ?? ""
+                  ).toLowerCase() ===
+                    "true" ||
+                  String(
+                    data.visible ?? ""
+                  ).toLowerCase() ===
+                    "true";
+
+                return {
+                  id: item.id,
+
+                  ...data,
+
+                  text,
+
+                  active:
+                    isActive,
+
+                  sortOrder:
+                    Number(
+                      data.sortOrder ??
+                        data.order ??
+                        0
+                    ),
+
+                  speed:
+                    Number(
+                      data.speed ??
+                        40
+                    ),
+
+                  height:
+                    Number(
+                      data.height ??
+                        42
+                    ),
+
+                  fontSize:
+                    Number(
+                      data.fontSize ??
+                        15
+                    ),
+
+                  backgroundColor:
+                    data.backgroundColor ??
+                    data.background ??
+                    null,
+
+                  textColor:
+                    data.textColor ??
+                    data.color ??
+                    null,
+
+                  direction:
+                    data.direction ||
+                    "rtl",
+
+                  type:
+                    String(
+                      data.type ||
+                        "marquee"
+                    ).toLowerCase(),
+
+                  link:
+                    data.link ||
+                    data.url ||
+                    "",
+                };
+              })
+
+              .filter(
+                (item) =>
+                  item.active === true &&
+                  String(
+                    item.text || ""
+                  ).trim()
+              )
+
+              .sort(
+                (a, b) =>
+                  Number(
+                    a.sortOrder || 0
+                  ) -
+                  Number(
+                    b.sortOrder || 0
+                  )
+              );
+
+          setAnnouncementBars(
+            bars
+          );
+        },
+        (error) => {
+          console.error(
+            "Announcement Bars Error:",
+            error
+          );
+
+          setAnnouncementBars([]);
+        }
+      );
+
+    return () => unsubscribe();
+  }, []);
+
+  // ===================================================
+  // VISIBLE ANNOUNCEMENT BARS
+  // ===================================================
+
+  const visibleAnnouncementBars =
+    useMemo(() => {
+      return (
+        announcementBars || []
+      ).filter(
+        (bar) =>
+          bar?.active === true &&
+          String(
+            bar?.text || ""
+          ).trim()
+      );
+    }, [
+      announcementBars,
+    ]);
 
   // ===================================================
   // LOAD WHEEL SETTINGS
@@ -610,7 +808,9 @@ const DAILY_WHEEL_ATTEMPTS =
     }
 
     if (wheelSettings?.popupShowOncePerDay === true) {
-      const storageKey = getWheelPopupStorageKey();
+      const storageKey =
+        getWheelPopupStorageKey();
+
       const alreadyShown =
         localStorage.getItem(storageKey);
 
@@ -623,7 +823,10 @@ const DAILY_WHEEL_ATTEMPTS =
 
     const delay = Math.max(
       0,
-      Number(wheelSettings?.popupDelay ?? 1500)
+      Number(
+        wheelSettings?.popupDelay ??
+          1500
+      )
     );
 
     setPopupReady(false);
@@ -632,7 +835,10 @@ const DAILY_WHEEL_ATTEMPTS =
       setPopupReady(true);
       setShowWheelPopup(true);
 
-      if (wheelSettings?.popupShowOncePerDay === true) {
+      if (
+        wheelSettings?.popupShowOncePerDay ===
+        true
+      ) {
         try {
           localStorage.setItem(
             getWheelPopupStorageKey(),
@@ -878,14 +1084,6 @@ const DAILY_WHEEL_ATTEMPTS =
       }
     };
   }, []);
-
-  // ===================================================
-  // THEME
-  // ===================================================
-
-  const theme =
-    storeSettings?.theme ||
-    defaultStoreSettings.theme;
 
   // ===================================================
   // CART COUNT
@@ -1641,19 +1839,10 @@ const DAILY_WHEEL_ATTEMPTS =
       const segment =
         360 / count;
 
-      /*
-       * العجلة تبدأ من الأعلى.
-       * كل قطاع له زاوية مركزية.
-       */
       const angle =
         index * segment +
         segment / 2;
 
-      /*
-       * كلما زاد عدد الجوائز
-       * نقرب النص من المركز قليلًا
-       * حتى لا يخرج من القطاع.
-       */
       const radius =
         count <= 4
           ? 103
@@ -1663,12 +1852,6 @@ const DAILY_WHEEL_ATTEMPTS =
               ? 96
               : 89;
 
-      /*
-       * النص يكون بمحاذاة اتجاه القطاع.
-       *
-       * لو الزاوية في النصف السفلي
-       * نقلب النص 180 درجة حتى يظل مقروءًا.
-       */
       const readableAngle =
         angle > 90 &&
         angle < 270
@@ -1692,238 +1875,213 @@ const DAILY_WHEEL_ATTEMPTS =
         color:
           textColor,
 
-        /*
-         * لون القطاع يستخدم أيضًا
-         * كحد خفيف للنص.
-         */
         textShadow:
           textColor === "#FFFFFF"
             ? "0 1px 2px rgba(0,0,0,.55)"
             : "0 1px 1px rgba(255,255,255,.65)",
 
-        /*
-         * متغيرات CSS إضافية
-         * لو حبينا نطور التصميم لاحقًا.
-         */
         "--wheel-prize-color":
           backgroundColor,
       };
     };
 
   // ===================================================
-// SPIN WHEEL
-// ===================================================
+  // SPIN WHEEL
+  // ===================================================
 
-const spinWheel = async () => {
-  if (
-    isSpinning ||
-    activeWheelPrizes.length === 0
-  ) {
-    return;
-  }
+  const spinWheel = async () => {
+    if (
+      isSpinning ||
+      activeWheelPrizes.length === 0
+    ) {
+      return;
+    }
 
-  if (!currentUser?.uid) {
-    alert(
-      "من فضلك سجل الدخول أولاً حتى تتمكن من لف العجلة."
+    if (!currentUser?.uid) {
+      alert(
+        "من فضلك سجل الدخول أولاً حتى تتمكن من لف العجلة."
+      );
+
+      navigate("/login");
+      return;
+    }
+
+    const today = getLocalDateKey();
+
+    const attemptRef = doc(
+      db,
+      "wheelAttempts",
+      `${currentUser.uid}_${today}`
     );
 
-    navigate("/login");
-    return;
-  }
+    let newAttempts = 0;
 
-  const today = getLocalDateKey();
+    // ===================================================
+    // REGISTER ATTEMPT
+    // ===================================================
 
-  const attemptRef = doc(
-    db,
-    "wheelAttempts",
-    `${currentUser.uid}_${today}`
-  );
+    try {
+      await runTransaction(
+        db,
+        async (transaction) => {
+          const snapshot =
+            await transaction.get(
+              attemptRef
+            );
 
-  let newAttempts = 0;
+          const currentAttempts =
+            snapshot.exists()
+              ? Number(
+                  snapshot.data()?.attempts || 0
+                )
+              : 0;
 
-  // ===================================================
-  // REGISTER ATTEMPT
-  // ===================================================
+          if (
+            currentAttempts >=
+            DAILY_WHEEL_ATTEMPTS
+          ) {
+            throw new Error(
+              "DAILY_LIMIT_REACHED"
+            );
+          }
 
-  try {
-    await runTransaction(
-      db,
-      async (transaction) => {
-        const snapshot =
-          await transaction.get(attemptRef);
+          newAttempts =
+            currentAttempts + 1;
 
-        const currentAttempts =
-          snapshot.exists()
-            ? Number(
-                snapshot.data()?.attempts || 0
-              )
-            : 0;
-
-        if (
-          currentAttempts >=
-          DAILY_WHEEL_ATTEMPTS
-        ) {
-          throw new Error(
-            "DAILY_LIMIT_REACHED"
+          transaction.set(
+            attemptRef,
+            {
+              uid: currentUser.uid,
+              attempts: newAttempts,
+              date: today,
+              updatedAt:
+                new Date().toISOString(),
+            },
+            {
+              merge: true,
+            }
           );
         }
+      );
 
-        newAttempts =
-          currentAttempts + 1;
-
-        transaction.set(
-          attemptRef,
-          {
-            uid: currentUser.uid,
-            attempts: newAttempts,
-            date: today,
-            updatedAt:
-              new Date().toISOString(),
-          },
-          {
-            merge: true,
-          }
+      setWheelAttempts(newAttempts);
+    } catch (error) {
+      if (
+        error?.message ===
+        "DAILY_LIMIT_REACHED"
+      ) {
+        setWheelAttempts(
+          DAILY_WHEEL_ATTEMPTS
         );
-      }
-    );
 
-    setWheelAttempts(newAttempts);
-  } catch (error) {
-    if (
-      error?.message ===
-      "DAILY_LIMIT_REACHED"
-    ) {
-      setWheelAttempts(
-        DAILY_WHEEL_ATTEMPTS
+        alert(
+          `لقد استخدمت ${DAILY_WHEEL_ATTEMPTS} محاولاتك المسموح بها اليوم. ارجع بكرة وجرب حظك من جديد ❤️`
+        );
+
+        return;
+      }
+
+      console.error(
+        "Wheel Spin Error:",
+        error
       );
 
       alert(
-        `لقد استخدمت ${DAILY_WHEEL_ATTEMPTS} محاولاتك المسموح بها اليوم. ارجع بكرة وجرب حظك من جديد ❤️`
+        "حصل خطأ أثناء تشغيل العجلة، حاول مرة أخرى."
       );
 
       return;
     }
 
-    console.error(
-      "Wheel Spin Error:",
-      error
-    );
+    // ===================================================
+    // SELECT PRIZE
+    // ===================================================
 
-    alert(
-      "حصل خطأ أثناء تشغيل العجلة، حاول مرة أخرى."
-    );
-
-    return;
-  }
-
-  // ===================================================
-  // SELECT PRIZE
-  // ===================================================
-
-  const randomIndex =
-    Math.floor(
-      Math.random() *
-        activeWheelPrizes.length
-    );
-
-  const selectedPrize =
-    activeWheelPrizes[randomIndex];
-
-  // ===================================================
-  // CALCULATE ROTATION
-  // ===================================================
-
-  const segmentAngle =
-    360 / activeWheelPrizes.length;
-
-  /*
-   * المؤشر موجود أعلى العجلة عند 12:00.
-   *
-   * مركز القطاع:
-   * randomIndex * segmentAngle + segmentAngle / 2
-   *
-   * لذلك نقوم بتدوير العجلة في الاتجاه
-   * العكسي حتى يصل مركز القطاع للمؤشر.
-   */
-
-  const prizeCenterAngle =
-    randomIndex * segmentAngle +
-    segmentAngle / 2;
-
-  const targetAngle =
-    360 - prizeCenterAngle;
-
-  // عدد اللفات الكاملة
-  const extraRotation = 360 * 6;
-
-  /*
-   * نستخدم rotation الحالية حتى لا يحصل
-   * رجوع مفاجئ للعجلة بين كل محاولة.
-   */
-  const normalizedCurrentRotation =
-    ((wheelRotation % 360) + 360) % 360;
-
-  const normalizedTargetAngle =
-    ((targetAngle % 360) + 360) % 360;
-
-  let additionalRotation =
-    normalizedTargetAngle -
-    normalizedCurrentRotation;
-
-  if (additionalRotation < 0) {
-    additionalRotation += 360;
-  }
-
-  const finalRotation =
-    wheelRotation +
-    extraRotation +
-    additionalRotation;
-
-  // ===================================================
-  // START SPIN
-  // ===================================================
-
-  setIsSpinning(true);
-
-  setWheelResult(null);
-
-  setSpinCountdown(SPIN_DURATION);
-
-  // إلغاء أي Timer قديم
-  if (spinTimerRef.current) {
-    clearTimeout(
-      spinTimerRef.current
-    );
-  }
-
-  // تشغيل الدوران
-  setWheelRotation(
-    finalRotation
-  );
-
-  // ===================================================
-  // FINISH
-  // ===================================================
-
-  spinTimerRef.current =
-    setTimeout(() => {
-      setIsSpinning(false);
-
-      setSpinCountdown(0);
-
-      setWheelResult(
-        selectedPrize
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+          activeWheelPrizes.length
       );
 
-      /*
-       * نحافظ على قيمة rotation
-       * بدل إعادة العجلة للصفر.
-       */
-      setWheelRotation(
-        finalRotation
+    const selectedPrize =
+      activeWheelPrizes[randomIndex];
+
+    // ===================================================
+    // CALCULATE ROTATION
+    // ===================================================
+
+    const segmentAngle =
+      360 / activeWheelPrizes.length;
+
+    const prizeCenterAngle =
+      randomIndex * segmentAngle +
+      segmentAngle / 2;
+
+    const targetAngle =
+      360 - prizeCenterAngle;
+
+    const extraRotation =
+      360 * 6;
+
+    const normalizedCurrentRotation =
+      ((wheelRotation % 360) + 360) % 360;
+
+    const normalizedTargetAngle =
+      ((targetAngle % 360) + 360) % 360;
+
+    let additionalRotation =
+      normalizedTargetAngle -
+      normalizedCurrentRotation;
+
+    if (additionalRotation < 0) {
+      additionalRotation += 360;
+    }
+
+    const finalRotation =
+      wheelRotation +
+      extraRotation +
+      additionalRotation;
+
+    // ===================================================
+    // START SPIN
+    // ===================================================
+
+    setIsSpinning(true);
+
+    setWheelResult(null);
+
+    setSpinCountdown(SPIN_DURATION);
+
+    if (spinTimerRef.current) {
+      clearTimeout(
+        spinTimerRef.current
       );
-    }, SPIN_DURATION * 1000);
-};
+    }
+
+    setWheelRotation(
+      finalRotation
+    );
+
+    // ===================================================
+    // FINISH
+    // ===================================================
+
+    spinTimerRef.current =
+      setTimeout(() => {
+        setIsSpinning(false);
+
+        setSpinCountdown(0);
+
+        setWheelResult(
+          selectedPrize
+        );
+
+        setWheelRotation(
+          finalRotation
+        );
+      }, SPIN_DURATION * 1000);
+  };
+
   // ===================================================
   // DYNAMIC CSS
   // ===================================================
@@ -2000,6 +2158,11 @@ const spinWheel = async () => {
     "--store-footer-text":
       theme?.footerText ||
       "#FFFFFF",
+
+    "--store-footer-brand":
+      theme?.footerBrand ||
+      theme?.accent ||
+      "#F68B1E",
   };
 
   // ===================================================
@@ -2012,6 +2175,225 @@ const spinWheel = async () => {
       style={homeStyle}
       dir="rtl"
     >
+      {/* =================================================
+          ACTIVE ANNOUNCEMENT BARS
+      ================================================= */}
+
+      {visibleAnnouncementBars.length > 0 && (
+        <div
+          className="home-announcement-bars"
+          style={{
+            width: "100%",
+            overflow: "hidden",
+            position: "relative",
+            zIndex: 1000,
+          }}
+        >
+          {visibleAnnouncementBars.map(
+            (bar, index) => {
+              const text =
+                String(
+                  bar?.text || ""
+                ).trim();
+
+              const background =
+                bar?.backgroundColor ||
+                theme?.topStripBackground ||
+                "#F68B1E";
+
+              const textColor =
+                bar?.textColor ||
+                theme?.topStripText ||
+                "#FFFFFF";
+
+              const speed =
+                Math.max(
+                  5,
+                  Number(
+                    bar?.speed ||
+                      storeSettings?.topStrip
+                        ?.speed ||
+                      40
+                  )
+                );
+
+              const type =
+                String(
+                  bar?.type ||
+                    "marquee"
+                ).toLowerCase();
+
+              const content =
+                bar?.link ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const link =
+                        String(
+                          bar.link
+                        ).trim();
+
+                      if (!link) {
+                        return;
+                      }
+
+                      if (
+                        /^https?:\/\//i.test(
+                          link
+                        )
+                      ) {
+                        window.location.href =
+                          link;
+                      } else {
+                        navigate(
+                          link
+                        );
+                      }
+                    }}
+                    style={{
+                      border:
+                        "none",
+                      background:
+                        "transparent",
+                      color:
+                        "inherit",
+                      font: "inherit",
+                      fontWeight:
+                        800,
+                      cursor:
+                        "pointer",
+                      padding:
+                        0,
+                    }}
+                  >
+                    {text}
+                  </button>
+                ) : (
+                  text
+                );
+
+              return (
+                <div
+                  key={
+                    bar?.id ||
+                    `${text}-${index}`
+                  }
+                  className={`home-announcement-bar ${
+                    type === "marquee"
+                      ? "is-marquee"
+                      : ""
+                  }`}
+                  style={{
+                    minHeight: `${Number(
+                      bar?.height ||
+                        storeSettings?.topStrip
+                          ?.height ||
+                        42
+                    )}px`,
+
+                    background,
+
+                    color:
+                      textColor,
+
+                    display:
+                      "flex",
+
+                    alignItems:
+                      "center",
+
+                    justifyContent:
+                      type ===
+                      "marquee"
+                        ? "flex-start"
+                        : "center",
+
+                    overflow:
+                      "hidden",
+
+                    fontSize: `${Number(
+                      bar?.fontSize ||
+                        storeSettings?.topStrip
+                          ?.fontSize ||
+                        15
+                    )}px`,
+
+                    fontWeight:
+                      800,
+
+                    direction:
+                      bar?.direction ||
+                      storeSettings?.topStrip
+                        ?.direction ||
+                      "rtl",
+
+                    whiteSpace:
+                      "nowrap",
+                  }}
+                >
+                  {type ===
+                  "marquee" ? (
+                    <div
+                      style={{
+                        display:
+                          "inline-flex",
+                        alignItems:
+                          "center",
+                        gap:
+                          "70px",
+                        minWidth:
+                          "max-content",
+                        paddingInline:
+                          "40px",
+                        animation: `homeAnnouncementMarquee-${index} ${speed}s linear infinite`,
+                      }}
+                    >
+                      <span>
+                        {content}
+                      </span>
+
+                      <span
+                        aria-hidden="true"
+                      >
+                        {text}
+                      </span>
+
+                      <span
+                        aria-hidden="true"
+                      >
+                        {text}
+                      </span>
+
+                      <span
+                        aria-hidden="true"
+                      >
+                        {text}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>
+                      {content}
+                    </span>
+                  )}
+
+                  <style>{`
+                    @keyframes homeAnnouncementMarquee-${index} {
+                      from {
+                        transform: translateX(0);
+                      }
+
+                      to {
+                        transform: translateX(-25%);
+                      }
+                    }
+                  `}</style>
+                </div>
+              );
+            }
+          )}
+        </div>
+      )}
+
       {/* =================================================
           NAVBAR
       ================================================= */}
@@ -2188,9 +2570,7 @@ const spinWheel = async () => {
                   }}
                 >
 
-                  {/* =================================================
-                      POINTER
-                  ================================================= */}
+                  {/* POINTER */}
 
                   <div
                     className="wheel-pointer"
@@ -2245,9 +2625,7 @@ const spinWheel = async () => {
                     }}
                   />
 
-                  {/* =================================================
-                      WHEEL STAND AREA
-                  ================================================= */}
+                  {/* WHEEL STAND AREA */}
 
                   <div
                     className="wheel-stand-area"
@@ -2267,9 +2645,7 @@ const spinWheel = async () => {
                     }}
                   >
 
-                    {/* =================================================
-                        OUTER BLACK RIM
-                    ================================================= */}
+                    {/* OUTER BLACK RIM */}
 
                     <div
                       className="wheel-outer-rim"
@@ -2295,9 +2671,7 @@ const spinWheel = async () => {
                       }}
                     >
 
-                      {/* =================================================
-                          GOLD RING
-                      ================================================= */}
+                      {/* GOLD RING */}
 
                       <div
                         style={{
@@ -2316,9 +2690,7 @@ const spinWheel = async () => {
                         }}
                       >
 
-                        {/* =================================================
-                            BULBS
-                        ================================================= */}
+                        {/* BULBS */}
 
                         {Array.from({
                           length: 24,
@@ -2337,37 +2709,27 @@ const spinWheel = async () => {
                                 style={{
                                   position:
                                     "absolute",
-
                                   left:
                                     "50%",
-
                                   top:
                                     "50%",
-
                                   width:
                                     "9px",
-
                                   height:
                                     "9px",
-
                                   borderRadius:
                                     "50%",
-
                                   background:
                                     isSpinning
                                       ? "#ffffff"
                                       : "#FFE7A0",
-
                                   boxShadow:
                                     isSpinning
                                       ? "0 0 12px rgba(255,255,255,1), 0 0 20px rgba(255,220,100,.95)"
                                       : "0 0 8px rgba(255,220,100,.95)",
-
                                   transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-137px)`,
-
                                   zIndex:
                                     20,
-
                                   transition:
                                     "background .2s ease, box-shadow .2s ease",
                                 }}
@@ -2376,9 +2738,7 @@ const spinWheel = async () => {
                           }
                         )}
 
-                        {/* =================================================
-                            ROTATING WHEEL
-                        ================================================= */}
+                        {/* ROTATING WHEEL */}
 
                         <div
                           className="wheel-circle"
@@ -2407,9 +2767,7 @@ const spinWheel = async () => {
                           }}
                         >
 
-                          {/* =================================================
-                              SEGMENT SEPARATORS
-                          ================================================= */}
+                          {/* SEGMENT SEPARATORS */}
 
                           {activeWheelPrizes.map(
                             (
@@ -2429,30 +2787,21 @@ const spinWheel = async () => {
                                   style={{
                                     position:
                                       "absolute",
-
                                     width:
                                       "2px",
-
                                     height:
                                       "50%",
-
                                     background:
                                       "rgba(255,255,255,.82)",
-
                                     left:
                                       "50%",
-
                                     top:
                                       "0",
-
                                     transformOrigin:
                                       "bottom center",
-
                                     transform: `translateX(-50%) rotate(${angle}deg)`,
-
                                     zIndex:
                                       2,
-
                                     boxShadow:
                                       "0 0 2px rgba(0,0,0,.25)",
                                   }}
@@ -2461,9 +2810,7 @@ const spinWheel = async () => {
                             }
                           )}
 
-                          {/* =================================================
-                              PRIZE LABELS
-                          ================================================= */}
+                          {/* PRIZE LABELS */}
 
                           {activeWheelPrizes.map(
                             (
@@ -2493,34 +2840,26 @@ const spinWheel = async () => {
                                   style={{
                                     position:
                                       "absolute",
-
                                     left:
                                       "50%",
-
                                     top:
                                       "50%",
-
                                     width:
                                       count <= 6
                                         ? "105px"
                                         : "92px",
-
                                     marginLeft:
                                       count <= 6
                                         ? "-52.5px"
                                         : "-46px",
-
                                     marginTop:
                                       count <= 6
                                         ? "-14px"
                                         : "-12px",
-
                                     textAlign:
                                       "center",
-
                                     color:
                                       textColor,
-
                                     fontSize:
                                       count >
                                       10
@@ -2532,34 +2871,24 @@ const spinWheel = async () => {
                                               6
                                             ? "11px"
                                             : "12px",
-
                                     fontWeight:
                                       "900",
-
                                     lineHeight:
                                       "1.12",
-
                                     letterSpacing:
                                       "-0.1px",
-
                                     whiteSpace:
                                       "normal",
-
                                     wordBreak:
                                       "break-word",
-
                                     zIndex:
                                       5,
-
                                     pointerEvents:
                                       "none",
-
                                     transformOrigin:
                                       "center center",
-
                                     transition:
                                       "none",
-
                                     ...getWheelLabelStyle(
                                       prize,
                                       index
@@ -2568,62 +2897,45 @@ const spinWheel = async () => {
                                 >
                                   {prize?.title ||
                                     "جائزة"}
-                              </div>
+                                </div>
                               );
                             }
                           )}
 
-                          {/* =================================================
-                              CENTER DISC
-                          ================================================= */}
+                          {/* CENTER DISC */}
 
                           <div
                             style={{
                               position:
                                 "absolute",
-
                               left:
                                 "50%",
-
                               top:
                                 "50%",
-
                               transform:
                                 "translate(-50%, -50%)",
-
                               width:
                                 "76px",
-
                               height:
                                 "76px",
-
                               borderRadius:
                                 "50%",
-
                               background:
                                 "radial-gradient(circle at 35% 30%, #555, #171717 60%, #050505)",
-
                               border:
                                 "5px solid #F68B1E",
-
                               boxShadow:
                                 "0 3px 12px rgba(0,0,0,.5), inset 0 0 10px rgba(255,255,255,.08)",
-
                               display:
                                 "flex",
-
                               alignItems:
                                 "center",
-
                               justifyContent:
                                 "center",
-
                               flexDirection:
                                 "column",
-
                               color:
                                 "#fff",
-
                               zIndex:
                                 15,
                             }}
@@ -2632,10 +2944,8 @@ const spinWheel = async () => {
                               style={{
                                 fontSize:
                                   "17px",
-
                                 lineHeight:
                                   "17px",
-
                                 letterSpacing:
                                   ".5px",
                               }}
@@ -2647,10 +2957,8 @@ const spinWheel = async () => {
                               style={{
                                 fontSize:
                                   "12px",
-
                                 fontWeight:
                                   "900",
-
                                 color:
                                   "#F68B1E",
                               }}
@@ -2662,39 +2970,28 @@ const spinWheel = async () => {
                       </div>
                     </div>
 
-                    {/* =================================================
-                        STAND
-                    ================================================= */}
+                    {/* STAND */}
 
                     <div
                       style={{
                         position:
                           "absolute",
-
                         bottom:
                           "0",
-
                         left:
                           "50%",
-
                         transform:
                           "translateX(-50%)",
-
                         width:
                           "125px",
-
                         height:
                           "55px",
-
                         background:
                           "linear-gradient(180deg, #333, #111)",
-
                         clipPath:
                           "polygon(28% 0, 72% 0, 100% 100%, 0 100%)",
-
                         zIndex:
                           2,
-
                         filter:
                           "drop-shadow(0 6px 5px rgba(0,0,0,.25))",
                       }}
@@ -2704,40 +3001,29 @@ const spinWheel = async () => {
                       style={{
                         position:
                           "absolute",
-
                         bottom:
                           "-2px",
-
                         left:
                           "50%",
-
                         transform:
                           "translateX(-50%)",
-
                         width:
                           "180px",
-
                         height:
                           "14px",
-
                         borderRadius:
                           "7px",
-
                         background:
                           "#151515",
-
                         boxShadow:
                           "0 5px 12px rgba(0,0,0,.3)",
-
                         zIndex:
                           3,
                       }}
                     />
                   </div>
 
-                  {/* =================================================
-                      SPIN BUTTON
-                  ================================================= */}
+                  {/* SPIN BUTTON */}
 
                   {!wheelResult && (
                     <>
@@ -2755,49 +3041,38 @@ const spinWheel = async () => {
                         style={{
                           marginTop:
                             "8px",
-
                           minWidth:
                             "210px",
-
                           padding:
                             "13px 25px",
-
                           border:
                             "none",
-
                           borderRadius:
                             "8px",
-
                           background:
                             isSpinning ||
                             wheelAttempts >=
                               DAILY_WHEEL_ATTEMPTS
                               ? "#999"
                               : "#F68B1E",
-
                           color:
                             "#fff",
-
                           fontSize:
                             "17px",
-
                           fontWeight:
                             "900",
-
                           cursor:
                             isSpinning ||
                             wheelAttempts >=
                               DAILY_WHEEL_ATTEMPTS
                               ? "not-allowed"
                               : "pointer",
-
                           boxShadow:
                             isSpinning ||
                             wheelAttempts >=
                               DAILY_WHEEL_ATTEMPTS
                               ? "none"
                               : "0 5px 14px rgba(246,139,30,.35)",
-
                           transition:
                             "all .2s ease",
                         }}
@@ -2817,28 +3092,20 @@ const spinWheel = async () => {
                         style={{
                           marginTop:
                             "12px",
-
                           display:
                             "flex",
-
                           alignItems:
                             "center",
-
                           justifyContent:
                             "center",
-
                           gap:
                             "8px",
-
                           flexWrap:
                             "wrap",
-
                           fontSize:
                             "14px",
-
                           fontWeight:
                             "800",
-
                           color:
                             "#313133",
                         }}
@@ -2875,13 +3142,10 @@ const spinWheel = async () => {
                         style={{
                           marginTop:
                             "7px",
-
                           fontSize:
                             "12px",
-
                           color:
                             "#75757A",
-
                           textAlign:
                             "center",
                         }}
@@ -2896,10 +3160,8 @@ const spinWheel = async () => {
                               style={{
                                 color:
                                   "#F68B1E",
-
                                 direction:
                                   "ltr",
-
                                 display:
                                   "inline-block",
                               }}
@@ -2920,9 +3182,7 @@ const spinWheel = async () => {
                     </>
                   )}
 
-                  {/* =================================================
-                      RESULT
-                  ================================================= */}
+                  {/* RESULT */}
 
                   {wheelResult && (
                     <div
@@ -2930,28 +3190,20 @@ const spinWheel = async () => {
                       style={{
                         marginTop:
                           "18px",
-
                         width:
                           "min(420px, 92%)",
-
                         textAlign:
                           "center",
-
                         background:
                           "#fff",
-
                         border:
                           "2px solid #F68B1E",
-
                         borderRadius:
                           "14px",
-
                         padding:
                           "20px",
-
                         boxShadow:
                           "0 8px 25px rgba(0,0,0,.12)",
-
                         animation:
                           "wheelResultPop .45s ease",
                       }}
@@ -2960,7 +3212,6 @@ const spinWheel = async () => {
                         style={{
                           fontSize:
                             "45px",
-
                           marginBottom:
                             "5px",
                         }}
@@ -2972,13 +3223,10 @@ const spinWheel = async () => {
                         style={{
                           margin:
                             "0 0 6px",
-
                           color:
                             "#313133",
-
                           fontSize:
                             "24px",
-
                           fontWeight:
                             "900",
                         }}
@@ -2990,7 +3238,6 @@ const spinWheel = async () => {
                         style={{
                           margin:
                             "0 0 5px",
-
                           color:
                             "#75757A",
                         }}
@@ -3002,13 +3249,10 @@ const spinWheel = async () => {
                         style={{
                           display:
                             "block",
-
                           fontSize:
                             "21px",
-
                           color:
                             "#F68B1E",
-
                           marginBottom:
                             "8px",
                         }}
@@ -3023,7 +3267,6 @@ const spinWheel = async () => {
                           style={{
                             display:
                               "block",
-
                             fontWeight:
                               "800",
                           }}
@@ -3043,7 +3286,6 @@ const spinWheel = async () => {
                           style={{
                             display:
                               "block",
-
                             fontWeight:
                               "800",
                           }}
@@ -3063,7 +3305,6 @@ const spinWheel = async () => {
                           style={{
                             display:
                               "block",
-
                             fontWeight:
                               "800",
                           }}
@@ -3078,7 +3319,6 @@ const spinWheel = async () => {
                           style={{
                             display:
                               "block",
-
                             fontWeight:
                               "800",
                           }}
@@ -3093,7 +3333,6 @@ const spinWheel = async () => {
                           style={{
                             display:
                               "block",
-
                             fontWeight:
                               "800",
                           }}
@@ -3114,25 +3353,18 @@ const spinWheel = async () => {
                         style={{
                           marginTop:
                             "15px",
-
                           border:
                             "none",
-
                           borderRadius:
                             "7px",
-
                           padding:
                             "10px 35px",
-
                           background:
                             "#313133",
-
                           color:
                             "#fff",
-
                           fontWeight:
                             "800",
-
                           cursor:
                             "pointer",
                         }}
@@ -3146,6 +3378,115 @@ const spinWheel = async () => {
             </section>
           )}
 
+        {/* =================================================
+            QUICK CATEGORIES
+        ================================================= */}
+
+        <section className="jumia-section quick-shop-section">
+          <div className="jumia-section-title">
+            <h2>
+              كل اللي هتحتاجه في مكان واحد
+            </h2>
+
+            <button
+              type="button"
+              onClick={() =>
+                scrollToSection(
+                  ".jumia-all-categories"
+                )
+              }
+            >
+              عرض الكل
+            </button>
+          </div>
+
+          <div className="jumia-categories">
+            {rootCategories.length >
+            0 ? (
+rootCategories.slice(
+  0,
+  Number(storeSettings?.quickCategoriesLimit ?? 8)
+)                .map((category) => {
+                  const children =
+                    getChildCategories(
+                      category?.id
+                    );
+
+                  const categoryProducts =
+                    getCategoryProducts(
+                      category
+                    );
+
+                  return (
+                    <button
+                      type="button"
+                      key={
+                        category?.id ||
+                        category?.name
+                      }
+                      className="store-choice-card"
+                      style={getCategoryCardStyle(
+                        category
+                      )}
+                      onClick={() =>
+                        openCategory(
+                          category
+                        )
+                      }
+                    >
+                      <div className="store-choice-image">
+                        {category?.image ? (
+                          <img
+                            src={
+                              category.image
+                            }
+                            alt={
+                              category?.name ||
+                              "قسم"
+                            }
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span>
+                            {category?.icon ||
+                              "📦"}
+                          </span>
+                        )}
+                      </div>
+
+                      <strong>
+                        {category?.name ||
+                          "قسم"}
+                      </strong>
+
+                      <small>
+                        {children.length >
+                        0
+                          ? `${children.length} قسم فرعي`
+                          : categoryProducts.length >
+                              0
+                            ? `${categoryProducts.length} منتج`
+                            : "تصفح الآن"}
+                      </small>
+                    </button>
+                  );
+                })
+            ) : (
+              <div className="store-empty-choice">
+                <div>📂</div>
+
+                <h3>
+                  لا توجد أقسام حاليًا
+                </h3>
+
+                <p>
+                  أضف الأقسام من لوحة
+                  الأدمن
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* =================================================
             TODAY OFFERS
@@ -3201,59 +3542,41 @@ const spinWheel = async () => {
             />
           </section>
         )}
-{/* =================================================
-    COUPONS
-================================================= */}
 
-<section className="jumia-promo-strip">
-  <div className="promo-content">
-    <span className="promo-icon">
-      🏷️
-    </span>
+        {/* =================================================
+            COUPONS
+        ================================================= */}
 
-    <div>
-      <h2>
-        {storeSettings?.couponPromoTitle ||
-          "ألحق أكواد الخصم!"}
-      </h2>
+        <section className="jumia-promo-strip">
+          <div className="promo-content">
+            <span className="promo-icon">
+              🏷️
+            </span>
 
-      <p>
-        {storeSettings?.couponPromoDescription ||
-          "وفر أكتر مع العروض والكوبونات"}
-      </p>
-    </div>
-  </div>
+            <div>
+              <h2>
+                ألحق أكواد الخصم!
+              </h2>
 
-  <button
-    type="button"
-    onClick={() => {
-      const link = String(
-        storeSettings?.couponPromoLink || ""
-      ).trim();
+              <p>
+                وفر أكتر مع العروض
+                والكوبونات
+              </p>
+            </div>
+          </div>
 
-      // لو مفيش رابط → يروح لعروض اليوم
-      if (!link) {
-        scrollToSection("#today-offers");
-        return;
-      }
+          <button
+            type="button"
+            onClick={() =>
+              scrollToSection(
+                "#today-offers"
+              )
+            }
+          >
+            تسوق الآن
+          </button>
+        </section>
 
-      // رابط خارجي
-      if (
-        link.startsWith("http://") ||
-        link.startsWith("https://")
-      ) {
-        window.location.href = link;
-        return;
-      }
-
-      // رابط داخلي
-      navigate(link);
-    }}
-  >
-    {storeSettings?.couponPromoButton ||
-      "تسوق الآن"}
-  </button>
-</section>
         {/* =================================================
             NEW ARRIVALS
         ================================================= */}
@@ -3513,6 +3836,75 @@ const spinWheel = async () => {
         )}
 
         {/* =================================================
+            CATEGORY PRODUCT SECTIONS
+        ================================================= */}
+
+        {rootCategories.map(
+          (category) => {
+            const categoryProducts =
+              getCategoryProducts(
+                category
+              );
+
+            if (
+              categoryProducts.length ===
+              0
+            ) {
+              return null;
+            }
+
+            return (
+              <section
+                key={
+                  `products-${category?.id}`
+                }
+                className="jumia-section category-products-section"
+              >
+                <div className="jumia-section-title">
+                  <div>
+                    <h2>
+                      {category?.name ||
+                        "منتجات"}
+                    </h2>
+
+                    <p>
+                      اكتشف أفضل المنتجات
+                      في هذا القسم
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openCategory(
+                        category
+                      )
+                    }
+                  >
+                    عرض الكل
+                  </button>
+                </div>
+
+                <ProductsSlider
+                  title=""
+                  products={
+                    categoryProducts
+                  }
+                  addToCart={
+                    addToCart
+                  }
+                  onTitleClick={() =>
+                    openCategory(
+                      category
+                    )
+                  }
+                />
+              </section>
+            );
+          }
+        )}
+
+        {/* =================================================
             FILTERED PRODUCTS
         ================================================= */}
 
@@ -3642,269 +4034,37 @@ const spinWheel = async () => {
           FOOTER
       ================================================= */}
 
-      <footer
-        className="store-footer jumia-footer"
-        style={{
-          background:
-            theme?.footerBackground ||
-            "#313133",
-
-          color:
-            theme?.footerText ||
-            "#FFFFFF",
-        }}
-      >
-        <div className="footer-container">
-
-          <div className="footer-column">
-            <h2>
-              {storeSettings?.storeName ||
-                "Elsafty Store"}
-            </h2>
-
-            <p>
-              كل اللي تحتاجه في مكان
-              واحد. تسوق بسهولة واحصل
-              على أفضل المنتجات
-              والأسعار.
-            </p>
-
-            {storeSettings?.address && (
-              <p>
-                📍{" "}
-                {
-                  storeSettings.address
-                }
-              </p>
-            )}
-
-            {storeSettings?.phone && (
-              <p>
-                📞{" "}
-                {
-                  storeSettings.phone
-                }
-              </p>
-            )}
-
-            {storeSettings?.email && (
-              <p>
-                ✉️{" "}
-                {
-                  storeSettings.email
-                }
-              </p>
-            )}
-          </div>
-
-          <div className="footer-column">
-            <h3>
-              تحتاج مساعدة؟
-            </h3>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                navigate("/")
-              }
-            >
-              الرئيسية
-            </button>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                navigate(
-                  "/account"
-                )
-              }
-            >
-              حسابي
-            </button>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                navigate(
-                  "/orders"
-                )
-              }
-            >
-              طلباتي
-            </button>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                navigate("/cart")
-              }
-            >
-              سلة التسوق
-            </button>
-          </div>
-
-          <div className="footer-column">
-            <h3>
-              تسوق معنا
-            </h3>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                scrollToSection(
-                  ".jumia-categories"
-                )
-              }
-            >
-              الأقسام
-            </button>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                scrollToSection(
-                  "#today-offers"
-                )
-              }
-            >
-              عروض اليوم
-            </button>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                scrollToSection(
-                  "#best-sellers"
-                )
-              }
-            >
-              الأكثر مبيعًا
-            </button>
-
-            <button
-              type="button"
-              className="footer-link"
-              onClick={() =>
-                scrollToSection(
-                  "#new-arrivals"
-                )
-              }
-            >
-              وصل حديثًا
-            </button>
-          </div>
-
-          <div className="footer-column">
-            <h3>
-              خدمة العملاء
-            </h3>
-
-            <p>
-              🚚 شحن لجميع المحافظات
-            </p>
-
-            <p>
-              🔒 دفع آمن
-            </p>
-
-            <p>
-              ⭐ منتجات مختارة
-            </p>
-
-            {storeSettings?.whatsapp && (
-              <p>
-                💬 واتساب:{" "}
-                {
-                  storeSettings.whatsapp
-                }
-              </p>
-            )}
-          </div>
-
-          <div className="footer-column">
-            <h3>
-              تابعنا
-            </h3>
-
-            <div className="footer-social">
-
-              {storeSettings?.facebook && (
-                <button
-                  type="button"
-                  aria-label="Facebook"
-                  onClick={() =>
-                    window.open(
-                      storeSettings.facebook,
-                      "_blank",
-                      "noopener,noreferrer"
-                    )
-                  }
-                >
-                  📘
-                </button>
-              )}
-
-              {storeSettings?.instagram && (
-                <button
-                  type="button"
-                  aria-label="Instagram"
-                  onClick={() =>
-                    window.open(
-                      storeSettings.instagram,
-                      "_blank",
-                      "noopener,noreferrer"
-                    )
-                  }
-                >
-                  📷
-                </button>
-              )}
-
-              {storeSettings?.telegram && (
-                <button
-                  type="button"
-                  aria-label="Telegram"
-                  onClick={() =>
-                    window.open(
-                      storeSettings.telegram,
-                      "_blank",
-                      "noopener,noreferrer"
-                    )
-                  }
-                >
-                  ✈️
-                </button>
-              )}
-
-              {!storeSettings?.facebook &&
-                !storeSettings?.instagram &&
-                !storeSettings?.telegram && (
-                  <span>
-                    أضف روابط التواصل
-                    من لوحة الأدمن
-                  </span>
-                )}
-
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          ©{" "}
-          {new Date().getFullYear()}{" "}
-          {storeSettings?.storeName ||
-            "Elsafty Store"}
-          {" - "}
-          جميع الحقوق محفوظة.
-        </div>
-      </footer>
+      <Footer
+        storeName={
+          storeSettings?.storeName ||
+          "ســـــَــــــــوا"
+        }
+        logo={
+          storeSettings?.logo || ""
+        }
+        phone={
+          storeSettings?.phone || ""
+        }
+        whatsapp={
+          storeSettings?.whatsapp || ""
+        }
+        email={
+          storeSettings?.email || ""
+        }
+        address={
+          storeSettings?.address || ""
+        }
+        facebook={
+          storeSettings?.facebook || ""
+        }
+        instagram={
+          storeSettings?.instagram || ""
+        }
+        telegram={
+          storeSettings?.telegram || ""
+        }
+        theme={theme}
+      />
 
       {/* =================================================
           WHEEL POPUP
@@ -3933,72 +4093,122 @@ const spinWheel = async () => {
               )}
 
               <div className="wheel-header wheel-popup-header">
-                <div className="wheel-popup-badge">🎁 SPIN & WIN</div>
+                <div className="wheel-popup-badge">
+                  🎁 SPIN & WIN
+                </div>
+
                 <h2>
-                  {wheelSettings?.title || "🎡 جرب حظك!"}
+                  {wheelSettings?.title ||
+                    "🎡 جرب حظك!"}
                 </h2>
+
                 <p>
-                  {wheelSettings?.description || "لف العجلة واكسب عرضك"}
+                  {wheelSettings?.description ||
+                    "لف العجلة واكسب عرضك"}
                 </p>
               </div>
 
               <div className="wheel-game-area wheel-popup-game-area">
                 <div className="wheel-popup-wheel-wrap">
                   <div className="wheel-pointer wheel-popup-pointer" />
+
                   <div className="wheel-popup-outer-rim">
                     <div
                       className="wheel-circle wheel-popup-circle"
                       style={{
-                        background: wheelGradient,
+                        background:
+                          wheelGradient,
+
                         transform: `rotate(${wheelRotation}deg)`,
-                        transition: isSpinning
-                          ? `transform ${SPIN_DURATION}s cubic-bezier(.17,.67,.12,.99)`
-                          : "none",
+
+                        transition:
+                          isSpinning
+                            ? `transform ${SPIN_DURATION}s cubic-bezier(.17,.67,.12,.99)`
+                            : "none",
                       }}
                     >
-                      {activeWheelPrizes.map((prize, index) => {
-                        const angle =
-                          (360 / activeWheelPrizes.length) * index;
-                        return (
-                          <div
-                            key={`popup-line-${prize?.id || index}`}
-                            className="wheel-popup-separator"
-                            style={{
-                              transform: `translateX(-50%) rotate(${angle}deg)`,
-                            }}
-                          />
-                        );
-                      })}
+                      {activeWheelPrizes.map(
+                        (
+                          prize,
+                          index
+                        ) => {
+                          const angle =
+                            (360 /
+                              activeWheelPrizes.length) *
+                            index;
 
-                      {activeWheelPrizes.map((prize, index) => {
-                        const count = activeWheelPrizes.length;
-                        const prizeColor = getWheelPrizeColor(prize, index);
-                        const textColor = getContrastTextColor(prizeColor);
-                        return (
-                          <div
-                            key={`popup-prize-${prize?.id || index}`}
-                            className="wheel-popup-prize-label"
-                            style={{
-                              color: textColor,
-                              fontSize:
-                                count > 10
-                                  ? "9px"
-                                  : count > 8
-                                    ? "10px"
-                                    : count > 6
-                                      ? "11px"
-                                      : "12px",
-                              ...getWheelLabelStyle(prize, index),
-                            }}
-                          >
-                            {prize?.title || "جائزة"}
-                          </div>
-                        );
-                      })}
+                          return (
+                            <div
+                              key={`popup-line-${prize?.id || index}`}
+                              className="wheel-popup-separator"
+                              style={{
+                                transform: `translateX(-50%) rotate(${angle}deg)`,
+                              }}
+                            />
+                          );
+                        }
+                      )}
+
+                      {activeWheelPrizes.map(
+                        (
+                          prize,
+                          index
+                        ) => {
+                          const count =
+                            activeWheelPrizes.length;
+
+                          const prizeColor =
+                            getWheelPrizeColor(
+                              prize,
+                              index
+                            );
+
+                          const textColor =
+                            getContrastTextColor(
+                              prizeColor
+                            );
+
+                          return (
+                            <div
+                              key={`popup-prize-${prize?.id || index}`}
+                              className="wheel-popup-prize-label"
+                              style={{
+                                color:
+                                  textColor,
+
+                                fontSize:
+                                  count >
+                                  10
+                                    ? "9px"
+                                    : count >
+                                        8
+                                      ? "10px"
+                                      : count >
+                                          6
+                                        ? "11px"
+                                        : "12px",
+
+                                ...getWheelLabelStyle(
+                                  prize,
+                                  index
+                                ),
+                              }}
+                            >
+                              {prize?.title ||
+                                "جائزة"}
+                            </div>
+                          );
+                        }
+                      )}
 
                       <div className="wheel-popup-center">
-                        <strong>SPIN</strong>
-                        <span>& WIN</span>
+                        <strong>
+                          SPIN
+                        </strong>
+
+                        <span>
+                          & WIN
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -4012,55 +4222,111 @@ const spinWheel = async () => {
                       onClick={spinWheel}
                       disabled={
                         isSpinning ||
-                        wheelAttempts >= DAILY_WHEEL_ATTEMPTS
+                        wheelAttempts >=
+                          DAILY_WHEEL_ATTEMPTS
                       }
                     >
                       {isSpinning
                         ? `🎡 جاري الدوران... ${spinCountdown}`
-                        : wheelAttempts >= DAILY_WHEEL_ATTEMPTS
+                        : wheelAttempts >=
+                            DAILY_WHEEL_ATTEMPTS
                           ? "⏳ انتهت محاولات اليوم"
                           : "🎯 لف العجلة"}
                     </button>
 
                     <div className="wheel-attempts wheel-popup-attempts">
                       🎯 المحاولات:
-                      <strong>{wheelAttempts}</strong>
-                      <span>/</span>
-                      <strong>{DAILY_WHEEL_ATTEMPTS}</strong>
+
+                      <strong>
+                        {
+                          wheelAttempts
+                        }
+                      </strong>
+
+                      <span>
+                        /
+                      </span>
+
+                      <strong>
+                        {
+                          DAILY_WHEEL_ATTEMPTS
+                        }
+                      </strong>
                     </div>
                   </>
                 )}
 
                 {wheelResult && (
                   <div className="wheel-result wheel-popup-result">
-                    <div className="wheel-popup-result-icon">🎉</div>
-                    <h3>مبروك!</h3>
-                    <p>لقد فزت بـ</p>
-                    <strong>{wheelResult?.title || "جائزة"}</strong>
+                    <div className="wheel-popup-result-icon">
+                      🎉
+                    </div>
 
-                    {wheelResult?.type === "discount" && (
-                      <small>خصم {wheelResult?.value || 0}%</small>
+                    <h3>
+                      مبروك!
+                    </h3>
+
+                    <p>
+                      لقد فزت بـ
+                    </p>
+
+                    <strong>
+                      {wheelResult?.title ||
+                        "جائزة"}
+                    </strong>
+
+                    {wheelResult?.type ===
+                      "discount" && (
+                      <small>
+                        خصم{" "}
+                        {
+                          wheelResult?.value ||
+                          0
+                        }
+                        %
+                      </small>
                     )}
 
-                    {wheelResult?.type === "fixed" && (
-                      <small>خصم {wheelResult?.value || 0} ج.م</small>
+                    {wheelResult?.type ===
+                      "fixed" && (
+                      <small>
+                        خصم{" "}
+                        {
+                          wheelResult?.value ||
+                          0
+                        }{" "}
+                        ج.م
+                      </small>
                     )}
 
-                    {wheelResult?.type === "free-shipping" && (
-                      <small>شحن مجاني 🚚</small>
+                    {wheelResult?.type ===
+                      "free-shipping" && (
+                      <small>
+                        شحن مجاني 🚚
+                      </small>
                     )}
 
-                    {wheelResult?.type === "gift" && (
-                      <small>هدية 🎁</small>
+                    {wheelResult?.type ===
+                      "gift" && (
+                      <small>
+                        هدية 🎁
+                      </small>
                     )}
 
-                    {wheelResult?.type === "nothing" && (
-                      <small>حظ أوفر المرة القادمة ❤️</small>
+                    {wheelResult?.type ===
+                      "nothing" && (
+                      <small>
+                        حظ أوفر المرة القادمة ❤️
+                      </small>
                     )}
 
                     <button
                       type="button"
-                      onClick={() => setWheelResult(null)}
+                      onClick={() =>
+                        setWheelResult(
+                          null
+                        )
+                      }
                     >
                       تمام
                     </button>
@@ -4333,6 +4599,7 @@ const spinWheel = async () => {
               opacity: 0;
               transform: scale(0.92);
             }
+
             to {
               opacity: 1;
               transform: scale(1);
