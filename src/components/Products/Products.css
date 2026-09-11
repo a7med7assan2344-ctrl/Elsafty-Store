@@ -1,7 +1,47 @@
 /* =====================================================
-   ELSAFTY STORE - PRODUCTS GRID
-   JUMIA STYLE - RTL - RESPONSIVE
+   Sـــــَــــــــوا - PRODUCTS GRID
+   RTL - RESPONSIVE - ADMIN CONTROLLED
    ===================================================== */
+
+
+/* =====================================================
+   PRODUCTS SECTION
+   ===================================================== */
+
+.products-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+
+/* =====================================================
+   PRODUCTS SECTION HEADER
+   ===================================================== */
+
+.products-section-header {
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 0;
+  box-sizing: border-box;
+  text-align: right;
+}
+
+.products-section-header h2 {
+  margin: 0;
+  color: #071a36;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.products-section-header p {
+  margin: 4px 0 0;
+  color: #777;
+  font-size: 13px;
+  line-height: 1.7;
+}
 
 
 /* =====================================================
@@ -15,13 +55,33 @@
 
   display: grid;
 
+  /*
+    القيم دي بتتقرأ من Products.jsx
+    وتقدر تتغير من إعدادات الأدمن.
+  */
   grid-template-columns:
-    repeat(5, minmax(0, 1fr));
+    repeat(
+      var(--products-columns-desktop, 5),
+      minmax(0, 1fr)
+    );
 
-  gap: 10px;
+  gap: var(--products-grid-gap, 14px);
 
   padding: 20px 0;
 
+  box-sizing: border-box;
+
+  align-items: stretch;
+}
+
+
+/* =====================================================
+   PRODUCT GRID CHILDREN SAFETY
+   ===================================================== */
+
+.products-grid > * {
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -32,13 +92,12 @@
 
 .no-products {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
-
   min-height: 260px;
 
   display: flex;
   flex-direction: column;
-
   align-items: center;
   justify-content: center;
 
@@ -46,15 +105,17 @@
 
   box-sizing: border-box;
 
-  background: #fff;
+  background: #ffffff;
 
   border: 1px solid #eeeeee;
-
-  border-radius: 7px;
+  border-radius: 10px;
 
   color: #071a36;
 
   text-align: center;
+
+  box-shadow:
+    0 2px 10px rgba(7, 26, 54, 0.04);
 }
 
 
@@ -63,11 +124,21 @@
    ===================================================== */
 
 .no-products-icon {
-  margin-bottom: 10px;
+  width: 64px;
+  height: 64px;
 
-  font-size: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
+  margin-bottom: 12px;
+
+  font-size: 42px;
   line-height: 1;
+
+  border-radius: 50%;
+
+  background: #f8f5e8;
 }
 
 
@@ -76,11 +147,11 @@
    ===================================================== */
 
 .no-products h3 {
-  margin: 0 0 5px;
+  margin: 0 0 6px;
 
   color: #071a36;
 
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 800;
 
   line-height: 1.5;
@@ -92,13 +163,15 @@
    ===================================================== */
 
 .no-products p {
+  max-width: 420px;
+
   margin: 0;
 
-  color: #777;
+  color: #777777;
 
-  font-size: 12px;
+  font-size: 13px;
 
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 
@@ -107,20 +180,19 @@
    ===================================================== */
 
 .no-products button {
-  min-height: 38px;
+  min-height: 40px;
 
-  margin-top: 15px;
+  margin-top: 16px;
 
-  padding: 7px 18px;
+  padding: 8px 20px;
 
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
 
   background: #071a36;
-  color: #fff;
+  color: #ffffff;
 
   font-family: inherit;
-
   font-size: 12px;
   font-weight: 700;
 
@@ -129,15 +201,22 @@
   transition:
     background 0.2s ease,
     color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .no-products button:hover {
   background: #d4af37;
-
   color: #071a36;
 
   transform: translateY(-1px);
+
+  box-shadow:
+    0 5px 14px rgba(212, 175, 55, 0.22);
+}
+
+.no-products button:active {
+  transform: translateY(0);
 }
 
 
@@ -146,16 +225,21 @@
    ===================================================== */
 
 @media (min-width: 601px) and (max-width: 1000px) {
-
   .products-grid {
     grid-template-columns:
-      repeat(3, minmax(0, 1fr));
+      repeat(
+        var(--products-columns-tablet, 3),
+        minmax(0, 1fr)
+      );
 
-    gap: 10px;
+    gap: var(--products-grid-gap, 10px);
 
     padding: 16px 0;
   }
 
+  .products-section-header h2 {
+    font-size: 20px;
+  }
 }
 
 
@@ -164,55 +248,68 @@
    ===================================================== */
 
 @media (max-width: 600px) {
-
   .products-grid {
     width: 100%;
     max-width: 100%;
     min-width: 0;
 
     grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+      repeat(
+        var(--products-columns-mobile, 2),
+        minmax(0, 1fr)
+      );
 
-    gap: 7px;
+    gap: var(--products-grid-gap, 7px);
 
     padding: 12px 0;
-
-    box-sizing: border-box;
   }
 
+  .products-grid > * {
+    min-width: 0;
+  }
+
+  .products-section-header {
+    margin-bottom: 8px;
+  }
+
+  .products-section-header h2 {
+    font-size: 18px;
+  }
+
+  .products-section-header p {
+    font-size: 11px;
+  }
 
   .no-products {
     min-height: 220px;
-
     padding: 20px;
 
-    border-radius: 6px;
+    border-radius: 8px;
   }
-
 
   .no-products-icon {
-    font-size: 38px;
-  }
+    width: 56px;
+    height: 56px;
 
+    font-size: 36px;
+  }
 
   .no-products h3 {
     font-size: 16px;
   }
 
-
   .no-products p {
-    font-size: 10px;
+    max-width: 300px;
+    font-size: 11px;
   }
-
 
   .no-products button {
-    min-height: 34px;
+    min-height: 36px;
 
-    padding: 6px 14px;
+    padding: 7px 16px;
 
-    font-size: 10px;
+    font-size: 11px;
   }
-
 }
 
 
@@ -221,36 +318,70 @@
    ===================================================== */
 
 @media (max-width: 380px) {
-
   .products-grid {
-    gap: 5px;
+    gap: var(--products-grid-gap, 5px);
 
     padding-top: 10px;
     padding-bottom: 10px;
   }
 
+  .products-section-header h2 {
+    font-size: 16px;
+  }
+
+  .products-section-header p {
+    font-size: 10px;
+  }
 
   .no-products {
     min-height: 200px;
-
     padding: 15px;
   }
 
-
   .no-products-icon {
-    font-size: 34px;
-  }
+    width: 50px;
+    height: 50px;
 
+    font-size: 32px;
+  }
 
   .no-products h3 {
     font-size: 15px;
   }
 
+  .no-products p {
+    font-size: 10px;
+  }
+}
+
+
+/* =====================================================
+   VERY SMALL SCREENS
+   ===================================================== */
+
+@media (max-width: 330px) {
+  .products-grid {
+    gap: 4px;
+  }
+
+  .no-products {
+    min-height: 180px;
+  }
+
+  .no-products-icon {
+    width: 46px;
+    height: 46px;
+
+    font-size: 28px;
+  }
+
+  .no-products h3 {
+    font-size: 14px;
+  }
 
   .no-products p {
     font-size: 9px;
   }
-
 }
 
 
@@ -259,10 +390,8 @@
    ===================================================== */
 
 .no-products button:focus-visible {
-  outline:
-    2px solid #d4af37;
-
-  outline-offset: 2px;
+  outline: 2px solid #d4af37;
+  outline-offset: 3px;
 }
 
 
@@ -270,12 +399,23 @@
    WIDTH SAFETY
    ===================================================== */
 
+.products-section,
 .products-grid,
 .no-products {
   max-width: 100%;
   min-width: 0;
-
   box-sizing: border-box;
+}
+
+
+/* =====================================================
+   REDUCED MOTION
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .no-products button {
+    transition: none;
+  }
 }
 
 

@@ -2,6 +2,7 @@
    ELSAFTY STORE - NAVBAR
    RTL / JUMIA STYLE / RESPONSIVE
    FIXED HEADER + CATEGORY BAR
+   ADMIN CONTROLLED ANNOUNCEMENT BAR
    FINAL CLEAN VERSION
 ===================================================== */
 
@@ -19,9 +20,7 @@
 .navbar-root,
 .navbar-root *,
 .store-navbar-theme,
-.store-navbar-theme *,
-.navbar-announcement-area,
-.navbar-announcement-area * {
+.store-navbar-theme * {
   box-sizing: border-box;
 }
 
@@ -38,121 +37,25 @@
   position: relative;
   z-index: 9990;
   overflow-x: clip;
-}
 
+  /*
+    القيم دي بيتم تحديثها تلقائيًا من Navbar.jsx
+    حسب الارتفاع الفعلي للـ Navbar.
+  */
 
-/* =====================================================
-   ANNOUNCEMENT AREA
-===================================================== */
-
-.navbar-announcement-area {
-  width: 100%;
-  position: relative;
-  z-index: 9999;
-  overflow: hidden;
-  direction: rtl;
-}
-
-.top-offer-bar {
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  direction: rtl;
-}
-
-
-/* =====================================================
-   ANNOUNCEMENT TRACK
-===================================================== */
-
-.offer-track,
-.announcement-track,
-.announcement-bar-track {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: max-content;
-  min-width: max-content;
-
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-
-  gap: 70px;
-  padding: 0 30px;
-
-  white-space: nowrap;
-  will-change: transform;
-
-  animation-name: announcementMarquee;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-
-  transform: translate3d(0, 0, 0);
-}
-
-.announcement-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 auto;
-
-  white-space: nowrap;
-  user-select: none;
-
-  font-size: var(--top-strip-font-size, 15px);
-  line-height: 1;
-}
-
-.announcement-icon,
-.announcement-svg {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.announcement-svg svg {
-  width: 1em;
-  height: 1em;
-  display: block;
-}
-
-
-/* =====================================================
-   MARQUEE
-===================================================== */
-
-@keyframes announcementMarquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-
-  to {
-    transform: translate3d(25%, 0, 0);
-  }
-}
-
-.offer-track:hover,
-.announcement-track:hover,
-.announcement-bar-track:hover {
-  animation-play-state: paused;
+  --navbar-announcement-height: 0px;
+  --navbar-fixed-height: 120px;
+  --mega-menu-top: 120px;
 }
 
 
 /* =====================================================
    FIXED HEADER SHELL
+   الهيدر فقط هو الـ Fixed
 ===================================================== */
 
 .navbar-sticky-shell {
   position: fixed !important;
-
   top: 0 !important;
   right: 0 !important;
   left: 0 !important;
@@ -175,20 +78,286 @@
 
 
 /* =====================================================
+   ADMIN ANNOUNCEMENT BARS
+
+   المصدر بالكامل:
+   Admin.jsx → Firestore → announcementBars
+
+   ممنوع وجود محتوى ثابت هنا.
+===================================================== */
+
+.navbar-announcement-stack {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  direction: rtl;
+
+  position: relative;
+
+  z-index: 10005;
+
+  overflow: hidden;
+
+  flex-shrink: 0;
+}
+
+
+/*
+  كل شريط إعلان منفصل
+*/
+
+.navbar-announcement {
+  width: 100%;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  direction: rtl;
+
+  flex-shrink: 0;
+
+  user-select: none;
+
+  /*
+    اللون لا يتم تحديده هنا.
+    Navbar.jsx يأخذ backgroundColor من Admin.
+  */
+
+  transition:
+    filter 0.2s ease,
+    opacity 0.2s ease;
+}
+
+
+/*
+  الإعلان القابل للضغط
+*/
+
+.navbar-announcement.is-clickable {
+  cursor: pointer;
+}
+
+.navbar-announcement.is-clickable:hover {
+  filter: brightness(0.96);
+}
+
+
+/*
+  المحتوى الداخلي
+*/
+
+.navbar-announcement-viewport {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  overflow: hidden;
+
+  position: relative;
+}
+
+
+/*
+  الإعلان الثابت
+*/
+
+.navbar-announcement-static {
+  width: 100%;
+
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 18px;
+
+  text-align: center;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  line-height: 1.2;
+}
+
+
+/*
+  Track الخاص بالإعلان المتحرك
+*/
+
+.navbar-announcement-track {
+  display: flex;
+  align-items: center;
+
+  width: max-content;
+  min-width: 100%;
+
+  height: 100%;
+
+  flex-shrink: 0;
+
+  will-change: transform;
+
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+
+  white-space: nowrap;
+}
+
+
+/*
+  عناصر الإعلان المكررة
+*/
+
+.navbar-announcement-item {
+  display: inline-flex;
+
+  align-items: center;
+
+  flex-shrink: 0;
+
+  min-height: 100%;
+
+  padding: 0 42px;
+
+  white-space: nowrap;
+
+  line-height: 1.2;
+}
+
+
+/*
+  اتجاه RTL
+*/
+
+.navbar-announcement-track.direction-rtl {
+  animation-name: navbarAnnouncementRTL;
+}
+
+
+/*
+  اتجاه LTR
+*/
+
+.navbar-announcement-track.direction-ltr {
+  animation-name: navbarAnnouncementLTR;
+}
+
+
+/*
+  Animation RTL
+*/
+
+@keyframes navbarAnnouncementRTL {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+
+/*
+  Animation LTR
+*/
+
+@keyframes navbarAnnouncementLTR {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+
+/*
+  إيقاف الحركة عند المرور بالماوس
+*/
+
+.navbar-announcement:hover .navbar-announcement-track {
+  animation-play-state: paused;
+}
+
+
+/*
+  لو الإعلان بدون حركة
+*/
+
+.navbar-announcement.no-animation
+  .navbar-announcement-track {
+  animation: none !important;
+
+  transform: translate3d(0, 0, 0);
+}
+
+
+/*
+  رابط الإعلان
+*/
+
+.navbar-announcement-link {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: inherit;
+
+  text-decoration: none;
+
+  overflow: hidden;
+}
+
+
+/*
+  لو فيه أكتر من إعلان
+*/
+
+.navbar-announcement-stack
+  .navbar-announcement
+  + .navbar-announcement {
+  border-top:
+    1px solid rgba(255, 255, 255, 0.12);
+}
+
+
+/* =====================================================
    MAIN HEADER
 ===================================================== */
 
 .store-header {
   width: 100%;
+
   min-height: 72px;
 
   display: flex;
   align-items: center;
 
   gap: 14px;
+
   padding: 10px 22px;
 
   position: relative;
+
   z-index: 10002;
 
   direction: rtl;
@@ -259,6 +428,7 @@
 
 .search-box input {
   width: 100%;
+
   height: 46px;
 
   border: 0;
@@ -272,7 +442,11 @@
   background: #ffffff;
   color: #313133;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
+
   font-size: 14px;
 
   direction: rtl;
@@ -298,9 +472,13 @@
   height: 46px;
 
   border: 0;
-  border-radius: 6px 0 0 6px;
 
-  background: var(--accent, #d4af37);
+  border-radius:
+    6px 0 0 6px;
+
+  background:
+    var(--accent, #d4af37);
+
   color: #ffffff;
 
   cursor: pointer;
@@ -333,12 +511,15 @@
   position: absolute;
 
   top: calc(100% + 5px);
+
   right: 0;
   left: 0;
 
   background: #ffffff;
 
-  border: 1px solid #e2e2e2;
+  border:
+    1px solid #e2e2e2;
+
   border-radius: 7px;
 
   box-shadow:
@@ -353,14 +534,18 @@
 
 .suggestion-item {
   width: 100%;
+
   min-height: 64px;
 
   padding: 8px 12px;
 
   border: 0;
-  border-bottom: 1px solid #eeeeee;
+
+  border-bottom:
+    1px solid #eeeeee;
 
   background: #ffffff;
+
   color: #313133;
 
   display: flex;
@@ -372,7 +557,10 @@
 
   cursor: pointer;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
 }
 
 .suggestion-item:last-child {
@@ -395,11 +583,13 @@
 
 .suggestion-image {
   object-fit: contain;
+
   background: #ffffff;
 }
 
 .suggestion-image-placeholder {
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -439,13 +629,17 @@
 .cart-icon,
 .admin-btn {
   border: 0;
+
   background: transparent;
 
   color: inherit;
 
   cursor: pointer;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
 }
 
 .nav-icon {
@@ -457,6 +651,7 @@
   border-radius: 5px;
 
   display: flex;
+
   flex-direction: column;
 
   align-items: center;
@@ -471,7 +666,8 @@
 .nav-action-button:hover,
 .cart-icon:hover,
 .admin-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background:
+    rgba(255, 255, 255, 0.12);
 }
 
 .nav-icon > span:first-child {
@@ -481,6 +677,7 @@
 
 .nav-icon small {
   font-size: 9px;
+
   white-space: nowrap;
 }
 
@@ -507,13 +704,17 @@
   border-radius: 999px;
 
   background: #ffffff;
-  color: var(--accent, #d4af37);
+
+  color:
+    var(--accent, #d4af37);
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
   font-size: 10px;
+
   font-weight: 800;
 
   line-height: 1;
@@ -532,16 +733,20 @@
   position: absolute;
 
   top: calc(100% + 8px);
+
   right: 0;
 
   width: 230px;
 
-  border: 1px solid #dddddd;
+  border:
+    1px solid #dddddd;
+
   border-radius: 8px;
 
   overflow: hidden;
 
   background: #ffffff;
+
   color: #313133;
 
   box-shadow:
@@ -552,12 +757,16 @@
 
 .account-dropdown button {
   width: 100%;
+
   min-height: 46px;
 
   border: 0;
-  border-bottom: 1px solid #eeeeee;
+
+  border-bottom:
+    1px solid #eeeeee;
 
   background: transparent;
+
   color: inherit;
 
   display: flex;
@@ -569,7 +778,11 @@
 
   cursor: pointer;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
+
   font-size: 13px;
 
   text-align: right;
@@ -585,13 +798,15 @@
 
 .account-user-info {
   display: flex;
+
   flex-direction: column;
 
   gap: 2px;
 
   padding: 14px;
 
-  border-bottom: 1px solid #eeeeee;
+  border-bottom:
+    1px solid #eeeeee;
 }
 
 .account-user-info strong {
@@ -604,9 +819,11 @@
   font-size: 11px;
 
   direction: ltr;
+
   text-align: right;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
 }
 
@@ -622,6 +839,7 @@
   border-radius: 5px;
 
   display: flex;
+
   flex-direction: column;
 
   align-items: center;
@@ -655,6 +873,7 @@
   position: relative;
 
   display: flex;
+
   flex-direction: column;
 
   align-items: center;
@@ -670,6 +889,7 @@
 
 .cart-text {
   font-size: 9px;
+
   white-space: nowrap;
 }
 
@@ -687,13 +907,17 @@
   border-radius: 999px;
 
   background: #ffffff;
-  color: var(--accent, #d4af37);
+
+  color:
+    var(--accent, #d4af37);
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
   font-size: 10px;
+
   font-weight: 800;
 
   line-height: 1;
@@ -711,9 +935,12 @@
   height: 42px;
 
   border: 0;
+
   border-radius: 6px;
 
-  background: rgba(255, 255, 255, 0.12);
+  background:
+    rgba(255, 255, 255, 0.12);
+
   color: #ffffff;
 
   cursor: pointer;
@@ -747,9 +974,11 @@
 
   flex-shrink: 0;
 
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top:
+    1px solid rgba(0, 0, 0, 0.06);
 
-  border-bottom: 1px solid var(--border, #d9dfe8);
+  border-bottom:
+    1px solid var(--border, #d9dfe8);
 }
 
 .navbar-bottom {
@@ -784,19 +1013,22 @@
 
   background: transparent;
 
-  color: var(--category-text, #071a36);
+  color:
+    var(--category-text, #071a36);
 
   cursor: pointer;
 
   font-size: 15px;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 }
 
 .category-arrow:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background:
+    rgba(0, 0, 0, 0.05);
 }
 
 
@@ -806,6 +1038,7 @@
 
 .nav-category-wrapper {
   position: static;
+
   flex: 0 0 auto;
 }
 
@@ -816,11 +1049,13 @@
 
   background: transparent;
 
-  color: var(--category-text, #071a36);
+  color:
+    var(--category-text, #071a36);
 
   padding: 0 15px;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -830,7 +1065,11 @@
 
   cursor: pointer;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
+
   font-size: 13px;
 
   position: relative;
@@ -842,9 +1081,11 @@
 
 .nav-category-item:hover,
 .nav-category-item.active-category {
-  background: rgba(212, 175, 55, 0.10);
+  background:
+    rgba(212, 175, 55, 0.10);
 
-  color: var(--accent, #d4af37);
+  color:
+    var(--accent, #d4af37);
 }
 
 .nav-category-item img {
@@ -872,7 +1113,8 @@
 }
 
 .offer-item {
-  color: var(--accent, #d4af37);
+  color:
+    var(--accent, #d4af37);
 }
 
 
@@ -883,7 +1125,13 @@
 .mega-menu {
   position: fixed !important;
 
-  top: var(--mega-menu-top, 120px);
+  /*
+    Navbar.jsx يحدث المتغير
+    حسب الارتفاع الفعلي للهيدر.
+  */
+
+  top:
+    var(--mega-menu-top, var(--navbar-fixed-height, 120px));
 
   right: 0;
   left: 0;
@@ -894,7 +1142,7 @@
   max-height:
     calc(
       100vh -
-      var(--mega-menu-top, 120px) -
+      var(--mega-menu-top, var(--navbar-fixed-height, 120px)) -
       10px
     );
 
@@ -925,12 +1173,16 @@
 @keyframes megaMenuOpen {
   from {
     opacity: 0;
-    transform: translateY(-5px);
+
+    transform:
+      translateY(-5px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+
+    transform:
+      translateY(0);
   }
 }
 
@@ -949,7 +1201,8 @@
 ===================================================== */
 
 .mega-menu-title {
-  width: min(1200px, calc(100% - 40px));
+  width:
+    min(1200px, calc(100% - 40px));
 
   margin: 0 auto;
 
@@ -960,7 +1213,8 @@
 
   gap: 13px;
 
-  border-bottom: 1px solid #eeeeee;
+  border-bottom:
+    1px solid #eeeeee;
 }
 
 .mega-menu-title-icon {
@@ -970,9 +1224,12 @@
   border-radius: 8px;
 
   background: #fff8ed;
-  color: var(--accent, #d4af37);
+
+  color:
+    var(--accent, #d4af37);
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -994,6 +1251,7 @@
 
 .mega-menu-title-content {
   display: flex;
+
   flex-direction: column;
 
   gap: 2px;
@@ -1005,6 +1263,7 @@
 
 .mega-menu-title-content small {
   color: #777777;
+
   font-size: 11px;
 }
 
@@ -1014,7 +1273,8 @@
 ===================================================== */
 
 .mega-columns {
-  width: min(1200px, calc(100% - 40px));
+  width:
+    min(1200px, calc(100% - 40px));
 
   margin: 0 auto;
 
@@ -1031,7 +1291,8 @@
 .mega-column {
   min-width: 0;
 
-  border: 1px solid #eeeeee;
+  border:
+    1px solid #eeeeee;
 
   border-radius: 8px;
 
@@ -1056,9 +1317,11 @@
   border: 0;
 
   background: #ffffff;
+
   color: #313133;
 
   display: flex;
+
   align-items: center;
 
   gap: 9px;
@@ -1067,7 +1330,10 @@
 
   cursor: pointer;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
 
   text-align: right;
 }
@@ -1075,7 +1341,9 @@
 .mega-column-title:hover,
 .mega-column-title.active-subcategory {
   background: #fffaf2;
-  color: var(--accent, #d4af37);
+
+  color:
+    var(--accent, #d4af37);
 }
 
 .mega-column-title img {
@@ -1091,11 +1359,13 @@
   flex: 1;
 
   font-size: 13px;
+
   font-weight: 700;
 }
 
 .mega-column-items {
-  border-top: 1px solid #eeeeee;
+  border-top:
+    1px solid #eeeeee;
 
   background: #fcfcfc;
 }
@@ -1117,13 +1387,15 @@
 
   border: 0;
 
-  border-bottom: 1px solid #eeeeee;
+  border-bottom:
+    1px solid #eeeeee;
 
   background: transparent;
 
   color: #4b4b4b;
 
   display: flex;
+
   align-items: center;
 
   gap: 7px;
@@ -1132,7 +1404,10 @@
 
   cursor: pointer;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
 
   font-size: 12px;
 
@@ -1141,7 +1416,8 @@
 
 .mega-link:hover,
 .mega-link.active-subcategory {
-  color: var(--accent, #d4af37);
+  color:
+    var(--accent, #d4af37);
 
   background: #fffaf2;
 }
@@ -1162,6 +1438,7 @@
   height: 27px;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -1180,7 +1457,8 @@
 ===================================================== */
 
 .mega-deep-level {
-  padding: 4px 8px 7px 0;
+  padding:
+    4px 8px 7px 0;
 }
 
 .mega-deep-children {
@@ -1199,11 +1477,13 @@
 ===================================================== */
 
 .mega-single-link {
-  border-top: 1px dashed #eeeeee;
+  border-top:
+    1px dashed #eeeeee;
 
   border-bottom: 0;
 
-  color: var(--accent, #d4af37);
+  color:
+    var(--accent, #d4af37);
 }
 
 
@@ -1214,11 +1494,13 @@
 .mega-menu-view-all {
   display: block;
 
-  width: min(1200px, calc(100% - 40px));
+  width:
+    min(1200px, calc(100% - 40px));
 
   min-height: 48px;
 
-  margin: 0 auto 18px;
+  margin:
+    0 auto 18px;
 
   border:
     1px solid rgba(212, 175, 55, 0.35);
@@ -1227,11 +1509,15 @@
 
   background: #fffaf2;
 
-  color: var(--accent, #d4af37);
+  color:
+    var(--accent, #d4af37);
 
   cursor: pointer;
 
-  font-family: "Cairo", "Tahoma", sans-serif;
+  font-family:
+    "Cairo",
+    "Tahoma",
+    sans-serif;
 
   font-size: 13px;
 
@@ -1288,6 +1574,7 @@
   height: 44px;
 
   border: 0;
+
   border-radius: 50%;
 
   background:
@@ -1303,10 +1590,27 @@
 
 /* =====================================================
    PAGE OFFSET
+
+   الهيدر Fixed فقط.
+   الإعلان خارج الـ Fixed Shell.
 ===================================================== */
 
 body {
   --navbar-fixed-height: 120px;
+
+  --navbar-announcement-height: 0px;
+
+  --mega-menu-top: 120px;
+}
+
+
+/*
+  مساحة أعلى الصفحة مساوية للهيدر فقط.
+*/
+
+body {
+  padding-top:
+    var(--navbar-fixed-height, 120px);
 }
 
 
@@ -1315,9 +1619,9 @@ body {
 ===================================================== */
 
 @media (max-width: 1000px) {
-
   .store-header {
     padding: 9px 14px;
+
     gap: 9px;
   }
 
@@ -1350,6 +1654,7 @@ body {
     position: fixed !important;
 
     top: 0 !important;
+
     right: 0 !important;
     left: 0 !important;
 
@@ -1358,6 +1663,21 @@ body {
     z-index: 10000 !important;
 
     overflow: visible !important;
+  }
+
+
+  /* ===================================================
+     MOBILE ANNOUNCEMENT
+  =================================================== */
+
+  .navbar-announcement-static {
+    padding:
+      0 10px;
+  }
+
+  .navbar-announcement-item {
+    padding:
+      0 24px;
   }
 
 
@@ -1376,9 +1696,11 @@ body {
 
   .store-header {
     min-height: 58px;
+
     height: 58px;
 
-    padding: 7px 8px;
+    padding:
+      7px 8px;
 
     gap: 5px;
 
@@ -1408,6 +1730,7 @@ body {
 
   .nav-logo {
     width: 76px;
+
     height: 40px;
 
     flex: 0 0 76px;
@@ -1438,11 +1761,13 @@ body {
     font-size: 11px;
 
     padding-right: 10px;
+
     padding-left: 40px;
   }
 
   .search-button {
     width: 40px;
+
     height: 40px;
 
     font-size: 16px;
@@ -1458,6 +1783,7 @@ body {
     flex: 0 0 auto;
 
     display: flex;
+
     align-items: center;
 
     gap: 1px;
@@ -1478,9 +1804,11 @@ body {
 
   .account-menu > .nav-icon {
     min-width: 38px;
+
     width: 38px;
 
     min-height: 40px;
+
     height: 40px;
 
     padding: 2px 3px;
@@ -1517,9 +1845,11 @@ body {
     flex: 0 0 auto;
 
     min-width: 38px;
+
     width: 38px;
 
     min-height: 40px;
+
     height: 40px;
 
     padding: 2px 3px;
@@ -1565,9 +1895,11 @@ body {
 
   .cart-icon {
     min-width: 38px;
+
     width: 38px;
 
     height: 40px;
+
     min-height: 40px;
 
     padding: 0;
@@ -1585,6 +1917,7 @@ body {
 
   .cart-badge {
     top: -2px;
+
     right: -2px;
   }
 
@@ -1595,6 +1928,7 @@ body {
 
   .navbar-bottom-wrapper {
     min-height: 45px;
+
     height: 45px;
 
     flex-shrink: 0;
@@ -1602,14 +1936,17 @@ body {
 
   .navbar-bottom {
     min-height: 45px;
+
     height: 45px;
 
     overflow-x: auto;
+
     overflow-y: visible;
   }
 
   .category-arrow {
     flex-basis: 30px;
+
     min-width: 30px;
 
     font-size: 12px;
@@ -1617,6 +1954,7 @@ body {
 
   .nav-category-item {
     min-height: 45px;
+
     height: 45px;
 
     padding: 0 10px;
@@ -1628,6 +1966,7 @@ body {
 
   .nav-category-item img {
     width: 20px;
+
     height: 20px;
   }
 
@@ -1639,23 +1978,37 @@ body {
   .mega-menu {
     position: fixed !important;
 
-    top: 103px !important;
+    top:
+      var(
+        --mega-menu-top,
+        var(--navbar-fixed-height, 103px)
+      ) !important;
 
     right: 0;
+
     left: 0;
 
     width: 100vw;
+
     max-width: 100vw;
 
     max-height:
-      calc(100vh - 103px);
+      calc(
+        100vh -
+        var(
+          --mega-menu-top,
+          var(--navbar-fixed-height, 103px)
+        )
+      );
 
     border-radius: 0;
 
     border-left: 0;
+
     border-right: 0;
 
     overflow-y: auto;
+
     overflow-x: hidden;
   }
 
@@ -1688,7 +2041,8 @@ body {
   }
 
   .mega-menu-view-all {
-    width: calc(100% - 20px);
+    width:
+      calc(100% - 20px);
 
     margin-bottom: 12px;
   }
@@ -1717,9 +2071,19 @@ body {
   .search-suggestions {
     position: fixed;
 
-    top: 58px;
+    /*
+      يتم تحديث المتغير من Navbar.jsx
+      حسب وجود الإعلان.
+    */
+
+    top:
+      calc(
+        var(--navbar-announcement-height, 0px) +
+        58px
+      );
 
     right: 8px;
+
     left: 8px;
 
     width: auto;
@@ -1727,30 +2091,6 @@ body {
     max-height: 65vh;
 
     overflow-y: auto;
-  }
-
-
-  /* ===================================================
-     ANNOUNCEMENT
-  =================================================== */
-
-  .announcement-bar,
-  .top-offer-bar {
-    width: 100%;
-  }
-
-  .offer-track,
-  .announcement-track,
-  .announcement-bar-track {
-    gap: 45px;
-
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  .announcement-item {
-    font-size:
-      var(--top-strip-font-size, 13px);
   }
 
 
@@ -1764,11 +2104,13 @@ body {
 
   .logo-modal img {
     max-width: 90vw;
+
     max-height: 70vh;
   }
 
   .close-logo {
     top: 12px;
+
     right: 12px;
   }
 }
@@ -1782,6 +2124,7 @@ body {
 
   .store-header {
     padding-left: 5px;
+
     padding-right: 5px;
 
     gap: 3px;
@@ -1789,6 +2132,7 @@ body {
 
   .mobile-menu-button {
     width: 34px;
+
     height: 36px;
 
     flex-basis: 34px;
@@ -1810,14 +2154,31 @@ body {
     font-size: 10px;
 
     padding-right: 7px;
+
     padding-left: 36px;
   }
 
   .search-button {
     width: 36px;
+
     height: 40px;
 
     font-size: 15px;
+  }
+
+
+  /* ===================================================
+     ANNOUNCEMENT
+  =================================================== */
+
+  .navbar-announcement-static {
+    padding:
+      0 8px;
+  }
+
+  .navbar-announcement-item {
+    padding:
+      0 18px;
   }
 
 
@@ -1827,9 +2188,11 @@ body {
 
   .account-menu > .nav-icon {
     width: 35px;
+
     min-width: 35px;
 
     height: 36px;
+
     min-height: 36px;
 
     padding: 1px 2px;
@@ -1850,9 +2213,11 @@ body {
 
   .admin-btn {
     width: 35px;
+
     min-width: 35px;
 
     height: 36px;
+
     min-height: 36px;
 
     padding: 1px 2px;
@@ -1873,9 +2238,11 @@ body {
 
   .cart-icon {
     width: 35px;
+
     min-width: 35px;
 
     height: 36px;
+
     min-height: 36px;
   }
 
@@ -1897,6 +2264,7 @@ body {
 
   .store-header {
     padding-left: 4px;
+
     padding-right: 4px;
 
     gap: 2px;
@@ -1904,6 +2272,7 @@ body {
 
   .mobile-menu-button {
     width: 32px;
+
     height: 34px;
 
     flex-basis: 32px;
@@ -1934,9 +2303,11 @@ body {
 
   .account-menu > .nav-icon {
     width: 32px;
+
     min-width: 32px;
 
     height: 34px;
+
     min-height: 34px;
 
     padding: 1px;
@@ -1957,9 +2328,11 @@ body {
 
   .admin-btn {
     width: 32px;
+
     min-width: 32px;
 
     height: 34px;
+
     min-height: 34px;
 
     padding: 1px;
@@ -1980,9 +2353,11 @@ body {
 
   .cart-icon {
     width: 32px;
+
     min-width: 32px;
 
     height: 34px;
+
     min-height: 34px;
   }
 
@@ -1998,18 +2373,21 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
 
-  .offer-track,
-  .announcement-track,
-  .announcement-bar-track {
+  .mega-menu {
+    animation: none !important;
+  }
+
+  .navbar-announcement-track {
     animation: none !important;
 
     transform: none !important;
-
-    right: 0;
   }
 
-  .mega-menu {
-    animation: none !important;
+  .nav-logo img,
+  .search-button,
+  .nav-category-item,
+  .category-down-arrow {
+    transition: none !important;
   }
 }
 
@@ -2023,9 +2401,20 @@ body {
   .account-dropdown {
     position: fixed !important;
 
-    top: 58px !important;
+    /*
+      الإعلان ممكن يكون موجود فوق الهيدر،
+      لذلك Navbar.jsx بيحسب
+      --navbar-announcement-height.
+    */
+
+    top:
+      calc(
+        var(--navbar-announcement-height, 0px) +
+        58px
+      ) !important;
 
     right: 8px !important;
+
     left: 8px !important;
 
     width: auto !important;
@@ -2034,9 +2423,14 @@ body {
       calc(100vw - 16px) !important;
 
     max-height:
-      calc(100vh - 70px);
+      calc(
+        100vh -
+        var(--navbar-announcement-height, 0px) -
+        70px
+      );
 
     overflow-y: auto;
+
     overflow-x: hidden;
 
     z-index: 100000 !important;
@@ -2102,9 +2496,14 @@ body {
 @media (max-width: 420px) {
 
   .account-dropdown {
-    top: 56px !important;
+    top:
+      calc(
+        var(--navbar-announcement-height, 0px) +
+        56px
+      ) !important;
 
     right: 6px !important;
+
     left: 6px !important;
 
     max-width:

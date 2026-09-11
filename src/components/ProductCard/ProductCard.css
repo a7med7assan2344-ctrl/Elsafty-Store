@@ -1,12 +1,8 @@
-/* =====================================================
-   ELSAFTY STORE - PRODUCT CARD
-   JUMIA STYLE - RTL - RESPONSIVE
-   ===================================================== */
-
-
-/* =====================================================
-   PRODUCT CARD
-   ===================================================== */
+/* ============================================================
+   ســـــَــــــــوا
+   PROFESSIONAL PRODUCT CARD
+   RTL / RESPONSIVE / E-COMMERCE
+============================================================ */
 
 .product-card {
   position: relative;
@@ -20,13 +16,17 @@
 
   background: #ffffff;
 
-  border: 1px solid #eeeeee;
-  border-radius: 7px;
+  border:
+    1px solid
+    #eeeeee;
+
+  border-radius: 9px;
 
   overflow: hidden;
 
   box-shadow:
-    0 1px 5px rgba(7, 26, 54, 0.06);
+    0 2px 7px
+    rgba(7, 26, 54, 0.06);
 
   text-align: right;
 
@@ -37,32 +37,31 @@
   box-sizing: border-box;
 
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
-
 
 .product-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 
   border-color:
-    rgba(212, 175, 55, 0.4);
+    rgba(212, 175, 55, 0.42);
 
   box-shadow:
-    0 7px 18px rgba(7, 26, 54, 0.12);
+    0 10px 24px
+    rgba(7, 26, 54, 0.12);
 }
 
-
-/* =====================================================
+/* ============================================================
    IMAGE BOX
-   ===================================================== */
+============================================================ */
 
 .image-box {
   position: relative;
 
   width: 100%;
-  height: 210px;
+  height: 220px;
 
   min-width: 0;
 
@@ -77,18 +76,34 @@
   box-sizing: border-box;
 }
 
+/* ============================================================
+   IMAGE WRAPPER
+============================================================ */
 
-/* =====================================================
+.product-image-wrapper {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background: #ffffff;
+}
+
+/* ============================================================
    PRODUCT IMAGE
-   ===================================================== */
+============================================================ */
 
-.image-box img {
+.product-image {
   width: 100%;
   height: 100%;
 
   display: block;
 
-  padding: 8px;
+  padding: 9px;
 
   box-sizing: border-box;
 
@@ -96,29 +111,61 @@
   object-position: center;
 
   transition:
-    transform 0.3s ease;
+    transform 0.35s ease,
+    opacity 0.25s ease;
 }
 
-
-.product-card:hover .image-box img {
-  transform: scale(1.04);
+.product-card:hover .product-image {
+  transform: scale(1.045);
 }
 
+/* ============================================================
+   IMAGE PLACEHOLDER
+============================================================ */
 
-/* =====================================================
+.product-image-placeholder {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8f9fb,
+      #eef1f5
+    );
+
+  color: #a4aab3;
+
+  font-size: 42px;
+}
+
+.product-image-error {
+  background:
+    linear-gradient(
+      135deg,
+      #f8f9fb,
+      #eef1f5
+    );
+}
+
+/* ============================================================
    WISHLIST BUTTON
-   ===================================================== */
+============================================================ */
 
 .wishlist-btn {
   position: absolute;
 
-  top: 8px;
-  right: 8px;
+  top: 9px;
+  right: 9px;
 
-  z-index: 10;
+  z-index: 20;
 
-  width: 35px;
-  height: 35px;
+  width: 37px;
+  height: 37px;
 
   display: flex;
   align-items: center;
@@ -126,59 +173,91 @@
 
   padding: 0;
 
-  border: 1px solid #eeeeee;
+  border:
+    1px solid
+    rgba(7, 26, 54, 0.08);
+
   border-radius: 50%;
 
-  background: rgba(255, 255, 255, 0.96);
+  background:
+    rgba(255, 255, 255, 0.96);
 
   color: #071a36;
 
-  font-size: 18px;
+  font-family: inherit;
+
+  font-size: 20px;
 
   line-height: 1;
 
   cursor: pointer;
 
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.12);
+    0 3px 10px
+    rgba(0, 0, 0, 0.12);
+
+  backdrop-filter: blur(5px);
+
+  -webkit-backdrop-filter: blur(5px);
 
   transition:
     transform 0.2s ease,
     background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-
 .wishlist-btn:hover {
-  transform: scale(1.08);
+  transform: scale(1.09);
 
-  background: #fff5f5;
+  background: #fff7f7;
+
+  color: #dc2626;
+
+  border-color:
+    rgba(220, 38, 38, 0.18);
 
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.16);
+    0 5px 14px
+    rgba(0, 0, 0, 0.16);
 }
-
 
 .wishlist-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.93);
 }
 
+.wishlist-btn.wishlist-active {
+  color: #dc2626;
 
-/* =====================================================
+  background: #fff4f4;
+
+  border-color:
+    rgba(220, 38, 38, 0.15);
+}
+
+/* ============================================================
    OFFER BADGE
-   ===================================================== */
+============================================================ */
 
 .offer-badge {
   position: absolute;
 
-  top: 8px;
-  left: 8px;
+  top: 9px;
+  left: 9px;
 
-  z-index: 9;
+  z-index: 15;
 
-  padding: 5px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-  border-radius: 5px;
+  min-height: 25px;
+
+  padding:
+    5px 9px;
+
+  border-radius: 6px;
 
   background:
     linear-gradient(
@@ -190,39 +269,137 @@
   color: #ffffff;
 
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 900;
 
   line-height: 1;
 
   white-space: nowrap;
 
   box-shadow:
-    0 2px 7px rgba(0, 0, 0, 0.18);
+    0 3px 9px
+    rgba(220, 38, 38, 0.2);
 
   pointer-events: none;
 }
 
+/* ============================================================
+   CUSTOM PRODUCT BADGE
+============================================================ */
 
-/* =====================================================
-   PRODUCT TITLE
-   ===================================================== */
+.product-badge {
+  position: absolute;
 
-.product-card h3 {
+  top: 42px;
+  left: 9px;
+
+  z-index: 14;
+
+  max-width: calc(100% - 18px);
+
+  padding:
+    5px 8px;
+
+  border-radius: 5px;
+
+  background: #071a36;
+
+  color: #ffffff;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  line-height: 1.2;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  box-shadow:
+    0 2px 7px
+    rgba(7, 26, 54, 0.18);
+
+  pointer-events: none;
+}
+
+/* ============================================================
+   STOCK OVERLAY
+============================================================ */
+
+.product-stock-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 12;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    rgba(7, 26, 54, 0.48);
+
+  pointer-events: none;
+}
+
+.product-stock-overlay span {
+  padding:
+    8px 15px;
+
+  border-radius: 7px;
+
+  background:
+    rgba(255, 255, 255, 0.96);
+
+  color: #071a36;
+
+  font-size: 13px;
+  font-weight: 900;
+
+  box-shadow:
+    0 4px 14px
+    rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================================
+   CARD CONTENT
+============================================================ */
+
+.product-card-content {
   width: 100%;
   min-width: 0;
 
-  min-height: 42px;
+  display: flex;
+  flex-direction: column;
+
+  padding:
+    0 0 10px;
+
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   PRODUCT TITLE
+============================================================ */
+
+.product-card .product-title {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 43px;
 
   margin: 0;
 
-  padding: 9px 9px 0;
+  padding:
+    10px 10px 0;
 
   box-sizing: border-box;
 
   color: #222222;
 
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 750;
 
   line-height: 1.55;
 
@@ -236,28 +413,29 @@
   overflow-wrap: anywhere;
 }
 
-
-/* =====================================================
+/* ============================================================
    DESCRIPTION
-   ===================================================== */
+============================================================ */
 
 .product-card .description {
   width: 100%;
   min-width: 0;
 
-  min-height: 30px;
+  min-height: 31px;
 
-  margin: 3px 0 0;
+  margin: 4px 0 0;
 
-  padding: 0 9px;
+  padding:
+    0 10px;
 
   box-sizing: border-box;
 
   color: #777777;
 
   font-size: 10px;
+  font-weight: 500;
 
-  line-height: 1.5;
+  line-height: 1.55;
 
   display: -webkit-box;
 
@@ -269,35 +447,62 @@
   overflow-wrap: anywhere;
 }
 
+/* ============================================================
+   STOCK TEXT
+============================================================ */
 
-/* =====================================================
-   PRODUCT PRICE
-   ===================================================== */
+.product-stock {
+  width: fit-content;
+  max-width: calc(100% - 20px);
+
+  margin:
+    5px 10px 0;
+
+  padding:
+    3px 7px;
+
+  border-radius: 5px;
+
+  background:
+    rgba(22, 163, 74, 0.08);
+
+  color: #15803d;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  line-height: 1.5;
+}
+
+/* ============================================================
+   PRICE
+============================================================ */
 
 .product-card .product-price {
   width: 100%;
   min-width: 0;
 
-  min-height: 29px;
+  min-height: 31px;
 
   display: flex;
-  align-items: center;
+  align-items: baseline;
 
-  gap: 7px;
+  gap: 8px;
 
   flex-wrap: wrap;
 
-  margin: 5px 0 7px;
+  margin:
+    7px 0 8px;
 
-  padding: 0 9px;
+  padding:
+    0 10px;
 
   box-sizing: border-box;
 }
 
-
-/* =====================================================
+/* ============================================================
    OLD PRICE
-   ===================================================== */
+============================================================ */
 
 .product-card .old-price {
   color: #999999;
@@ -305,63 +510,74 @@
   font-size: 10px;
   font-weight: 500;
 
+  line-height: 1.4;
+
   text-decoration: line-through;
 
   white-space: nowrap;
 }
 
-
-/* =====================================================
+/* ============================================================
    CURRENT PRICE
-   ===================================================== */
+============================================================ */
 
 .product-card .current-price {
   color: #071a36;
 
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
 
   line-height: 1.3;
 
   white-space: nowrap;
 }
 
-
-/* =====================================================
+/* ============================================================
    ADD TO CART
-   ===================================================== */
+============================================================ */
 
-.product-card > button:not(.wishlist-btn) {
-  width: calc(100% - 18px);
+.product-card .add-to-cart-btn {
+  width: calc(100% - 20px);
 
-  min-height: 36px;
+  min-height: 39px;
 
   margin:
-    0 9px 9px;
+    0 10px;
 
   padding:
-    7px 5px;
+    8px 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
 
   border:
-    1px solid #d4af37;
+    1px solid
+    #d4af37;
 
-  border-radius: 5px;
+  border-radius: 6px;
 
-  background: #d4af37;
+  background:
+    linear-gradient(
+      135deg,
+      #d4af37,
+      #e6c65c
+    );
 
   color: #071a36;
 
   font-family: inherit;
 
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
 
   line-height: 1.4;
 
   cursor: pointer;
 
   user-select: none;
-
   -webkit-user-select: none;
 
   touch-action: manipulation;
@@ -371,111 +587,267 @@
   transition:
     background 0.2s ease,
     transform 0.2s ease,
-    color 0.2s ease;
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
 }
 
+.product-card .add-to-cart-btn:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #c9a52d,
+      #d4af37
+    );
 
-.product-card > button:not(.wishlist-btn):hover {
-  background: #c39d25;
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 5px 13px
+    rgba(212, 175, 55, 0.24);
+}
+
+.product-card .add-to-cart-btn:active {
+  transform: translateY(0);
+
+  box-shadow: none;
+}
+
+.product-card .add-to-cart-btn:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.65;
+
+  background:
+    #d9dce1;
+
+  border-color:
+    #d9dce1;
+
+  color: #6b7280;
+
+  box-shadow: none;
+
+  transform: none;
+}
+
+.cart-icon {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  font-size: 15px;
+
+  line-height: 1;
+}
+
+/* ============================================================
+   EXTERNAL PRODUCT LINK
+============================================================ */
+
+.product-external-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin:
+    7px 10px 0;
+
+  padding:
+    4px 8px;
 
   color: #071a36;
 
-  transform: translateY(-1px);
+  font-size: 10px;
+  font-weight: 700;
+
+  text-decoration: none;
+
+  opacity: 0.75;
+
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
 }
 
+.product-external-link:hover {
+  color: #d4af37;
 
-.product-card > button:not(.wishlist-btn):active {
-  transform: translateY(0);
+  opacity: 1;
 }
 
+/* ============================================================
+   OUT OF STOCK CARD
+============================================================ */
 
-/* =====================================================
-   MOBILE
-   ===================================================== */
+.product-card-out-of-stock {
+  cursor: pointer;
+}
 
-@media (max-width: 600px) {
+.product-card-out-of-stock .current-price {
+  opacity: 0.65;
+}
 
-  .product-card {
-    border-radius: 5px;
+/* ============================================================
+   KEYBOARD ACCESSIBILITY
+============================================================ */
 
-    box-shadow:
-      0 1px 5px rgba(7, 26, 54, 0.06);
+.product-card button:focus-visible,
+.product-card a:focus-visible {
+  outline:
+    2px solid
+    #d4af37;
+
+  outline-offset: 3px;
+}
+
+/* ============================================================
+   WIDTH SAFETY
+============================================================ */
+
+.product-card,
+.product-card *,
+.image-box,
+.product-image-wrapper,
+.product-card-content,
+.product-card h3,
+.product-card .description,
+.product-card .product-price,
+.product-card button {
+  min-width: 0;
+
+  max-width: 100%;
+
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   TABLET
+============================================================ */
+
+@media (max-width: 900px) {
+  .image-box {
+    height: 190px;
   }
 
+  .product-card .product-title {
+    font-size: 12px;
+
+    min-height: 40px;
+  }
+
+  .product-card .description {
+    font-size: 9px;
+  }
+
+  .product-card .current-price {
+    font-size: 15px;
+  }
+
+  .product-card .add-to-cart-btn {
+    min-height: 37px;
+
+    font-size: 11px;
+  }
+}
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (max-width: 600px) {
+  .product-card {
+    border-radius: 6px;
+
+    box-shadow:
+      0 1px 5px
+      rgba(7, 26, 54, 0.07);
+  }
 
   .product-card:hover {
     transform: translateY(-1px);
 
     box-shadow:
-      0 4px 12px rgba(7, 26, 54, 0.10);
+      0 5px 14px
+      rgba(7, 26, 54, 0.1);
   }
 
-
-  /* ===================================================
-     IMAGE
-     =================================================== */
+  /* IMAGE */
 
   .image-box {
-    height: 145px;
+    height: 155px;
   }
 
-
-  .image-box img {
-    padding: 5px;
+  .product-image {
+    padding: 6px;
   }
 
-
-  /* ===================================================
-     WISHLIST
-     =================================================== */
+  /* WISHLIST */
 
   .wishlist-btn {
-    top: 5px;
-    right: 5px;
+    top: 6px;
+    right: 6px;
 
-    width: 29px;
-    height: 29px;
+    width: 30px;
+    height: 30px;
 
-    font-size: 16px;
+    font-size: 17px;
   }
 
-
-  /* ===================================================
-     OFFER
-     =================================================== */
+  /* OFFER */
 
   .offer-badge {
-    top: 5px;
-    left: 5px;
+    top: 6px;
+    left: 6px;
+
+    min-height: 21px;
 
     padding:
-      3px 5px;
+      4px 6px;
 
     font-size: 8px;
 
-    border-radius: 3px;
+    border-radius: 4px;
   }
 
+  /* BADGE */
 
-  /* ===================================================
-     TITLE
-     =================================================== */
+  .product-badge {
+    top: 32px;
+    left: 6px;
 
-  .product-card h3 {
-    min-height: 34px;
+    max-width:
+      calc(100% - 12px);
 
     padding:
-      6px 6px 0;
+      4px 6px;
+
+    font-size: 7px;
+  }
+
+  /* STOCK */
+
+  .product-stock-overlay span {
+    padding:
+      6px 10px;
+
+    font-size: 10px;
+  }
+
+  /* TITLE */
+
+  .product-card .product-title {
+    min-height: 35px;
+
+    padding:
+      7px 7px 0;
 
     font-size: 10px;
 
     line-height: 1.45;
   }
 
-
-  /* ===================================================
-     DESCRIPTION
-     =================================================== */
+  /* DESCRIPTION */
 
   .product-card .description {
     min-height: 27px;
@@ -483,57 +855,66 @@
     margin-top: 2px;
 
     padding:
-      0 6px;
+      0 7px;
 
     font-size: 8px;
 
     line-height: 1.45;
   }
 
+  /* STOCK */
 
-  /* ===================================================
-     PRICE
-     =================================================== */
-
-  .product-card .product-price {
-    min-height: 22px;
-
-    gap: 4px;
+  .product-stock {
+    max-width:
+      calc(100% - 14px);
 
     margin:
-      2px 0 5px;
+      4px 7px 0;
 
     padding:
-      0 6px;
+      2px 5px;
+
+    font-size: 7px;
   }
 
+  /* PRICE */
+
+  .product-card .product-price {
+    min-height: 24px;
+
+    gap: 5px;
+
+    margin:
+      4px 0 6px;
+
+    padding:
+      0 7px;
+  }
 
   .product-card .old-price {
     font-size: 8px;
   }
 
-
   .product-card .current-price {
     font-size: 13px;
   }
 
+  /* CART */
 
-  /* ===================================================
-     ADD TO CART
-     =================================================== */
-
-  .product-card > button:not(.wishlist-btn) {
-    width: calc(100% - 12px);
+  .product-card .add-to-cart-btn {
+    width: calc(100% - 14px);
 
     min-height: 32px;
 
     margin:
-      0 6px 6px;
+      0 7px;
 
     padding:
-      5px 3px;
+      5px 5px;
 
-    font-size: 10px;
+    gap: 4px;
+
+    font-size: 9px;
 
     border-radius: 4px;
 
@@ -544,21 +925,64 @@
     text-overflow: ellipsis;
   }
 
-}
-
-
-/* =====================================================
-   SMALL MOBILE
-   ===================================================== */
-
-@media (max-width: 380px) {
-
-  .image-box {
-    height: 125px;
+  .cart-icon {
+    font-size: 12px;
   }
 
+  .product-external-link {
+    margin:
+      5px 7px 0;
 
-  .product-card h3 {
+    font-size: 8px;
+  }
+}
+
+/* ============================================================
+   SMALL MOBILE
+============================================================ */
+
+@media (max-width: 380px) {
+  .image-box {
+    height: 130px;
+  }
+
+  .product-image {
+    padding: 5px;
+  }
+
+  .wishlist-btn {
+    top: 5px;
+    right: 5px;
+
+    width: 27px;
+    height: 27px;
+
+    font-size: 15px;
+  }
+
+  .offer-badge {
+    top: 5px;
+    left: 5px;
+
+    min-height: 18px;
+
+    padding:
+      3px 5px;
+
+    font-size: 7px;
+  }
+
+  .product-badge {
+    top: 28px;
+    left: 5px;
+
+    padding:
+      3px 5px;
+
+    font-size: 6px;
+  }
+
+  .product-card .product-title {
     min-height: 30px;
 
     padding:
@@ -567,9 +991,8 @@
     font-size: 9px;
   }
 
-
   .product-card .description {
-    min-height: 24px;
+    min-height: 23px;
 
     padding:
       0 5px;
@@ -577,82 +1000,90 @@
     font-size: 7px;
   }
 
-
   .product-card .product-price {
+    min-height: 21px;
+
     padding:
       0 5px;
-  }
 
+    margin:
+      3px 0 5px;
+  }
 
   .product-card .old-price {
     font-size: 7px;
   }
 
-
   .product-card .current-price {
     font-size: 12px;
   }
 
-
-  .product-card > button:not(.wishlist-btn) {
+  .product-card .add-to-cart-btn {
     width: calc(100% - 10px);
 
     min-height: 29px;
 
     margin:
-      0 5px 5px;
-
-    font-size: 9px;
-  }
-
-
-  .wishlist-btn {
-    width: 26px;
-    height: 26px;
-
-    font-size: 14px;
-  }
-
-
-  .offer-badge {
-    font-size: 7px;
+      0 5px;
 
     padding:
-      3px 4px;
+      4px 3px;
+
+    font-size: 8px;
+
+    border-radius: 4px;
   }
 
+  .cart-icon {
+    font-size: 10px;
+  }
 }
 
+/* ============================================================
+   VERY SMALL MOBILE
+============================================================ */
 
-/* =====================================================
-   ACCESSIBILITY
-   ===================================================== */
+@media (max-width: 330px) {
+  .image-box {
+    height: 115px;
+  }
 
-.product-card button:focus-visible {
-  outline:
-    2px solid #d4af37;
+  .product-card .product-title {
+    font-size: 8px;
+  }
 
-  outline-offset: 2px;
+  .product-card .description {
+    font-size: 6.5px;
+  }
+
+  .product-card .current-price {
+    font-size: 11px;
+  }
+
+  .product-card .add-to-cart-btn {
+    font-size: 7px;
+
+    min-height: 27px;
+  }
 }
 
+/* ============================================================
+   REDUCED MOTION
+============================================================ */
 
-/* =====================================================
-   WIDTH SAFETY
-   ===================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .product-card,
+  .product-card *,
+  .product-card *::before,
+  .product-card *::after {
+    transition-duration: 0.01ms !important;
 
-.product-card,
-.image-box,
-.product-card h3,
-.product-card .description,
-.product-card .product-price,
-.product-card > button {
-  max-width: 100%;
-  min-width: 0;
+    animation-duration: 0.01ms !important;
 
-  box-sizing: border-box;
+    animation-iteration-count: 1 !important;
+  }
 }
 
-
-/* =====================================================
-   END - PRODUCT CARD CSS
-   ===================================================== */
+/* ============================================================
+   END
+============================================================ */

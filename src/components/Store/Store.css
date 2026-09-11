@@ -1,20 +1,32 @@
-/* =====================================================
-   ELSAFTY STORE - GLOBAL STORE STYLES
-   RTL / RESPONSIVE / DYNAMIC THEME
-===================================================== */
+/* =========================================================
+   ســـــَــــــــوا
+   GLOBAL STORE SYSTEM
+   RTL / RESPONSIVE / ADMIN CONTROLLED
+========================================================= */
+
+
+/* =========================================================
+   ROOT THEME
+   القيم الأساسية يتم تمريرها من إعدادات الأدمن
+========================================================= */
 
 :root {
   --store-primary: #071A36;
   --store-secondary: #0B1F3A;
+
   --store-accent: #D4AF37;
+  --store-accent-dark: #B8921F;
+  --store-accent-light: #F4D06F;
 
   --store-page-background: #F5F6F8;
+  --store-soft-background: #FAFAFA;
+
   --store-card-background: #FFFFFF;
 
   --store-text-primary: #071A36;
   --store-text-secondary: #64748B;
 
-  --store-border: #EEEEEE;
+  --store-border: #E8ECF1;
 
   --store-button-background: #D4AF37;
   --store-button-text: #071A36;
@@ -31,17 +43,39 @@
   --store-footer-background: #071A36;
   --store-footer-text: #FFFFFF;
 
-  --store-accent-dark: #B8921F;
-  --store-accent-light: #F4D06F;
-
-  --store-soft-background: #FAFAFA;
   --store-rating-color: #F2A900;
+
+  --store-font:
+    Cairo,
+    Tahoma,
+    Arial,
+    sans-serif;
+
+  --store-radius-xs: 6px;
+  --store-radius-sm: 10px;
+  --store-radius-md: 14px;
+  --store-radius-lg: 20px;
+  --store-radius-xl: 28px;
+
+  --store-container-width: 1440px;
+
+  --store-shadow-xs:
+    0 2px 8px rgba(7, 26, 54, 0.05);
+
+  --store-shadow-sm:
+    0 5px 16px rgba(7, 26, 54, 0.07);
+
+  --store-shadow-md:
+    0 10px 28px rgba(7, 26, 54, 0.09);
+
+  --store-shadow-lg:
+    0 18px 45px rgba(7, 26, 54, 0.12);
 }
 
 
-/* =====================================================
-   HTML / BODY
-===================================================== */
+/* =========================================================
+   GLOBAL RESET
+========================================================= */
 
 html,
 body {
@@ -66,35 +100,78 @@ body {
     );
 
   font-family:
-    Cairo,
-    Tahoma,
-    Arial,
-    sans-serif;
+    var(
+      --store-font,
+      Cairo,
+      Tahoma,
+      Arial,
+      sans-serif
+    );
+
+  direction: rtl;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 
-/* =====================================================
+/* =========================================================
    ROOT
-===================================================== */
+========================================================= */
 
 #root {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+
+  margin: 0;
+  padding: 0;
 }
 
 
-/* =====================================================
+/* =========================================================
+   UNIVERSAL BOX SIZING
+========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
    STORE CONTAINER
-===================================================== */
+========================================================= */
 
 .store-container {
+  --store-primary:
+    var(--store-primary, #071A36);
+
+  --store-secondary:
+    var(--store-secondary, #0B1F3A);
+
+  --store-accent:
+    var(--store-accent, #D4AF37);
+
+  --store-text:
+    var(--store-text-primary, #071A36);
+
+  --store-font:
+    var(--store-font, Cairo);
+
+  position: relative;
+
   width: 100%;
   max-width: 100%;
 
+  min-width: 0;
   min-height: 100vh;
 
-  min-width: 0;
+  margin: 0;
+  padding: 0 0 50px;
+
+  overflow-x: hidden;
 
   background:
     var(
@@ -108,39 +185,52 @@ body {
       #071A36
     );
 
-  padding-bottom: 40px;
-
-  overflow-x: hidden;
-
-  box-sizing: border-box;
+  font-family:
+    var(
+      --store-font,
+      Cairo,
+      Tahoma,
+      Arial,
+      sans-serif
+    );
 
   direction: rtl;
 }
 
 
-/* =====================================================
-   ALL BOX SIZING
-===================================================== */
+/* =========================================================
+   STORE CONTENT CONTAINERS
+========================================================= */
 
-.store-container *,
-.store-container *::before,
-.store-container *::after {
-  box-sizing: border-box;
+.store-container
+.store-categories-section,
+.store-container
+.products-section {
+  width: min(
+    var(--store-container-width),
+    100%
+  );
+
+  margin-inline: auto;
 }
 
 
-/* =====================================================
+/* =========================================================
    IMAGES
-===================================================== */
+========================================================= */
 
 .store-container img {
+  display: block;
+
   max-width: 100%;
+
+  height: auto;
 }
 
 
-/* =====================================================
+/* =========================================================
    BUTTONS / FORM
-===================================================== */
+========================================================= */
 
 .store-container button,
 .store-container input,
@@ -150,59 +240,221 @@ body {
 }
 
 
-/* =====================================================
-   OLD STATIC HERO
-   Hidden because HeroSlider is now responsible
-===================================================== */
+/* =========================================================
+   LINKS
+========================================================= */
+
+.store-container a {
+  color: inherit;
+
+  text-decoration: none;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.store-hero {
+  position: relative;
+
+  width: 100%;
+  max-width: 100%;
+
+  min-width: 0;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   OLD HERO COMPATIBILITY
+========================================================= */
 
 .store-container > .hero-banner {
   display: none;
 }
 
 
-/* =====================================================
-   OLD STATIC CATEGORY BAR
-   Kept for compatibility with older components
-===================================================== */
+/* =========================================================
+   SECTION SYSTEM
+========================================================= */
+
+.store-categories-section,
+.products-section {
+  padding-inline: 24px;
+}
+
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+.store-section-heading {
+  width: 100%;
+
+  display: flex;
+
+  align-items: flex-end;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin:
+    32px 0 20px;
+}
+
+
+.store-section-heading h2 {
+  margin: 0;
+
+  color:
+    var(
+      --store-text-primary,
+      #071A36
+    );
+
+  font-family:
+    var(
+      --store-font,
+      Cairo,
+      sans-serif
+    );
+
+  font-size:
+    clamp(20px, 2vw, 29px);
+
+  line-height: 1.35;
+
+  font-weight: 900;
+}
+
+
+.store-section-kicker {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color:
+    var(
+      --store-accent,
+      #D4AF37
+    );
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.6px;
+}
+
+
+.store-section-line {
+  flex: 1;
+
+  height: 1px;
+
+  margin-bottom: 8px;
+
+  background:
+    linear-gradient(
+      to left,
+      transparent,
+      var(
+        --store-accent,
+        #D4AF37
+      )
+    );
+
+  opacity: 0.45;
+}
+
+
+/* =========================================================
+   CATEGORIES BAR
+========================================================= */
 
 .categories-bar {
   width: 100%;
+
   display: flex;
 
-  gap: 12px;
+  align-items: center;
+
+  gap: 10px;
 
   overflow-x: auto;
+
   overflow-y: hidden;
 
-  padding-bottom: 10px;
+  padding:
+    5px 2px 13px;
 
-  scrollbar-width: none;
+  scrollbar-width: thin;
+
+  scrollbar-color:
+    var(--store-accent)
+    transparent;
 
   -webkit-overflow-scrolling: touch;
 }
 
+
 .categories-bar::-webkit-scrollbar {
-  display: none;
+  height: 4px;
 }
 
 
-/* =====================================================
-   OLD CATEGORY BUTTONS
-===================================================== */
+.categories-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+.categories-bar::-webkit-scrollbar-thumb {
+  background:
+    var(
+      --store-accent,
+      #D4AF37
+    );
+
+  border-radius: 999px;
+}
+
+
+/* =========================================================
+   CATEGORY BUTTON
+========================================================= */
 
 .category-btn {
+  --category-color:
+    var(
+      --store-accent,
+      #D4AF37
+    );
+
+  position: relative;
+
   flex-shrink: 0;
+
+  min-height: 45px;
+
+  padding:
+    9px 17px;
 
   border:
     1px solid
     var(
       --store-border,
-      #EEEEEE
+      #E8ECF1
     );
+
+  border-radius:
+    999px;
 
   background:
     var(
-      --store-card-background,
+      --store-category-background,
       #FFFFFF
     );
 
@@ -212,48 +464,47 @@ body {
       #071A36
     );
 
-  padding:
-    12px 20px;
+  display: inline-flex;
 
-  border-radius:
-    30px;
+  align-items: center;
 
-  cursor:
-    pointer;
+  justify-content: center;
 
-  font-family:
-    inherit;
+  gap: 7px;
 
-  font-size:
-    14px;
+  cursor: pointer;
 
-  font-weight:
-    700;
+  white-space: nowrap;
 
-  white-space:
-    nowrap;
+  font-family: inherit;
+
+  font-size: 13px;
+
+  font-weight: 800;
 
   box-shadow:
-    0 2px 8px
-    rgba(11, 31, 58, 0.08);
+    var(--store-shadow-xs);
 
   transition:
     transform 0.2s ease,
-    border-color 0.2s ease,
     background 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
+
 
 .category-btn:hover {
   transform:
     translateY(-2px);
 
   border-color:
-    var(
-      --store-accent,
-      #D4AF37
-    );
+    var(--category-color);
+
+  box-shadow:
+    var(--store-shadow-sm);
 }
+
 
 .category-btn.active {
   background:
@@ -273,22 +524,40 @@ body {
       --store-accent,
       #D4AF37
     );
+
+  box-shadow:
+    0 6px 18px
+    rgba(7, 26, 54, 0.15);
 }
 
 
-/* =====================================================
+.category-icon {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 16px;
+
+  line-height: 1;
+}
+
+
+/* =========================================================
    LEGACY CATEGORIES
-===================================================== */
+========================================================= */
 
 .categories {
-  width: 100%;
-  max-width: 1400px;
+  width: min(
+    var(--store-container-width),
+    100%
+  );
 
   margin:
-    15px auto;
+    20px auto;
 
-  padding:
-    0 12px;
+  padding-inline: 24px;
 
   color:
     var(
@@ -296,21 +565,32 @@ body {
       #071A36
     );
 }
+
 
 .categories h2 {
+  margin: 0 0 15px;
+
   color:
     var(
       --store-text-primary,
       #071A36
     );
+
+  font-size: 24px;
+
+  font-weight: 900;
 }
 
 
-/* =====================================================
-   LEGACY PRODUCTS SECTION
-===================================================== */
+/* =========================================================
+   PRODUCTS SECTION
+========================================================= */
 
 .products-section {
+  padding-top: 12px;
+
+  padding-bottom: 45px;
+
   color:
     var(
       --store-text-primary,
@@ -319,99 +599,400 @@ body {
 }
 
 
-/* =====================================================
-   GLOBAL LINKS
-===================================================== */
+/* =========================================================
+   PRODUCTS RESULT
+========================================================= */
 
-.store-container a {
-  color:
-    inherit;
+.products-result-count {
+  flex-shrink: 0;
 
-  text-decoration:
-    none;
-}
+  min-width: 65px;
 
+  min-height: 42px;
 
-/* =====================================================
-   GLOBAL FOCUS
-===================================================== */
+  padding:
+    5px 12px;
 
-.store-container
-  button:focus-visible,
-.store-container
-  input:focus-visible,
-.store-container
-  select:focus-visible,
-.store-container
-  textarea:focus-visible {
-  outline:
-    2px solid
+  border:
+    1px solid
     var(
       --store-accent,
       #D4AF37
     );
 
-  outline-offset:
-    2px;
+  border-radius:
+    var(--store-radius-sm);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--store-accent, #D4AF37) 10%,
+      white
+    );
+
+  color:
+    var(
+      --store-primary,
+      #071A36
+    );
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 4px;
+
+  font-size: 16px;
+
+  font-weight: 900;
 }
 
 
-/* =====================================================
-   SWIPER FIX
-===================================================== */
+.products-result-count span {
+  font-size: 10px;
 
-.store-container
-  .swiper {
+  font-weight: 700;
+
+  opacity: 0.7;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.store-empty {
+  min-height: 280px;
+
+  margin-top: 20px;
+
+  padding:
+    40px 20px;
+
+  border:
+    1px solid
+    var(
+      --store-border,
+      #E8ECF1
+    );
+
+  border-radius:
+    var(--store-radius-lg);
+
+  background:
+    var(
+      --store-card-background,
+      #FFFFFF
+    );
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+  box-shadow:
+    var(--store-shadow-sm);
+}
+
+
+.store-empty-icon {
+  width: 66px;
+
+  height: 66px;
+
+  margin-bottom: 14px;
+
+  border-radius: 50%;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--store-accent, #D4AF37) 14%,
+      white
+    );
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 27px;
+}
+
+
+.store-empty h3 {
+  margin:
+    0 0 7px;
+
+  color:
+    var(
+      --store-primary,
+      #071A36
+    );
+
+  font-size: 19px;
+
+  font-weight: 900;
+}
+
+
+.store-empty p {
+  margin:
+    0 0 18px;
+
+  color:
+    var(
+      --store-text-secondary,
+      #64748B
+    );
+
+  font-size: 13px;
+}
+
+
+.store-empty button {
+  min-height: 43px;
+
+  padding:
+    0 21px;
+
+  border: 0;
+
+  border-radius:
+    var(--store-radius-sm);
+
+  background:
+    var(
+      --store-button-background,
+      #D4AF37
+    );
+
+  color:
+    var(
+      --store-button-text,
+      #071A36
+    );
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  font-weight: 900;
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+
+.store-empty button:hover {
+  transform:
+    translateY(-2px);
+
+  filter:
+    brightness(1.06);
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.store-categories-loading {
+  min-height: 60px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 9px;
+
+  color:
+    var(
+      --store-primary,
+      #071A36
+    );
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+.store-loading-dot {
+  width: 9px;
+
+  height: 9px;
+
+  border-radius: 50%;
+
+  background:
+    var(
+      --store-accent,
+      #D4AF37
+    );
+
+  animation:
+    storeLoadingPulse 1s ease-in-out infinite;
+}
+
+
+@keyframes storeLoadingPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+
+    transform: scale(1);
+  }
+}
+
+
+/* =========================================================
+   SWIPER GLOBAL FIX
+========================================================= */
+
+.store-container .swiper {
   width: 100%;
+
   max-width: 100%;
 
   min-width: 0;
 }
 
-.store-container
-  .swiper-wrapper {
-  min-width: 0;
-}
 
-.store-container
-  .swiper-slide {
+.store-container .swiper-wrapper {
   min-width: 0;
 }
 
 
-/* =====================================================
-   DESKTOP
-===================================================== */
+.store-container .swiper-slide {
+  min-width: 0;
 
-@media (min-width: 1201px) {
-
-  .store-container {
-    padding-bottom: 50px;
-  }
-
+  overflow: hidden;
 }
 
 
-/* =====================================================
+/* =========================================================
+   OLD / LEGACY COMPONENT COMPATIBILITY
+========================================================= */
+
+.store-container
+.hero-banner {
+  max-width: 100%;
+}
+
+
+.store-container
+.categories-bar {
+  max-width: 100%;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.store-container {
+  scrollbar-width: thin;
+
+  scrollbar-color:
+    var(--store-accent)
+    transparent;
+}
+
+
+.store-container::-webkit-scrollbar {
+  width: 6px;
+
+  height: 6px;
+}
+
+
+.store-container::-webkit-scrollbar-track {
+  background:
+    transparent;
+}
+
+
+.store-container::-webkit-scrollbar-thumb {
+  background:
+    var(--store-accent);
+
+  border-radius: 999px;
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+.store-container
+button:focus-visible,
+.store-container
+input:focus-visible,
+.store-container
+select:focus-visible,
+.store-container
+textarea:focus-visible,
+.store-container
+a:focus-visible {
+  outline:
+    3px solid
+    var(
+      --store-accent,
+      #D4AF37
+    );
+
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
    TABLET
-===================================================== */
+========================================================= */
 
-@media (min-width: 601px) and (max-width: 1200px) {
-
-  .store-container {
-    width: 100%;
-    min-width: 0;
+@media (max-width: 1200px) {
+  .store-categories-section,
+  .products-section,
+  .categories {
+    padding-inline: 18px;
   }
 
+  .store-section-heading {
+    margin-top: 28px;
+  }
+
+  .category-btn {
+    min-height: 43px;
+
+    padding-inline: 15px;
+  }
 }
 
 
-/* =====================================================
+/* =========================================================
    MOBILE
-===================================================== */
+========================================================= */
 
 @media (max-width: 600px) {
-
   html,
   body {
     width: 100%;
@@ -420,15 +1001,15 @@ body {
     overflow-x: hidden;
   }
 
-
   #root {
     width: 100%;
+
     min-width: 0;
   }
 
-
   .store-container {
     width: 100%;
+
     max-width: 100%;
 
     min-width: 0;
@@ -436,91 +1017,225 @@ body {
     padding-bottom: 25px;
   }
 
-
+  .store-categories-section,
+  .products-section,
   .categories {
     width: 100%;
 
-    margin:
-      10px auto;
-
-    padding:
-      0 8px;
-  }
-
-
-  .categories h2 {
-    font-size:
-      18px;
-
-    margin:
-      12px 0;
-  }
-
-
-  .categories-bar {
-    gap:
-      7px;
-  }
-
-
-  .category-btn {
-    padding:
-      8px 13px;
-
-    font-size:
-      11px;
-  }
-
-
-  .products-section {
-    width: 100%;
     max-width: 100%;
 
-    margin:
-      14px auto;
+    padding-inline: 9px;
   }
 
+  .store-section-heading {
+    align-items: center;
+
+    gap: 10px;
+
+    margin:
+      23px 0 14px;
+  }
+
+  .store-section-heading h2 {
+    font-size: 20px;
+  }
+
+  .store-section-kicker {
+    font-size: 10px;
+  }
+
+  .store-section-line {
+    display: none;
+  }
+
+  .categories-bar {
+    gap: 7px;
+
+    padding:
+      4px 1px 10px;
+  }
+
+  .category-btn {
+    min-height: 39px;
+
+    padding:
+      7px 13px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+  }
+
+  .category-icon {
+    font-size: 14px;
+  }
+
+  .categories {
+    margin:
+      10px auto;
+  }
+
+  .categories h2 {
+    margin:
+      12px 0;
+
+    font-size: 18px;
+  }
+
+  .products-section {
+    margin:
+      0 auto;
+
+    padding-top: 5px;
+
+    padding-bottom: 30px;
+  }
+
+  .products-result-count {
+    min-width: 55px;
+
+    min-height: 36px;
+
+    padding:
+      4px 8px;
+
+    border-radius: 10px;
+
+    font-size: 13px;
+  }
+
+  .store-empty {
+    min-height: 240px;
+
+    padding:
+      30px 15px;
+  }
 }
 
 
-/* =====================================================
+/* =========================================================
    SMALL MOBILE
-===================================================== */
+========================================================= */
 
 @media (max-width: 380px) {
-
-  .store-container {
-    width:
-      100%;
-
-    min-width:
-      0;
+  .store-categories-section,
+  .products-section,
+  .categories {
+    padding-inline: 7px;
   }
 
+  .store-section-heading h2 {
+    font-size: 18px;
+  }
+
+  .store-section-kicker {
+    font-size: 9px;
+  }
+
+  .category-btn {
+    min-height: 37px;
+
+    padding:
+      6px 11px;
+
+    font-size: 10px;
+  }
+
+  .products-result-count {
+    min-width: 48px;
+
+    padding-inline: 7px;
+  }
+
+  .products-result-count span {
+    display: none;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 320px) {
+  .store-section-heading h2 {
+    font-size: 17px;
+  }
 
   .category-btn {
     padding:
-      7px 11px;
+      6px 9px;
 
-    font-size:
-      10px;
+    font-size: 9px;
   }
 
+  .store-empty h3 {
+    font-size: 17px;
+  }
+
+  .store-empty p {
+    font-size: 12px;
+  }
 }
 
 
-/* =====================================================
-   PRINT
-===================================================== */
+/* =========================================================
+   LANDSCAPE MOBILE
+========================================================= */
 
-@media print {
+@media
+  (max-width: 900px)
+  and (orientation: landscape) {
 
-  .store-container {
-    background:
-      #FFFFFF !important;
-
-    color:
-      #000000 !important;
+  .store-categories-section,
+  .products-section {
+    padding-inline: 12px;
   }
 
+  .store-section-heading {
+    margin-top: 18px;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .store-container *,
+  .store-container *::before,
+  .store-container *::after {
+    animation: none !important;
+
+    transition: none !important;
+
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* =========================================================
+   PRINT
+========================================================= */
+
+@media print {
+  html,
+  body {
+    background: #FFFFFF !important;
+
+    color: #000000 !important;
+  }
+
+  .store-container {
+    background: #FFFFFF !important;
+
+    color: #000000 !important;
+
+    padding-bottom: 0 !important;
+  }
+
+  .categories-bar {
+    overflow: visible !important;
+  }
 }

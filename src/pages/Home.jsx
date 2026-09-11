@@ -35,82 +35,35 @@ import Footer from "../components/Footer/Footer";
 
 import { CartContext } from "../context/CartContext";
 
-import { getCategories } from "../services/categoryService";
-
 // =====================================================
 // DEFAULT STORE SETTINGS
 // =====================================================
 
 const defaultStoreSettings = {
-  storeName: "ســـــَــــــــوا",
-
-  phone: "",
-  whatsapp: "",
-  email: "",
-  address: "",
-
-  facebook: "",
-  instagram: "",
-  telegram: "",
-
-  announcement: "",
-
+  storeName: "ســــَــــــــــوا", logo: "", phone: "", whatsapp: "", email: "", address: "",
+  facebook: "", instagram: "", telegram: "", tiktok: "", youtube: "", announcement: "",
   theme: {
-    primary: "#F68B1E",
-    secondary: "#E97B10",
-    accent: "#F68B1E",
-
-    pageBackground: "#F5F5F5",
-    cardBackground: "#FFFFFF",
-
-    textPrimary: "#313133",
-    textSecondary: "#75757A",
-
-    border: "#E5E5E5",
-
-    buttonBackground: "#F68B1E",
-    buttonText: "#FFFFFF",
-
-    navbarBackground: "#FFFFFF",
-    navbarText: "#313133",
-
-    categoryBarBackground: "#FFFFFF",
-    categoryBarText: "#313133",
-
-    topStripBackground: "#F68B1E",
-    topStripText: "#FFFFFF",
-
-    footerBackground: "#313133",
-    footerText: "#FFFFFF",
-    footerBrand: "#F68B1E",
+    primary:"#071A36", secondary:"#0B1F3A", accent:"#D4AF37", pageBackground:"#F0F4F8",
+    cardBackground:"#FFFFFF", textPrimary:"#071A36", textSecondary:"#64748B", border:"#D9DFE8",
+    buttonBackground:"#0B1F3A", buttonText:"#FFFFFF", navbarBackground:"#071A36", navbarText:"#FFFFFF",
+    categoryBarBackground:"#FFFFFF", categoryBarText:"#071A36", topStripBackground:"#071A36",
+    topStripText:"#FFFFFF", footerBackground:"#071A36", footerText:"#FFFFFF", footerBrand:"#D4AF37",
+    footerButtonBackground:"#D4AF37", footerButtonText:"#071A36", footerButtonHover:"#B8941F",
+    headingColor:"#071A36", linkColor:"#071A36", priceColor:"#071A36", saleColor:"#C62828",
+    successColor:"#16803C", warningColor:"#B7791F", errorColor:"#C62828",
+    inputBackground:"#FFFFFF", sectionBackground:"#FFFFFF",
   },
-
-  bannerSettings: {
-    heightDesktop: 420,
-    heightTablet: 350,
-    heightMobile: 240,
-
-    borderRadius: 0,
-    overlayOpacity: 0.35,
-  },
-
-  topStrip: {
-    enabled: true,
-    direction: "rtl",
-    speed: 40,
-    height: 42,
-    fontSize: 15,
-    items: [],
-  },
-
-  featuresBar: {
-    enabled: true,
-    background: "#FFFFFF",
-    color: "#313133",
-    accentColor: "#F68B1E",
-    height: 80,
-    fontSize: 16,
-    items: [],
+  bannerSettings:{heightDesktop:420,heightTablet:350,heightMobile:240,borderRadius:16,overlayOpacity:.35,autoplay:true,autoplayDelay:5000},
+  topStrip:{enabled:true,direction:"rtl",speed:40,height:42,fontSize:15,fontWeight:700,items:[]},
+  featuresBar:{enabled:true,background:"#FFFFFF",color:"#071A36",accentColor:"#D4AF37",height:80,fontSize:16,items:[]},
+  texts:{
+    homeTitle:"أهلاً بك في ســــَــــــــــوا",homeSubtitle:"اختيارات مميزة وأسعار تناسبك",
+    productsTitle:"منتجات مميزة",offersTitle:"عروض اليوم",bestSellersTitle:"الأكثر مبيعًا",
+    newArrivalsTitle:"وصل حديثًا",recommendedTitle:"قد يعجبك",categoriesTitle:"تسوق حسب القسم",
+    emptyProducts:"لا توجد منتجات متاحة حاليًا",emptyCategories:"لا توجد أقسام متاحة حاليًا",
+    cartTitle:"سلة المشتريات",checkoutTitle:"إتمام الطلب",addToCart:"أضف للسلة",
+    buyNow:"اشترِ الآن",viewAll:"عرض الكل",footerAbout:"متجر ســــَــــــــــوا للتسوق الإلكتروني",
+    footerRights:"جميع الحقوق محفوظة",
   },
 };
 
@@ -289,6 +242,18 @@ function Home({
 
   const [announcementBars, setAnnouncementBars] =
     useState([]);
+  const [liveProducts, setLiveProducts] =
+    useState(products);
+  const [banners, setBanners] =
+    useState([]);
+  const [popupAds, setPopupAds] =
+    useState([]);
+  const [storeMenuItems, setStoreMenuItems] =
+    useState([]);
+  const [adminAnnouncements, setAdminAnnouncements] =
+    useState([]);
+  const [showAdminPopup, setShowAdminPopup] =
+    useState(false);
 
   // ===================================================
   // WHEEL STATES
@@ -400,27 +365,33 @@ function Home({
             snapshot.data() || {};
 
           setStoreSettings((previous) => ({
+            ...defaultStoreSettings,
             ...previous,
             ...data,
-
             theme: {
-              ...previous.theme,
+              ...defaultStoreSettings.theme,
+              ...(previous.theme || {}),
               ...(data.theme || {}),
             },
-
             bannerSettings: {
-              ...previous.bannerSettings,
+              ...defaultStoreSettings.bannerSettings,
+              ...(previous.bannerSettings || {}),
               ...(data.bannerSettings || {}),
             },
-
             topStrip: {
-              ...previous.topStrip,
+              ...defaultStoreSettings.topStrip,
+              ...(previous.topStrip || {}),
               ...(data.topStrip || {}),
             },
-
             featuresBar: {
-              ...previous.featuresBar,
+              ...defaultStoreSettings.featuresBar,
+              ...(previous.featuresBar || {}),
               ...(data.featuresBar || {}),
+            },
+            texts: {
+              ...defaultStoreSettings.texts,
+              ...(previous.texts || {}),
+              ...(data.texts || {}),
             },
           }));
         },
@@ -433,6 +404,45 @@ function Home({
       );
 
     return () => unsubscribe();
+  }, []);
+
+  // ===================================================
+  // LOAD CUSTOMER-FACING CONTENT FROM ADMIN
+  // ===================================================
+
+  useEffect(() => {
+    const unsubs = [];
+
+    const watch = (name, setter) => {
+      const unsubscribe = onSnapshot(
+        collection(db, name),
+        (snapshot) => {
+          setter(
+            snapshot.docs.map((item) => ({
+              id: item.id,
+              ...(item.data() || {}),
+            }))
+          );
+        },
+        (error) => {
+          console.error(`Home ${name} Error:`, error);
+        }
+      );
+
+      unsubs.push(unsubscribe);
+    };
+
+    watch("products", setLiveProducts);
+    watch("banners", setBanners);
+    watch("popupAds", setPopupAds);
+    watch("storeMenuItems", setStoreMenuItems);
+    watch("announcements", setAdminAnnouncements);
+
+    return () => {
+      unsubs.forEach((unsubscribe) => {
+        try { unsubscribe(); } catch {}
+      });
+    };
   }, []);
 
   // ===================================================
@@ -611,6 +621,82 @@ function Home({
     }, [
       announcementBars,
     ]);
+
+  const activeAnnouncements = useMemo(() => {
+    const items = (adminAnnouncements || []).filter(
+      (item) =>
+        item?.active !== false &&
+        item?.enabled !== false &&
+        item?.visible !== false &&
+        String(
+          item?.text ||
+            item?.title ||
+            item?.message ||
+            ""
+        ).trim()
+    );
+
+    if (items.length) return items;
+
+    const fallback = String(
+      storeSettings?.announcement || ""
+    ).trim();
+
+    return fallback
+      ? [{ id: "store-announcement", text: fallback }]
+      : [];
+  }, [
+    adminAnnouncements,
+    storeSettings?.announcement,
+  ]);
+
+  const activePopupAd = useMemo(
+    () =>
+      (popupAds || [])
+        .filter(
+          (item) =>
+            item?.active !== false &&
+            item?.enabled !== false &&
+            item?.visible !== false &&
+            (item?.image ||
+              item?.title ||
+              item?.text)
+        )
+        .sort(
+          (a, b) =>
+            Number(
+              a?.order ??
+                a?.sortOrder ??
+                0
+            ) -
+            Number(
+              b?.order ??
+                b?.sortOrder ??
+                0
+            )
+        )[0] || null,
+    [popupAds]
+  );
+
+  useEffect(() => {
+    if (!activePopupAd) {
+      setShowAdminPopup(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(
+      () => setShowAdminPopup(true),
+      Math.max(
+        0,
+        Number(activePopupAd.delay ?? 0)
+      )
+    );
+
+    return () => clearTimeout(timer);
+  }, [
+    activePopupAd?.id,
+    activePopupAd?.delay,
+  ]);
 
   // ===================================================
   // LOAD WHEEL SETTINGS
@@ -1123,60 +1209,40 @@ function Home({
     }, [categories]);
 
   // ===================================================
-  // LOAD CATEGORIES
+  // LOAD CATEGORIES FROM ADMIN / FIRESTORE
   // ===================================================
 
   useEffect(() => {
-    let mounted = true;
+    const unsubscribe = onSnapshot(
+      collection(db, "categories"),
+      (snapshot) => {
+        setCategories(
+          snapshot.docs
+            .map((item) => ({
+              id: item.id,
+              ...(item.data() || {}),
+            }))
+            .filter(
+              (category) =>
+                category?.active !== false
+            )
+            .sort(
+              (x, y) =>
+                Number(x?.sortOrder ?? 0) -
+                Number(y?.sortOrder ?? 0)
+            )
+        );
+      },
+      (error) => {
+        console.error(
+          "Home Categories Error:",
+          error
+        );
+        setCategories([]);
+      }
+    );
 
-    const loadCategories =
-      async () => {
-        try {
-          const data =
-            await getCategories();
-
-          if (!mounted) {
-            return;
-          }
-
-          const activeCategories =
-            (data || [])
-              .filter(
-                (category) =>
-                  category?.active ===
-                  true
-              )
-              .slice()
-              .sort(
-                (a, b) =>
-                  Number(
-                    a?.sortOrder ?? 0
-                  ) -
-                  Number(
-                    b?.sortOrder ?? 0
-                  )
-              );
-
-          setCategories(
-            activeCategories
-          );
-        } catch (error) {
-          console.error(
-            "خطأ في تحميل الأقسام:",
-            error
-          );
-
-          if (mounted) {
-            setCategories([]);
-          }
-        }
-      };
-
-    loadCategories();
-
-    return () => {
-      mounted = false;
-    };
+    return () => unsubscribe();
   }, []);
 
   // ===================================================
@@ -1232,7 +1298,7 @@ function Home({
           .trim()
           .toLowerCase();
 
-      return (products || []).filter(
+      return (visibleProducts || []).filter(
         (product) => {
           const productCategoryId =
             String(
@@ -1386,45 +1452,64 @@ function Home({
       });
     };
 
+  const texts = {
+    ...defaultStoreSettings.texts,
+    ...(storeSettings?.texts || {}),
+  };
+
+  const visibleProducts = useMemo(
+    () =>
+      (Array.isArray(liveProducts)
+        ? liveProducts
+        : Array.isArray(products)
+          ? products
+          : []
+      ).filter(
+        (product) =>
+          product?.active !== false
+      ),
+    [liveProducts, products]
+  );
+
   // ===================================================
   // SPECIAL PRODUCTS
   // ===================================================
 
   const offers = useMemo(
     () =>
-      (products || []).filter(
+      (visibleProducts || []).filter(
         (product) =>
           product?.offer === true
       ),
-    [products]
+    [visibleProducts]
   );
 
   const bestSellers = useMemo(
     () =>
-      (products || []).filter(
+      (visibleProducts || []).filter(
         (product) =>
           product?.bestSeller === true
       ),
-    [products]
+    [visibleProducts]
   );
 
   const newArrivals = useMemo(
     () =>
-      (products || []).filter(
+      (visibleProducts || []).filter(
         (product) =>
           product?.newArrival === true
       ),
-    [products]
+    [visibleProducts]
   );
 
   const recommended = useMemo(
     () =>
-      (products || []).filter(
+      (visibleProducts || []).filter(
         (product) =>
           product?.recommended ===
           true
       ),
-    [products]
+    [visibleProducts]
   );
 
   // ===================================================
@@ -1445,7 +1530,7 @@ function Home({
           selectedCategory || ""
         ).trim();
 
-      return [...(products || [])]
+      return [...(visibleProducts || [])]
         .filter((product) => {
           const title =
             String(
@@ -1639,7 +1724,7 @@ function Home({
           }
         });
     }, [
-      products,
+      visibleProducts,
       categories,
       searchTerm,
       selectedCategory,
@@ -2162,7 +2247,35 @@ function Home({
     "--store-footer-brand":
       theme?.footerBrand ||
       theme?.accent ||
-      "#F68B1E",
+      "#D4AF37",
+
+    "--store-heading-color":
+      theme?.headingColor ||
+      theme?.textPrimary ||
+      "#071A36",
+
+    "--store-link-color":
+      theme?.linkColor ||
+      theme?.textPrimary ||
+      "#071A36",
+
+    "--store-price-color":
+      theme?.priceColor ||
+      theme?.textPrimary ||
+      "#071A36",
+
+    "--store-sale-color":
+      theme?.saleColor ||
+      "#C62828",
+
+    "--store-section-background":
+      theme?.sectionBackground ||
+      theme?.cardBackground ||
+      "#FFFFFF",
+
+    "--store-input-background":
+      theme?.inputBackground ||
+      "#FFFFFF",
   };
 
   // ===================================================
@@ -2179,7 +2292,7 @@ function Home({
           ACTIVE ANNOUNCEMENT BARS
       ================================================= */}
 
-      {visibleAnnouncementBars.length > 0 && (
+      {storeSettings?.topStrip?.enabled !== false && visibleAnnouncementBars.length > 0 && (
         <div
           className="home-announcement-bars"
           style={{
@@ -2312,14 +2425,23 @@ function Home({
                       "hidden",
 
                     fontSize: `${Number(
-                      bar?.fontSize ||
+                      bar?.fontSize ??
                         storeSettings?.topStrip
-                          ?.fontSize ||
+                          ?.fontSize ??
                         15
                     )}px`,
 
                     fontWeight:
-                      800,
+                      Number(
+                        bar?.fontWeight ??
+                          storeSettings?.topStrip
+                            ?.fontWeight ??
+                          700
+                      ),
+
+                    fontFamily:
+                      bar?.fontFamily ||
+                      "Cairo, sans-serif",
 
                     direction:
                       bar?.direction ||
@@ -2408,7 +2530,10 @@ function Home({
           setSearchTerm
         }
         admin={admin}
-        products={products}
+        products={visibleProducts}
+        storeSettings={storeSettings}
+        storeMenuItems={storeMenuItems}
+        theme={theme}
         setSelectedCategory={
           setSelectedCategory
         }
@@ -2425,8 +2550,161 @@ function Home({
         ================================================= */}
 
         <section className="jumia-hero">
-          <HeroSlider />
+          <HeroSlider
+            banners={banners}
+            bannerSettings={
+              storeSettings?.bannerSettings
+            }
+            settings={storeSettings}
+          />
         </section>
+
+        {storeSettings?.featuresBar?.enabled !== false &&
+          Array.isArray(
+            storeSettings?.featuresBar?.items
+          ) &&
+          storeSettings.featuresBar.items.filter(
+            (item) =>
+              item?.active !== false &&
+              item?.enabled !== false &&
+              item?.visible !== false
+          ).length > 0 && (
+            <section
+              className="home-features-bar"
+              style={{
+                background:
+                  storeSettings.featuresBar.background ||
+                  theme?.sectionBackground ||
+                  "#FFFFFF",
+                color:
+                  storeSettings.featuresBar.color ||
+                  theme?.textPrimary ||
+                  "#071A36",
+                minHeight: `${Number(
+                  storeSettings.featuresBar.height ?? 80
+                )}px`,
+                fontSize: `${Number(
+                  storeSettings.featuresBar.fontSize ?? 16
+                )}px`,
+              }}
+            >
+              <div className="home-features-bar-inner">
+                {storeSettings.featuresBar.items
+                  .filter(
+                    (item) =>
+                      item?.active !== false &&
+                      item?.enabled !== false &&
+                      item?.visible !== false
+                  )
+                  .map((item, index) => (
+                    <button
+                      key={
+                        item?.id ||
+                        `${item?.title || item?.name}-${index}`
+                      }
+                      type="button"
+                      disabled={!item?.link && !item?.url}
+                      onClick={() => {
+                        const link = String(
+                          item?.link || item?.url || ""
+                        ).trim();
+                        if (!link) return;
+                        if (/^https?:\/\//i.test(link)) {
+                          window.location.href = link;
+                        } else {
+                          navigate(link);
+                        }
+                      }}
+                    >
+                      <span className="home-feature-icon">
+                        {item?.icon || item?.emoji || "✓"}
+                      </span>
+                      <span>
+                        <strong>
+                          {item?.title ||
+                            item?.name ||
+                            "ميزة"}
+                        </strong>
+                        {(item?.description ||
+                          item?.text) && (
+                          <small>
+                            {item.description ||
+                              item.text}
+                          </small>
+                        )}
+                      </span>
+                    </button>
+                  ))}
+              </div>
+            </section>
+          )}
+
+        {showAdminPopup && activePopupAd && (
+          <div
+            className="home-admin-popup-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label={
+              activePopupAd.title || "إعلان"
+            }
+          >
+            <div className="home-admin-popup">
+              {activePopupAd.closable !== false && (
+                <button
+                  type="button"
+                  className="home-admin-popup-close"
+                  onClick={() =>
+                    setShowAdminPopup(false)
+                  }
+                  aria-label="إغلاق"
+                >
+                  ×
+                </button>
+              )}
+
+              {activePopupAd.image && (
+                <img
+                  src={activePopupAd.image}
+                  alt={
+                    activePopupAd.title || "إعلان"
+                  }
+                />
+              )}
+
+              {activePopupAd.title && (
+                <h2>{activePopupAd.title}</h2>
+              )}
+
+              {activePopupAd.text && (
+                <p>{activePopupAd.text}</p>
+              )}
+
+              {(activePopupAd.link ||
+                activePopupAd.buttonText) && (
+                <button
+                  type="button"
+                  className="home-admin-popup-action"
+                  onClick={() => {
+                    const link = String(
+                      activePopupAd.link || ""
+                    ).trim();
+                    if (!link) return;
+                    if (
+                      /^https?:\/\//i.test(link)
+                    ) {
+                      window.location.href = link;
+                    } else {
+                      navigate(link);
+                    }
+                  }}
+                >
+                  {activePopupAd.buttonText ||
+                    texts.viewAll}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* =================================================
             WHEEL OF FORTUNE
@@ -3385,7 +3663,7 @@ function Home({
         <section className="jumia-section quick-shop-section">
           <div className="jumia-section-title">
             <h2>
-              كل اللي هتحتاجه في مكان واحد
+              {texts.categoriesTitle}
             </h2>
 
             <button
@@ -3396,7 +3674,7 @@ function Home({
                 )
               }
             >
-              عرض الكل
+              {texts.viewAll}
             </button>
           </div>
 
@@ -3466,7 +3744,7 @@ rootCategories.slice(
                           : categoryProducts.length >
                               0
                             ? `${categoryProducts.length} منتج`
-                            : "تصفح الآن"}
+                            : texts.viewAll}
                       </small>
                     </button>
                   );
@@ -3498,7 +3776,7 @@ rootCategories.slice(
             id="today-offers"
           >
             <ProductsSlider
-              title="عروض اليوم"
+              title={texts.offersTitle}
               badge="خصم"
               badgeClass="offer"
               products={offers}
@@ -3525,7 +3803,7 @@ rootCategories.slice(
             id="best-sellers"
           >
             <ProductsSlider
-              title="المنتجات الأفضل مبيعاً"
+              title={texts.bestSellersTitle}
               badge="الأكثر مبيعاً"
               badgeClass="best"
               products={
@@ -3544,38 +3822,47 @@ rootCategories.slice(
         )}
 
         {/* =================================================
-            COUPONS
+            ADMIN ANNOUNCEMENTS
         ================================================= */}
 
-        <section className="jumia-promo-strip">
-          <div className="promo-content">
-            <span className="promo-icon">
-              🏷️
-            </span>
-
-            <div>
-              <h2>
-                ألحق أكواد الخصم!
-              </h2>
-
-              <p>
-                وفر أكتر مع العروض
-                والكوبونات
-              </p>
+        {activeAnnouncements.length > 0 && (
+          <section className="jumia-promo-strip">
+            <div className="promo-content">
+              <span className="promo-icon">🏷️</span>
+              <div>
+                <h2>
+                  {activeAnnouncements[0]?.title ||
+                    texts.offersTitle}
+                </h2>
+                <p>
+                  {activeAnnouncements[0]?.text ||
+                    storeSettings?.announcement ||
+                    ""}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              scrollToSection(
-                "#today-offers"
-              )
-            }
-          >
-            تسوق الآن
-          </button>
-        </section>
+            <button
+              type="button"
+              onClick={() => {
+                const link = String(
+                  activeAnnouncements[0]?.link ||
+                    ""
+                ).trim();
+
+                if (/^https?:\/\//i.test(link)) {
+                  window.location.href = link;
+                } else if (link) {
+                  navigate(link);
+                } else {
+                  scrollToSection("#today-offers");
+                }
+              }}
+            >
+              {texts.viewAll}
+            </button>
+          </section>
+        )}
 
         {/* =================================================
             NEW ARRIVALS
@@ -3588,7 +3875,7 @@ rootCategories.slice(
             id="new-arrivals"
           >
             <ProductsSlider
-              title="وصل حديثاً"
+              title={texts.newArrivalsTitle}
               badge="جديد"
               badgeClass="new"
               products={
@@ -3617,7 +3904,7 @@ rootCategories.slice(
             id="recommended"
           >
             <ProductsSlider
-              title="قد يعجبك"
+              title={texts.recommendedTitle}
               badge="مميز"
               badgeClass="recommended"
               products={
@@ -3642,7 +3929,7 @@ rootCategories.slice(
         <section className="jumia-section all-categories-section">
           <div className="jumia-section-title">
             <h2>
-              تصفح الأقسام
+              {texts.categoriesTitle}
             </h2>
 
             <button
@@ -3713,7 +4000,7 @@ rootCategories.slice(
                       {categoryProducts.length >
                       0
                         ? `${categoryProducts.length} منتج`
-                        : "اكتشف الآن"}
+                        : texts.viewAll}
                     </small>
                   </button>
                 );
@@ -3737,7 +4024,7 @@ rootCategories.slice(
 
                 <div>
                   <h2>
-                    Flash Sales
+                    {texts.offersTitle}
                   </h2>
 
                   <p>
@@ -3754,7 +4041,7 @@ rootCategories.slice(
                 aria-label="Flash Sales countdown"
               >
                 <span className="flash-countdown-label">
-                  ينتهي خلال
+                  {texts.homeSubtitle || "ينتهي خلال"}
                 </span>
 
                 <div className="flash-countdown-boxes">
@@ -3814,7 +4101,7 @@ rootCategories.slice(
                   )
                 }
               >
-                عرض الكل
+                {texts.viewAll}
               </button>
             </div>
 
@@ -3868,8 +4155,7 @@ rootCategories.slice(
                     </h2>
 
                     <p>
-                      اكتشف أفضل المنتجات
-                      في هذا القسم
+                      {texts.productsTitle}
                     </p>
                   </div>
 
@@ -4063,6 +4349,14 @@ rootCategories.slice(
         telegram={
           storeSettings?.telegram || ""
         }
+        tiktok={
+          storeSettings?.tiktok || ""
+        }
+        youtube={
+          storeSettings?.youtube || ""
+        }
+        texts={texts}
+        menuItems={storeMenuItems}
         theme={theme}
       />
 
@@ -4629,6 +4923,150 @@ rootCategories.slice(
 
           .wheel-spin-btn:active:not(:disabled) {
             transform: translateY(0);
+          }
+
+          .home-features-bar {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .home-features-bar-inner {
+            width: min(1200px, 100%);
+            margin: 0 auto;
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 10px;
+            box-sizing: border-box;
+          }
+
+          .home-features-bar-inner button {
+            min-height: 54px;
+            border: 0;
+            border-radius: 12px;
+            background: transparent;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            padding: 8px 10px;
+            font: inherit;
+            text-align: right;
+          }
+
+          .home-features-bar-inner button:not(:disabled) {
+            cursor: pointer;
+          }
+
+          .home-features-bar-inner button:disabled {
+            cursor: default;
+          }
+
+          .home-features-bar-inner strong {
+            display: block;
+            font-weight: 900;
+          }
+
+          .home-features-bar-inner small {
+            display: block;
+            margin-top: 3px;
+            opacity: .75;
+            font-size: .82em;
+          }
+
+          .home-feature-icon {
+            font-size: 26px;
+            line-height: 1;
+            color: var(--store-accent);
+          }
+
+          .home-admin-popup-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999997;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, .62);
+            direction: rtl;
+          }
+
+          .home-admin-popup {
+            position: relative;
+            width: min(520px, 94vw);
+            max-height: 90vh;
+            overflow: auto;
+            box-sizing: border-box;
+            padding: 18px;
+            border-radius: 18px;
+            background: var(--store-card-background, #fff);
+            color: var(--store-text-primary, #071A36);
+            box-shadow: 0 25px 70px rgba(0,0,0,.35);
+            text-align: center;
+          }
+
+          .home-admin-popup > img {
+            display: block;
+            width: 100%;
+            max-height: 62vh;
+            object-fit: contain;
+            border-radius: 12px;
+          }
+
+          .home-admin-popup h2 {
+            margin: 16px 0 8px;
+            color: var(--store-heading-color, #071A36);
+            font-weight: 900;
+          }
+
+          .home-admin-popup p {
+            margin: 0 0 14px;
+            line-height: 1.7;
+            color: var(--store-text-secondary, #64748B);
+          }
+
+          .home-admin-popup-close {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 5;
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 50%;
+            background: var(--store-primary, #071A36);
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+          }
+
+          .home-admin-popup-action {
+            border: none;
+            border-radius: 10px;
+            padding: 11px 24px;
+            background: var(--store-footer-brand, #D4AF37);
+            color: var(--store-primary, #071A36);
+            font-weight: 900;
+            cursor: pointer;
+          }
+
+          @media (max-width: 600px) {
+            .home-features-bar-inner {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              padding: 10px;
+            }
+
+            .home-features-bar-inner button {
+              min-height: 48px;
+              padding: 7px;
+              font-size: .9em;
+            }
+
+            .home-feature-icon {
+              font-size: 22px;
+            }
           }
 
           /* ===============================================

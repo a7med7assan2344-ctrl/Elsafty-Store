@@ -1,310 +1,556 @@
-import React, {
-  useContext
-} from "react";
-
-import {
-  useNavigate
-} from "react-router-dom";
+import React, { useContext, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 import "./ProductCard.css";
 
-import {
-  CartContext
-} from "../../context/CartContext";
+import { CartContext } from "../../context/CartContext";
+import { WishlistContext } from "../../context/WishlistContext";
 
-import {
-  WishlistContext
-} from "../../context/WishlistContext";
+const safeString = (value) => {
+  if (value === null || value === undefined) {
+    return "";
+  }
 
+  return String(value).trim();
+};
 
-function ProductCard({ product }) {
+const getFirstValue = (...values) => {
+  for (const value of values) {
+    const normalized = safeString(value);
 
-  // =====================================================
-  // NAVIGATION
-  // =====================================================
+    if (normalized) {
+      return normalized;
+    }
+  }
 
+  return "";
+};
+
+const getNumber = (value, fallback = 0) => {
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : fallback;
+};
+
+const getImage = (product) => {
+  if (!product) {
+    return "";
+  }
+
+  return getFirstValue(
+    product.image,
+    product.imageUrl,
+    product.imageURL,
+    product.photo,
+    product.productImage,
+    product.thumbnail,
+    product.mainImage,
+    Array.isArray(product.images)
+      ? product.images[0]
+      : ""
+  );
+};
+
+const isExternalUrl = (value) =>
+  /^https?:\/\//i.test(safeString(value));
+
+function ProductCard({
+  product,
+  storeSettings = {},
+  onProductClick,
+}) {
   const navigate = useNavigate();
 
+  /* =====================================================
+     CART
+  ===================================================== */
 
-  // =====================================================
-  // CART
-  // =====================================================
+  const cartContext = useContext(CartContext) || {};
 
-  const {
-    addToCart
-  } = useContext(CartContext);
+  const addToCart = cartContext.addToCart;
 
+  /* =====================================================
+     WISHLIST
+  ===================================================== */
 
-  // =====================================================
-  // WISHLIST
-  // =====================================================
+  const wishlistContext =
+    useContext(WishlistContext) || {};
 
-  const {
-    toggleWishlist,
-    isFavorite
-  } = useContext(WishlistContext);
+  const toggleWishlist =
+    wishlistContext.toggleWishlist;
 
+  const isFavorite =
+    wishlistContext.isFavorite;
 
-  // =====================================================
-  // PRODUCT ID
-  // =====================================================
+  /* =====================================================
+     PRODUCT ID
+  ===================================================== */
 
-  const productId =
-    product?.id ||
-    product?._id;
+  const productId = getFirstValue(
+    product?.id,
+    product?._id,
+    product?.productId
+  );
 
+  /* =====================================================
+     PRODUCT DATA
+  ===================================================== */
 
-  // =====================================================
-  // FAVORITE
-  // =====================================================
+  const title = getFirstValue(
+    product?.title,
+    product?.name,
+    product?.productName
+  );
 
-  const favorite =
-    isFavorite(productId);
+  const description = getFirstValue(
+    product?.description,
+    product?.shortDescription,
+    product?.subtitle,
+    product?.summary
+  );
 
+  const image = getImage(product);
 
-  // =====================================================
-  // PRODUCT DATA
-  // =====================================================
+  const price = getNumber(
+    product?.price ??
+      product?.salePrice ??
+      product?.currentPrice,
+    0
+  );
 
-  const title =
-    product?.title ||
-    product?.name ||
-    "منتج بدون اسم";
+  const oldPrice = getNumber(
+    product?.oldPrice ??
+      product?.compareAtPrice ??
+      product?.originalPrice ??
+      product?.beforePrice,
+    0
+  );
 
+  /* =====================================================
+     PRODUCT STATUS
+  ===================================================== */
 
-  const image =
-    product?.image ||
-    "https://via.placeholder.com/300";
+  const isActive =
+    product?.active !== false &&
+    product?.enabled !== false &&
+    product?.visible !== false;
 
+  const stock = getNumber(
+    product?.stock ??
+      product?.quantity ??
+      product?.inventory,
+    0
+  );
 
-  const price =
-    Number(product?.price || 0);
+  const hasStockField =
+    product?.stock !== undefined ||
+    product?.quantity !== undefined ||
+    product?.inventory !== undefined;
 
+  const isOutOfStock =
+    product?.outOfStock === true ||
+    product?.soldOut === true ||
+    (hasStockField && stock <= 0);
 
-  const oldPrice =
-    Number(product?.oldPrice || 0);
-
-
-  const description =
-    product?.description ||
-    "منتج مميز بجودة عالية";
-
-
-  // =====================================================
-  // OFFER PERCENTAGE
-  // =====================================================
+  /* =====================================================
+     OFFER
+  ===================================================== */
 
   const hasOffer =
-    Boolean(
-      product?.offer &&
-      oldPrice > price &&
-      oldPrice > 0
+    oldPrice > price &&
+    oldPrice > 0 &&
+    price >= 0;
+
+  const discountPercentage = useMemo(() => {
+    if (!hasOffer) {
+      return 0;
+    }
+
+    return Math.max(
+      0,
+      Math.round(
+        ((oldPrice - price) / oldPrice) * 100
+      )
     );
+  }, [hasOffer, oldPrice, price]);
 
+  /* =====================================================
+     ADMIN-CONTROLLED LABELS
+  ===================================================== */
 
-  const discountPercentage =
-    hasOffer
-      ? Math.round(
-          (
-            (oldPrice - price) /
-            oldPrice
-          ) * 100
-        )
-      : 0;
+  const cardSettings =
+    storeSettings?.productCard ||
+    storeSettings?.productCardSettings ||
+    {};
 
+  const addToCartText = getFirstValue(
+    cardSettings.addToCartText,
+    cardSettings.cartButtonText,
+    storeSettings?.addToCartText,
+    "أضف للسلة"
+  );
 
-  // =====================================================
-  // OPEN PRODUCT DETAILS
-  // =====================================================
+  const outOfStockText = getFirstValue(
+    cardSettings.outOfStockText,
+    storeSettings?.outOfStockText,
+    "غير متوفر"
+  );
+
+  const offerPrefix = getFirstValue(
+    cardSettings.offerPrefix,
+    storeSettings?.offerPrefix,
+    "-"
+  );
+
+  const currency = getFirstValue(
+    product?.currency,
+    storeSettings?.currency,
+    storeSettings?.currencySymbol,
+    "ج.م"
+  );
+
+  /* =====================================================
+     CARD DISPLAY SETTINGS
+  ===================================================== */
+
+  const showDescription =
+    cardSettings.showDescription !== false;
+
+  const showWishlist =
+    cardSettings.showWishlist !== false;
+
+  const showOfferBadge =
+    cardSettings.showOfferBadge !== false;
+
+  const showAddToCart =
+    cardSettings.showAddToCart !== false;
+
+  const showOldPrice =
+    cardSettings.showOldPrice !== false;
+
+  const showStockStatus =
+    cardSettings.showStockStatus === true;
+
+  const showProductBadge =
+    cardSettings.showProductBadge !== false;
+
+  /* =====================================================
+     PRODUCT BADGE
+  ===================================================== */
+
+  const productBadge = getFirstValue(
+    product?.badge,
+    product?.label,
+    product?.tag,
+    product?.ribbon
+  );
+
+  /* =====================================================
+     FAVORITE
+  ===================================================== */
+
+  const favorite =
+    typeof isFavorite === "function"
+      ? Boolean(isFavorite(productId))
+      : false;
+
+  /* =====================================================
+     NAVIGATION
+  ===================================================== */
 
   const handleProductClick = () => {
-
     if (!productId) {
       return;
     }
 
-    navigate(
-      `/product/${productId}`
-    );
-
-  };
-
-
-  // =====================================================
-  // WISHLIST
-  // =====================================================
-
-  const handleWishlist = (e) => {
-
-    e.stopPropagation();
-
-    toggleWishlist(product);
-
-  };
-
-
-  // =====================================================
-  // ADD TO CART
-  // =====================================================
-
-  const handleAddToCart = (e) => {
-
-    e.stopPropagation();
-
-    if (addToCart) {
-      addToCart(product);
+    if (typeof onProductClick === "function") {
+      onProductClick(product);
+      return;
     }
 
+    navigate(`/product/${productId}`);
   };
 
+  /* =====================================================
+     WISHLIST
+  ===================================================== */
 
-  // =====================================================
-  // RENDER
-  // =====================================================
+  const handleWishlist = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (
+      !productId ||
+      typeof toggleWishlist !== "function"
+    ) {
+      return;
+    }
+
+    toggleWishlist(product);
+  };
+
+  /* =====================================================
+     ADD TO CART
+  ===================================================== */
+
+  const handleAddToCart = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (
+      isOutOfStock ||
+      typeof addToCart !== "function"
+    ) {
+      return;
+    }
+
+    addToCart(product);
+  };
+
+  /* =====================================================
+     IMAGE FALLBACK
+  ===================================================== */
+
+  const handleImageError = (event) => {
+    event.currentTarget.style.display = "none";
+
+    const parent =
+      event.currentTarget.parentElement;
+
+    if (parent) {
+      parent.classList.add(
+        "product-image-error"
+      );
+    }
+  };
+
+  /* =====================================================
+     LINK
+  ===================================================== */
+
+  const productLink =
+    getFirstValue(
+      product?.link,
+      product?.url,
+      product?.productUrl
+    );
+
+  const hasExternalProductLink =
+    isExternalUrl(productLink);
+
+  /* =====================================================
+     RENDER
+  ===================================================== */
+
+  if (!product || !isActive) {
+    return null;
+  }
 
   return (
-
-    <div
-      className="product-card"
+    <article
+      className={[
+        "product-card",
+        isOutOfStock
+          ? "product-card-out-of-stock"
+          : "",
+        favorite
+          ? "product-card-favorite"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       onClick={handleProductClick}
+      role="article"
     >
-
       {/* =================================================
           IMAGE
-          ================================================= */}
+      ================================================= */}
 
       <div className="image-box">
 
-
-        {/* WISHLIST */}
-
-        <button
-          type="button"
-          className="wishlist-btn"
-          aria-label={
-            favorite
-              ? "إزالة المنتج من المفضلة"
-              : "إضافة المنتج للمفضلة"
-          }
-          onClick={handleWishlist}
-        >
-
-          {
-            favorite
-              ? "❤️"
-              : "🤍"
-          }
-
-        </button>
-
+        {showWishlist && (
+          <button
+            type="button"
+            className={[
+              "wishlist-btn",
+              favorite
+                ? "wishlist-active"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            aria-label={
+              favorite
+                ? "إزالة المنتج من المفضلة"
+                : "إضافة المنتج للمفضلة"
+            }
+            aria-pressed={favorite}
+            onClick={handleWishlist}
+          >
+            <span aria-hidden="true">
+              {favorite ? "♥" : "♡"}
+            </span>
+          </button>
+        )}
 
         {/* OFFER */}
 
-        {
-          hasOffer && (
+        {showOfferBadge && hasOffer && (
+          <span
+            className="offer-badge"
+            aria-label={`خصم ${discountPercentage}%`}
+          >
+            {offerPrefix}
+            {discountPercentage}%
+          </span>
+        )}
 
-            <span className="offer-badge">
+        {/* CUSTOM PRODUCT BADGE */}
 
-              🔥 -
-              {discountPercentage}
-              %
-
+        {showProductBadge &&
+          productBadge && (
+            <span className="product-badge">
+              {productBadge}
             </span>
+          )}
 
-          )
-        }
+        {/* IMAGE */}
 
+        <div className="product-image-wrapper">
+          {image ? (
+            <img
+              src={image}
+              alt={title || "منتج"}
+              className="product-image"
+              loading="lazy"
+              decoding="async"
+              onError={handleImageError}
+            />
+          ) : (
+            <div
+              className="product-image-placeholder"
+              aria-label="لا توجد صورة للمنتج"
+            >
+              <span aria-hidden="true">
+                🛍️
+              </span>
+            </div>
+          )}
+        </div>
 
-        {/* PRODUCT IMAGE */}
+        {/* OUT OF STOCK */}
 
-        <img
-          src={image}
-          alt={title}
-          loading="lazy"
-        />
-
+        {isOutOfStock && (
+          <div className="product-stock-overlay">
+            <span>
+              {outOfStockText}
+            </span>
+          </div>
+        )}
       </div>
 
-
       {/* =================================================
-          TITLE
-          ================================================= */}
+          CONTENT
+      ================================================= */}
 
-      <h3>
-        {title}
-      </h3>
+      <div className="product-card-content">
 
+        {/* TITLE */}
 
-      {/* =================================================
-          DESCRIPTION
-          ================================================= */}
+        <h3
+          className="product-title"
+          title={title}
+        >
+          {title || "منتج"}
+        </h3>
 
-      <p className="description">
-        {description}
-      </p>
+        {/* DESCRIPTION */}
 
+        {showDescription &&
+          description && (
+            <p className="description">
+              {description}
+            </p>
+          )}
 
-      {/* =================================================
-          PRICE
-          ================================================= */}
+        {/* STOCK */}
 
-      <div className="product-price">
+        {showStockStatus &&
+          !isOutOfStock &&
+          hasStockField && (
+            <div className="product-stock">
+              {stock > 0
+                ? `متوفر: ${stock}`
+                : outOfStockText}
+            </div>
+          )}
 
+        {/* PRICE */}
 
-        {
-          hasOffer && (
+        <div className="product-price">
 
-            <span className="old-price">
-
-              {
-                oldPrice.toLocaleString(
+          {showOldPrice &&
+            hasOffer && (
+              <span className="old-price">
+                {oldPrice.toLocaleString(
                   "ar-EG"
-                )
-              }
+                )}
+                {" "}
+                {currency}
+              </span>
+            )}
 
-              {" "}ج.م
+          <span className="current-price">
+            {price.toLocaleString(
+              "ar-EG"
+            )}
+            {" "}
+            {currency}
+          </span>
+        </div>
 
+        {/* ACTION */}
+
+        {showAddToCart && (
+          <button
+            type="button"
+            className="add-to-cart-btn"
+            disabled={isOutOfStock}
+            onClick={handleAddToCart}
+          >
+            <span
+              className="cart-icon"
+              aria-hidden="true"
+            >
+              🛒
             </span>
 
-          )
-        }
+            <span>
+              {isOutOfStock
+                ? outOfStockText
+                : addToCartText}
+            </span>
+          </button>
+        )}
 
+        {/* EXTERNAL PRODUCT LINK */}
 
-        <span className="current-price">
-
-          {
-            price.toLocaleString(
-              "ar-EG"
-            )
-          }
-
-          {" "}ج.م
-
-        </span>
-
-
+        {hasExternalProductLink && (
+          <a
+            href={productLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="product-external-link"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            عرض المنتج
+          </a>
+        )}
       </div>
-
-
-      {/* =================================================
-          ADD TO CART
-          ================================================= */}
-
-      <button
-        type="button"
-        onClick={handleAddToCart}
-      >
-
-        🛒 أضف للسلة
-
-      </button>
-
-
-    </div>
-
+    </article>
   );
-
 }
-
 
 export default ProductCard;

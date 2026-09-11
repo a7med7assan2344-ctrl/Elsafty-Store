@@ -1,67 +1,803 @@
-.hero{
-    width:100%;
-    height:450px;
-    background-size:cover;
-    background-position:center;
-    border-radius:20px;
-    overflow:hidden;
-    transition:.5s;
-    position:relative;
-    margin-bottom:40px;
+/* ============================================================
+   HERO
+   ============================================================ */
+
+.hero {
+  --hero-height-desktop: 420px;
+  --hero-height-tablet: 350px;
+  --hero-height-mobile: 240px;
+
+  --hero-overlay-opacity: 0.35;
+
+  --hero-border-radius: 20px;
+
+  --hero-transition-duration: 0.5s;
+
+  --hero-object-position: center;
+
+  position: relative;
+
+  width: 100%;
+
+  height: var(--hero-height-desktop);
+
+  margin: 0 0 40px;
+
+  overflow: hidden;
+
+  border-radius:
+    var(--hero-border-radius);
+
+  background:
+    #071A36;
+
+  isolation: isolate;
+
+  direction: rtl;
+
+  box-sizing: border-box;
+
+  box-shadow:
+    0 12px 35px
+    rgba(7, 26, 54, 0.10);
 }
 
-.hero-overlay{
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,.45);
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:flex-start;
-    padding:60px;
-    color:white;
+
+/* ============================================================
+   IMAGE WRAPPER
+   ============================================================ */
+
+.hero-image-wrapper {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+
+  height: 100%;
+
+  overflow: hidden;
+
+  background:
+    #071A36;
+
+  z-index: 0;
 }
 
-.hero-overlay h1{
-    font-size:52px;
-    margin-bottom:20px;
+
+/* ============================================================
+   IMAGE
+   ============================================================ */
+
+.hero-image {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  object-position:
+    var(--hero-object-position);
+
+  opacity: 0;
+
+  transform:
+    scale(1.015);
+
+  transition:
+    opacity
+      var(--hero-transition-duration)
+      ease,
+
+    transform
+      6s
+      ease;
 }
 
-.hero-overlay p{
-    font-size:22px;
-    margin-bottom:30px;
+
+.hero-image-wrapper.is-loaded
+.hero-image {
+  opacity: 1;
+
+  transform:
+    scale(1);
 }
 
-.hero-overlay button{
-    background:#D4AF37;
-    color:white;
-    border:none;
-    padding:15px 35px;
-    border-radius:10px;
-    cursor:pointer;
-    font-size:18px;
+
+/* ============================================================
+   OVERLAY
+   ============================================================ */
+
+.hero-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 2;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content:
+    var(--hero-content-position);
+
+  box-sizing: border-box;
+
+  padding:
+    50px 60px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.08) 0%,
+      rgba(0, 0, 0, 0.18) 35%,
+      rgba(0, 0, 0, var(--hero-overlay-opacity)) 100%
+    );
 }
 
-.hero-overlay button:hover{
-    background:#ff7b00;
+
+/* ============================================================
+   CONTENT
+   ============================================================ */
+
+.hero-content {
+  width: min(
+    650px,
+    100%
+  );
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items:
+    flex-start;
+
+  text-align:
+    var(--hero-text-align);
+
+  animation:
+    heroContentIn
+    0.65s
+    ease both;
 }
 
-@media(max-width:768px){
 
-.hero{
-height:280px;
+/* ============================================================
+   TITLE
+   ============================================================ */
+
+.hero-content h1 {
+  margin: 0 0 18px;
+
+  color: #ffffff;
+
+  font-size: clamp(
+    30px,
+    4vw,
+    52px
+  );
+
+  font-weight: 900;
+
+  line-height: 1.2;
+
+  letter-spacing:
+    -0.5px;
+
+  text-shadow:
+    0 3px 14px
+    rgba(0, 0, 0, 0.35);
 }
 
-.hero-overlay{
-padding:30px;
+
+/* ============================================================
+   DESCRIPTION
+   ============================================================ */
+
+.hero-content p {
+  margin: 0 0 28px;
+
+  max-width: 600px;
+
+  color: #ffffff;
+
+  font-size: clamp(
+    16px,
+    2vw,
+    22px
+  );
+
+  font-weight: 600;
+
+  line-height: 1.8;
+
+  text-shadow:
+    0 2px 8px
+    rgba(0, 0, 0, 0.35);
 }
 
-.hero-overlay h1{
-font-size:30px;
+
+/* ============================================================
+   BUTTON
+   ============================================================ */
+
+.hero-content button {
+  min-width: 150px;
+
+  min-height: 50px;
+
+  padding:
+    13px 30px;
+
+  border:
+    0;
+
+  border-radius:
+    12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #D4AF37,
+      #F4D06F
+    );
+
+  color:
+    #071A36;
+
+  font-family:
+    inherit;
+
+  font-size:
+    17px;
+
+  font-weight:
+    800;
+
+  cursor:
+    pointer;
+
+  box-shadow:
+    0 8px 22px
+    rgba(0, 0, 0, 0.20);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 
-.hero-overlay p{
-font-size:16px;
+
+.hero-content button:hover {
+  transform:
+    translateY(-2px);
+
+  filter:
+    brightness(1.05);
+
+  box-shadow:
+    0 12px 28px
+    rgba(0, 0, 0, 0.28);
 }
 
+
+.hero-content button:active {
+  transform:
+    translateY(0);
+}
+
+
+/* ============================================================
+   ARROWS
+   ============================================================ */
+
+.hero-arrow {
+  position: absolute;
+
+  top: 50%;
+
+  z-index: 5;
+
+  width: 46px;
+
+  height: 46px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 0;
+
+  transform:
+    translateY(-50%);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.25);
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(7, 26, 54, 0.58);
+
+  color:
+    #ffffff;
+
+  font-family:
+    Arial, sans-serif;
+
+  font-size: 38px;
+
+  font-weight: 300;
+
+  line-height: 1;
+
+  cursor:
+    pointer;
+
+  backdrop-filter:
+    blur(8px);
+
+  -webkit-backdrop-filter:
+    blur(8px);
+
+  opacity: 0;
+
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.hero:hover
+.hero-arrow {
+  opacity: 1;
+}
+
+
+.hero-arrow:hover {
+  background:
+    rgba(7, 26, 54, 0.82);
+
+  transform:
+    translateY(-50%)
+    scale(1.06);
+}
+
+
+.hero-arrow-prev {
+  right: 20px;
+}
+
+
+.hero-arrow-next {
+  left: 20px;
+}
+
+
+/* ============================================================
+   DOTS
+   ============================================================ */
+
+.hero-dots {
+  position: absolute;
+
+  bottom: 18px;
+
+  left: 50%;
+
+  z-index: 6;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  transform:
+    translateX(-50%);
+
+  padding:
+    7px 10px;
+
+  border-radius:
+    999px;
+
+  background:
+    rgba(7, 26, 54, 0.42);
+
+  backdrop-filter:
+    blur(8px);
+
+  -webkit-backdrop-filter:
+    blur(8px);
+}
+
+
+.hero-dot {
+  width: 8px;
+
+  height: 8px;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(255, 255, 255, 0.55);
+
+  cursor:
+    pointer;
+
+  transition:
+    width 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+
+.hero-dot:hover {
+  transform:
+    scale(1.15);
+}
+
+
+.hero-dot.active {
+  width: 26px;
+
+  border-radius:
+    999px;
+
+  background:
+    #D4AF37;
+}
+
+
+/* ============================================================
+   COUNTER
+   ============================================================ */
+
+.hero-counter {
+  position: absolute;
+
+  left: 18px;
+
+  bottom: 18px;
+
+  z-index: 6;
+
+  min-width: 52px;
+
+  padding:
+    7px 10px;
+
+  border-radius:
+    999px;
+
+  background:
+    rgba(7, 26, 54, 0.55);
+
+  color:
+    #ffffff;
+
+  font-size:
+    12px;
+
+  font-weight:
+    700;
+
+  text-align:
+    center;
+
+  direction: ltr;
+
+  backdrop-filter:
+    blur(8px);
+
+  -webkit-backdrop-filter:
+    blur(8px);
+}
+
+
+.hero-counter span {
+  margin:
+    0 4px;
+
+  color:
+    #D4AF37;
+}
+
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+.hero-arrow:focus-visible,
+.hero-dot:focus-visible,
+.hero-content button:focus-visible {
+  outline:
+    3px solid
+    #F4D06F;
+
+  outline-offset:
+    3px;
+}
+
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+
+@keyframes heroContentIn {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0);
+  }
+}
+
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .hero {
+    height:
+      var(--hero-height-tablet);
+
+    margin-bottom:
+      30px;
+  }
+
+  .hero-overlay {
+    padding:
+      40px;
+  }
+
+  .hero-arrow {
+    opacity: 0.9;
+  }
+
+  .hero-arrow-prev {
+    right: 14px;
+  }
+
+  .hero-arrow-next {
+    left: 14px;
+  }
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .hero {
+    height:
+      var(--hero-height-mobile);
+
+    margin-bottom:
+      24px;
+
+    border-radius:
+      14px;
+  }
+
+  .hero-overlay {
+    padding:
+      25px;
+
+    background:
+      linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.12),
+        rgba(0, 0, 0, var(--hero-overlay-opacity))
+      );
+  }
+
+  .hero-content {
+    width: 100%;
+
+    align-items:
+      flex-start;
+  }
+
+  .hero-content h1 {
+    margin-bottom:
+      10px;
+
+    font-size:
+      clamp(24px, 7vw, 34px);
+  }
+
+  .hero-content p {
+    margin-bottom:
+      17px;
+
+    font-size:
+      15px;
+
+    line-height:
+      1.6;
+  }
+
+  .hero-content button {
+    min-width:
+      125px;
+
+    min-height:
+      44px;
+
+    padding:
+      10px 20px;
+
+    border-radius:
+      10px;
+
+    font-size:
+      14px;
+  }
+
+  .hero-arrow {
+    width: 36px;
+
+    height: 36px;
+
+    font-size: 29px;
+
+    opacity: 0.9;
+  }
+
+  .hero-arrow-prev {
+    right: 10px;
+  }
+
+  .hero-arrow-next {
+    left: 10px;
+  }
+
+  .hero-dots {
+    bottom: 12px;
+
+    gap: 6px;
+  }
+
+  .hero-dot {
+    width: 7px;
+
+    height: 7px;
+  }
+
+  .hero-dot.active {
+    width: 21px;
+  }
+
+  .hero-counter {
+    display: none;
+  }
+}
+
+
+/* ============================================================
+   SMALL MOBILE
+   ============================================================ */
+
+@media (max-width: 480px) {
+  .hero {
+    height:
+      var(--hero-height-mobile);
+
+    border-radius:
+      10px;
+  }
+
+  .hero-overlay {
+    padding:
+      20px;
+  }
+
+  .hero-content h1 {
+    font-size:
+      23px;
+
+    margin-bottom:
+      8px;
+  }
+
+  .hero-content p {
+    max-width:
+      85%;
+
+    font-size:
+      13px;
+
+    margin-bottom:
+      13px;
+  }
+
+  .hero-content button {
+    min-width:
+      110px;
+
+    min-height:
+      40px;
+
+    padding:
+      8px 16px;
+
+    font-size:
+      13px;
+  }
+
+  .hero-arrow {
+    width: 32px;
+
+    height: 32px;
+
+    font-size: 25px;
+  }
+
+  .hero-arrow-prev {
+    right: 7px;
+  }
+
+  .hero-arrow-next {
+    left: 7px;
+  }
+}
+
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-image {
+    transition:
+      opacity 0.2s ease;
+
+    transform:
+      none !important;
+  }
+
+  .hero-content {
+    animation:
+      none;
+  }
+
+  .hero-arrow,
+  .hero-dot,
+  .hero-content button {
+    transition:
+      none;
+  }
 }

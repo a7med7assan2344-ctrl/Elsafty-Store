@@ -6,199 +6,706 @@ const DEFAULT_PRIMARY = "#071A36";
 const DEFAULT_TEXT = "#FFFFFF";
 const DEFAULT_BRAND = "#D4AF37";
 
+const safeString = (value) =>
+  value === null || value === undefined ? "" : String(value).trim();
+
+const getFirstValue = (...values) => {
+  for (const value of values) {
+    const normalized = safeString(value);
+
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return "";
+};
+
+const normalizePhone = (value) =>
+  safeString(value).replace(/[^\d+]/g, "");
+
+const normalizeWhatsApp = (value) =>
+  safeString(value).replace(/\D/g, "");
+
+const isExternalUrl = (value) =>
+  /^https?:\/\//i.test(safeString(value));
+
+const getInternalPath = (value, fallback = "/") => {
+  const url = safeString(value);
+
+  if (!url) {
+    return fallback;
+  }
+
+  if (isExternalUrl(url)) {
+    return url;
+  }
+
+  return url.startsWith("/") ? url : `/${url}`;
+};
+
 function Footer({ storeSettings = {} }) {
-  const theme = storeSettings?.theme || {};
+  const settings = storeSettings || {};
+  const theme = settings?.theme || {};
+  const footerSettings = settings?.footer || settings?.footerSettings || {};
 
-  const footerBackground =
-    theme.footerBackground || DEFAULT_PRIMARY;
+  /*
+   * ============================================================
+   * THEME
+   * كل الألوان الأساسية قابلة للتحكم من إعدادات الأدمن
+   * ============================================================
+   */
 
-  const footerText =
-    theme.footerText || DEFAULT_TEXT;
+  const footerBackground = getFirstValue(
+    footerSettings.background,
+    footerSettings.backgroundColor,
+    theme.footerBackground,
+    theme.primary,
+    settings.primaryColor,
+    DEFAULT_PRIMARY
+  );
 
-  const footerBrand =
-    theme.footerBrand || theme.accent || DEFAULT_BRAND;
+  const footerText = getFirstValue(
+    footerSettings.textColor,
+    footerSettings.color,
+    theme.footerText,
+    theme.text,
+    DEFAULT_TEXT
+  );
 
-  const storeName =
-    storeSettings?.storeName || "ســـــَــــــــوا";
+  const footerBrand = getFirstValue(
+    footerSettings.brandColor,
+    footerSettings.accent,
+    theme.footerBrand,
+    theme.accent,
+    settings.accentColor,
+    DEFAULT_BRAND
+  );
 
-  const phone = storeSettings?.phone || "";
-  const whatsapp = storeSettings?.whatsapp || "";
-  const email = storeSettings?.email || "";
-  const address = storeSettings?.address || "";
+  const footerBorder = getFirstValue(
+    footerSettings.borderColor,
+    theme.footerBorder,
+    footerBrand
+  );
 
-  const facebook = storeSettings?.facebook || "";
-  const instagram = storeSettings?.instagram || "";
-  const telegram = storeSettings?.telegram || "";
+  /*
+   * ============================================================
+   * STORE INFORMATION
+   * ============================================================
+   */
+
+  const storeName = getFirstValue(
+    settings.storeName,
+    settings.name,
+    "ســـــَــــــــوا"
+  );
+
+  const storeDescription = getFirstValue(
+    footerSettings.description,
+    footerSettings.footerDescription,
+    settings.footerDescription,
+    settings.description,
+    `تسوق بسهولة وأمان مع ${storeName}`
+  );
+
+  const logo = getFirstValue(
+    settings.logo,
+    settings.logoUrl,
+    settings.logoURL
+  );
+
+  /*
+   * ============================================================
+   * CONTACT
+   * ============================================================
+   */
+
+  const phone = getFirstValue(
+    settings.phone,
+    settings.phoneNumber,
+    settings.contactPhone
+  );
+
+  const whatsapp = getFirstValue(
+    settings.whatsapp,
+    settings.whatsappNumber,
+    settings.contactWhatsapp
+  );
+
+  const email = getFirstValue(
+    settings.email,
+    settings.contactEmail
+  );
+
+  const address = getFirstValue(
+    settings.address,
+    settings.storeAddress,
+    settings.location
+  );
+
+  /*
+   * ============================================================
+   * SOCIAL
+   * ============================================================
+   */
+
+  const facebook = getFirstValue(
+    settings.facebook,
+    settings.facebookUrl,
+    settings.socials?.facebook,
+    settings.social?.facebook
+  );
+
+  const instagram = getFirstValue(
+    settings.instagram,
+    settings.instagramUrl,
+    settings.socials?.instagram,
+    settings.social?.instagram
+  );
+
+  const telegram = getFirstValue(
+    settings.telegram,
+    settings.telegramUrl,
+    settings.socials?.telegram,
+    settings.social?.telegram
+  );
+
+  const tiktok = getFirstValue(
+    settings.tiktok,
+    settings.tiktokUrl,
+    settings.socials?.tiktok,
+    settings.social?.tiktok
+  );
+
+  const youtube = getFirstValue(
+    settings.youtube,
+    settings.youtubeUrl,
+    settings.socials?.youtube,
+    settings.social?.youtube
+  );
+
+  /*
+   * ============================================================
+   * FOOTER LINKS
+   *
+   * لو الأدمن عامل footerLinks / footerMenu / footerSections
+   * يتم استخدامها بدل الروابط الثابتة.
+   * ============================================================
+   */
+
+  const configuredSections = Array.isArray(footerSettings.sections)
+    ? footerSettings.sections
+    : Array.isArray(settings.footerSections)
+      ? settings.footerSections
+      : [];
+
+  const configuredLinks = Array.isArray(footerSettings.links)
+    ? footerSettings.links
+    : Array.isArray(settings.footerLinks)
+      ? settings.footerLinks
+      : [];
+
+  const normalizeLink = (item, index) => {
+    if (!item) {
+      return null;
+    }
+
+    if (typeof item === "string") {
+      return {
+        id: `footer-link-${index}`,
+        title: item,
+        label: item,
+        url: "/",
+        active: true,
+        order: index,
+      };
+    }
+
+    return {
+      id: item.id || item.key || `footer-link-${index}`,
+      title: getFirstValue(
+        item.title,
+        item.label,
+        item.name,
+        item.text
+      ),
+      label: getFirstValue(
+        item.label,
+        item.title,
+        item.name,
+        item.text
+      ),
+      url: getFirstValue(
+        item.url,
+        item.link,
+        item.href,
+        item.path,
+        "/"
+      ),
+      active:
+        item.active !== false &&
+        item.enabled !== false &&
+        item.visible !== false,
+      order: Number(
+        item.order ??
+          item.sortOrder ??
+          item.position ??
+          index
+      ),
+      external:
+        item.external === true ||
+        item.isExternal === true,
+    };
+  };
+
+  const normalizedLinks = configuredLinks
+    .map(normalizeLink)
+    .filter(
+      (item) =>
+        item &&
+        item.active &&
+        item.label
+    )
+    .sort((a, b) => a.order - b.order);
+
+  /*
+   * ============================================================
+   * DEFAULT SECTIONS
+   *
+   * لا تظهر إلا لو الأدمن لم يرسل أقسام Footer مخصصة.
+   * ============================================================
+   */
+
+  const defaultSections = [
+    {
+      id: "quick-links",
+      title: getFirstValue(
+        footerSettings.quickLinksTitle,
+        footerSettings.linksTitle,
+        "روابط مهمة"
+      ),
+      links: [
+        {
+          label: "الرئيسية",
+          url: "/",
+        },
+        {
+          label: "العروض",
+          url: "/offers",
+        },
+        {
+          label: "الأكثر مبيعًا",
+          url: "/best-sellers",
+        },
+        {
+          label: "أحدث المنتجات",
+          url: "/new-arrivals",
+        },
+      ],
+    },
+    {
+      id: "customer-service",
+      title: getFirstValue(
+        footerSettings.customerServiceTitle,
+        "خدمة العملاء"
+      ),
+      links: [
+        {
+          label: "سلة المشتريات",
+          url: "/cart",
+        },
+        {
+          label: "طلباتي",
+          url: "/orders",
+        },
+        {
+          label: "المفضلة",
+          url: "/favorites",
+        },
+        {
+          label: "تواصل معنا",
+          url: "/support",
+        },
+      ],
+    },
+  ];
+
+  const adminSections = configuredSections
+    .map((section, sectionIndex) => {
+      if (!section) {
+        return null;
+      }
+
+      const sectionLinks = Array.isArray(section.links)
+        ? section.links
+        : Array.isArray(section.items)
+          ? section.items
+          : [];
+
+      return {
+        id:
+          section.id ||
+          section.key ||
+          `footer-section-${sectionIndex}`,
+
+        title: getFirstValue(
+          section.title,
+          section.name,
+          section.label
+        ),
+
+        order: Number(
+          section.order ??
+            section.sortOrder ??
+            section.position ??
+            sectionIndex
+        ),
+
+        links: sectionLinks
+          .map(normalizeLink)
+          .filter(
+            (item) =>
+              item &&
+              item.active &&
+              item.label
+          )
+          .sort((a, b) => a.order - b.order),
+      };
+    })
+    .filter(
+      (section) =>
+        section &&
+        section.title &&
+        section.links.length > 0
+    )
+    .sort((a, b) => a.order - b.order);
+
+  const footerSections =
+    adminSections.length > 0
+      ? adminSections
+      : normalizedLinks.length > 0
+        ? [
+            {
+              id: "admin-links",
+              title: getFirstValue(
+                footerSettings.linksTitle,
+                "روابط مهمة"
+              ),
+              links: normalizedLinks,
+            },
+          ]
+        : defaultSections;
+
+  /*
+   * ============================================================
+   * FOOTER VISIBILITY
+   * ============================================================
+   */
+
+  const footerEnabled =
+    footerSettings.enabled !== false &&
+    settings.footerEnabled !== false;
+
+  if (!footerEnabled) {
+    return null;
+  }
+
+  /*
+   * ============================================================
+   * COPYRIGHT
+   * ============================================================
+   */
+
+  const currentYear = new Date().getFullYear();
+
+  const copyrightText = getFirstValue(
+    footerSettings.copyright,
+    settings.copyright
+  );
+
+  const showSocial =
+    footerSettings.showSocial !== false &&
+    settings.showSocial !== false;
+
+  const socialLinks = [
+    {
+      key: "facebook",
+      label: "Facebook",
+      value: facebook,
+      icon: "f",
+    },
+    {
+      key: "instagram",
+      label: "Instagram",
+      value: instagram,
+      icon: "◎",
+    },
+    {
+      key: "telegram",
+      label: "Telegram",
+      value: telegram,
+      icon: "✈",
+    },
+    {
+      key: "tiktok",
+      label: "TikTok",
+      value: tiktok,
+      icon: "♪",
+    },
+    {
+      key: "youtube",
+      label: "YouTube",
+      value: youtube,
+      icon: "▶",
+    },
+  ].filter((item) => item.value);
+
+  const renderFooterLink = (item) => {
+    const url = getInternalPath(item.url);
+
+    if (
+      item.external ||
+      isExternalUrl(url)
+    ) {
+      return (
+        <a
+          key={item.id}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="footer-link"
+        >
+          <span>{item.label}</span>
+        </a>
+      );
+    }
+
+    return (
+      <Link
+        key={item.id}
+        to={url}
+        className="footer-link"
+      >
+        <span>{item.label}</span>
+      </Link>
+    );
+  };
 
   return (
     <footer
       className="store-footer"
+      dir="rtl"
       style={{
         "--footer-background": footerBackground,
         "--footer-text": footerText,
         "--footer-brand": footerBrand,
+        "--footer-border": footerBorder,
       }}
     >
       <div className="store-footer-container">
 
-        {/* BRAND */}
+        {/* =====================================================
+            BRAND
+        ====================================================== */}
+
         <div className="footer-brand-section">
-          <Link to="/" className="footer-brand-name">
-            {storeSettings?.logo ? (
+
+          <Link
+            to="/"
+            className="footer-brand-name"
+            aria-label={storeName}
+          >
+            {logo ? (
               <img
-                src={storeSettings.logo}
+                src={logo}
                 alt={storeName}
                 className="footer-logo"
+                loading="lazy"
               />
             ) : (
-              <span
-                style={{
-                  color: "var(--footer-brand)",
-                }}
-              >
+              <span className="footer-brand-text">
                 {storeName}
               </span>
             )}
           </Link>
 
-          <p className="footer-description">
-            تسوق بسهولة وأمان مع {storeName}
-          </p>
-        </div>
+          {storeDescription && (
+            <p className="footer-description">
+              {storeDescription}
+            </p>
+          )}
 
-        {/* QUICK LINKS */}
-        <div className="footer-column">
-          <h3>روابط مهمة</h3>
+          {/* SOCIAL */}
 
-          <Link to="/">الرئيسية</Link>
-
-          <Link to="/offers">العروض</Link>
-
-          <Link to="/best-sellers">
-            الأكثر مبيعًا
-          </Link>
-
-          <Link to="/new-arrivals">
-            أحدث المنتجات
-          </Link>
-        </div>
-
-        {/* CUSTOMER SERVICE */}
-        <div className="footer-column">
-          <h3>خدمة العملاء</h3>
-
-          <Link to="/cart">
-            سلة المشتريات
-          </Link>
-
-          <Link to="/orders">
-            طلباتي
-          </Link>
-
-          <Link to="/favorites">
-            المفضلة
-          </Link>
-
-          <Link to="/support">
-            تواصل معنا
-          </Link>
-        </div>
-
-        {/* CONTACT */}
-        <div className="footer-column footer-contact">
-          <h3>تواصل معنا</h3>
-
-          {phone && (
-            <a
-              href={`tel:${phone}`}
-              dir="ltr"
+          {showSocial && socialLinks.length > 0 && (
+            <div
+              className="footer-social"
+              aria-label="روابط التواصل الاجتماعي"
             >
-              📞 {phone}
-            </a>
-          )}
+              {socialLinks.map((social) => (
+                <a
+                  key={social.key}
+                  href={social.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className={`footer-social-link footer-social-${social.key}`}
+                >
+                  <span aria-hidden="true">
+                    {social.icon}
+                  </span>
 
-          {whatsapp && (
-            <a
-              href={`https://wa.me/${String(
-                whatsapp
-              ).replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              dir="ltr"
-            >
-              💬 واتساب
-            </a>
-          )}
-
-          {email && (
-            <a
-              href={`mailto:${email}`}
-              dir="ltr"
-            >
-              ✉️ {email}
-            </a>
-          )}
-
-          {address && (
-            <span>
-              📍 {address}
-            </span>
+                  <span className="footer-social-label">
+                    {social.label}
+                  </span>
+                </a>
+              ))}
+            </div>
           )}
         </div>
+
+        {/* =====================================================
+            FOOTER SECTIONS
+        ====================================================== */}
+
+        {footerSections.map((section) => (
+          <div
+            className="footer-column"
+            key={section.id}
+          >
+            <h3>
+              {section.title}
+            </h3>
+
+            <div className="footer-links-list">
+              {section.links.map(renderFooterLink)}
+            </div>
+          </div>
+        ))}
+
+        {/* =====================================================
+            CONTACT
+        ====================================================== */}
+
+        {(phone ||
+          whatsapp ||
+          email ||
+          address) && (
+          <div className="footer-column footer-contact">
+            <h3>
+              {getFirstValue(
+                footerSettings.contactTitle,
+                "تواصل معنا"
+              )}
+            </h3>
+
+            {phone && (
+              <a
+                href={`tel:${normalizePhone(phone)}`}
+                className="footer-contact-item"
+                dir="ltr"
+              >
+                <span
+                  className="footer-contact-icon"
+                  aria-hidden="true"
+                >
+                  ☎
+                </span>
+
+                <span>
+                  {phone}
+                </span>
+              </a>
+            )}
+
+            {whatsapp && (
+              <a
+                href={`https://wa.me/${normalizeWhatsApp(
+                  whatsapp
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-contact-item"
+                dir="ltr"
+              >
+                <span
+                  className="footer-contact-icon"
+                  aria-hidden="true"
+                >
+                  💬
+                </span>
+
+                <span>
+                  واتساب
+                </span>
+              </a>
+            )}
+
+            {email && (
+              <a
+                href={`mailto:${email}`}
+                className="footer-contact-item"
+                dir="ltr"
+              >
+                <span
+                  className="footer-contact-icon"
+                  aria-hidden="true"
+                >
+                  ✉
+                </span>
+
+                <span>
+                  {email}
+                </span>
+              </a>
+            )}
+
+            {address && (
+              <div className="footer-contact-item footer-address">
+                <span
+                  className="footer-contact-icon"
+                  aria-hidden="true"
+                >
+                  📍
+                </span>
+
+                <span>
+                  {address}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* SOCIAL */}
-      {(facebook || instagram || telegram) && (
-        <div className="footer-social">
-          {facebook && (
-            <a
-              href={facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook"
-            >
-              Facebook
-            </a>
-          )}
+      {/* =======================================================
+          BOTTOM
+      ======================================================== */}
 
-          {instagram && (
-            <a
-              href={instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-            >
-              Instagram
-            </a>
-          )}
-
-          {telegram && (
-            <a
-              href={telegram}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Telegram"
-            >
-              Telegram
-            </a>
-          )}
-        </div>
-      )}
-
-      {/* COPYRIGHT */}
       <div className="footer-bottom">
-        <p>
-          © {new Date().getFullYear()}{" "}
-          <span
-            style={{
-              color: "var(--footer-brand)",
-              fontWeight: "800",
-            }}
-          >
-            {storeName}
-          </span>{" "}
-          - جميع الحقوق محفوظة
-        </p>
+        <div className="footer-bottom-container">
+
+          <p className="footer-copyright">
+            {copyrightText ? (
+              copyrightText
+            ) : (
+              <>
+                © {currentYear}{" "}
+                <span className="footer-copyright-brand">
+                  {storeName}
+                </span>{" "}
+                - جميع الحقوق محفوظة
+              </>
+            )}
+          </p>
+
+          <div className="footer-bottom-links">
+            <Link to="/">
+              الرئيسية
+            </Link>
+          </div>
+
+        </div>
       </div>
     </footer>
   );
