@@ -26,7 +26,9 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { auth, db } from "../firebase";
 import { CartContext } from "../context/CartContext";
-import { getGovernorates, getDistricts } from "egypt-geo-navigator";
+import * as EgyptGeo from "egypt-geo-navigator";
+
+const { getGovernorates, getDistricts } = EgyptGeo;
 import "./Checkout.css";
 
 const CLOUDINARY_CLOUD = "wkcpvsqi";
@@ -79,17 +81,360 @@ const normalizePhone = (value) => {
   return phone;
 };
 
-const getLocationId = (item) =>
-  item?.id || item?.code || item?.value || item?.governorateId || item?.districtId || "";
+/* =====================================================
+   EGYPT LOCATION HELPERS
+===================================================== */
 
-const getReadableLocationName = (item) =>
-  item?.nameAr ||
-  item?.name ||
-  item?.arabicName ||
-  item?.title ||
-  item?.label ||
-  item?.nameEn ||
-  "";
+const getLocationId = (item) => {
+  if (
+    item === null ||
+    item === undefined
+  ) {
+    return "";
+  }
+
+  if (
+    typeof item === "string" ||
+    typeof item === "number"
+  ) {
+    return String(item).trim();
+  }
+
+  return String(
+    item.id ??
+      item.code ??
+      item.value ??
+      item.locationId ??
+      item.location_id ??
+      item.districtId ??
+      item.district_id ??
+      item.governorateId ??
+      item.governorate_id ??
+      ""
+  ).trim();
+};
+
+/* =====================================================
+   FIX ARABIC ENCODING
+===================================================== */
+
+const fixArabicEncoding = (
+  value
+) => {
+  const text =
+    String(value ?? "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  if (
+    /[\u0600-\u06FF]/.test(text) &&
+    !/[ØÙÃÂ]/.test(text)
+  ) {
+    return text;
+  }
+
+  if (/[ØÙÃÂ]/.test(text)) {
+    try {
+      const bytes =
+        Uint8Array.from(
+          Array.from(text),
+          (char) =>
+            char.charCodeAt(0) & 0xff
+        );
+
+      const decoded =
+        new TextDecoder("utf-8").decode(
+          bytes
+        );
+
+      if (
+        decoded &&
+        decoded !== text &&
+        /[\u0600-\u06FF]/.test(
+          decoded
+        )
+      ) {
+        return decoded.trim();
+      }
+    } catch (error) {
+      console.warn(
+        "SWA Arabic encoding fix failed:",
+        error
+      );
+    }
+  }
+
+  return text;
+};
+
+/* =====================================================
+   READ LOCATION NAME
+===================================================== */
+
+const getReadableLocationName = (
+  item
+) => {
+  if (
+    item === null ||
+    item === undefined
+  ) {
+    return "";
+  }
+
+  if (
+    typeof item === "string" ||
+    typeof item === "number"
+  ) {
+    return fixArabicEncoding(item);
+  }
+
+  const value =
+    item.nameAr ??
+    item.name_ar ??
+    item.arabicName ??
+    item.arabic_name ??
+    item.name ??
+    item.label ??
+    item.title ??
+    item.locationName ??
+    item.location_name ??
+    item.villageName ??
+    item.village_name ??
+    item.areaName ??
+    item.area_name ??
+    item.townName ??
+    item.town_name ??
+    item.nameEn ??
+    item.name_en ??
+    "";
+
+  return fixArabicEncoding(value);
+};
+
+/* =====================================================
+   NORMALIZE LOCATION ARRAY
+===================================================== */
+
+const normalizeLocationArray = (
+  result
+) => {
+  if (!result) {
+    return [];
+  }
+
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  const possibleKeys = [
+    "locations",
+    "villages",
+    "village",
+    "data",
+    "results",
+    "items",
+    "records",
+    "towns",
+    "areas",
+    "children",
+    "districts",
+    "governorates",
+  ];
+
+  for (const key of possibleKeys) {
+    if (
+      Array.isArray(result?.[key])
+    ) {
+      return result[key];
+    }
+  }
+
+  if (
+    typeof result === "object"
+  ) {
+    const values =
+      Object.values(result);
+
+    const arrayValue =
+      values.find((item) =>
+        Array.isArray(item)
+      );
+
+    if (arrayValue) {
+      return arrayValue;
+    }
+
+    const objectValues =
+      values.filter(
+        (item) =>
+          item &&
+          typeof item === "object"
+      );
+
+    if (objectValues.length) {
+      return objectValues;
+    }
+  }
+
+  return [];
+};
+
+/* =====================================================
+   PREPARE LOCATIONS
+===================================================== */
+
+const prepareLocations = (
+  result
+) => {
+  const source =
+    normalizeLocationArray(result);
+
+  const seenIds = new Set();
+  const seenNames = new Set();
+
+  const locations = source
+    .map((item) => {
+      if (
+        item === null ||
+        item === undefined
+      ) {
+        return null;
+      }
+
+      if (
+        typeof item === "string" ||
+        typeof item === "number"
+      ) {
+        const value =
+          String(item).trim();
+
+        if (!value) {
+          return null;
+        }
+
+        return {
+          id: value,
+          nameAr:
+            fixArabicEncoding(value),
+          name:
+            fixArabicEncoding(value),
+          nameEn: value,
+        };
+      }
+
+      const id =
+        getLocationId(item);
+
+      const name =
+        getReadableLocationName(item);
+
+      if (!id && !name) {
+        return null;
+      }
+
+      const nameAr =
+        fixArabicEncoding(
+          item.nameAr ??
+            item.name_ar ??
+            item.arabicName ??
+            item.arabic_name ??
+            item.name ??
+            name
+        );
+
+      const nameValue =
+        fixArabicEncoding(
+          item.name ??
+            item.nameAr ??
+            item.name_ar ??
+            item.arabicName ??
+            item.arabic_name ??
+            name
+        );
+
+      return {
+        ...item,
+
+        id:
+          id ||
+          name,
+
+        nameAr,
+
+        name:
+          nameValue,
+
+        nameEn:
+          item.nameEn ??
+          item.name_en ??
+          "",
+      };
+    })
+    .filter(Boolean)
+    .filter((item) => {
+      const id =
+        String(
+          item.id || ""
+        ).trim();
+
+      const name =
+        String(
+          getReadableLocationName(item) ||
+            ""
+        ).trim();
+
+      const nameKey =
+        name.toLowerCase();
+
+      if (
+        id &&
+        seenIds.has(id)
+      ) {
+        return false;
+      }
+
+      if (
+        nameKey &&
+        seenNames.has(nameKey)
+      ) {
+        return false;
+      }
+
+      if (id) {
+        seenIds.add(id);
+      }
+
+      if (nameKey) {
+        seenNames.add(nameKey);
+      }
+
+      return true;
+    });
+
+  locations.sort((a, b) => {
+    const nameA =
+      getReadableLocationName(a);
+
+    const nameB =
+      getReadableLocationName(b);
+
+    return String(nameA).localeCompare(
+      String(nameB),
+      "ar",
+      {
+        sensitivity: "base",
+      }
+    );
+  });
+
+  return locations;
+};
+
+/* =====================================================
+   COMPONENT
+===================================================== */
 
 const isFirestoreFieldValue = (value) =>
   value &&
@@ -262,60 +607,337 @@ const Checkout = () => {
   }, [selectedGovernorate]);
 
   useEffect(() => {
-    if (!selectedCity) {
+    let cancelled = false;
+
+    if (
+      !selectedGovernorate ||
+      !selectedCity
+    ) {
       setVillages([]);
-      return;
+      setSelectedVillage("");
+      setVillagesLoading(false);
+
+      return () => {
+        cancelled = true;
+      };
     }
-    let mounted = true;
-    const loadVillages = async () => {
-      try {
-        setVillagesLoading(true);
-        const govId = String(selectedGovernorate || "").padStart(2, "0");
-        const cityId = String(selectedCity || "");
-        const candidates = [
-          `/egypt-geo/governorates/gov-${govId}.json`,
-          `/data/egypt-geo/governorates/gov-${govId}.json`,
-        ];
-        let payload = null;
-        for (const url of candidates) {
-          try {
-            const response = await fetch(url);
-            if (response.ok) {
-              payload = await response.json();
-              break;
+
+    const loadVillages =
+      async () => {
+        try {
+          setVillagesLoading(true);
+
+          setVillages([]);
+          setSelectedVillage("");
+
+          const governorateId =
+            String(
+              selectedGovernorate
+            )
+              .trim()
+              .padStart(2, "0");
+
+          const cityId =
+            String(
+              selectedCity
+            ).trim();
+
+          console.log(
+            "================================"
+          );
+
+          console.log(
+            "SWA LOAD VILLAGES"
+          );
+
+          console.log(
+            "Governorate ID:",
+            governorateId
+          );
+
+          console.log(
+            "City / District ID:",
+            cityId
+          );
+
+          console.log(
+            "================================"
+          );
+
+          /* =============================================
+             BASE URL
+          ============================================= */
+
+          const baseUrl =
+            import.meta.env.BASE_URL || "/";
+
+          const normalizedBaseUrl =
+            baseUrl.endsWith("/")
+              ? baseUrl
+              : `${baseUrl}/`;
+
+          const jsonUrl =
+            `${normalizedBaseUrl}egypt-geo/governorates/gov-${governorateId}.json`;
+
+          console.log(
+            "SWA JSON URL:",
+            jsonUrl
+          );
+
+          /* =============================================
+             FETCH JSON
+          ============================================= */
+
+          const response =
+            await fetch(
+              jsonUrl,
+              {
+                cache: "no-store",
+              }
+            );
+
+          console.log(
+            "SWA JSON STATUS:",
+            response.status
+          );
+
+          console.log(
+            "SWA JSON OK:",
+            response.ok
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              `فشل تحميل ملف المحافظة: ${response.status}`
+            );
+          }
+
+          const governorateData =
+            await response.json();
+
+          console.log(
+            "SWA GOVERNORATE DATA:",
+            governorateData
+          );
+
+          /* =============================================
+             DISTRICTS
+          ============================================= */
+
+          const districts =
+            Array.isArray(
+              governorateData?.districts
+            )
+              ? governorateData.districts
+              : [];
+
+          console.log(
+            "SWA DISTRICTS COUNT:",
+            districts.length
+          );
+
+          /* =============================================
+             FIND DISTRICT BY ID
+          ============================================= */
+
+          let selectedDistrict =
+            districts.find(
+              (district) =>
+                String(
+                  district?.id ?? ""
+                ).trim() === cityId
+            ) || null;
+
+          /* =============================================
+             FALLBACK ID SEARCH
+          ============================================= */
+
+          if (!selectedDistrict) {
+            selectedDistrict =
+              districts.find(
+                (district) => {
+                  const possibleIds = [
+                    district?.id,
+                    district?.code,
+                    district?.value,
+                    district?.locationId,
+                    district?.location_id,
+                    district?.districtId,
+                    district?.district_id,
+                  ]
+                    .filter(
+                      (value) =>
+                        value !==
+                          null &&
+                        value !==
+                          undefined &&
+                        String(
+                          value
+                        ).trim() !== ""
+                    )
+                    .map(
+                      (value) =>
+                        String(
+                          value
+                        ).trim()
+                    );
+
+                  return possibleIds.includes(
+                    cityId
+                  );
+                }
+              ) || null;
+          }
+
+          console.log(
+            "SWA SELECTED DISTRICT:",
+            selectedDistrict
+          );
+
+          /* =============================================
+             DISTRICT NOT FOUND
+          ============================================= */
+
+          if (!selectedDistrict) {
+            console.warn(
+              "SWA DISTRICT NOT FOUND",
+              {
+                governorateId,
+                cityId,
+
+                availableDistricts:
+                  districts.map(
+                    (district) => ({
+                      id:
+                        district?.id,
+
+                      nameAr:
+                        fixArabicEncoding(
+                          district?.nameAr
+                        ),
+
+                      nameEn:
+                        district?.nameEn,
+
+                      locationsCount:
+                        Array.isArray(
+                          district?.locations
+                        )
+                          ? district
+                              .locations
+                              .length
+                          : 0,
+                    })
+                  ),
+              }
+            );
+
+            if (!cancelled) {
+              setVillages([]);
+              setSelectedVillage("");
             }
-          } catch (_) {}
+
+            return;
+          }
+
+          /* =============================================
+             READ LOCATIONS
+          ============================================= */
+
+          let locations = [];
+
+          if (
+            Array.isArray(
+              selectedDistrict.locations
+            )
+          ) {
+            locations =
+              selectedDistrict.locations;
+          } else if (
+            Array.isArray(
+              selectedDistrict.villages
+            )
+          ) {
+            locations =
+              selectedDistrict.villages;
+          } else if (
+            Array.isArray(
+              selectedDistrict.areas
+            )
+          ) {
+            locations =
+              selectedDistrict.areas;
+          } else if (
+            Array.isArray(
+              selectedDistrict.children
+            )
+          ) {
+            locations =
+              selectedDistrict.children;
+          }
+
+          console.log(
+            "SWA RAW LOCATIONS:",
+            locations
+          );
+
+          console.log(
+            "SWA RAW LOCATIONS COUNT:",
+            locations.length
+          );
+
+          /* =============================================
+             PREPARE LOCATIONS
+          ============================================= */
+
+          const prepared =
+            prepareLocations(
+              locations
+            );
+
+          console.log(
+            "SWA FINAL VILLAGES:",
+            prepared
+          );
+
+          console.log(
+            "SWA FINAL VILLAGES COUNT:",
+            prepared.length
+          );
+
+          if (!cancelled) {
+            setVillages(
+              prepared
+            );
+
+            setSelectedVillage("");
+          }
+        } catch (error) {
+          console.error(
+            "SWA VILLAGES ERROR:",
+            error
+          );
+
+          if (!cancelled) {
+            setVillages([]);
+            setSelectedVillage("");
+          }
+        } finally {
+          if (!cancelled) {
+            setVillagesLoading(false);
+          }
         }
-        const source = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.districts)
-          ? payload.districts
-          : Array.isArray(payload?.cities)
-          ? payload.cities
-          : [];
-        const city = source.find(
-          (item) => String(getLocationId(item)) === cityId
-        );
-        const result =
-          city?.villages ||
-          city?.areas ||
-          city?.regions ||
-          city?.kafr ||
-          city?.children ||
-          [];
-        if (mounted) setVillages(Array.isArray(result) ? result : []);
-      } catch (error) {
-        console.error("Villages Error:", error);
-        if (mounted) setVillages([]);
-      } finally {
-        if (mounted) setVillagesLoading(false);
-      }
-    };
+      };
+
     loadVillages();
+
     return () => {
-      mounted = false;
+      cancelled = true;
     };
-  }, [selectedGovernorate, selectedCity]);
+  }, [
+    selectedGovernorate,
+    selectedCity,
+  ]);
 
   useEffect(() => {
     const loadCheckoutData = async () => {
@@ -752,10 +1374,53 @@ const Checkout = () => {
       (isCashPayment || paymentProofFile || paymentProofUrl)
   );
 
+  const getProductPrice = (product) =>
+    safeNumber(
+      product?.salePrice ??
+        product?.discountPrice ??
+        product?.price ??
+        0
+    );
+
+  const getProductQuantity = (product) =>
+    Math.max(
+      1,
+      safeNumber(
+        product?.quantity ?? product?.qty ?? product?.count ?? 1,
+        1
+      )
+    );
+
+  const getDepartmentGroups = (storeWhatsapp = "") => {
+    const groups = new Map();
+    const fallbackWhatsapp = normalizePhone(storeWhatsapp);
+
+    cart.forEach((product) => {
+      const department = getCategoryWhatsapp(product);
+      const key = department?.id || "general";
+      const existing = groups.get(key) || {
+        id: key,
+        name: department?.name || "خدمة العملاء",
+        whatsapp: department?.whatsapp || fallbackWhatsapp,
+        products: [],
+      };
+
+      existing.products.push(product);
+      if (!existing.whatsapp && department?.whatsapp) {
+        existing.whatsapp = department.whatsapp;
+      }
+      groups.set(key, existing);
+    });
+
+    return Array.from(groups.values());
+  };
+
   const buildWhatsappMessage = ({
     orderNumber,
     departmentName,
     paymentProof,
+    products = [],
+    departmentSubtotal = subtotal,
   }) => {
     const lines = [
       "🛒 طلب جديد من ســــَـــــوا",
@@ -767,9 +1432,32 @@ const Checkout = () => {
       `🏘️ القرية / المنطقة: ${villageName || "-"}`,
       `🏠 العنوان: ${address.trim()}`,
       `💳 الدفع: ${selectedPayment?.name || selectedPayment?.title || "-"}`,
-      `💰 الإجمالي: ${formatMoney(finalTotal)}`,
       `🏢 القسم: ${departmentName || "-"}`,
+      "",
+      "📦 منتجات القسم:",
     ];
+
+    products.forEach((product, index) => {
+      const quantity = getProductQuantity(product);
+      const price = getProductPrice(product);
+      const productName = product?.name || product?.title || "منتج";
+      const variant =
+        product?.variantName ||
+        product?.selectedVariant?.name ||
+        product?.variant?.name ||
+        product?.size ||
+        product?.color ||
+        "";
+      lines.push(
+        `${index + 1}. ${productName}${variant ? ` — ${variant}` : ""}`
+      );
+      lines.push(`   الكمية: ${quantity} × ${formatMoney(price)} = ${formatMoney(price * quantity)}`);
+    });
+
+    lines.push("");
+    lines.push(`💵 إجمالي منتجات القسم: ${formatMoney(departmentSubtotal)}`);
+    lines.push(`🚚 الشحن: ${gameFreeShipping ? "مجاني" : formatMoney(shippingCost)}`);
+    lines.push(`💰 إجمالي الطلب النهائي: ${formatMoney(finalTotal)}`);
 
     if (gamePrize) {
       lines.push(`🎁 جائزة اللعبة: ${getPrizeDescription(gamePrize)}`);
@@ -832,35 +1520,34 @@ const Checkout = () => {
         uploadedProof = await uploadPaymentProof();
       }
 
-      const departments = getDepartmentsForOrder();
-      const targetDepartment =
-        departments[0] || {
-          id: "general",
-          name: "خدمة العملاء",
-          whatsapp: normalizePhone(
-            selectedPayment?.whatsapp || ""
-          ),
-        };
+      // General store WhatsApp is only a fallback. Department WhatsApp
+      // numbers are resolved from the product category and its parents.
+      const storeSnap = await getDoc(doc(db, "settings", "store"));
+      const storeData = storeSnap.exists() ? storeSnap.data() : {};
+      const generalWhatsapp = normalizePhone(
+        storeData.hotlineWhatsApp ||
+          storeData.whatsapp ||
+          storeData.whatsappNumber ||
+          ""
+      );
 
-      if (!targetDepartment.whatsapp) {
-        const storeSnap = await getDoc(doc(db, "settings", "store"));
-        const storeData = storeSnap.exists() ? storeSnap.data() : {};
-        targetDepartment.whatsapp = normalizePhone(
-          storeData.hotlineWhatsApp || storeData.whatsapp || ""
-        );
+      const departmentGroups = getDepartmentGroups(generalWhatsapp);
+
+      if (!departmentGroups.length) {
+        throw new Error("السلة فارغة أو لم يتم العثور على منتجات لإرسال الطلب.");
       }
 
-      if (!targetDepartment.whatsapp) {
-        throw new Error("لا يوجد رقم واتساب للقسم المستهدف في إعدادات المتجر.");
+      const missingWhatsapp = departmentGroups.find((group) => !group.whatsapp);
+      if (missingWhatsapp) {
+        throw new Error(
+          `لا يوجد رقم واتساب للقسم «${missingWhatsapp.name}»، كما لا يوجد رقم واتساب عام للمتجر.`
+        );
       }
 
       const orderNumber = generateOrderNumber();
       const orderProducts = cart.map((product) => ({
         ...product,
-        quantity: safeNumber(
-          product.quantity ?? product.qty ?? product.count ?? 1,
-          1
-        ),
+        quantity: getProductQuantity(product),
       }));
 
       const paymentStatus = isCashPayment ? "pending" : "proof_uploaded";
@@ -885,6 +1572,26 @@ const Checkout = () => {
             ...gamePrize,
           }
         : null;
+
+      // Keep ONE Firestore order for the whole cart. The departmentGroups
+      // field contains the exact WhatsApp routing and products per department.
+      const departmentOrderData = departmentGroups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        whatsapp: group.whatsapp,
+        productIds: group.products.map(
+          (product) => product?.id || product?.productId || ""
+        ),
+        productCount: group.products.length,
+        subtotal: group.products.reduce(
+          (sum, product) =>
+            sum + getProductPrice(product) * getProductQuantity(product),
+          0
+        ),
+      }));
+
+      const departments = departmentOrderData;
+      const primaryDepartment = departmentGroups[0];
 
       const orderData = {
         orderNumber,
@@ -913,9 +1620,11 @@ const Checkout = () => {
           : null,
         products: orderProducts,
         departments,
-        departmentId: targetDepartment.id || "",
-        departmentName: targetDepartment.name || "",
-        departmentWhatsapp: targetDepartment.whatsapp || "",
+        departmentGroups: departmentOrderData,
+        departmentCount: departmentGroups.length,
+        departmentId: primaryDepartment?.id || "",
+        departmentName: primaryDepartment?.name || "",
+        departmentWhatsapp: primaryDepartment?.whatsapp || "",
         shippingZoneId: selectedShippingZone || "",
         shippingZoneName:
           selectedZone?.name || selectedZone?.title || "",
@@ -948,7 +1657,6 @@ const Checkout = () => {
         gamePrizeDescription: gamePrizeData
           ? getPrizeDescription(gamePrizeData)
           : "",
-        // Backward compatibility with older wheel-based orders.
         wheelPrize: gamePrizeData,
         wheelDiscount: gameDiscount,
         paymentMethod: selectedPayment.id,
@@ -976,8 +1684,16 @@ const Checkout = () => {
         status: orderStatus,
         orderStatus,
         whatsappMessageSent: false,
-        whatsappTarget: targetDepartment.whatsapp,
-        whatsappDepartment: targetDepartment.name || "",
+        whatsappTargets: departmentGroups.map((group) => ({
+          departmentId: group.id,
+          departmentName: group.name,
+          whatsapp: group.whatsapp,
+          productIds: group.products.map(
+            (product) => product?.id || product?.productId || ""
+          ),
+        })),
+        whatsappTarget: primaryDepartment?.whatsapp || "",
+        whatsappDepartment: primaryDepartment?.name || "",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -988,17 +1704,31 @@ const Checkout = () => {
         sanitizedOrder
       );
 
-      const whatsappMessage = buildWhatsappMessage({
-        orderNumber,
-        departmentName: targetDepartment.name,
-        paymentProof: uploadedProof,
+      // Open one WhatsApp conversation per department. Each conversation
+      // receives ONLY that department's products.
+      const whatsappUrls = departmentGroups.map((group) => {
+        const departmentSubtotal = group.products.reduce(
+          (sum, product) =>
+            sum + getProductPrice(product) * getProductQuantity(product),
+          0
+        );
+
+        const whatsappMessage = buildWhatsappMessage({
+          orderNumber,
+          departmentName: group.name,
+          paymentProof: uploadedProof,
+          products: group.products,
+          departmentSubtotal,
+        });
+
+        return (
+          `https://wa.me/${group.whatsapp}?text=` +
+          encodeURIComponent(whatsappMessage)
+        );
       });
 
-      const whatsappUrl =
-        `https://wa.me/${targetDepartment.whatsapp}?text=` +
-        encodeURIComponent(whatsappMessage);
-
       console.log("Order created successfully:", orderRef.id);
+      console.log("WhatsApp department targets:", departmentGroups);
 
       if (typeof setCart === "function") setCart([]);
 
@@ -1009,7 +1739,26 @@ const Checkout = () => {
         console.warn("Could not clear customer prize:", error);
       }
 
-      window.location.href = whatsappUrl;
+      if (whatsappUrls.length === 1) {
+        window.location.href = whatsappUrls[0];
+        return;
+      }
+
+      // The click on the confirm button gives the browser permission to open
+      // multiple tabs. We still fall back to the first URL if a popup blocker
+      // prevents opening the other conversations.
+      const openedWindows = whatsappUrls.map((url) => {
+        try {
+          return window.open(url, "_blank", "noopener,noreferrer");
+        } catch (error) {
+          console.warn("Could not open WhatsApp tab:", error);
+          return null;
+        }
+      });
+
+      if (!openedWindows.some(Boolean)) {
+        window.location.href = whatsappUrls[0];
+      }
     } catch (error) {
       console.error("SEND ORDER ERROR:", error);
       alert(
@@ -1111,16 +1860,36 @@ const Checkout = () => {
                 </div>
                 <div className="checkout-field">
                   <label>القرية / المنطقة</label>
-                  <select value={selectedVillage} onChange={(e) => setSelectedVillage(e.target.value)} disabled={!selectedCity || villagesLoading}>
-                    <option value="">{!selectedCity ? "اختر المدينة أولاً" : villagesLoading ? "جاري تحميل القرى والمناطق..." : villages.length ? "اختر القرية / المنطقة" : "لا توجد قرى / مناطق متاحة"}</option>
+                  <select
+                    value={selectedVillage}
+                    onChange={(e) => setSelectedVillage(e.target.value)}
+                    disabled={!selectedCity || villagesLoading}
+                  >
+                    <option value="">
+                      {!selectedCity
+                        ? "اختر المدينة أولاً"
+                        : villagesLoading
+                        ? "جاري تحميل القرى والمناطق..."
+                        : villages.length
+                        ? "اختر القرية / المنطقة"
+                        : "لا توجد قرى / مناطق متاحة"}
+                    </option>
                     {villages.map((item, index) => {
-                      const id = getLocationId(item);
-                      const title = getReadableLocationName(item);
-                      if (!id || !title) return null;
-                      return <option key={`${id}-${index}`} value={id}>{title}</option>;
+                      const villageId = getLocationId(item);
+                      const villageName = getReadableLocationName(item);
+                      if (!villageId || !villageName) return null;
+                      return (
+                        <option key={`${villageId}-${index}`} value={villageId}>
+                          {villageName}
+                        </option>
+                      );
                     })}
                   </select>
-                  {selectedCity && !villagesLoading && villages.length === 0 && <small style={{ display: "block", marginTop: 8, color: "#b45309", fontSize: 12 }}>لم يتم العثور على قرى لهذه المدينة / المركز.</small>}
+                  {selectedCity && !villagesLoading && villages.length === 0 && (
+                    <small style={{ display: "block", marginTop: 8, color: "#b45309", fontSize: 12 }}>
+                      لم يتم العثور على قرى لهذه المدينة / المركز.
+                    </small>
+                  )}
                 </div>
                 <div className="checkout-field checkout-field-full">
                   <label>العنوان بالتفصيل <span>*</span></label>
