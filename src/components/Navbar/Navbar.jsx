@@ -792,6 +792,17 @@ export default function Navbar() {
   ] = useState(null);
 
 
+  /* ===================================================
+     ADMIN VISIBILITY
+     يظهر زر الإدارة للمشرفين فقط
+  =================================================== */
+
+  const [
+    isAdmin,
+    setIsAdmin,
+  ] = useState(false);
+
+
   const [
     accountName,
     setAccountName,
@@ -1322,6 +1333,9 @@ export default function Navbar() {
             user
           );
 
+          // الافتراضي: العميل ليس أدمن
+          setIsAdmin(false);
+
 
           if (!user) {
             setAccountName("");
@@ -1331,6 +1345,47 @@ export default function Navbar() {
 
 
           try {
+            /*
+             * حساب الأدمن الأساسي:
+             * admins/{uid}
+             */
+            const adminRef =
+              doc(
+                db,
+                "admins",
+                user.uid
+              );
+
+            const adminSnapshot =
+              await getDoc(
+                adminRef
+              );
+
+            let adminAccount =
+              false;
+
+            if (
+              adminSnapshot.exists()
+            ) {
+              const adminData =
+                adminSnapshot.data() ||
+                {};
+
+              /*
+               * لو سجل المشرف موجود في admins
+               * يعتبر مشرفًا، إلا لو تم تعطيله صراحةً.
+               */
+              adminAccount =
+                adminData.active !== false &&
+                adminData.enabled !== false;
+            }
+
+
+            /*
+             * احتياطي للحسابات القديمة:
+             * users/{uid} مع role=admin/superadmin
+             * أو isAdmin=true.
+             */
             const userRef =
               doc(
                 db,
@@ -1338,21 +1393,35 @@ export default function Navbar() {
                 user.uid
               );
 
-
             const snapshot =
               await getDoc(
                 userRef
               );
 
+            const data =
+              snapshot.exists()
+                ? snapshot.data() || {}
+                : {};
+
+            const role =
+              String(
+                data.role || ""
+              ).toLowerCase();
+
+            const legacyAdmin =
+              data.isAdmin === true ||
+              role === "admin" ||
+              role === "superadmin";
+
+            setIsAdmin(
+              adminAccount ||
+                legacyAdmin
+            );
+
 
             if (
               snapshot.exists()
             ) {
-              const data =
-                snapshot.data() ||
-                {};
-
-
               setAccountName(
                 data.name ||
                   data.displayName ||
@@ -1370,9 +1439,12 @@ export default function Navbar() {
             }
           } catch (error) {
             console.error(
-              "Failed to load account:",
+              "Failed to load account/admin:",
               error
             );
+
+            // في حالة حدوث خطأ، لا نظهر زر الإدارة للعميل.
+            setIsAdmin(false);
 
 
             setAccountName(
@@ -2947,27 +3019,29 @@ export default function Navbar() {
             </div>
 
 
-            {/* ADMIN */}
+            {/* ADMIN - يظهر للأدمن فقط */}
 
-            <button
-              type="button"
-              className="admin-btn"
-              onClick={() =>
-                goTo(
-                  "/admin"
-                )
-              }
-            >
+            {isAdmin && (
+              <button
+                type="button"
+                className="admin-btn"
+                onClick={() =>
+                  goTo(
+                    "/admin"
+                  )
+                }
+              >
 
-              <span>
-                ⚙️
-              </span>
+                <span>
+                  ⚙️
+                </span>
 
-              <small>
-                الأدمن
-              </small>
+                <small>
+                  الأدمن
+                </small>
 
-            </button>
+              </button>
+            )}
 
 
             {/* CART */}

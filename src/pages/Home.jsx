@@ -41,7 +41,7 @@ import { CartContext } from "../context/CartContext";
 
 const defaultStoreSettings = {
   storeName: "ســــَــــــــــوا", logo: "", phone: "", whatsapp: "", email: "", address: "",
-  facebook: "", instagram: "", telegram: "", tiktok: "", youtube: "", announcement: "",
+  facebook: "", instagram: "", telegram: "", tiktok: "", youtube: "", contactLink: "", hotlineWhatsApp: "", announcement: "",
   theme: {
     primary:"#071A36", secondary:"#0B1F3A", accent:"#D4AF37", pageBackground:"#F0F4F8",
     cardBackground:"#FFFFFF", textPrimary:"#071A36", textSecondary:"#64748B", border:"#D9DFE8",
@@ -52,6 +52,8 @@ const defaultStoreSettings = {
     headingColor:"#071A36", linkColor:"#071A36", priceColor:"#071A36", saleColor:"#C62828",
     successColor:"#16803C", warningColor:"#B7791F", errorColor:"#C62828",
     inputBackground:"#FFFFFF", sectionBackground:"#FFFFFF",
+    fontFamily:"Cairo, sans-serif", bodyFontFamily:"Cairo, sans-serif", headingFontFamily:"Cairo, sans-serif",
+    baseFontSize:16, headingFontSize:28, bodyFontSize:16, borderRadius:14,
   },
   bannerSettings:{heightDesktop:420,heightTablet:350,heightMobile:240,borderRadius:16,overlayOpacity:.35,autoplay:true,autoplayDelay:5000},
   topStrip:{enabled:true,direction:"rtl",speed:40,height:42,fontSize:15,fontWeight:700,items:[]},
@@ -64,6 +66,15 @@ const defaultStoreSettings = {
     cartTitle:"سلة المشتريات",checkoutTitle:"إتمام الطلب",addToCart:"أضف للسلة",
     buyNow:"اشترِ الآن",viewAll:"عرض الكل",footerAbout:"متجر ســــَــــــــــوا للتسوق الإلكتروني",
     footerRights:"جميع الحقوق محفوظة",
+    contactLink:"/support",
+    hotlineWhatsApp:"",
+    categoryEmptyTitle:"لا توجد أقسام حاليًا", categoryEmptyText:"أضف الأقسام من لوحة الأدمن",
+    gamesTitle:"ألعاب الجوائز", gamesSubtitle:"اختار لعبتك وجرب حظك واربح جائزتك",
+    attemptsLabel:"محاولات", playNow:"العب الآن", playingNow:"جاري اللعب...",
+    chooseCard:"اختار كارت", startScratch:"ابدأ الكشط", chooseBox:"اختار صندوق", chooseTarget:"اختار هدف", rollDice:"ارمِ النرد",
+    scratchHere:"اكشط هنا", yourPrize:"🎁 جائزتك", diceRolling:"النرد بيلف...", pressDice:"اضغط على النرد",
+    determiningPrize:"جاري تحديد جائزتك...", gameResult:"نتيجة اللعب", noLuck:"حظ أوفر",
+    discountLabel:"خصم", freeShippingLabel:"شحن مجاني", giftLabel:"هدية من المتجر", resultClose:"تمام، مبروك لي 🎊",
   },
 };
 
@@ -99,6 +110,30 @@ const defaultWheelSettings = {
 };
 
 // =====================================================
+// CUSTOMER GAMES - SYNCED WITH ADMIN
+// =====================================================
+const defaultGamesSettings = {
+  wheel: { enabled: true, title: "🎡 عجلة الحظ", description: "لف واربح جائزتك", attemptsPerUser: 2, requireLogin: false, winnerMessage: "مبروك! كسبت جائزتك 🎉", prizes: [] },
+  cards: { enabled: true, title: "🃏 الكروت المقلوبة", description: "اختار كارت واكتشف جائزتك", attemptsPerUser: 2, requireLogin: false, winnerMessage: "مبروك! 🎉", prizes: [] },
+  scratch: { enabled: true, title: "🪙 اكشط واربح", description: "اكشط واكتشف الجائزة", attemptsPerUser: 2, requireLogin: false, winnerMessage: "مبروك! 🎉", prizes: [] },
+  mystery: { enabled: true, title: "🎁 الصناديق الغامضة", description: "اختار صندوقك", attemptsPerUser: 2, requireLogin: false, winnerMessage: "مبروك! 🎉", prizes: [] },
+  pick: { enabled: true, title: "🎯 اختار واربح", description: "اختار هدفك واربح", attemptsPerUser: 2, requireLogin: false, winnerMessage: "مبروك! 🎉", prizes: [] },
+  dice: { enabled: true, title: "🎲 النرد الرابح", description: "ارمِ النرد واكسب", attemptsPerUser: 2, requireLogin: false, winnerMessage: "مبروك! 🎉", prizes: [] },
+};
+
+const mergeGamesSettings = (incoming = {}) => {
+  const result = {};
+  Object.keys(defaultGamesSettings).forEach((key) => {
+    result[key] = {
+      ...defaultGamesSettings[key],
+      ...(incoming?.[key] || {}),
+      prizes: Array.isArray(incoming?.[key]?.prizes) ? incoming[key].prizes : [],
+    };
+  });
+  return result;
+};
+
+// =====================================================
 // LOCAL DATE HELPER
 // =====================================================
 
@@ -124,13 +159,13 @@ const getLocalDateKey = () => {
 
 const normalizeHexColor = (color) => {
   if (!color) {
-    return "#F68B1E";
+    return "#D4AF37";
   }
 
   let value = String(color).trim();
 
   if (!value.startsWith("#")) {
-    return "#F68B1E";
+    return "#D4AF37";
   }
 
   value = value.replace("#", "");
@@ -143,7 +178,7 @@ const normalizeHexColor = (color) => {
   }
 
   if (!/^[0-9a-fA-F]{6}$/.test(value)) {
-    return "#F68B1E";
+    return "#D4AF37";
   }
 
   return `#${value}`;
@@ -236,6 +271,11 @@ function Home({
     storeSettings?.theme ||
     defaultStoreSettings.theme;
 
+  const homeFontFamily =
+    theme?.fontFamily || theme?.bodyFontFamily || "Cairo, sans-serif";
+  const headingFontFamily =
+    theme?.headingFontFamily || homeFontFamily;
+
   // ===================================================
   // ANNOUNCEMENT BARS
   // ===================================================
@@ -309,6 +349,32 @@ function Home({
       minutes: "00",
       seconds: "00",
     });
+
+  // ===================================================
+  // CUSTOMER GAMES
+  // ===================================================
+  const [gamesSettings, setGamesSettings] = useState(defaultGamesSettings);
+  const [activeGame, setActiveGame] = useState(null);
+  const [gameBusy, setGameBusy] = useState(false);
+  const [gameResult, setGameResult] = useState(null);
+  const [gameVisual, setGameVisual] = useState(null);
+
+  // ===================================================
+  // FLOATING WHATSAPP
+  // ===================================================
+  const [whatsappPosition, setWhatsappPosition] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("elsafty_hotline_position") || "null");
+      return saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)
+        ? saved
+        : { x: null, y: null };
+    } catch {
+      return { x: null, y: null };
+    }
+  });
+  const [draggingWhatsapp, setDraggingWhatsapp] = useState(false);
+  const whatsappDragRef = useRef({ offsetX: 0, offsetY: 0 });
+
 
   const DAILY_WHEEL_ATTEMPTS =
     Math.max(
@@ -437,6 +503,15 @@ function Home({
     watch("popupAds", setPopupAds);
     watch("storeMenuItems", setStoreMenuItems);
     watch("announcements", setAdminAnnouncements);
+
+    const gamesRef = doc(db, "settings", "games");
+    const gamesUnsubscribe = onSnapshot(gamesRef, (snapshot) => {
+      setGamesSettings(snapshot.exists() ? mergeGamesSettings(snapshot.data() || {}) : defaultGamesSettings);
+    }, (error) => {
+      console.error("Home games settings error:", error);
+      setGamesSettings(defaultGamesSettings);
+    });
+    unsubs.push(gamesUnsubscribe);
 
     return () => {
       unsubs.forEach((unsubscribe) => {
@@ -1796,6 +1871,142 @@ function Home({
     };
 
   // ===================================================
+  // CUSTOMER GAMES HELPERS
+  // ===================================================
+  const activeGames = useMemo(() => (
+    Object.entries(gamesSettings || {}).filter(([key, game]) => key !== "wheel" && game?.enabled !== false)
+  ), [gamesSettings]);
+
+  const getGamePrizes = (key) => (gamesSettings?.[key]?.prizes || []).filter((p) => p?.enabled !== false);
+
+  const pickWeightedPrize = (prizes) => {
+    if (!prizes.length) return { title: "حظ أوفر المرة الجاية 🍀", type: "nothing", value: 0 };
+    const weights = prizes.map((p) => Math.max(0, Number(p?.probability ?? 0)));
+    const total = weights.reduce((a, b) => a + b, 0);
+    if (!total) return prizes[Math.floor(Math.random() * prizes.length)];
+    let r = Math.random() * total;
+    for (let i = 0; i < prizes.length; i += 1) {
+      r -= weights[i];
+      if (r <= 0) return prizes[i];
+    }
+    return prizes[prizes.length - 1];
+  };
+
+  const openCustomerGame = (gameKey) => {
+    const game = gamesSettings?.[gameKey];
+    if (!game || game.enabled === false) return;
+    setGameResult(null);
+    setGameVisual(null);
+    setActiveGame(gameKey);
+  };
+
+  const playCustomerGame = async (gameKey, visual) => {
+    if (gameBusy) return;
+    const game = gamesSettings?.[gameKey];
+    if (!game || game.enabled === false) return;
+
+    if (game.requireLogin === true && !currentUser?.uid) {
+      alert("من فضلك سجل الدخول أولاً للمشاركة في اللعبة.");
+      navigate("/login");
+      return;
+    }
+
+    const prizes = getGamePrizes(gameKey);
+    if (!prizes.length) {
+      alert("اللعبة متاحة، لكن الأدمن لم يضف جوائز لها بعد.");
+      return;
+    }
+
+    const attemptLimit = Math.max(1, Number(game.attemptsPerUser ?? 2));
+    const today = getLocalDateKey();
+    const uid = currentUser?.uid || "guest";
+    const attemptRef = doc(db, "gameAttempts", `${uid}_${gameKey}_${today}`);
+
+    setGameBusy(true);
+    setActiveGame(gameKey);
+    setGameVisual(visual);
+
+    try {
+      let attempts = 0;
+      if (currentUser?.uid) {
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(attemptRef);
+          const current = snap.exists() ? Number(snap.data()?.attempts || 0) : 0;
+          if (current >= attemptLimit) throw new Error("GAME_LIMIT_REACHED");
+          attempts = current + 1;
+          transaction.set(attemptRef, { uid: currentUser.uid, gameKey, date: today, attempts, updatedAt: new Date() }, { merge: true });
+        });
+      } else {
+        const guestKey = `elsafty_guest_game_${gameKey}_${today}`;
+        const current = Number(localStorage.getItem(guestKey) || 0);
+        if (current >= attemptLimit) throw new Error("GAME_LIMIT_REACHED");
+        attempts = current + 1;
+        localStorage.setItem(guestKey, String(attempts));
+      }
+
+      const prize = pickWeightedPrize(prizes);
+      const delay = gameKey === "dice" ? 1250 : gameKey === "scratch" ? 1100 : 900;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      setGameResult({ gameKey, prize, attempts, limit: attemptLimit, message: game.winnerMessage || "مبروك! 🎉" });
+    } catch (error) {
+      if (error?.message === "GAME_LIMIT_REACHED") {
+        alert(`خلصت محاولاتك النهارده في لعبة ${game.title || "اللعبة"}.`);
+      } else {
+        console.error("Customer game error:", error);
+        alert("حصل خطأ بسيط، جرّب تاني.");
+      }
+    } finally {
+      setGameBusy(false);
+      setGameVisual(null);
+    }
+  };
+
+  const closeGameResult = () => {
+    setGameResult(null);
+    setActiveGame(null);
+  };
+
+  // ===================================================
+  // FLOATING WHATSAPP DRAG
+  // ===================================================
+  const hotlineWhatsApp = String(storeSettings?.hotlineWhatsApp || storeSettings?.whatsapp || "").trim();
+  const normalizeWhatsApp = (value) => String(value || "").replace(/[^0-9]/g, "");
+  const whatsappHref = hotlineWhatsApp ? `https://wa.me/${normalizeWhatsApp(hotlineWhatsApp)}` : "";
+
+  useEffect(() => {
+    try {
+      if (whatsappPosition?.x !== null && whatsappPosition?.y !== null) {
+        localStorage.setItem("elsafty_hotline_position", JSON.stringify(whatsappPosition));
+      }
+    } catch {}
+  }, [whatsappPosition]);
+
+  const startWhatsappDrag = (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    whatsappDragRef.current = { offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top };
+    setDraggingWhatsapp(true);
+    event.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!draggingWhatsapp) return undefined;
+    const move = (event) => {
+      const size = 54;
+      const x = Math.max(8, Math.min(window.innerWidth - size - 8, event.clientX - whatsappDragRef.current.offsetX));
+      const y = Math.max(72, Math.min(window.innerHeight - size - 8, event.clientY - whatsappDragRef.current.offsetY));
+      setWhatsappPosition({ x, y });
+    };
+    const up = () => setDraggingWhatsapp(false);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [draggingWhatsapp]);
+
+  // ===================================================
   // CATEGORY CARD STYLE
   // ===================================================
 
@@ -1803,7 +2014,8 @@ function Home({
     (category) => {
       const color =
         category?.color ||
-        "#F68B1E";
+        theme?.accent ||
+        defaultStoreSettings.theme.accent;
 
       return {
         "--category-color":
@@ -1839,14 +2051,14 @@ function Home({
   // ===================================================
 
   const defaultWheelColors = [
-    "#F68B1E",
-    "#FFD166",
-    "#E94F37",
-    "#FF9F1C",
-    "#F7C948",
-    "#D93636",
-    "#FFB703",
-    "#E85D04",
+    theme?.accent || "#D4AF37",
+    theme?.primary || "#071A36",
+    theme?.secondary || "#0B1F3A",
+    "#B8941F",
+    "#F4D06F",
+    theme?.saleColor || "#C62828",
+    theme?.successColor || "#16803C",
+    theme?.warningColor || "#B7791F",
   ];
 
   // ===================================================
@@ -1859,7 +2071,7 @@ function Home({
         activeWheelPrizes.length ===
         0
       ) {
-        return "#F68B1E";
+        return "#D4AF37";
       }
 
       const segment =
@@ -1891,6 +2103,12 @@ function Home({
       )})`;
     }, [
       activeWheelPrizes,
+      theme?.accent,
+      theme?.primary,
+      theme?.secondary,
+      theme?.saleColor,
+      theme?.successColor,
+      theme?.warningColor,
     ]);
 
   // ===================================================
@@ -2172,17 +2390,23 @@ function Home({
   // ===================================================
 
   const homeStyle = {
+    fontFamily: homeFontFamily,
+    fontSize: `${Number(theme?.baseFontSize ?? theme?.bodyFontSize ?? 16)}px`,
+    "--store-font-family": homeFontFamily,
+    "--store-heading-font-family": headingFontFamily,
+    "--store-body-font-size": `${Number(theme?.bodyFontSize ?? theme?.baseFontSize ?? 16)}px`,
+    "--store-heading-font-size": `${Number(theme?.headingFontSize ?? 28)}px`,
     "--store-primary":
       theme?.primary ||
-      "#F68B1E",
+      "#D4AF37",
 
     "--store-secondary":
       theme?.secondary ||
-      "#E97B10",
+      "#0B1F3A",
 
     "--store-accent":
       theme?.accent ||
-      "#F68B1E",
+      "#D4AF37",
 
     "--store-page-background":
       theme?.pageBackground ||
@@ -2206,7 +2430,7 @@ function Home({
 
     "--store-button-background":
       theme?.buttonBackground ||
-      "#F68B1E",
+      "#D4AF37",
 
     "--store-button-text":
       theme?.buttonText ||
@@ -2230,7 +2454,7 @@ function Home({
 
     "--store-top-strip-background":
       theme?.topStripBackground ||
-      "#F68B1E",
+      "#D4AF37",
 
     "--store-top-strip-text":
       theme?.topStripText ||
@@ -2249,23 +2473,49 @@ function Home({
       theme?.accent ||
       "#D4AF37",
 
+    "--store-footer-button-background":
+      theme?.footerButtonBackground ||
+      theme?.accent ||
+      "#D4AF37",
+
+    "--store-footer-button-text":
+      theme?.footerButtonText ||
+      theme?.primary ||
+      "#071A36",
+
+    "--store-footer-button-hover":
+      theme?.footerButtonHover ||
+      "#B8941F",
+
     "--store-heading-color":
       theme?.headingColor ||
-      theme?.textPrimary ||
+      theme?.primary ||
       "#071A36",
 
     "--store-link-color":
       theme?.linkColor ||
-      theme?.textPrimary ||
+      theme?.primary ||
       "#071A36",
 
     "--store-price-color":
       theme?.priceColor ||
-      theme?.textPrimary ||
+      theme?.primary ||
       "#071A36",
 
     "--store-sale-color":
       theme?.saleColor ||
+      "#C62828",
+
+    "--store-success-color":
+      theme?.successColor ||
+      "#16803C",
+
+    "--store-warning-color":
+      theme?.warningColor ||
+      "#B7791F",
+
+    "--store-error-color":
+      theme?.errorColor ||
       "#C62828",
 
     "--store-section-background":
@@ -2312,7 +2562,7 @@ function Home({
               const background =
                 bar?.backgroundColor ||
                 theme?.topStripBackground ||
-                "#F68B1E";
+                "#D4AF37";
 
               const textColor =
                 bar?.textColor ||
@@ -2738,7 +2988,7 @@ function Home({
                   background:
                     "linear-gradient(145deg, #fff8e8 0%, #ffffff 45%, #fff3d2 100%)",
                   border:
-                    "1px solid #f2c15a",
+                    `1px solid ${theme?.accent || "#D4AF37"}`,
                   boxShadow:
                     "0 10px 35px rgba(0,0,0,.12)",
                 }}
@@ -2756,7 +3006,7 @@ function Home({
                     height:
                       "7px",
                     background:
-                      "linear-gradient(90deg, #F68B1E, #FFD166, #E94F37, #F68B1E)",
+                      `linear-gradient(90deg, ${theme?.accent || "#D4AF37"}, ${theme?.primary || "#071A36"}, ${theme?.accent || "#D4AF37"})`,
                   }}
                 />
 
@@ -2899,7 +3149,7 @@ function Home({
                       borderRight:
                         "7px solid transparent",
                       borderTop:
-                        "15px solid #F68B1E",
+                        `15px solid ${theme?.accent || "#D4AF37"}`,
                     }}
                   />
 
@@ -3201,7 +3451,7 @@ function Home({
                               background:
                                 "radial-gradient(circle at 35% 30%, #555, #171717 60%, #050505)",
                               border:
-                                "5px solid #F68B1E",
+                                `5px solid ${theme?.accent || "#D4AF37"}`,
                               boxShadow:
                                 "0 3px 12px rgba(0,0,0,.5), inset 0 0 10px rgba(255,255,255,.08)",
                               display:
@@ -3238,7 +3488,7 @@ function Home({
                                 fontWeight:
                                   "900",
                                 color:
-                                  "#F68B1E",
+                                  "#D4AF37",
                               }}
                             >
                               & WIN
@@ -3332,7 +3582,7 @@ function Home({
                             wheelAttempts >=
                               DAILY_WHEEL_ATTEMPTS
                               ? "#999"
-                              : "#F68B1E",
+                              : "#D4AF37",
                           color:
                             "#fff",
                           fontSize:
@@ -3395,7 +3645,7 @@ function Home({
                         <strong
                           style={{
                             color:
-                              "#F68B1E",
+                              "#D4AF37",
                           }}
                         >
                           {
@@ -3437,7 +3687,7 @@ function Home({
                             <strong
                               style={{
                                 color:
-                                  "#F68B1E",
+                                  "#D4AF37",
                                 direction:
                                   "ltr",
                                 display:
@@ -3475,7 +3725,7 @@ function Home({
                         background:
                           "#fff",
                         border:
-                          "2px solid #F68B1E",
+                          `2px solid ${theme?.accent || "#D4AF37"}`,
                         borderRadius:
                           "14px",
                         padding:
@@ -3530,7 +3780,7 @@ function Home({
                           fontSize:
                             "21px",
                           color:
-                            "#F68B1E",
+                            "#D4AF37",
                           marginBottom:
                             "8px",
                         }}
@@ -3657,6 +3907,112 @@ function Home({
           )}
 
         {/* =================================================
+            CUSTOMER GAMES - CONTROLLED BY ADMIN
+        ================================================= */}
+        {activeGames.length > 0 && (
+          <section className="customer-games-section">
+            <div className="customer-games-heading">
+              <div>
+                <span className="customer-games-kicker">🎮 PLAY & WIN</span>
+                <h2>العاب الجوائز</h2>
+                <p>اختار لعبتك وجرب حظك في تجربة تفاعلية حقيقية.</p>
+              </div>
+              <div className="customer-games-live"><span /> متاحة الآن</div>
+            </div>
+
+            <div className="customer-games-grid">
+              {activeGames.map(([key, game]) => {
+                const gameMeta = {
+                  cards: { icon: "🃏", className: "cards", action: texts.chooseCard },
+                  scratch: { icon: "🪙", className: "scratch", action: texts.startScratch },
+                  mystery: { icon: "🎁", className: "mystery", action: texts.chooseBox },
+                  pick: { icon: "🎯", className: "pick", action: texts.chooseTarget },
+                  dice: { icon: "🎲", className: "dice", action: texts.rollDice },
+                }[key] || { icon: "🎮", className: "default", action: texts.playNow };
+                return (
+                  <article className={`customer-game-card ${gameMeta.className}`} key={key}>
+                    <div className="customer-game-glow" />
+                    <div className="customer-game-top">
+                      <span className="customer-game-icon">{gameMeta.icon}</span>
+                      <span className="customer-game-pill">{Math.max(1, Number(game.attemptsPerUser ?? 2))} {texts.attemptsLabel}</span>
+                    </div>
+                    <div className="customer-game-art">
+                      {key === "cards" && <div className="game-cards-art"><i>?</i><i>?</i><i>?</i></div>}
+                      {key === "scratch" && <div className="game-scratch-art"><span>🎁</span><b>اكشط</b></div>}
+                      {key === "mystery" && <div className="game-boxes-art"><i>🎁</i><i>🎁</i><i>🎁</i></div>}
+                      {key === "pick" && <div className="game-target-art"><b>🎯</b><span>+</span></div>}
+                      {key === "dice" && <div className="game-dice-art">🎲</div>}
+                    </div>
+                    <h3>{game.title || gameMeta.icon}</h3>
+                    <p>{game.description || "اختار واربح"}</p>
+                    <button
+                      type="button"
+                      className="customer-game-play"
+                      disabled={gameBusy}
+                      onClick={() => openCustomerGame(key)}
+                    >
+                      {gameBusy && activeGame === key ? texts.playingNow : `${gameMeta.action}  ←`}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+
+            {activeGame && !gameResult && (
+              <div className={`game-stage-overlay game-stage-${activeGame}`} role="dialog" aria-modal="true">
+                <div className="game-stage-card">
+                  <button type="button" className="game-stage-close" onClick={() => { if (!gameBusy) setActiveGame(null); }}>×</button>
+                  <div className="game-stage-head">
+                    <span>{activeGame === "cards" ? "🃏" : activeGame === "scratch" ? "🪙" : activeGame === "mystery" ? "🎁" : activeGame === "pick" ? "🎯" : "🎲"}</span>
+                    <h3>{gamesSettings?.[activeGame]?.title}</h3>
+                    <p>{gamesSettings?.[activeGame]?.description}</p>
+                  </div>
+
+                  {activeGame === "cards" && (
+                    <div className="cards-stage">
+                      {[0,1,2].map((i) => <button key={i} type="button" className={`flip-card ${gameBusy ? "flipping" : ""}`} onClick={() => !gameBusy && playCustomerGame("cards", i)}><span>★</span><b>؟</b></button>)}
+                    </div>
+                  )}
+                  {activeGame === "scratch" && (
+                    <button type="button" className={`scratch-stage ${gameBusy ? "scratching" : ""}`} onClick={() => !gameBusy && playCustomerGame("scratch", null)}><span className="scratch-cover">{texts.scratchHere}</span><span className="scratch-prize">{texts.yourPrize}</span></button>
+                  )}
+                  {activeGame === "mystery" && (
+                    <div className="mystery-stage">{[0,1,2].map((i) => <button key={i} type="button" className={`mystery-box box-${i} ${gameBusy ? "opening" : ""}`} onClick={() => !gameBusy && playCustomerGame("mystery", i)}><span>🎁</span><b>صندوق {i+1}</b></button>)}</div>
+                  )}
+                  {activeGame === "pick" && (
+                    <div className="pick-stage">{[0,1,2,3,4].map((i) => <button key={i} type="button" className="target-pick" onClick={() => !gameBusy && playCustomerGame("pick", i)}><span>{i % 2 ? "✦" : "●"}</span></button>)}</div>
+                  )}
+                  {activeGame === "dice" && (
+                    <div className={`dice-stage ${gameBusy ? "rolling" : ""}`}><button type="button" className="big-dice" onClick={() => !gameBusy && playCustomerGame("dice", null)}><span>🎲</span></button><small>{gameBusy ? texts.diceRolling : texts.pressDice}</small></div>
+                  )}
+                  {gameBusy && <div className="game-loading"><span /> {texts.determiningPrize}</div>}
+                </div>
+              </div>
+            )}
+
+            {gameResult && (
+              <div className="game-stage-overlay game-result-overlay" role="dialog" aria-modal="true">
+                <div className="game-result-card">
+                  <div className="game-result-burst">🎉</div>
+                  <span className="game-result-label">{texts.gameResult}</span>
+                  <h3>{gameResult.message}</h3>
+                  <div className="game-result-prize">
+                    <span>🏆</span>
+                    <strong>{gameResult.prize?.title || texts.noLuck}</strong>
+                    {gameResult.prize?.type === "discount" && <small>{texts.discountLabel} {gameResult.prize?.value ?? 0}%</small>}
+                    {gameResult.prize?.type === "fixed" && <small>{texts.discountLabel} {gameResult.prize?.value ?? 0} جنيه</small>}
+                    {gameResult.prize?.type === "free-shipping" && <small>{texts.freeShippingLabel}</small>}
+                    {gameResult.prize?.type === "gift" && <small>{texts.giftLabel}</small>}
+                  </div>
+                  <p>استخدم الجائزة حسب شروط المتجر المعروضة في صفحة إتمام الطلب.</p>
+                  <button type="button" onClick={closeGameResult}>{texts.resultClose}</button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* =================================================
             QUICK CATEGORIES
         ================================================= */}
 
@@ -3666,25 +4022,12 @@ function Home({
               {texts.categoriesTitle}
             </h2>
 
-            <button
-              type="button"
-              onClick={() =>
-                scrollToSection(
-                  ".jumia-all-categories"
-                )
-              }
-            >
-              {texts.viewAll}
-            </button>
           </div>
 
           <div className="jumia-categories">
             {rootCategories.length >
             0 ? (
-rootCategories.slice(
-  0,
-  Number(storeSettings?.quickCategoriesLimit ?? 8)
-)                .map((category) => {
+                rootCategories.map((category) => {
                   const children =
                     getChildCategories(
                       category?.id
@@ -3720,7 +4063,7 @@ rootCategories.slice(
                             }
                             alt={
                               category?.name ||
-                              "قسم"
+                              texts.categoryEmptyTitle
                             }
                             loading="lazy"
                           />
@@ -3734,7 +4077,7 @@ rootCategories.slice(
 
                       <strong>
                         {category?.name ||
-                          "قسم"}
+                          texts.categoryEmptyTitle}
                       </strong>
 
                       <small>
@@ -3753,14 +4096,9 @@ rootCategories.slice(
               <div className="store-empty-choice">
                 <div>📂</div>
 
-                <h3>
-                  لا توجد أقسام حاليًا
-                </h3>
+                <h3>{texts.categoryEmptyTitle}</h3>
 
-                <p>
-                  أضف الأقسام من لوحة
-                  الأدمن
-                </p>
+                <p>{texts.categoryEmptyText}</p>
               </div>
             )}
           </div>
@@ -3916,206 +4254,6 @@ rootCategories.slice(
               onTitleClick={() =>
                 scrollToSection(
                   "#recommended"
-                )
-              }
-            />
-          </section>
-        )}
-
-        {/* =================================================
-            ALL CATEGORIES
-        ================================================= */}
-
-        <section className="jumia-section all-categories-section">
-          <div className="jumia-section-title">
-            <h2>
-              {texts.categoriesTitle}
-            </h2>
-
-            <button
-              type="button"
-              onClick={() =>
-                window.scrollTo({
-                  top: 0,
-                  behavior:
-                    "smooth",
-                })
-              }
-            >
-              الرئيسية
-            </button>
-          </div>
-
-          <div className="jumia-all-categories">
-            {rootCategories.map(
-              (category) => {
-                const categoryProducts =
-                  getCategoryProducts(
-                    category
-                  );
-
-                return (
-                  <button
-                    type="button"
-                    key={
-                      category?.id ||
-                      category?.name
-                    }
-                    className="jumia-category-tile"
-                    style={getCategoryCardStyle(
-                      category
-                    )}
-                    onClick={() =>
-                      openCategory(
-                        category
-                      )
-                    }
-                  >
-                    <div className="jumia-category-image">
-                      {category?.image ? (
-                        <img
-                          src={
-                            category.image
-                          }
-                          alt={
-                            category?.name ||
-                            "قسم"
-                          }
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span>
-                          {category?.icon ||
-                            "📦"}
-                        </span>
-                      )}
-                    </div>
-
-                    <strong>
-                      {category?.name ||
-                        "قسم"}
-                    </strong>
-
-                    <small>
-                      {categoryProducts.length >
-                      0
-                        ? `${categoryProducts.length} منتج`
-                        : texts.viewAll}
-                    </small>
-                  </button>
-                );
-              }
-            )}
-          </div>
-        </section>
-
-        {/* =================================================
-            FLASH SALES
-        ================================================= */}
-
-        {offers.length > 0 && (
-          <section className="jumia-flash-section">
-            <div className="jumia-flash-header">
-
-              <div className="flash-title">
-                <span className="flash-icon">
-                  ⚡
-                </span>
-
-                <div>
-                  <h2>
-                    {texts.offersTitle}
-                  </h2>
-
-                  <p>
-                    عروض لفترة محدودة
-                  </p>
-                </div>
-              </div>
-
-              {/* FLASH COUNTDOWN */}
-
-              <div
-                className="flash-countdown"
-                dir="ltr"
-                aria-label="Flash Sales countdown"
-              >
-                <span className="flash-countdown-label">
-                  {texts.homeSubtitle || "ينتهي خلال"}
-                </span>
-
-                <div className="flash-countdown-boxes">
-
-                  <div className="flash-time-box">
-                    <strong>
-                      {
-                        flashTimeLeft.hours
-                      }
-                    </strong>
-
-                    <small>
-                      ساعة
-                    </small>
-                  </div>
-
-                  <span className="flash-time-separator">
-                    :
-                  </span>
-
-                  <div className="flash-time-box">
-                    <strong>
-                      {
-                        flashTimeLeft.minutes
-                      }
-                    </strong>
-
-                    <small>
-                      دقيقة
-                    </small>
-                  </div>
-
-                  <span className="flash-time-separator">
-                    :
-                  </span>
-
-                  <div className="flash-time-box">
-                    <strong>
-                      {
-                        flashTimeLeft.seconds
-                      }
-                    </strong>
-
-                    <small>
-                      ثانية
-                    </small>
-                  </div>
-
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  scrollToSection(
-                    "#today-offers"
-                  )
-                }
-              >
-                {texts.viewAll}
-              </button>
-            </div>
-
-            <ProductsSlider
-              title=""
-              badge="FLASH"
-              badgeClass="offer"
-              products={offers}
-              addToCart={
-                addToCart
-              }
-              onTitleClick={() =>
-                scrollToSection(
-                  "#today-offers"
                 )
               }
             />
@@ -4317,6 +4455,34 @@ rootCategories.slice(
       </main>
 
       {/* =================================================
+          FLOATING CUSTOMER SERVICE WHATSAPP
+      ================================================= */}
+      {whatsappHref && (
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`home-floating-whatsapp ${draggingWhatsapp ? "is-dragging" : ""}`}
+          style={whatsappPosition?.x !== null && whatsappPosition?.y !== null ? { left: whatsappPosition.x, top: whatsappPosition.y, right: "auto", bottom: "auto" } : undefined}
+          onPointerDown={startWhatsappDrag}
+          onClick={(event) => {
+            if (draggingWhatsapp) event.preventDefault();
+          }}
+          aria-label="خدمة العملاء واتساب"
+          title="خدمة العملاء - واتساب"
+        >
+          <span className="home-whatsapp-ring" />
+          <span className="home-whatsapp-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="31" height="31" fill="none">
+              <path d="M16 3.5C9.1 3.5 3.5 8.8 3.5 15.3c0 2.3.7 4.5 2 6.3L4 27.9l6.5-2.1c1.7.9 3.6 1.3 5.5 1.3 6.9 0 12.5-5.3 12.5-11.8S22.9 3.5 16 3.5Z" fill="white"/>
+              <path d="M21.9 18.5c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-1.9-.9-3.2-1.6-4.5-3.6-.3-.5.3-.4.9-1.4.1-.2.1-.4 0-.6-.1-.2-.7-1.7-1-2.3-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.6 0 1.5 1.1 2.9 1.3 3.1.2.2 2.2 3.4 5.4 4.7 2.7 1.1 3.2.9 3.8.8.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.1-1.4Z" fill="#20d66b"/>
+            </svg>
+          </span>
+          <span className="home-whatsapp-label">خدمة العملاء</span>
+        </a>
+      )}
+
+      {/* =================================================
           FOOTER
       ================================================= */}
 
@@ -4354,6 +4520,16 @@ rootCategories.slice(
         }
         youtube={
           storeSettings?.youtube || ""
+        }
+        contactLink={
+          storeSettings?.contactLink ||
+          storeSettings?.contactUrl ||
+          "/support"
+        }
+        hotlineWhatsApp={
+          storeSettings?.hotlineWhatsApp ||
+          storeSettings?.whatsapp ||
+          ""
         }
         texts={texts}
         menuItems={storeMenuItems}
@@ -4813,7 +4989,7 @@ rootCategories.slice(
             height: 76px;
             border-radius: 50%;
             background: radial-gradient(circle at 35% 30%, #555, #171717 60%, #050505);
-            border: 5px solid #F68B1E;
+            border: 5px solid #D4AF37;
             box-shadow: 0 3px 12px rgba(0,0,0,.5), inset 0 0 10px rgba(255,255,255,.08);
             display: flex;
             align-items: center;
@@ -4831,7 +5007,7 @@ rootCategories.slice(
           .wheel-popup-center span {
             font-size: 12px;
             font-weight: 900;
-            color: #F68B1E;
+            color: #D4AF37;
           }
 
           .wheel-popup-spin-btn {
@@ -4863,7 +5039,7 @@ rootCategories.slice(
           .wheel-popup-result > strong {
             display: block;
             font-size: 21px;
-            color: #F68B1E;
+            color: #D4AF37;
           }
 
           .wheel-popup-result small {
@@ -4923,6 +5099,71 @@ rootCategories.slice(
 
           .wheel-spin-btn:active:not(:disabled) {
             transform: translateY(0);
+          }
+
+          /* ADMIN CONTROLLED HOME THEME */
+          .jumia-home,
+          .jumia-home * {
+            font-family: var(--store-font-family, Cairo, sans-serif);
+          }
+
+          .jumia-home {
+            background: var(--store-page-background, #F0F4F8);
+            color: var(--store-text-primary, #071A36);
+            font-size: var(--store-body-font-size, 16px);
+          }
+
+          .jumia-home h1,
+          .jumia-home h2,
+          .jumia-home h3,
+          .jumia-home h4,
+          .jumia-home h5,
+          .jumia-home h6 {
+            font-family: var(--store-heading-font-family, Cairo, sans-serif);
+            color: var(--store-heading-color, #071A36);
+          }
+
+          .jumia-section,
+          .quick-shop-section {
+            background: var(--store-section-background, #FFFFFF);
+          }
+
+          .jumia-section-title h2 {
+            font-size: var(--store-heading-font-size, 28px);
+            color: var(--store-heading-color, #071A36);
+          }
+
+          .store-choice-card {
+            background: var(--store-card-background, #FFFFFF);
+            color: var(--store-text-primary, #071A36);
+            border-color: var(--store-border, #D9DFE8);
+          }
+
+          .store-choice-card strong,
+          .store-choice-card small {
+            color: var(--store-text-primary, #071A36);
+          }
+
+          .customer-game-card,
+          .game-stage-card,
+          .game-result-card {
+            font-family: var(--store-font-family, Cairo, sans-serif);
+          }
+
+          .customer-game-play,
+          .game-result-card button {
+            background: var(--store-button-background, #0B1F3A);
+            color: var(--store-button-text, #FFFFFF);
+          }
+
+          .customer-game-card h3,
+          .game-result-card h3 {
+            color: var(--store-heading-color, #071A36);
+          }
+
+          .customer-game-pill,
+          .game-result-prize strong {
+            color: var(--store-accent, #D4AF37);
           }
 
           .home-features-bar {
@@ -5132,7 +5373,7 @@ rootCategories.slice(
             font-size: 20px;
             line-height: 1;
             font-weight: 900;
-            color: #F68B1E;
+            color: #D4AF37;
           }
 
           /* ===============================================
@@ -5255,7 +5496,84 @@ rootCategories.slice(
               font-size: 16px;
             }
           }
+          /* =================================================
+             CUSTOMER GAMES
+          ================================================= */
+          .customer-games-section {
+            position: relative;
+            max-width: 1180px;
+            margin: 26px auto;
+            padding: 28px 16px 34px;
+            direction: rtl;
+            border-radius: 28px;
+            overflow: hidden;
+            background: linear-gradient(145deg, var(--store-primary, #071A36), var(--store-secondary, #0B1F3A));
+            box-shadow: 0 22px 55px rgba(7,26,54,.18);
+          }
+          .customer-games-section::before { content:""; position:absolute; inset:-40% -10%; background:radial-gradient(circle, rgba(212,175,55,.22), transparent 35%); pointer-events:none; }
+          .customer-games-heading { position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:20px; color:#fff; margin-bottom:22px; }
+          .customer-games-kicker { display:inline-flex; padding:6px 12px; border-radius:999px; background:rgba(212,175,55,.16); border:1px solid rgba(212,175,55,.4); color:#F4D06F; font-size:12px; font-weight:900; letter-spacing:.5px; }
+          .customer-games-heading h2 { margin:8px 0 4px; font-size:clamp(24px,4vw,34px); font-weight:1000; }
+          .customer-games-heading p { margin:0; color:rgba(255,255,255,.72); }
+          .customer-games-live { display:flex; align-items:center; gap:8px; color:#fff; font-weight:800; white-space:nowrap; }
+          .customer-games-live span { width:9px; height:9px; border-radius:50%; background:#36d675; box-shadow:0 0 0 5px rgba(54,214,117,.13); animation:gameLivePulse 1.5s infinite; }
+          .customer-games-grid { position:relative; z-index:2; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; }
+          .customer-game-card { position:relative; min-height:335px; padding:18px; border-radius:22px; overflow:hidden; background:linear-gradient(160deg,#fff,#f7f9fc); color:#071A36; border:1px solid rgba(255,255,255,.7); box-shadow:0 16px 35px rgba(0,0,0,.18); transition:.28s ease; text-align:center; }
+          .customer-game-card:hover { transform:translateY(-7px); box-shadow:0 24px 45px rgba(0,0,0,.27); }
+          .customer-game-glow { position:absolute; width:120px; height:120px; border-radius:50%; top:-50px; left:-40px; background:rgba(212,175,55,.22); filter:blur(5px); }
+          .customer-game-top { position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+          .customer-game-icon { font-size:28px; filter:drop-shadow(0 5px 6px rgba(0,0,0,.15)); }
+          .customer-game-pill { padding:5px 8px; border-radius:999px; background:#eef2f7; color:#64748b; font-size:10px; font-weight:900; }
+          .customer-game-art { height:120px; display:flex; align-items:center; justify-content:center; }
+          .customer-game-card h3 { position:relative; margin:3px 0 6px; font-size:18px; font-weight:1000; }
+          .customer-game-card p { position:relative; min-height:42px; margin:0 0 13px; color:#64748b; font-size:12px; line-height:1.7; }
+          .customer-game-play { position:relative; width:100%; border:0; border-radius:13px; padding:11px 10px; background:linear-gradient(135deg,#D4AF37,#F4D06F); color:#071A36; font-weight:1000; cursor:pointer; box-shadow:0 7px 18px rgba(212,175,55,.25); transition:.2s; }
+          .customer-game-play:hover { transform:translateY(-2px); }
+          .customer-game-play:disabled { opacity:.6; cursor:not-allowed; }
+          .game-cards-art { display:flex; justify-content:center; align-items:center; gap:0; transform:rotate(-5deg); }
+          .game-cards-art i { width:57px; height:82px; display:flex; align-items:center; justify-content:center; border-radius:9px; border:4px solid #fff; background:linear-gradient(145deg,#071A36,#163c6d); color:#F4D06F; font-size:28px; font-style:normal; box-shadow:0 9px 18px rgba(7,26,54,.3); margin-left:-16px; }
+          .game-cards-art i:nth-child(2){transform:translateY(-9px) rotate(7deg);z-index:2;background:linear-gradient(145deg,#D4AF37,#9c7410);color:#071A36;}
+          .game-cards-art i:nth-child(3){transform:translateY(2px) rotate(12deg);}
+          .game-scratch-art { position:relative; width:115px; height:86px; border-radius:18px; display:flex; flex-direction:column; justify-content:center; align-items:center; background:linear-gradient(145deg,#D4AF37,#f7e19a); box-shadow:inset 0 0 0 5px rgba(255,255,255,.45),0 12px 22px rgba(212,175,55,.25); transform:rotate(-3deg); }
+          .game-scratch-art span{font-size:35px}.game-scratch-art b{font-size:12px;color:#071A36}
+          .game-boxes-art {display:flex;align-items:flex-end;gap:5px}.game-boxes-art i{font-style:normal;font-size:38px;filter:drop-shadow(0 9px 6px rgba(0,0,0,.18))}.game-boxes-art i:nth-child(2){font-size:52px;transform:translateY(-10px)}
+          .game-target-art{position:relative;width:105px;height:105px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:repeating-radial-gradient(circle,#fff 0 10px,#C62828 11px 20px);box-shadow:0 12px 24px rgba(0,0,0,.2)}.game-target-art b{font-size:40px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.3))}.game-target-art span{position:absolute;font-size:32px;color:#fff;font-weight:1000}
+          .game-dice-art{font-size:86px;filter:drop-shadow(0 14px 12px rgba(0,0,0,.22));animation:diceFloat 2.4s ease-in-out infinite}
+
+          .game-stage-overlay { position:fixed; inset:0; z-index:1000000; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(2,8,20,.78); backdrop-filter:blur(8px); direction:rtl; }
+          .game-stage-card,.game-result-card{position:relative;width:min(600px,96vw);min-height:360px;padding:28px;border-radius:28px;background:linear-gradient(160deg,#fff,#f3f6fb);box-shadow:0 35px 90px rgba(0,0,0,.45);overflow:hidden;text-align:center;animation:gameStageIn .35s ease}
+          .game-stage-close{position:absolute;top:12px;left:12px;width:40px;height:40px;border:0;border-radius:50%;background:#071A36;color:#fff;font-size:25px;cursor:pointer;z-index:5}.game-stage-head span{font-size:44px}.game-stage-head h3{margin:4px 0;font-size:26px;color:#071A36;font-weight:1000}.game-stage-head p{margin:0 0 20px;color:#64748b}
+          .cards-stage{display:flex;justify-content:center;gap:16px;padding:18px 0 25px}.flip-card{width:130px;height:185px;border:0;border-radius:18px;background:linear-gradient(145deg,#071A36,#163c6d);box-shadow:0 18px 28px rgba(7,26,54,.25);color:#F4D06F;cursor:pointer;transform-style:preserve-3d;transition:.35s}.flip-card:hover{transform:translateY(-9px) rotateY(8deg)}.flip-card span{display:block;font-size:35px}.flip-card b{display:block;font-size:55px}.flip-card.flipping{animation:cardFlip 1s infinite}
+          .scratch-stage{position:relative;width:min(360px,90%);height:190px;margin:15px auto 25px;border:0;border-radius:22px;background:linear-gradient(145deg,#D4AF37,#F4D06F);box-shadow:inset 0 0 0 6px rgba(255,255,255,.45),0 18px 35px rgba(0,0,0,.2);cursor:pointer;overflow:hidden}.scratch-cover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(135deg,#8a8d93 0 8px,#b9bdc3 8px 16px);color:#fff;font-size:25px;font-weight:1000;text-shadow:0 2px 4px rgba(0,0,0,.3);transition:.5s}.scratch-prize{font-size:55px;font-weight:1000;color:#071A36}.scratch-stage.scratching .scratch-cover{transform:translateY(-100%);opacity:.15}.scratch-stage:hover .scratch-cover{filter:brightness(1.08)}
+          .mystery-stage{display:flex;justify-content:center;gap:15px;padding:25px 0 35px}.mystery-box{width:150px;height:150px;border:0;border-radius:20px;background:linear-gradient(145deg,#071A36,#183f70);color:#F4D06F;box-shadow:0 18px 28px rgba(7,26,54,.25);cursor:pointer;transition:.3s}.mystery-box:hover{transform:translateY(-10px) rotate(-2deg)}.mystery-box span{display:block;font-size:55px}.mystery-box b{display:block;margin-top:8px}.mystery-box.opening{animation:boxOpen .9s ease}
+          .pick-stage{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;max-width:460px;margin:30px auto 45px}.target-pick{aspect-ratio:1;border:5px solid #fff;border-radius:50%;background:repeating-radial-gradient(circle,#C62828 0 12%,#fff 13% 25%,#071A36 26% 39%,#fff 40% 53%,#C62828 54%);box-shadow:0 10px 20px rgba(0,0,0,.2);color:#fff;cursor:pointer;transition:.25s}.target-pick:hover{transform:scale(1.08)}.target-pick span{font-size:28px;text-shadow:0 2px 4px #000}
+          .dice-stage{display:flex;flex-direction:column;align-items:center;gap:18px;padding:20px 0 35px}.big-dice{border:0;background:transparent;font-size:125px;cursor:pointer;filter:drop-shadow(0 20px 15px rgba(0,0,0,.25))}.dice-stage.rolling .big-dice{animation:diceRoll .75s linear infinite}.dice-stage small{color:#64748b;font-weight:800}
+          .game-loading{display:flex;align-items:center;justify-content:center;gap:10px;color:#071A36;font-weight:900}.game-loading span{width:12px;height:12px;border-radius:50%;border:3px solid #D4AF37;border-top-color:transparent;animation:spin .7s linear infinite}
+          .game-result-card{width:min(460px,96vw);min-height:auto;padding:34px}.game-result-burst{font-size:65px;animation:resultBounce .9s ease infinite alternate}.game-result-label{display:inline-flex;margin-top:4px;padding:6px 12px;border-radius:999px;background:#fff4cf;color:#9b7110;font-size:12px;font-weight:1000}.game-result-card h3{font-size:24px;color:#071A36;margin:14px 0}.game-result-prize{padding:20px;border-radius:20px;background:linear-gradient(145deg,#071A36,#173c69);color:#fff;box-shadow:0 16px 30px rgba(7,26,54,.2)}.game-result-prize span{display:block;font-size:45px}.game-result-prize strong{display:block;font-size:22px;color:#F4D06F;margin-top:5px}.game-result-prize small{display:block;margin-top:6px;color:#fff}.game-result-card p{color:#64748b;line-height:1.8;font-size:12px}.game-result-card button{border:0;border-radius:13px;padding:12px 28px;background:linear-gradient(135deg,#D4AF37,#F4D06F);color:#071A36;font-weight:1000;cursor:pointer}
+
+          /* =================================================
+             FLOATING WHATSAPP CUSTOMER SERVICE
+          ================================================= */
+          .home-floating-whatsapp{position:fixed;right:18px;bottom:90px;z-index:999990;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;background:linear-gradient(145deg,#20d66b,#0aa851);box-shadow:0 10px 25px rgba(0,0,0,.28);touch-action:none;cursor:grab;animation:whatsappFloat 2.8s ease-in-out infinite}.home-floating-whatsapp.is-dragging{cursor:grabbing;animation:none}.home-whatsapp-icon{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:1000}.home-whatsapp-icon svg{display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.12))}.home-whatsapp-ring{position:absolute;inset:-5px;border:2px solid rgba(37,211,102,.55);border-radius:50%;animation:whatsappRing 2s ease-out infinite}.home-whatsapp-label{position:absolute;right:66px;white-space:nowrap;padding:6px 9px;border-radius:8px;background:#071A36;color:#fff;font-size:11px;font-weight:900;opacity:0;transform:translateX(8px);transition:.2s;pointer-events:none}.home-floating-whatsapp:hover .home-whatsapp-label{opacity:1;transform:none}
+
+          @keyframes gameLivePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+          @keyframes gameStageIn{from{opacity:0;transform:scale(.9) translateY(18px)}to{opacity:1;transform:none}}
+          @keyframes cardFlip{0%{transform:rotateY(0)}50%{transform:rotateY(180deg) scale(1.04)}100%{transform:rotateY(360deg)}}
+          @keyframes boxOpen{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-14px) rotate(-4deg) scale(1.04)}70%{transform:translateY(0) rotate(4deg)}}
+          @keyframes diceRoll{0%{transform:rotate(0) translateY(0)}50%{transform:rotate(180deg) translateY(-15px)}100%{transform:rotate(360deg) translateY(0)}}
+          @keyframes diceFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-9px) rotate(5deg)}}
+          @keyframes resultBounce{from{transform:scale(1) rotate(-4deg)}to{transform:scale(1.1) rotate(4deg)}}
+          @keyframes whatsappFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+          @keyframes whatsappRing{0%{transform:scale(.85);opacity:.8}80%,100%{transform:scale(1.45);opacity:0}}
+
+          @media (max-width: 1000px){
+            .customer-games-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+          }
+          @media (max-width: 680px){
+            .customer-games-section{margin:18px 8px;padding:22px 10px;border-radius:22px}.customer-games-heading{align-items:flex-start;flex-direction:column}.customer-games-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.customer-game-card{min-height:315px;padding:14px}.customer-game-art{height:105px}.cards-stage{gap:7px}.flip-card{width:95px;height:145px}.mystery-stage{gap:7px}.mystery-box{width:100px;height:125px}.mystery-box span{font-size:42px}.pick-stage{gap:8px}.home-floating-whatsapp{width:54px;height:54px;right:12px;bottom:76px}.home-whatsapp-label{display:none}}
+          @media (max-width: 430px){.customer-games-grid{grid-template-columns:1fr}.customer-game-card{min-height:300px}.customer-game-art{height:100px}}
         `}
+
       </style>
     </div>
   );

@@ -10,6 +10,13 @@ import {
   useParams,
 } from "react-router-dom";
 
+import {
+  doc,
+  getDoc,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+
 import { CartContext } from "../context/CartContext";
 
 import { getCategories } from "../services/categoryService";
@@ -61,6 +68,13 @@ function CategoryPage({
     useState("");
 
   // ======================================================
+  // STORE SETTINGS
+  // ======================================================
+
+  const [storeSettings, setStoreSettings] =
+    useState(null);
+
+  // ======================================================
   // CART COUNT
   // ======================================================
 
@@ -69,6 +83,94 @@ function CategoryPage({
       total + Number(item?.quantity || 0),
     0
   );
+
+  // ======================================================
+  // LOAD STORE SETTINGS
+  //
+  // نستخدمها خصوصًا لرقم WhatsApp.
+  // ======================================================
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadStoreSettings = async () => {
+      try {
+        const snapshot = await getDoc(
+          doc(db, "settings", "store")
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        if (snapshot.exists()) {
+          setStoreSettings(
+            snapshot.data() || {}
+          );
+        } else {
+          setStoreSettings({});
+        }
+      } catch (error) {
+        console.error(
+          "خطأ في تحميل إعدادات المتجر:",
+          error
+        );
+
+        if (mounted) {
+          setStoreSettings({});
+        }
+      }
+    };
+
+    loadStoreSettings();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ======================================================
+  // WHATSAPP NUMBER
+  //
+  // ندعم أكثر من شكل حتى لا تتأثر الصفحة
+  // باختلاف بنية الإعدادات الحالية.
+  // ======================================================
+
+  const whatsappNumber = useMemo(() => {
+    const raw =
+      storeSettings?.whatsapp ||
+      storeSettings?.phone ||
+      storeSettings?.contact?.whatsapp ||
+      storeSettings?.socials?.whatsapp ||
+      "";
+
+    return String(raw)
+      .replace(/[^\d+]/g, "")
+      .replace(/^00/, "+");
+  }, [storeSettings]);
+
+  // ======================================================
+  // WHATSAPP LINK
+  // ======================================================
+
+  const whatsappLink = useMemo(() => {
+    if (!whatsappNumber) {
+      return "";
+    }
+
+    const digits =
+      whatsappNumber.replace(/\D/g, "");
+
+    if (!digits) {
+      return "";
+    }
+
+    const message = encodeURIComponent(
+      `مرحبًا، أريد الاستفسار عن قسم ${""}`
+    );
+
+    return `https://wa.me/${digits}?text=${message}`;
+  }, [whatsappNumber]);
 
   // ======================================================
   // LOAD CATEGORIES
@@ -140,9 +242,6 @@ function CategoryPage({
 
   // ======================================================
   // CHILD CATEGORIES
-  //
-  // أي قسم له parentId يساوي ID القسم الحالي
-  // يعتبر قسمًا فرعيًا تابعًا له.
   // ======================================================
 
   const childCategories = useMemo(() => {
@@ -197,9 +296,6 @@ function CategoryPage({
 
   // ======================================================
   // GET CHILDREN COUNT
-  //
-  // نستخدمه لإظهار عدد الأقسام الفرعية
-  // الموجودة داخل الكارت.
   // ======================================================
 
   const getChildrenCount =
@@ -281,20 +377,12 @@ function CategoryPage({
 
   // ======================================================
   // CATEGORY PRODUCTS
-  //
-  // المنتجات تظهر فقط عندما لا يكون هناك
-  // أقسام فرعية.
   // ======================================================
 
   const categoryProducts = useMemo(() => {
     if (!currentCategory) {
       return [];
     }
-
-    // ----------------------------------------------------
-    // مهم:
-    // لو القسم له أقسام فرعية، لا نعرض أي منتجات هنا.
-    // ----------------------------------------------------
 
     if (hasChildCategories) {
       return [];
@@ -327,10 +415,6 @@ function CategoryPage({
       selectedCategoryName
     )
       .filter((product) => {
-        // ==================================================
-        // SEARCH
-        // ==================================================
-
         const title =
           String(
             product?.title ||
@@ -350,10 +434,6 @@ function CategoryPage({
           title.includes(search) ||
           description.includes(search);
 
-        // ==================================================
-        // PRICE
-        // ==================================================
-
         const price =
           Number(
             product?.price || 0
@@ -361,15 +441,11 @@ function CategoryPage({
 
         const matchMinPrice =
           minPrice === "" ||
-          price >= Number(
-            minPrice
-          );
+          price >= Number(minPrice);
 
         const matchMaxPrice =
           maxPrice === "" ||
-          price <= Number(
-            maxPrice
-          );
+          price <= Number(maxPrice);
 
         return (
           matchSearch &&
@@ -377,61 +453,36 @@ function CategoryPage({
           matchMaxPrice
         );
       })
-
-      // ====================================================
-      // SORT
-      // ====================================================
-
       .sort((a, b) => {
         switch (sortBy) {
           case "low":
             return (
-              Number(
-                a?.price || 0
-              ) -
-              Number(
-                b?.price || 0
-              )
+              Number(a?.price || 0) -
+              Number(b?.price || 0)
             );
 
           case "high":
             return (
-              Number(
-                b?.price || 0
-              ) -
-              Number(
-                a?.price || 0
-              )
+              Number(b?.price || 0) -
+              Number(a?.price || 0)
             );
 
           case "rating":
             return (
-              Number(
-                b?.rating || 0
-              ) -
-              Number(
-                a?.rating || 0
-              )
+              Number(b?.rating || 0) -
+              Number(a?.rating || 0)
             );
 
           case "new":
             return (
-              Number(
-                !!b?.newArrival
-              ) -
-              Number(
-                !!a?.newArrival
-              )
+              Number(!!b?.newArrival) -
+              Number(!!a?.newArrival)
             );
 
           case "best":
             return (
-              Number(
-                !!b?.bestSeller
-              ) -
-              Number(
-                !!a?.bestSeller
-              )
+              Number(!!b?.bestSeller) -
+              Number(!!a?.bestSeller)
             );
 
           default:
@@ -570,9 +621,7 @@ function CategoryPage({
   };
 
   // ======================================================
-  // GET CATEGORY CARD CLASS
-  //
-  // يحافظ على cardSize القادم من الأدمن.
+  // CATEGORY CARD CLASS
   // ======================================================
 
   const getCategoryCardClass =
@@ -597,9 +646,7 @@ function CategoryPage({
     };
 
   // ======================================================
-  // GET CATEGORY CARD STYLE
-  //
-  // يحافظ على color القادم من الأدمن.
+  // CATEGORY CARD STYLE
   // ======================================================
 
   const getCategoryCardStyle =
@@ -846,33 +893,84 @@ function CategoryPage({
           CATEGORY PAGE
       ================================================== */}
 
-      <main className="category-page">
-
+      <main
+        className="category-page"
+        dir="rtl"
+      >
         {/* ==================================================
-            CATEGORY HEADER
+            CATEGORY HERO
         ================================================== */}
 
-        <div className="category-page-header">
+        <section
+          className="category-hero"
+          style={{
+            "--category-hero-color":
+              currentCategory?.color ||
+              "#071A36",
+          }}
+        >
+          <div className="category-hero-glow" />
 
-          <div className="category-page-title">
+          <div className="category-hero-content">
 
-            {currentCategory?.image ? (
-              <img
-                src={
-                  currentCategory.image
-                }
-                alt={
-                  currentCategoryName
-                }
-              />
-            ) : (
-              <span className="category-page-icon">
-                {currentCategory?.icon ||
-                  "📦"}
+            <div className="category-hero-image-wrap">
+
+              <div className="category-hero-image">
+
+                {currentCategory?.image ? (
+                  <img
+                    src={
+                      currentCategory.image
+                    }
+                    alt={
+                      currentCategoryName ||
+                      "صورة القسم"
+                    }
+                    loading="eager"
+                    onError={(
+                      event
+                    ) => {
+                      event.currentTarget.style.display =
+                        "none";
+
+                      const fallback =
+                        event.currentTarget
+                          .parentElement
+                          ?.querySelector(
+                            ".category-hero-fallback"
+                          );
+
+                      if (fallback) {
+                        fallback.style.display =
+                          "flex";
+                      }
+                    }}
+                  />
+                ) : null}
+
+                <div
+                  className="category-hero-fallback"
+                  style={{
+                    display:
+                      currentCategory?.image
+                        ? "none"
+                        : "flex",
+                  }}
+                >
+                  {currentCategory?.icon ||
+                    "📦"}
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="category-hero-info">
+
+              <span className="category-hero-label">
+                متجر ســـــَــــــــوا
               </span>
-            )}
 
-            <div>
               <h1>
                 {currentCategoryName ||
                   "القسم"}
@@ -880,61 +978,128 @@ function CategoryPage({
 
               <p>
                 {hasChildCategories
-                  ? "اختار القسم الفرعي"
-                  : "تصفح منتجات قسم "}
-                {!hasChildCategories && (
-                  <strong>
-                    {currentCategoryName ||
-                      "القسم"}
-                  </strong>
-                )}
+                  ? "اختارالبراند المناسب ليك وتصفح المنتجات بسهولة."
+                  : "تصفح أفضل المنتجات الموجودة داخل هذا القسم واختر اللي يناسبك."}
               </p>
-            </div>
 
-          </div>
+              <div className="category-hero-stats">
 
-          <button
-            type="button"
-            className="category-back-btn"
-            onClick={
-              handleBack
-            }
-          >
-            ←{" "}
-            {parentCategory
-              ? `العودة إلى ${parentCategory.name}`
-              : "العودة للرئيسية"}
-          </button>
+                {hasChildCategories ? (
+                  <>
+                    <div className="category-stat">
+                      <strong>
+                        {
+                          childCategories.length
+                        }
+                      </strong>
 
-        </div>
+                      <span>
+                        قسم فرعي
+                      </span>
+                    </div>
 
-        {/* ==================================================
-            SUB CATEGORIES
-            تظهر فقط إذا كان للقسم أبناء.
-        ================================================== */}
+                    <div className="category-stat">
+                      <strong>
+                        {childCategories.reduce(
+                          (
+                            total,
+                            category
+                          ) =>
+                            total +
+                            getCategoryProductCount(
+                              category
+                            ),
+                          0
+                        )}
+                      </strong>
 
-        {hasChildCategories && (
+                      <span>
+                        منتج
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="category-stat">
+                      <strong>
+                        {
+                          categoryProducts.length
+                        }
+                      </strong>
 
-          <section
-            className="store-choices-section category-subcategories-section"
-          >
+                      <span>
+                        منتج
+                      </span>
+                    </div>
 
-            <div className="store-choices-header">
+                    <div className="category-stat">
+                      <strong>
+                        {offers.length}
+                      </strong>
 
-              <div>
-                <h2>
-                  📂 الأقسام الفرعية
-                </h2>
+                      <span>
+                        عرض
+                      </span>
+                    </div>
+                  </>
+                )}
 
-                <p>
-                  اختار القسم اللي عايز
-                  تتصفح منتجاته
-                </p>
               </div>
 
             </div>
 
-            <div className="store-choices-grid">
+            <button
+              type="button"
+              className="category-back-btn category-hero-back"
+              onClick={
+                handleBack
+              }
+            >
+              <span>
+                ←
+              </span>
+
+              <span>
+                {parentCategory
+                  ? `العودة إلى ${parentCategory.name}`
+                  : "العودة للرئيسية"}
+              </span>
+            </button>
+
+          </div>
+        </section>
+
+        {/* ==================================================
+            SUB CATEGORIES
+        ================================================== */}
+
+        {hasChildCategories && (
+          <section className="category-subcategories-section">
+
+            <div className="category-section-heading">
+
+              <div>
+                <span className="category-section-kicker">
+                  تصفح حسب القسم
+                </span>
+
+                <h2>
+                  📂البراندات والمحلات
+                </h2>
+
+                <p>
+                  اختار المكان اللي عايز
+                  تتصفح منتجاته
+                </p>
+              </div>
+
+              <span className="category-section-count">
+                {childCategories.length} قسم
+              </span>
+
+            </div>
+
+            <div className="store-choices-grid category-cards-grid">
 
               {childCategories.map(
                 (category) => {
@@ -957,9 +1122,9 @@ function CategoryPage({
                         category?._id ||
                         category?.name
                       }
-                      className={getCategoryCardClass(
+                      className={`${getCategoryCardClass(
                         category
-                      )}
+                      )} category-modern-card`}
                       style={getCategoryCardStyle(
                         category
                       )}
@@ -969,10 +1134,7 @@ function CategoryPage({
                         )
                       }
                     >
-
-                      {/* IMAGE */}
-
-                      <div className="store-choice-image">
+                      <div className="category-modern-image">
 
                         {category?.image ? (
                           <img
@@ -989,440 +1151,522 @@ function CategoryPage({
                             ) => {
                               event.currentTarget.style.display =
                                 "none";
+
+                              const fallback =
+                                event.currentTarget
+                                  .parentElement
+                                  ?.querySelector(
+                                    ".category-modern-image-fallback"
+                                  );
+
+                              if (fallback) {
+                                fallback.style.display =
+                                  "flex";
+                              }
                             }}
                           />
-                        ) : (
+                        ) : null}
+
+                        <span
+                          className="category-modern-image-fallback"
+                          style={{
+                            display:
+                              category?.image
+                                ? "none"
+                                : "flex",
+                          }}
+                        >
+                          {category?.icon ||
+                            "📂"}
+                        </span>
+
+                        <span className="category-modern-overlay">
+                          عرض القسم
                           <span>
-                            {
-                              category?.icon ||
-                              "📂"
-                            }
+                            ←
                           </span>
-                        )}
+                        </span>
 
                       </div>
 
-                      {/* NAME */}
+                      <div className="category-modern-info">
 
-                      <strong>
-                        {
-                          category?.name ||
-                          "قسم"
-                        }
-                      </strong>
+                        <div className="category-modern-title-row">
 
-                      {/* INFO */}
+                          <strong>
+                            {category?.name ||
+                              "قسم"}
+                          </strong>
 
-                      <small>
-                        {childrenCount >
-                        0
-                          ? `${childrenCount} قسم فرعي`
-                          : productCount >
-                              0
-                            ? `${productCount} منتج`
-                            : "تصفح القسم"}
-                      </small>
+                          <span className="category-modern-arrow">
+                            ❯
+                          </span>
 
-                      {/* ARROW */}
+                        </div>
 
-                      <span className="store-choice-arrow">
-                        ❯
-                      </span>
+                        <div className="category-modern-meta">
 
+                          {childrenCount >
+                          0 ? (
+                            <span>
+                              📂{" "}
+                              {
+                                childrenCount
+                              }{" "}
+                              أقسام فرعية
+                            </span>
+                          ) : (
+                            <span>
+                              📦{" "}
+                              {
+                                productCount
+                              }{" "}
+                              منتج
+                            </span>
+                          )}
+
+                        </div>
+
+                      </div>
                     </button>
                   );
                 }
               )}
 
             </div>
-
           </section>
         )}
 
         {/* ==================================================
             PRODUCTS AREA
-            لا تظهر إلا إذا لم يوجد أبناء.
         ================================================== */}
 
         {!hasChildCategories && (
-
           <>
-
             {/* ==================================================
                 FILTERS
             ================================================== */}
 
-            <div className="products-filters">
+            <section className="category-products-section">
 
-              <select
-                value={sortBy}
-                onChange={(event) =>
-                  setSortBy(
-                    event.target.value
-                  )
-                }
-              >
-                <option value="default">
-                  ترتيب افتراضي
-                </option>
+              <div className="products-filters">
 
-                <option value="low">
-                  💰 الأقل سعرًا
-                </option>
-
-                <option value="high">
-                  💰 الأعلى سعرًا
-                </option>
-
-                <option value="rating">
-                  ⭐ الأعلى تقييمًا
-                </option>
-
-                <option value="new">
-                  🆕 الأحدث
-                </option>
-
-                <option value="best">
-                  🔥 الأكثر مبيعًا
-                </option>
-              </select>
-
-              <input
-                type="number"
-                min="0"
-                placeholder="من سعر"
-                value={minPrice}
-                onChange={(event) =>
-                  setMinPrice(
-                    event.target.value
-                  )
-                }
-              />
-
-              <input
-                type="number"
-                min="0"
-                placeholder="إلى سعر"
-                value={maxPrice}
-                onChange={(event) =>
-                  setMaxPrice(
-                    event.target.value
-                  )
-                }
-              />
-
-            </div>
-
-            {/* ==================================================
-                PRODUCTS COUNT
-            ================================================== */}
-
-            <div className="section-header">
-
-              <div>
-                <h2>
-                  📦 منتجات القسم
-                </h2>
-              </div>
-
-              <span className="products-count">
-                {
-                  categoryProducts.length
-                }{" "}
-                منتج
-              </span>
-
-            </div>
-
-            {/* ==================================================
-                OFFERS
-            ================================================== */}
-
-            {offers.length > 0 && (
-              <ProductsSlider
-                title="🔥 عروض القسم"
-                badge="🔥 خصم"
-                badgeClass="offer"
-                products={
-                  offers
-                }
-                addToCart={
-                  addToCart
-                }
-                categoryName={
-                  currentCategoryName
-                }
-              />
-            )}
-
-            {/* ==================================================
-                BEST SELLERS
-            ================================================== */}
-
-            {bestSellers.length >
-              0 && (
-              <ProductsSlider
-                title="⭐ الأكثر مبيعًا"
-                badge="⭐ الأكثر طلبًا"
-                badgeClass="best"
-                products={
-                  bestSellers
-                }
-                addToCart={
-                  addToCart
-                }
-                categoryName={
-                  currentCategoryName
-                }
-              />
-            )}
-
-            {/* ==================================================
-                NEW ARRIVALS
-            ================================================== */}
-
-            {newArrivals.length >
-              0 && (
-              <ProductsSlider
-                title="🆕 وصل حديثًا"
-                badge="🆕 جديد"
-                badgeClass="new"
-                products={
-                  newArrivals
-                }
-                addToCart={
-                  addToCart
-                }
-                categoryName={
-                  currentCategoryName
-                }
-              />
-            )}
-
-            {/* ==================================================
-                RECOMMENDED
-            ================================================== */}
-
-            {recommended.length >
-              0 && (
-              <ProductsSlider
-                title="❤️ قد يعجبك"
-                badge="❤️ مميز"
-                badgeClass="recommended"
-                products={
-                  recommended
-                }
-                addToCart={
-                  addToCart
-                }
-                categoryName={
-                  currentCategoryName
-                }
-              />
-            )}
-
-            {/* ==================================================
-                ALL PRODUCTS
-            ================================================== */}
-
-            {categoryProducts.length >
-            0 ? (
-
-              <div className="products-grid">
-
-                {categoryProducts.map(
-                  (product) => {
-
-                    const productId =
-                      product?.id ||
-                      product?._id;
-
-                    const image =
-                      product?.image ||
-                      product?.images?.[0] ||
-                      "/default-product.png";
-
-                    const title =
-                      product?.title ||
-                      product?.name ||
-                      product?.productName ||
-                      "منتج";
-
-                    const price =
-                      Number(
-                        product?.price ||
-                          0
-                      );
-
-                    const oldPrice =
-                      Number(
-                        product?.oldPrice ||
-                          0
-                      );
-
-                    const discount =
-                      oldPrice >
-                        price &&
-                      oldPrice > 0
-                        ? Math.round(
-                            (
-                              (
-                                oldPrice -
-                                price
-                              ) /
-                              oldPrice
-                            ) *
-                              100
-                          )
-                        : 0;
-
-                    return (
-                      <article
-                        key={
-                          productId
-                        }
-                        className="product-card"
-                        onClick={() =>
-                          navigate(
-                            `/product/${productId}`
-                          )
-                        }
-                      >
-
-                        {/* IMAGE */}
-
-                        <div className="product-card-image">
-
-                          {discount >
-                            0 && (
-                            <span className="discount-badge">
-                              -{discount}%
-                            </span>
-                          )}
-
-                          {product?.newArrival && (
-                            <span className="new-badge">
-                              جديد
-                            </span>
-                          )}
-
-                          {product?.bestSeller && (
-                            <span className="product-badge">
-                              ⭐
-                            </span>
-                          )}
-
-                          <img
-                            src={image}
-                            alt={
-                              title
-                            }
-                            loading="lazy"
-                            onError={(
-                              event
-                            ) => {
-                              event.currentTarget.src =
-                                "/default-product.png";
-                            }}
-                          />
-
-                        </div>
-
-                        {/* INFO */}
-
-                        <div className="product-card-info">
-
-                          <h3>
-                            {title}
-                          </h3>
-
-                          <div className="product-rating">
-                            ⭐{" "}
-                            {Number(
-                              product?.rating ||
-                                0
-                            ).toFixed(
-                              1
-                            )}
-                          </div>
-
-                          <div className="product-price">
-
-                            <strong>
-                              {price} ج.م
-                            </strong>
-
-                            {oldPrice >
-                              price && (
-                              <del>
-                                {
-                                  oldPrice
-                                }{" "}
-                                ج.م
-                              </del>
-                            )}
-
-                          </div>
-
-                          <button
-                            type="button"
-                            className="add-to-cart-btn"
-                            onClick={(
-                              event
-                            ) => {
-                              event.stopPropagation();
-
-                              addToCart({
-                                ...product,
-                                quantity: 1,
-                              });
-                            }}
-                          >
-                            🛒 أضف للسلة
-                          </button>
-
-                        </div>
-
-                      </article>
-                    );
+                <select
+                  value={sortBy}
+                  onChange={(
+                    event
+                  ) =>
+                    setSortBy(
+                      event.target.value
+                    )
                   }
+                >
+                  <option value="default">
+                    ترتيب افتراضي
+                  </option>
+
+                  <option value="low">
+                    💰 الأقل سعرًا
+                  </option>
+
+                  <option value="high">
+                    💰 الأعلى سعرًا
+                  </option>
+
+                  <option value="rating">
+                    ⭐ الأعلى تقييمًا
+                  </option>
+
+                  <option value="new">
+                    🆕 الأحدث
+                  </option>
+
+                  <option value="best">
+                    🔥 الأكثر مبيعًا
+                  </option>
+                </select>
+
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="من سعر"
+                  value={minPrice}
+                  onChange={(
+                    event
+                  ) =>
+                    setMinPrice(
+                      event.target.value
+                    )
+                  }
+                />
+
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="إلى سعر"
+                  value={maxPrice}
+                  onChange={(
+                    event
+                  ) =>
+                    setMaxPrice(
+                      event.target.value
+                    )
+                  }
+                />
+
+                {(searchTerm ||
+                  minPrice ||
+                  maxPrice ||
+                  sortBy !==
+                    "default") && (
+                  <button
+                    type="button"
+                    className="category-reset-filters"
+                    onClick={
+                      resetFilters
+                    }
+                  >
+                    إعادة الضبط
+                  </button>
                 )}
 
               </div>
 
-            ) : (
+              {/* ==================================================
+                  PRODUCTS HEADER
+              ================================================== */}
 
-              <div className="no-products">
+              <div className="section-header category-products-header">
 
-                <div className="no-products-icon">
-                  📦
+                <div>
+                  <span className="category-section-kicker">
+                    اكتشف منتجاتنا
+                  </span>
+
+                  <h2>
+                    📦 منتجات القسم
+                  </h2>
                 </div>
 
-                <h3>
-                  لا توجد منتجات في هذا القسم
-                </h3>
-
-                <p>
-                  جرب تغيير البحث أو الفلاتر
-                </p>
-
-                <button
-                  type="button"
-                  onClick={
-                    resetFilters
-                  }
-                >
-                  إعادة ضبط الفلاتر
-                </button>
+                <span className="products-count">
+                  {
+                    categoryProducts.length
+                  }{" "}
+                  منتج
+                </span>
 
               </div>
 
-            )}
+              {/* ==================================================
+                  OFFERS
+              ================================================== */}
 
+              {offers.length > 0 && (
+                <ProductsSlider
+                  title="🔥 عروض القسم"
+                  badge="🔥 خصم"
+                  badgeClass="offer"
+                  products={
+                    offers
+                  }
+                  addToCart={
+                    addToCart
+                  }
+                  categoryName={
+                    currentCategoryName
+                  }
+                />
+              )}
+
+              {/* ==================================================
+                  BEST SELLERS
+              ================================================== */}
+
+              {bestSellers.length >
+                0 && (
+                <ProductsSlider
+                  title="⭐ الأكثر مبيعًا"
+                  badge="⭐ الأكثر طلبًا"
+                  badgeClass="best"
+                  products={
+                    bestSellers
+                  }
+                  addToCart={
+                    addToCart
+                  }
+                  categoryName={
+                    currentCategoryName
+                  }
+                />
+              )}
+
+              {/* ==================================================
+                  NEW ARRIVALS
+              ================================================== */}
+
+              {newArrivals.length >
+                0 && (
+                <ProductsSlider
+                  title="🆕 وصل حديثًا"
+                  badge="🆕 جديد"
+                  badgeClass="new"
+                  products={
+                    newArrivals
+                  }
+                  addToCart={
+                    addToCart
+                  }
+                  categoryName={
+                    currentCategoryName
+                  }
+                />
+              )}
+
+              {/* ==================================================
+                  RECOMMENDED
+              ================================================== */}
+
+              {recommended.length >
+                0 && (
+                <ProductsSlider
+                  title="❤️ قد يعجبك"
+                  badge="❤️ مميز"
+                  badgeClass="recommended"
+                  products={
+                    recommended
+                  }
+                  addToCart={
+                    addToCart
+                  }
+                  categoryName={
+                    currentCategoryName
+                  }
+                />
+              )}
+
+              {/* ==================================================
+                  ALL PRODUCTS
+              ================================================== */}
+
+              {categoryProducts.length >
+              0 ? (
+                <div className="products-grid">
+
+                  {categoryProducts.map(
+                    (product) => {
+
+                      const productId =
+                        product?.id ||
+                        product?._id;
+
+                      const image =
+                        product?.image ||
+                        product?.images?.[0] ||
+                        "/default-product.png";
+
+                      const title =
+                        product?.title ||
+                        product?.name ||
+                        product?.productName ||
+                        "منتج";
+
+                      const price =
+                        Number(
+                          product?.price ||
+                            0
+                        );
+
+                      const oldPrice =
+                        Number(
+                          product?.oldPrice ||
+                            0
+                        );
+
+                      const discount =
+                        oldPrice >
+                          price &&
+                        oldPrice > 0
+                          ? Math.round(
+                              (
+                                (
+                                  oldPrice -
+                                  price
+                                ) /
+                                oldPrice
+                              ) *
+                                100
+                            )
+                          : 0;
+
+                      return (
+                        <article
+                          key={
+                            productId
+                          }
+                          className="product-card"
+                          onClick={() =>
+                            navigate(
+                              `/product/${productId}`
+                            )
+                          }
+                        >
+                          <div className="product-card-image">
+
+                            {discount >
+                              0 && (
+                              <span className="discount-badge">
+                                -{discount}%
+                              </span>
+                            )}
+
+                            {product?.newArrival && (
+                              <span className="new-badge">
+                                جديد
+                              </span>
+                            )}
+
+                            {product?.bestSeller && (
+                              <span className="product-badge">
+                                ⭐
+                              </span>
+                            )}
+
+                            <img
+                              src={image}
+                              alt={
+                                title
+                              }
+                              loading="lazy"
+                              onError={(
+                                event
+                              ) => {
+                                event.currentTarget.src =
+                                  "/default-product.png";
+                              }}
+                            />
+
+                          </div>
+
+                          <div className="product-card-info">
+
+                            <h3>
+                              {title}
+                            </h3>
+
+                            <div className="product-rating">
+                              ⭐{" "}
+                              {Number(
+                                product?.rating ||
+                                  0
+                              ).toFixed(
+                                1
+                              )}
+                            </div>
+
+                            <div className="product-price">
+
+                              <strong>
+                                {price} ج.م
+                              </strong>
+
+                              {oldPrice >
+                                price && (
+                                <del>
+                                  {
+                                    oldPrice
+                                  }{" "}
+                                  ج.م
+                                </del>
+                              )}
+
+                            </div>
+
+                            <button
+                              type="button"
+                              className="add-to-cart-btn"
+                              onClick={(
+                                event
+                              ) => {
+                                event.stopPropagation();
+
+                                addToCart({
+                                  ...product,
+                                  quantity: 1,
+                                });
+                              }}
+                            >
+                              🛒 أضف للسلة
+                            </button>
+
+                          </div>
+                        </article>
+                      );
+                    }
+                  )}
+
+                </div>
+              ) : (
+                <div className="no-products">
+
+                  <div className="no-products-icon">
+                    📦
+                  </div>
+
+                  <h3>
+                    لا توجد منتجات في هذا القسم
+                  </h3>
+
+                  <p>
+                    جرب تغيير البحث أو الفلاتر
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={
+                      resetFilters
+                    }
+                  >
+                    إعادة ضبط الفلاتر
+                  </button>
+
+                </div>
+              )}
+
+            </section>
           </>
         )}
-
       </main>
+
+      {/* ==================================================
+          FLOATING WHATSAPP
+      ================================================== */}
+
+      {whatsappLink && (
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="category-floating-whatsapp"
+          aria-label="تواصل معنا على واتساب"
+          title="تواصل معنا على واتساب"
+        >
+          <span className="category-whatsapp-icon">
+            <svg
+              viewBox="0 0 32 32"
+              aria-hidden="true"
+            >
+              <path
+                d="M16.04 3C8.85 3 3 8.82 3 16c0 2.3.61 4.56 1.76 6.53L3 29l6.63-1.73A13.04 13.04 0 0 0 16.04 29C23.22 29 29 23.18 29 16S23.22 3 16.04 3Zm0 23.75c-2.1 0-4.15-.56-5.96-1.63l-.43-.25-3.93 1.03 1.05-3.82-.28-.44A10.77 10.77 0 1 1 16.04 26.75Zm5.9-8.08c-.32-.16-1.89-.93-2.18-1.04-.29-.11-.5-.16-.71.16-.21.32-.82 1.04-1 1.25-.18.21-.37.24-.69.08-.32-.16-1.35-.5-2.57-1.6-.95-.85-1.59-1.9-1.77-2.22-.18-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.18.21-.32.32-.53.11-.21.05-.4-.03-.56-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55h-.61c-.21 0-.55.08-.84.4-.29.32-1.1 1.08-1.1 2.64s1.13 3.06 1.29 3.27c.16.21 2.23 3.4 5.4 4.77.76.33 1.35.53 1.81.68.76.24 1.45.21 2 .13.61-.09 1.89-.77 2.16-1.52.27-.75.27-1.39.19-1.52-.08-.13-.29-.21-.61-.37Z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+
+          <span className="category-whatsapp-text">
+            واتساب
+          </span>
+        </a>
+      )}
 
       {/* ==================================================
           FOOTER
@@ -1432,12 +1676,10 @@ function CategoryPage({
 
         <div className="footer-container">
 
-          {/* BRAND */}
-
           <div className="footer-column">
 
             <h2>
-              Elsafty Store
+              ســـــَــــــــوا
             </h2>
 
             <p>
@@ -1447,8 +1689,6 @@ function CategoryPage({
             </p>
 
           </div>
-
-          {/* LINKS */}
 
           <div className="footer-column">
 
@@ -1477,8 +1717,6 @@ function CategoryPage({
             </button>
 
           </div>
-
-          {/* SERVICE */}
 
           <div className="footer-column">
 
@@ -1510,7 +1748,7 @@ function CategoryPage({
 
           ©{" "}
           {new Date().getFullYear()}{" "}
-          Elsafty Store
+          ســـــَــــــــوا
           {" - "}
           جميع الحقوق محفوظة.
 

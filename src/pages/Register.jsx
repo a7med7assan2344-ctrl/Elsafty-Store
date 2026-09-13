@@ -12,7 +12,6 @@ import {
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import ReCAPTCHA from "react-google-recaptcha";
 
 import { auth, db } from "../firebase";
 import "./Auth.css";
@@ -54,16 +53,6 @@ const discoveryOptions = [
 ];
 
 // ==========================================================
-// HELPERS
-// ==========================================================
-
-const getRecaptchaSiteKey = () => {
-  const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-
-  return typeof key === "string" ? key.trim() : "";
-};
-
-// ==========================================================
 // REGISTER
 // ==========================================================
 
@@ -89,12 +78,6 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   // ========================================================
-  // CAPTCHA
-  // ========================================================
-
-  const [captchaToken, setCaptchaToken] = useState(null);
-
-  // ========================================================
   // UI STATE
   // ========================================================
 
@@ -103,12 +86,6 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
-
-  // ========================================================
-  // CAPTCHA SITE KEY
-  // ========================================================
-
-  const recaptchaSiteKey = getRecaptchaSiteKey();
 
   // ========================================================
   // ARRAY TOGGLE
@@ -129,22 +106,6 @@ function Register() {
   };
 
   // ========================================================
-  // CAPTCHA HANDLERS
-  // ========================================================
-
-  const handleCaptchaChange = (token) => {
-    setCaptchaToken(token || null);
-  };
-
-  const handleCaptchaExpired = () => {
-    setCaptchaToken(null);
-  };
-
-  const handleCaptchaError = () => {
-    setCaptchaToken(null);
-  };
-
-  // ========================================================
   // REGISTER
   // ========================================================
 
@@ -152,20 +113,6 @@ function Register() {
     event.preventDefault();
 
     if (loading) return;
-
-    // ------------------------------------------------------
-    // CAPTCHA CONFIG CHECK
-    // ------------------------------------------------------
-
-    if (!recaptchaSiteKey) {
-      alert(
-        "إعداد التحقق الأمني غير مكتمل.\n\n" +
-          "أضف VITE_RECAPTCHA_SITE_KEY إلى ملف .env " +
-          "ثم أعد تشغيل المشروع."
-      );
-
-      return;
-    }
 
     // ------------------------------------------------------
     // CLEAN DATA
@@ -218,18 +165,6 @@ function Register() {
     if (interests.length === 0) {
       alert(
         "من فضلك اختر اهتمامًا واحدًا على الأقل."
-      );
-
-      return;
-    }
-
-    // ------------------------------------------------------
-    // CAPTCHA
-    // ------------------------------------------------------
-
-    if (!captchaToken) {
-      alert(
-        "من فضلك أكد أنك لست روبوتًا."
       );
 
       return;
@@ -365,8 +300,6 @@ function Register() {
         );
       }
 
-      setCaptchaToken(null);
-
       navigate("/");
     } catch (error) {
       console.error(
@@ -457,8 +390,6 @@ function Register() {
       }
 
       alert(message);
-
-      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -500,7 +431,7 @@ function Register() {
               className="auth-brand"
             >
               <span className="auth-brand-mark">
-                س
+                🅢🅐🅦🅐
               </span>
 
               <span className="auth-brand-name">
@@ -601,7 +532,7 @@ function Register() {
               className="auth-mobile-logo"
             >
               <span className="auth-brand-mark">
-                س
+                🅢🅐🅦🅐
               </span>
 
               <span>
@@ -1220,56 +1151,13 @@ function Register() {
             </div>
 
             {/* =================================================
-                CAPTCHA
-            ================================================= */}
-
-            <div className="auth-captcha">
-
-              {recaptchaSiteKey ? (
-                <ReCAPTCHA
-                  sitekey={recaptchaSiteKey}
-                  onChange={
-                    handleCaptchaChange
-                  }
-                  onExpired={
-                    handleCaptchaExpired
-                  }
-                  onErrored={
-                    handleCaptchaError
-                  }
-                />
-              ) : (
-                <div className="auth-captcha-missing">
-
-                  <span>
-                    ⚠️
-                  </span>
-
-                  <div>
-                    <strong>
-                      التحقق الأمني غير مُفعّل
-                    </strong>
-
-                    <small>
-                      أضف VITE_RECAPTCHA_SITE_KEY
-                      إلى ملف .env ثم أعد تشغيل
-                      المشروع.
-                    </small>
-                  </div>
-
-                </div>
-              )}
-
-            </div>
-
-            {/* =================================================
                 SUBMIT
             ================================================= */}
 
             <button
               type="submit"
               className="auth-submit"
-              disabled={loading || !recaptchaSiteKey}
+              disabled={loading}
             >
 
               {loading ? (

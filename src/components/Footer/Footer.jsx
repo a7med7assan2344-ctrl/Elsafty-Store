@@ -12,12 +12,8 @@ const safeString = (value) =>
 const getFirstValue = (...values) => {
   for (const value of values) {
     const normalized = safeString(value);
-
-    if (normalized) {
-      return normalized;
-    }
+    if (normalized) return normalized;
   }
-
   return "";
 };
 
@@ -33,9 +29,7 @@ const isExternalUrl = (value) =>
 const getInternalPath = (value, fallback = "/") => {
   const url = safeString(value);
 
-  if (!url) {
-    return fallback;
-  }
+  if (!url) return fallback;
 
   if (isExternalUrl(url)) {
     return url;
@@ -47,12 +41,15 @@ const getInternalPath = (value, fallback = "/") => {
 function Footer({ storeSettings = {} }) {
   const settings = storeSettings || {};
   const theme = settings?.theme || {};
-  const footerSettings = settings?.footer || settings?.footerSettings || {};
+
+  const footerSettings =
+    settings?.footer ||
+    settings?.footerSettings ||
+    {};
 
   /*
    * ============================================================
    * THEME
-   * كل الألوان الأساسية قابلة للتحكم من إعدادات الأدمن
    * ============================================================
    */
 
@@ -108,6 +105,11 @@ function Footer({ storeSettings = {} }) {
     `تسوق بسهولة وأمان مع ${storeName}`
   );
 
+  /*
+   * اللوجو يأتي من Admin.jsx بعد رفع الصورة
+   * وحفظ الرابط الناتج في settings.logo
+   */
+
   const logo = getFirstValue(
     settings.logo,
     settings.logoUrl,
@@ -141,6 +143,18 @@ function Footer({ storeSettings = {} }) {
     settings.address,
     settings.storeAddress,
     settings.location
+  );
+
+  /*
+   * رابط "تواصل معنا"
+   * يتحكم فيه Admin.jsx
+   */
+
+  const contactLink = getFirstValue(
+    footerSettings.contactLink,
+    settings.contactLink,
+    settings.contactUrl,
+    "/support"
   );
 
   /*
@@ -187,28 +201,27 @@ function Footer({ storeSettings = {} }) {
   /*
    * ============================================================
    * FOOTER LINKS
-   *
-   * لو الأدمن عامل footerLinks / footerMenu / footerSections
-   * يتم استخدامها بدل الروابط الثابتة.
    * ============================================================
    */
 
-  const configuredSections = Array.isArray(footerSettings.sections)
+  const configuredSections = Array.isArray(
+    footerSettings.sections
+  )
     ? footerSettings.sections
     : Array.isArray(settings.footerSections)
       ? settings.footerSections
       : [];
 
-  const configuredLinks = Array.isArray(footerSettings.links)
+  const configuredLinks = Array.isArray(
+    footerSettings.links
+  )
     ? footerSettings.links
     : Array.isArray(settings.footerLinks)
       ? settings.footerLinks
       : [];
 
   const normalizeLink = (item, index) => {
-    if (!item) {
-      return null;
-    }
+    if (!item) return null;
 
     if (typeof item === "string") {
       return {
@@ -218,23 +231,30 @@ function Footer({ storeSettings = {} }) {
         url: "/",
         active: true,
         order: index,
+        external: false,
       };
     }
 
     return {
-      id: item.id || item.key || `footer-link-${index}`,
+      id:
+        item.id ||
+        item.key ||
+        `footer-link-${index}`,
+
       title: getFirstValue(
         item.title,
         item.label,
         item.name,
         item.text
       ),
+
       label: getFirstValue(
         item.label,
         item.title,
         item.name,
         item.text
       ),
+
       url: getFirstValue(
         item.url,
         item.link,
@@ -242,16 +262,19 @@ function Footer({ storeSettings = {} }) {
         item.path,
         "/"
       ),
+
       active:
         item.active !== false &&
         item.enabled !== false &&
         item.visible !== false,
+
       order: Number(
         item.order ??
           item.sortOrder ??
           item.position ??
           index
       ),
+
       external:
         item.external === true ||
         item.isExternal === true,
@@ -271,60 +294,75 @@ function Footer({ storeSettings = {} }) {
   /*
    * ============================================================
    * DEFAULT SECTIONS
-   *
-   * لا تظهر إلا لو الأدمن لم يرسل أقسام Footer مخصصة.
    * ============================================================
    */
 
   const defaultSections = [
     {
       id: "quick-links",
+
       title: getFirstValue(
         footerSettings.quickLinksTitle,
         footerSettings.linksTitle,
         "روابط مهمة"
       ),
+
       links: [
         {
+          id: "home",
           label: "الرئيسية",
           url: "/",
         },
         {
+          id: "offers",
           label: "العروض",
           url: "/offers",
         },
         {
+          id: "best-sellers",
           label: "الأكثر مبيعًا",
           url: "/best-sellers",
         },
         {
+          id: "new-arrivals",
           label: "أحدث المنتجات",
           url: "/new-arrivals",
         },
       ],
     },
+
     {
       id: "customer-service",
+
       title: getFirstValue(
         footerSettings.customerServiceTitle,
         "خدمة العملاء"
       ),
+
       links: [
         {
+          id: "cart",
           label: "سلة المشتريات",
           url: "/cart",
         },
         {
+          id: "orders",
           label: "طلباتي",
           url: "/orders",
         },
         {
+          id: "favorites",
           label: "المفضلة",
           url: "/favorites",
         },
+
+        /*
+         * رابط تواصل معنا يتحكم فيه Admin.jsx
+         */
         {
+          id: "support",
           label: "تواصل معنا",
-          url: "/support",
+          url: contactLink,
         },
       ],
     },
@@ -332,11 +370,11 @@ function Footer({ storeSettings = {} }) {
 
   const adminSections = configuredSections
     .map((section, sectionIndex) => {
-      if (!section) {
-        return null;
-      }
+      if (!section) return null;
 
-      const sectionLinks = Array.isArray(section.links)
+      const sectionLinks = Array.isArray(
+        section.links
+      )
         ? section.links
         : Array.isArray(section.items)
           ? section.items
@@ -369,7 +407,9 @@ function Footer({ storeSettings = {} }) {
               item.active &&
               item.label
           )
-          .sort((a, b) => a.order - b.order),
+          .sort(
+            (a, b) => a.order - b.order
+          ),
       };
     })
     .filter(
@@ -378,7 +418,9 @@ function Footer({ storeSettings = {} }) {
         section.title &&
         section.links.length > 0
     )
-    .sort((a, b) => a.order - b.order);
+    .sort(
+      (a, b) => a.order - b.order
+    );
 
   const footerSections =
     adminSections.length > 0
@@ -387,10 +429,12 @@ function Footer({ storeSettings = {} }) {
         ? [
             {
               id: "admin-links",
+
               title: getFirstValue(
                 footerSettings.linksTitle,
                 "روابط مهمة"
               ),
+
               links: normalizedLinks,
             },
           ]
@@ -422,6 +466,12 @@ function Footer({ storeSettings = {} }) {
     footerSettings.copyright,
     settings.copyright
   );
+
+  /*
+   * ============================================================
+   * SOCIAL LINKS
+   * ============================================================
+   */
 
   const showSocial =
     footerSettings.showSocial !== false &&
@@ -460,8 +510,21 @@ function Footer({ storeSettings = {} }) {
     },
   ].filter((item) => item.value);
 
-  const renderFooterLink = (item) => {
+  /*
+   * ============================================================
+   * RENDER FOOTER LINK
+   * ============================================================
+   */
+
+  const renderFooterLink = (item, index) => {
+    if (!item) return null;
+
     const url = getInternalPath(item.url);
+
+    const key =
+      item.id ||
+      item.key ||
+      `${url}-${item.label || index}`;
 
     if (
       item.external ||
@@ -469,7 +532,7 @@ function Footer({ storeSettings = {} }) {
     ) {
       return (
         <a
-          key={item.id}
+          key={key}
           href={url}
           target="_blank"
           rel="noopener noreferrer"
@@ -482,7 +545,7 @@ function Footer({ storeSettings = {} }) {
 
     return (
       <Link
-        key={item.id}
+        key={key}
         to={url}
         className="footer-link"
       >
@@ -490,6 +553,46 @@ function Footer({ storeSettings = {} }) {
       </Link>
     );
   };
+
+  /*
+   * ============================================================
+   * CONTACT LINK
+   * ============================================================
+   */
+
+  const renderContactLink = () => {
+    const url = getInternalPath(contactLink);
+
+    if (
+      isExternalUrl(url)
+    ) {
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="footer-link"
+        >
+          <span>تواصل معنا</span>
+        </a>
+      );
+    }
+
+    return (
+      <Link
+        to={url}
+        className="footer-link"
+      >
+        <span>تواصل معنا</span>
+      </Link>
+    );
+  };
+
+  /*
+   * ============================================================
+   * RETURN
+   * ============================================================
+   */
 
   return (
     <footer
@@ -509,7 +612,6 @@ function Footer({ storeSettings = {} }) {
         ====================================================== */}
 
         <div className="footer-brand-section">
-
           <Link
             to="/"
             className="footer-brand-name"
@@ -537,51 +639,57 @@ function Footer({ storeSettings = {} }) {
 
           {/* SOCIAL */}
 
-          {showSocial && socialLinks.length > 0 && (
-            <div
-              className="footer-social"
-              aria-label="روابط التواصل الاجتماعي"
-            >
-              {socialLinks.map((social) => (
-                <a
-                  key={social.key}
-                  href={social.value}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className={`footer-social-link footer-social-${social.key}`}
-                >
-                  <span aria-hidden="true">
-                    {social.icon}
-                  </span>
+          {showSocial &&
+            socialLinks.length > 0 && (
+              <div
+                className="footer-social"
+                aria-label="روابط التواصل الاجتماعي"
+              >
+                {socialLinks.map((social) => (
+                  <a
+                    key={social.key}
+                    href={social.value}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className={`footer-social-link footer-social-${social.key}`}
+                  >
+                    <span aria-hidden="true">
+                      {social.icon}
+                    </span>
 
-                  <span className="footer-social-label">
-                    {social.label}
-                  </span>
-                </a>
-              ))}
-            </div>
-          )}
+                    <span className="footer-social-label">
+                      {social.label}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
         </div>
 
         {/* =====================================================
             FOOTER SECTIONS
         ====================================================== */}
 
-        {footerSections.map((section) => (
-          <div
-            className="footer-column"
-            key={section.id}
-          >
-            <h3>
-              {section.title}
-            </h3>
+        {footerSections.map(
+          (section, sectionIndex) => (
+            <div
+              className="footer-column"
+              key={
+                section.id ||
+                `footer-section-${sectionIndex}`
+              }
+            >
+              <h3>{section.title}</h3>
 
-            <div className="footer-links-list">
-              {section.links.map(renderFooterLink)}
+              <div className="footer-links-list">
+                {section.links.map(
+                  renderFooterLink
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        )}
 
         {/* =====================================================
             CONTACT
@@ -612,9 +720,7 @@ function Footer({ storeSettings = {} }) {
                   ☎
                 </span>
 
-                <span>
-                  {phone}
-                </span>
+                <span>{phone}</span>
               </a>
             )}
 
@@ -635,9 +741,7 @@ function Footer({ storeSettings = {} }) {
                   💬
                 </span>
 
-                <span>
-                  واتساب
-                </span>
+                <span>واتساب</span>
               </a>
             )}
 
@@ -654,9 +758,7 @@ function Footer({ storeSettings = {} }) {
                   ✉
                 </span>
 
-                <span>
-                  {email}
-                </span>
+                <span>{email}</span>
               </a>
             )}
 
@@ -669,9 +771,7 @@ function Footer({ storeSettings = {} }) {
                   📍
                 </span>
 
-                <span>
-                  {address}
-                </span>
+                <span>{address}</span>
               </div>
             )}
           </div>
@@ -684,7 +784,6 @@ function Footer({ storeSettings = {} }) {
 
       <div className="footer-bottom">
         <div className="footer-bottom-container">
-
           <p className="footer-copyright">
             {copyrightText ? (
               copyrightText
@@ -700,11 +799,16 @@ function Footer({ storeSettings = {} }) {
           </p>
 
           <div className="footer-bottom-links">
-            <Link to="/">
+            <Link
+              to="/"
+              key="footer-home-link"
+            >
               الرئيسية
             </Link>
-          </div>
 
+            {/* رابط التواصل من إعدادات الأدمن */}
+            {renderContactLink()}
+          </div>
         </div>
       </div>
     </footer>

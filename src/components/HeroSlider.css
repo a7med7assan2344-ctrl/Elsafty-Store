@@ -1486,3 +1486,87 @@
     transition: none;
   }
 }
+/* ============================================================
+   ســــَــــــــــوا
+   ANNOUNCEMENT MARQUEE
+   السرعة والاتجاه بيتحكم فيهم HeroSlider.jsx
+============================================================ */
+
+.hero-offer-strip {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.hero-offer-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 70px;
+
+  width: max-content;
+  min-width: max-content;
+
+  white-space: nowrap;
+
+  animation-name: heroAnnouncementMarquee;
+  animation-duration: var(--top-strip-duration, 40s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: var(
+    --top-strip-animation-direction,
+    normal
+  );
+
+  will-change: transform;
+}
+
+.hero-offer-item {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.hero-offer-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes heroAnnouncementMarquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-33.333%, 0, 0);
+  }
+}
+
+/* RTL = يمين ← شمال */
+.hero-offer-track[style*="direction: rtl"] {
+  direction: ltr;
+}
+
+/* ============================================================
+   FEATURES BAR
+============================================================ */
+
+.hero-features-track {
+  animation-name: heroFeaturesMarquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: normal;
+  will-change: transform;
+}
+
+@keyframes heroFeaturesMarquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}

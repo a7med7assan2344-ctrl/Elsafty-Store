@@ -312,7 +312,7 @@ function Login() {
               aria-label="ســـــَــــــــوا"
             >
               <span className="auth-brand-mark">
-                س
+               🅢🅐🅦🅐
               </span>
 
               <span className="auth-brand-name">
@@ -410,7 +410,7 @@ function Login() {
               className="auth-mobile-logo"
             >
               <span>
-                س
+                🅢🅐🅦🅐
               </span>
 
               ســـــَــــــــوا

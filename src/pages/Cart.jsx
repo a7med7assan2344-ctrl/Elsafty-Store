@@ -1,9 +1,45 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import "./Cart.css";
-
 import { CartContext } from "../context/CartContext";
+
+const DEFAULT_PRODUCT_IMAGE = "/default-product.png";
+const WHATSAPP_NUMBER = "201553570220";
+
+const normalizePrizeType = (prize) =>
+  String(
+    prize?.type ||
+      prize?.prizeType ||
+      prize?.rewardType ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+
+const getPrizeValue = (prize) =>
+  Math.max(
+    0,
+    Number(
+      prize?.value ??
+        prize?.amount ??
+        prize?.discountValue ??
+        0
+    )
+  );
+
+const isPercentagePrize = (type) =>
+  ["discount", "percentage", "percent"].includes(type);
+
+const isFixedPrize = (type) =>
+  ["fixed", "fixed-discount", "amount"].includes(type);
+
+const isFreeShippingPrize = (type) =>
+  ["free-shipping", "free_shipping", "freeshipping"].includes(type);
+
+const getProductImage = (item) =>
+  item?.image ||
+  (Array.isArray(item?.images) ? item.images[0] : "") ||
+  DEFAULT_PRODUCT_IMAGE;
 
 function Cart() {
   const navigate = useNavigate();
@@ -14,170 +50,114 @@ function Cart() {
     removeFromCart,
   } = useContext(CartContext);
 
-  // =====================
-  // DISCOUNT / WHEEL PRIZE
-  // =====================
-
   const [discountCode, setDiscountCode] = useState("");
   const [discountData, setDiscountData] = useState(null);
 
-  // =====================
-  // LOAD SAVED PRIZE
-  // =====================
-
   useEffect(() => {
     try {
-      const savedPrize = localStorage.getItem(
-        "elsafty_wheel_prize"
-      );
+      const gamePrize = localStorage.getItem("elsafty_game_prize");
+      const wheelPrize = localStorage.getItem("elsafty_wheel_prize");
+      const savedPrize = gamePrize || wheelPrize;
 
-      if (!savedPrize) {
-        return;
-      }
+      if (!savedPrize) return;
 
       const parsedPrize = JSON.parse(savedPrize);
 
-      if (
-        parsedPrize &&
-        typeof parsedPrize === "object"
-      ) {
-        setDiscountData(parsedPrize);
+      if (parsedPrize && typeof parsedPrize === "object") {
+        const prize =
+          parsedPrize.prize &&
+          typeof parsedPrize.prize === "object"
+            ? {
+                ...parsedPrize.prize,
+                gameKey:
+                  parsedPrize.gameKey ||
+                  parsedPrize.prize.gameKey ||
+                  "",
+                gameName:
+                  parsedPrize.gameName ||
+                  parsedPrize.prize.gameName ||
+                  "",
+                source:
+                  parsedPrize.source ||
+                  "game",
+                awardedAt:
+                  parsedPrize.awardedAt || null,
+              }
+            : parsedPrize;
 
-        if (parsedPrize.code) {
-          setDiscountCode(parsedPrize.code);
+        setDiscountData(prize);
+
+        if (prize.code) {
+          setDiscountCode(String(prize.code));
         }
       }
     } catch (error) {
-      console.error(
-        "Wheel Prize Load Error:",
-        error
-      );
+      console.error("Game Prize Load Error:", error);
     }
   }, []);
 
-  // =====================
-  // TOTAL PRICE
-  // =====================
+  const totalPrice = useMemo(
+    () =>
+      cart.reduce(
+        (sum, item) =>
+          sum +
+          Number(item?.price || 0) *
+            Number(item?.quantity || 0),
+        0
+      ),
+    [cart]
+  );
 
-  const totalPrice = useMemo(() => {
-    return cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(item?.price || 0) *
-          Number(item?.quantity || 0),
-      0
-    );
-  }, [cart]);
-
-  // =====================
-  // DISCOUNT CALCULATION
-  // =====================
+  const prizeType = normalizePrizeType(discountData);
+  const prizeValue = getPrizeValue(discountData);
 
   const discountAmount = useMemo(() => {
-    if (!discountData) {
-      return 0;
-    }
+    if (!discountData) return 0;
 
-    if (
-      discountData.type === "discount" ||
-      discountData.type === "percentage"
-    ) {
-      const percentage = Number(
-        discountData.value || 0
-      );
-
+    if (isPercentagePrize(prizeType)) {
       return Math.min(
         totalPrice,
-        (totalPrice * percentage) / 100
+        (totalPrice * prizeValue) / 100
       );
     }
 
-    if (
-      discountData.type === "fixed"
-    ) {
-      const fixedAmount = Number(
-        discountData.value || 0
-      );
-
-      return Math.min(
-        totalPrice,
-        fixedAmount
-      );
+    if (isFixedPrize(prizeType)) {
+      return Math.min(totalPrice, prizeValue);
     }
 
     return 0;
-  }, [discountData, totalPrice]);
+  }, [discountData, prizeType, prizeValue, totalPrice]);
 
-  // =====================
-  // FINAL TOTAL
-  // =====================
+  const freeShipping = isFreeShippingPrize(prizeType);
 
   const finalTotal = Math.max(
     0,
     totalPrice - discountAmount
   );
 
-  // =====================
-  // EMPTY CART
-  // =====================
-
-  if (cart.length === 0) {
-    return (
-      <div className="cart-page">
-
-        <div className="empty-cart">
-
-          <h2>
-            🛒 السلة فارغة
-          </h2>
-
-          <p>
-            لم تقم بإضافة أي منتجات للسلة بعد.
-          </p>
-
-          <button
-            type="button"
-            className="back-store-btn"
-            onClick={() =>
-              navigate("/")
-            }
-          >
-            ⬅ العودة للمتجر
-          </button>
-
-        </div>
-
-      </div>
-    );
-  }
-
-  // =====================
-  // REMOVE WHEEL PRIZE
-  // =====================
-
   const removeDiscount = () => {
     setDiscountData(null);
     setDiscountCode("");
 
     try {
-      localStorage.removeItem(
-        "elsafty_wheel_prize"
-      );
+      localStorage.removeItem("elsafty_game_prize");
+      localStorage.removeItem("elsafty_wheel_prize");
     } catch (error) {
-      console.error(
-        "Wheel Prize Remove Error:",
-        error
-      );
+      console.error("Prize Remove Error:", error);
     }
   };
 
-  // =====================
-  // SEND ORDER WHATSAPP
-  // =====================
+  const handleImageError = (event) => {
+    if (event.currentTarget.dataset.fallbackApplied === "1") {
+      return;
+    }
+
+    event.currentTarget.dataset.fallbackApplied = "1";
+    event.currentTarget.src = DEFAULT_PRODUCT_IMAGE;
+  };
 
   const sendOrder = () => {
-    let msg =
-      "🛒 طلب جديد من الصفتي ستور\n\n";
+    let msg = "🛒 طلب جديد من ســـــَــــــــوا\n\n";
 
     cart.forEach((item, index) => {
       const itemName =
@@ -186,17 +166,11 @@ function Cart() {
         "منتج";
 
       const variantName =
-        item?.selectedVariant?.name ||
-        "";
+        item?.selectedVariant?.name || "";
 
-      const itemPrice =
-        Number(item?.price || 0);
-
-      const itemQuantity =
-        Number(item?.quantity || 0);
-
-      const itemTotal =
-        itemPrice * itemQuantity;
+      const itemPrice = Number(item?.price || 0);
+      const itemQuantity = Number(item?.quantity || 0);
+      const itemTotal = itemPrice * itemQuantity;
 
       msg += `${index + 1}- ${itemName}\n`;
 
@@ -209,44 +183,36 @@ function Cart() {
       msg += `💰 إجمالي المنتج: ${itemTotal} جنيه\n\n`;
     });
 
-    // =====================
-    // DISCOUNT
-    // =====================
-
-    if (
-      discountData &&
-      discountAmount > 0
-    ) {
-      msg += `🎁 كود الخصم: ${
-        discountCode || "غير محدد"
+    if (discountData) {
+      msg += `🎁 الجائزة: ${
+        discountData.title || "جائزة من المتجر"
       }\n`;
 
-      msg += `🏷️ قيمة الخصم: ${discountAmount} جنيه\n\n`;
-    }
+      if (discountData.gameName) {
+        msg += `🎮 اللعبة: ${discountData.gameName}\n`;
+      }
 
-    // =====================
-    // FREE SHIPPING
-    // =====================
+      if (discountData.gameKey) {
+        msg += `🔑 اللعبة: ${discountData.gameKey}\n`;
+      }
 
-    if (
-      discountData?.type ===
-      "free-shipping"
-    ) {
-      msg +=
-        "🚚 الجائزة: شحن مجاني\n\n";
-    }
+      if (discountCode) {
+        msg += `🏷️ كود الخصم: ${discountCode}\n`;
+      }
 
-    // =====================
-    // GIFT
-    // =====================
+      if (isPercentagePrize(prizeType)) {
+        msg += `📉 قيمة الجائزة: خصم ${prizeValue}%\n`;
+      } else if (isFixedPrize(prizeType)) {
+        msg += `📉 قيمة الجائزة: خصم ${prizeValue} جنيه\n`;
+      } else if (freeShipping) {
+        msg += "🚚 الجائزة: شحن مجاني\n";
+      } else if (prizeType === "gift") {
+        msg += `🎁 الهدية: ${
+          discountData.title || "هدية مجانية"
+        }\n`;
+      }
 
-    if (
-      discountData?.type === "gift"
-    ) {
-      msg += `🎁 الجائزة: ${
-        discountData?.title ||
-        "هدية"
-      }\n\n`;
+      msg += "\n";
     }
 
     msg += `💰 إجمالي المنتجات: ${totalPrice} جنيه\n`;
@@ -255,19 +221,14 @@ function Cart() {
       msg += `🏷️ الخصم: -${discountAmount} جنيه\n`;
     }
 
+    if (freeShipping) {
+      msg += "🚚 الشحن: مجاني\n";
+    }
+
     msg += `💵 الإجمالي النهائي: ${finalTotal} جنيه`;
 
-    // =====================
-    // WHATSAPP
-    // =====================
-
-    const whatsappNumber =
-      "201553570220";
-
     const whatsappUrl =
-      `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        msg
-      )}`;
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
     window.open(
       whatsappUrl,
@@ -276,32 +237,34 @@ function Cart() {
     );
   };
 
-  // =====================
-  // RETURN
-  // =====================
+  if (cart.length === 0) {
+    return (
+      <div className="cart-page">
+        <div className="empty-cart">
+          <h2>🛒 السلة فارغة</h2>
+          <p>لم تقم بإضافة أي منتجات للسلة بعد.</p>
+
+          <button
+            type="button"
+            className="back-store-btn"
+            onClick={() => navigate("/")}
+          >
+            ⬅ العودة للمتجر
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="cart-page">
-
-      {/* =====================
-          CART HEADER
-      ===================== */}
-
+    <div className="cart-page" dir="rtl">
       <div className="cart-header">
-
-        <h1>
-          🛒 سلة المشتريات
-        </h1>
-
+        <h1>🛒 سلة المشتريات</h1>
         <span>
-          {cart.length} منتج
+          {cart.length}{" "}
+          {cart.length === 1 ? "منتج" : "منتجات"}
         </span>
-
       </div>
-
-      {/* =====================
-          WHEEL PRIZE
-      ===================== */}
 
       {discountData && (
         <div
@@ -312,26 +275,15 @@ function Cart() {
             borderRadius: "14px",
             background:
               "linear-gradient(135deg, #fff8e1, #fff)",
-            border:
-              "2px solid #D4AF37",
+            border: "2px solid #D4AF37",
             textAlign: "center",
           }}
         >
-
-          <div
-            style={{
-              fontSize: "30px",
-              marginBottom: "8px",
-            }}
-          >
+          <div style={{ fontSize: "30px", marginBottom: "8px" }}>
             🎉
           </div>
 
-          <h3
-            style={{
-              margin: "0 0 8px",
-            }}
-          >
+          <h3 style={{ margin: "0 0 8px" }}>
             الجائزة الخاصة بك
           </h3>
 
@@ -342,21 +294,18 @@ function Cart() {
               marginBottom: "8px",
             }}
           >
-            {discountData.title ||
-              "جائزة"}
+            {discountData.title || "جائزة"}
           </strong>
 
+          {discountData.gameName && (
+            <div style={{ marginBottom: "8px", opacity: 0.8 }}>
+              🎮 من لعبة: {discountData.gameName}
+            </div>
+          )}
+
           {discountData.code && (
-            <div
-              style={{
-                marginTop: "10px",
-              }}
-            >
-
-              <small>
-                كود الخصم
-              </small>
-
+            <div style={{ marginTop: "10px" }}>
+              <small>كود الخصم</small>
               <div
                 style={{
                   fontSize: "22px",
@@ -367,51 +316,33 @@ function Cart() {
               >
                 {discountData.code}
               </div>
-
             </div>
           )}
 
-          {discountData.type ===
-            "discount" && (
-            <p>
-              خصم{" "}
-              {Number(
-                discountData.value || 0
-              )}
-              %
-            </p>
+          {isPercentagePrize(prizeType) && (
+            <p>خصم {prizeValue}%</p>
           )}
 
-          {discountData.type ===
-            "fixed" && (
-            <p>
-              خصم{" "}
-              {Number(
-                discountData.value || 0
-              )}{" "}
-              جنيه
-            </p>
+          {isFixedPrize(prizeType) && (
+            <p>خصم {prizeValue} جنيه</p>
           )}
 
-          {discountData.type ===
-            "free-shipping" && (
-            <p>
-              🚚 شحن مجاني
-            </p>
+          {freeShipping && <p>🚚 شحن مجاني</p>}
+
+          {prizeType === "gift" && (
+            <p>🎁 هدية مجانية</p>
           )}
 
-          {discountData.type ===
-            "gift" && (
-            <p>
-              🎁 هدية مجانية
-            </p>
-          )}
+          {!isPercentagePrize(prizeType) &&
+            !isFixedPrize(prizeType) &&
+            !freeShipping &&
+            prizeType !== "gift" && (
+              <p>🎁 جائزة خاصة من المتجر</p>
+            )}
 
           <button
             type="button"
-            onClick={
-              removeDiscount
-            }
+            onClick={removeDiscount}
             style={{
               marginTop: "8px",
               border: "none",
@@ -422,138 +353,82 @@ function Cart() {
           >
             إزالة الجائزة
           </button>
-
         </div>
       )}
 
-      {/* =====================
-          CART ITEMS
-      ===================== */}
-
       <div className="cart-items">
-
         {cart.map((item, index) => {
-
           const id =
             item?.cartId ||
             item?.id ||
             item?._id ||
             index;
 
-          const itemPrice =
-            Number(item?.price || 0);
-
-          const itemQuantity =
-            Number(item?.quantity || 0);
-
-          const itemStock =
-            Number(item?.stock || 0);
-
-          const itemTotal =
-            itemPrice *
-            itemQuantity;
-
+          const itemPrice = Number(item?.price || 0);
+          const itemQuantity = Number(item?.quantity || 0);
+          const itemStock = Number(item?.stock || 0);
+          const itemTotal = itemPrice * itemQuantity;
           const variantName =
             item?.selectedVariant?.name;
 
           return (
-            <div
-              className="cart-item"
-              key={id}
-            >
-
-              {/* IMAGE */}
-
+            <div className="cart-item" key={id}>
               <div className="cart-item-image">
-
                 <img
-                  src={
-                    item?.image ||
-                    item?.images?.[0] ||
-                    "https://via.placeholder.com/100"
-                  }
+                  src={getProductImage(item)}
                   alt={
                     item?.title ||
                     item?.name ||
                     "product"
                   }
+                  onError={handleImageError}
                 />
-
               </div>
 
-              {/* INFO */}
-
               <div className="cart-item-info">
-
                 <h3>
                   {item?.title ||
                     item?.name ||
                     "منتج"}
                 </h3>
 
-                {/* VARIANT */}
-
                 {variantName && (
                   <div className="cart-variant">
-
                     🔀 النوع:{" "}
-
-                    <strong>
-                      {variantName}
-                    </strong>
-
+                    <strong>{variantName}</strong>
                   </div>
                 )}
-
-                {/* PRICE */}
 
                 <div className="cart-item-price">
                   {itemPrice} جنيه
                 </div>
 
-                {/* QUANTITY */}
-
                 <div className="cart-quantity">
-
                   <button
                     type="button"
                     onClick={() =>
-                      updateQuantity(
-                        id,
-                        -1
-                      )
+                      updateQuantity(id, -1)
                     }
-                    disabled={
-                      itemQuantity <= 1
-                    }
+                    disabled={itemQuantity <= 1}
                   >
                     -
                   </button>
 
-                  <span>
-                    {itemQuantity}
-                  </span>
+                  <span>{itemQuantity}</span>
 
                   <button
                     type="button"
                     onClick={() =>
-                      updateQuantity(
-                        id,
-                        1
-                      )
+                      updateQuantity(id, 1)
                     }
                     disabled={
                       itemStock > 0 &&
-                      itemQuantity >=
-                        itemStock
+                      itemQuantity >= itemStock
                     }
                   >
                     +
                   </button>
-
                 </div>
-
-                {/* STOCK */}
 
                 {itemStock > 0 && (
                   <small className="cart-stock">
@@ -561,139 +436,66 @@ function Cart() {
                   </small>
                 )}
 
-                {/* TOTAL */}
-
                 <div className="cart-item-total">
-
                   الإجمالي:{" "}
-
-                  <strong>
-                    {itemTotal} جنيه
-                  </strong>
-
+                  <strong>{itemTotal} جنيه</strong>
                 </div>
-
               </div>
-
-              {/* REMOVE */}
 
               <button
                 type="button"
                 className="remove-btn"
-                onClick={() =>
-                  removeFromCart(id)
-                }
+                onClick={() => removeFromCart(id)}
               >
                 🗑 حذف
               </button>
-
             </div>
           );
         })}
-
       </div>
 
-      {/* =====================
-          CART SUMMARY
-      ===================== */}
-
       <div className="cart-summary">
-
-        {/* PRODUCTS TOTAL */}
-
         <div className="cart-total">
-
-          <span>
-            إجمالي المنتجات:
-          </span>
-
-          <strong>
-            {totalPrice} جنيه
-          </strong>
-
+          <span>إجمالي المنتجات:</span>
+          <strong>{totalPrice} جنيه</strong>
         </div>
-
-        {/* DISCOUNT */}
 
         {discountAmount > 0 && (
           <div
             className="cart-total"
-            style={{
-              color: "#198754",
-            }}
+            style={{ color: "#198754" }}
           >
-
-            <span>
-              🎁 الخصم:
-            </span>
-
-            <strong>
-              - {discountAmount} جنيه
-            </strong>
-
+            <span>🎁 الخصم:</span>
+            <strong>- {discountAmount} جنيه</strong>
           </div>
         )}
 
-        {/* FREE SHIPPING */}
-
-        {discountData?.type ===
-          "free-shipping" && (
+        {freeShipping && (
           <div
             className="cart-total"
-            style={{
-              color: "#198754",
-            }}
+            style={{ color: "#198754" }}
           >
-
-            <span>
-              🚚 الشحن:
-            </span>
-
-            <strong>
-              مجاني
-            </strong>
-
+            <span>🚚 الشحن:</span>
+            <strong>مجاني</strong>
           </div>
         )}
-
-        {/* FINAL TOTAL */}
 
         <div
           className="cart-total"
-          style={{
-            fontSize: "20px",
-          }}
+          style={{ fontSize: "20px" }}
         >
-
-          <span>
-            الإجمالي النهائي:
-          </span>
-
-          <strong>
-            {finalTotal} جنيه
-          </strong>
-
+          <span>الإجمالي النهائي:</span>
+          <strong>{finalTotal} جنيه</strong>
         </div>
 
-        {/* =====================
-            ACTIONS
-        ===================== */}
-
         <div className="cart-actions">
-
-          {/* العودة للمتجر */}
-
           <button
             type="button"
             className="back-store-btn"
-            onClick={() =>
-              navigate("/")
-            }
+            onClick={() => navigate("/")}
           >
             ⬅ العودة للمتجر
           </button>
-
-          {/* إتمام الطلب */}
 
           <button
             type="button"
@@ -713,8 +515,6 @@ function Cart() {
             📦 إتمام الطلب
           </button>
 
-          {/* واتساب */}
-
           <button
             type="button"
             className="checkout-btn"
@@ -722,11 +522,8 @@ function Cart() {
           >
             واتساب 📱
           </button>
-
         </div>
-
       </div>
-
     </div>
   );
 }
