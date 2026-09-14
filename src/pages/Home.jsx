@@ -58,10 +58,11 @@ const defaultStoreSettings = {
   bannerSettings:{heightDesktop:420,heightTablet:350,heightMobile:240,borderRadius:16,overlayOpacity:.35,autoplay:true,autoplayDelay:5000},
   topStrip:{enabled:true,direction:"rtl",speed:40,height:42,fontSize:15,fontWeight:700,items:[]},
   featuresBar:{enabled:true,background:"#FFFFFF",color:"#071A36",accentColor:"#D4AF37",height:80,fontSize:16,items:[]},
+  todayOffersTimer:{enabled:false,title:"العرض ينتهي خلال",startAt:"",endAt:"",showDays:true},
   texts:{
     homeTitle:"أهلاً بك في ســــَــــــــــوا",homeSubtitle:"اختيارات مميزة وأسعار تناسبك",
     productsTitle:"منتجات مميزة",offersTitle:"عروض اليوم",bestSellersTitle:"الأكثر مبيعًا",
-    newArrivalsTitle:"وصل حديثًا",recommendedTitle:"قد يعجبك",categoriesTitle:"تسوق حسب القسم",
+    newArrivalsTitle:"وصل حديثًا",recommendedTitle:"قد يعجبك",categoriesTitle:"محتــاج إيـــــــه ؟",
     emptyProducts:"لا توجد منتجات متاحة حاليًا",emptyCategories:"لا توجد أقسام متاحة حاليًا",
     cartTitle:"سلة المشتريات",checkoutTitle:"إتمام الطلب",addToCart:"أضف للسلة",
     buyNow:"اشترِ الآن",viewAll:"عرض الكل",footerAbout:"متجر ســــَــــــــــوا للتسوق الإلكتروني",
@@ -261,6 +262,65 @@ function Home({
   const [storeSettings, setStoreSettings] =
     useState(defaultStoreSettings);
 
+  const [todayOffersTimerRemaining, setTodayOffersTimerRemaining] =
+    useState(null);
+
+  // ===================================================
+  // TODAY OFFERS COUNTDOWN
+  // ===================================================
+
+  useEffect(() => {
+    const timer = storeSettings?.todayOffersTimer || {};
+
+    if (!timer.enabled || !timer.endAt) {
+      setTodayOffersTimerRemaining(null);
+      return undefined;
+    }
+
+    const getState = () => {
+      const now = Date.now();
+      const start = timer.startAt ? new Date(timer.startAt).getTime() : null;
+      const end = new Date(timer.endAt).getTime();
+
+      if (!Number.isFinite(end)) {
+        setTodayOffersTimerRemaining(null);
+        return;
+      }
+
+      if (start && Number.isFinite(start) && now < start) {
+        setTodayOffersTimerRemaining({ status: "not-started" });
+        return;
+      }
+
+      if (now >= end) {
+        setTodayOffersTimerRemaining({ status: "expired" });
+        return;
+      }
+
+      const totalSeconds = Math.max(0, Math.floor((end - now) / 1000));
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      setTodayOffersTimerRemaining({
+        status: "active",
+        days,
+        hours,
+        minutes,
+        seconds,
+      });
+    };
+
+    getState();
+    const interval = window.setInterval(getState, 1000);
+    return () => window.clearInterval(interval);
+  }, [
+    storeSettings?.todayOffersTimer?.enabled,
+    storeSettings?.todayOffersTimer?.startAt,
+    storeSettings?.todayOffersTimer?.endAt,
+  ]);
+
   // ===================================================
   // THEME
   // IMPORTANT:
@@ -453,6 +513,11 @@ function Home({
               ...defaultStoreSettings.featuresBar,
               ...(previous.featuresBar || {}),
               ...(data.featuresBar || {}),
+            },
+            todayOffersTimer: {
+              ...defaultStoreSettings.todayOffersTimer,
+              ...(previous.todayOffersTimer || {}),
+              ...(data.todayOffersTimer || {}),
             },
             texts: {
               ...defaultStoreSettings.texts,
@@ -2396,6 +2461,7 @@ function Home({
     "--store-heading-font-family": headingFontFamily,
     "--store-body-font-size": `${Number(theme?.bodyFontSize ?? theme?.baseFontSize ?? 16)}px`,
     "--store-heading-font-size": `${Number(theme?.headingFontSize ?? 28)}px`,
+    "--store-border-radius": `${Math.max(0, Number(theme?.borderRadius ?? 14))}px`,
     "--store-primary":
       theme?.primary ||
       "#D4AF37",
@@ -2410,9 +2476,18 @@ function Home({
 
     "--store-page-background":
       theme?.pageBackground ||
-      "#F5F5F5",
+      "#F0F4F8",
 
     "--store-card-background":
+      theme?.cardBackground ||
+      "#FFFFFF",
+
+    "--store-section-background":
+      theme?.sectionBackground ||
+      theme?.pageBackground ||
+      "#F0F4F8",
+
+    "--store-category-card-background":
       theme?.cardBackground ||
       "#FFFFFF",
 
@@ -2518,15 +2593,70 @@ function Home({
       theme?.errorColor ||
       "#C62828",
 
-    "--store-section-background":
-      theme?.sectionBackground ||
-      theme?.cardBackground ||
-      "#FFFFFF",
-
     "--store-input-background":
       theme?.inputBackground ||
       "#FFFFFF",
   };
+
+  // ===================================================
+  // APPLY STORE BACKGROUND GLOBALLY
+  // ===================================================
+  // نخلي لون خلفية المتجر القادم من الأدمن هو الخلفية
+  // الفعلية للصفحة كلها، وليس فقط داخل home-page.
+  useEffect(() => {
+    const pageBackground =
+      theme?.pageBackground ||
+      defaultStoreSettings.theme.pageBackground ||
+      "#F0F4F8";
+
+    const root = document.documentElement;
+    const body = document.body;
+    const appRoot = document.getElementById("root");
+
+    const previous = {
+      rootBackground: root?.style.backgroundColor || "",
+      bodyBackground: body?.style.backgroundColor || "",
+      appRootBackground: appRoot?.style.backgroundColor || "",
+    };
+
+    root?.style.setProperty(
+      "--store-page-background",
+      pageBackground
+    );
+    body?.style.setProperty(
+      "--store-page-background",
+      pageBackground
+    );
+
+    if (root) {
+      root.style.backgroundColor = pageBackground;
+    }
+
+    if (body) {
+      body.style.backgroundColor = pageBackground;
+    }
+
+    if (appRoot) {
+      appRoot.style.backgroundColor = pageBackground;
+    }
+
+    return () => {
+      if (root) {
+        root.style.backgroundColor =
+          previous.rootBackground;
+      }
+
+      if (body) {
+        body.style.backgroundColor =
+          previous.bodyBackground;
+      }
+
+      if (appRoot) {
+        appRoot.style.backgroundColor =
+          previous.appRootBackground;
+      }
+    };
+  }, [theme?.pageBackground]);
 
   // ===================================================
   // RENDER
@@ -4013,6 +4143,50 @@ function Home({
         )}
 
         {/* =================================================
+            ADMIN ANNOUNCEMENTS
+        ================================================= */}
+
+        {activeAnnouncements.length > 0 && (
+          <section className="jumia-promo-strip">
+            <div className="promo-content">
+              <span className="promo-icon">🏷️</span>
+              <div>
+                <h2>
+                  {activeAnnouncements[0]?.title ||
+                    texts.offersTitle}
+                </h2>
+                <p>
+                  {activeAnnouncements[0]?.text ||
+                    storeSettings?.announcement ||
+                    ""}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const link = String(
+                  activeAnnouncements[0]?.link ||
+                    ""
+                ).trim();
+
+                if (/^https?:\/\//i.test(link)) {
+                  window.location.href = link;
+                } else if (link) {
+                  navigate(link);
+                } else {
+                  scrollToSection("#today-offers");
+                }
+              }}
+            >
+              {texts.viewAll}
+            </button>
+          </section>
+        )}
+
+
+        {/* =================================================
             QUICK CATEGORIES
         ================================================= */}
 
@@ -4110,12 +4284,41 @@ function Home({
 
         {offers.length > 0 && (
           <section
-            className="jumia-section"
+            className="jumia-section products-showcase-section today-offers-section"
             id="today-offers"
           >
+            {todayOffersTimerRemaining?.status === "active" && (
+              <div className="today-offers-countdown" dir="rtl" aria-label="عداد انتهاء عروض اليوم">
+                <div className="today-offers-countdown-heading">
+                  <span className="today-offers-countdown-icon">⏳</span>
+                  <strong>{storeSettings.todayOffersTimer?.title || "العرض ينتهي خلال"}</strong>
+                </div>
+                <div className="today-offers-countdown-units">
+                  {storeSettings.todayOffersTimer?.showDays !== false && (
+                    <div className="today-offers-countdown-unit"><b>{String(todayOffersTimerRemaining.days).padStart(2, "0")}</b><small>يوم</small></div>
+                  )}
+                  <div className="today-offers-countdown-unit"><b>{String(todayOffersTimerRemaining.hours).padStart(2, "0")}</b><small>ساعة</small></div>
+                  <span className="today-offers-countdown-separator">:</span>
+                  <div className="today-offers-countdown-unit"><b>{String(todayOffersTimerRemaining.minutes).padStart(2, "0")}</b><small>دقيقة</small></div>
+                  <span className="today-offers-countdown-separator">:</span>
+                  <div className="today-offers-countdown-unit"><b>{String(todayOffersTimerRemaining.seconds).padStart(2, "0")}</b><small>ثانية</small></div>
+                </div>
+              </div>
+            )}
+
+            {todayOffersTimerRemaining?.status === "expired" && (
+              <div className="today-offers-countdown expired" dir="rtl">
+                <div className="today-offers-countdown-heading">
+                  <span className="today-offers-countdown-icon">⌛</span>
+                  <strong>انتهى العرض</strong>
+                </div>
+                <span className="today-offers-countdown-expired-text">انتهت مدة العرض الحالي</span>
+              </div>
+            )}
+
             <ProductsSlider
               title={texts.offersTitle}
-              badge="خصم"
+              badge="عرض اليوم"
               badgeClass="offer"
               products={offers}
               addToCart={
@@ -4137,7 +4340,7 @@ function Home({
         {bestSellers.length >
           0 && (
           <section
-            className="jumia-section"
+            className="jumia-section products-showcase-section best-sellers-section"
             id="best-sellers"
           >
             <ProductsSlider
@@ -4160,56 +4363,13 @@ function Home({
         )}
 
         {/* =================================================
-            ADMIN ANNOUNCEMENTS
-        ================================================= */}
-
-        {activeAnnouncements.length > 0 && (
-          <section className="jumia-promo-strip">
-            <div className="promo-content">
-              <span className="promo-icon">🏷️</span>
-              <div>
-                <h2>
-                  {activeAnnouncements[0]?.title ||
-                    texts.offersTitle}
-                </h2>
-                <p>
-                  {activeAnnouncements[0]?.text ||
-                    storeSettings?.announcement ||
-                    ""}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                const link = String(
-                  activeAnnouncements[0]?.link ||
-                    ""
-                ).trim();
-
-                if (/^https?:\/\//i.test(link)) {
-                  window.location.href = link;
-                } else if (link) {
-                  navigate(link);
-                } else {
-                  scrollToSection("#today-offers");
-                }
-              }}
-            >
-              {texts.viewAll}
-            </button>
-          </section>
-        )}
-
-        {/* =================================================
             NEW ARRIVALS
         ================================================= */}
 
         {newArrivals.length >
           0 && (
           <section
-            className="jumia-section"
+            className="jumia-section products-showcase-section new-arrivals-section"
             id="new-arrivals"
           >
             <ProductsSlider
@@ -4238,7 +4398,7 @@ function Home({
         {recommended.length >
           0 && (
           <section
-            className="jumia-section"
+            className="jumia-section products-showcase-section recommended-section"
             id="recommended"
           >
             <ProductsSlider
@@ -4283,7 +4443,7 @@ function Home({
                 key={
                   `products-${category?.id}`
                 }
-                className="jumia-section category-products-section"
+                className="jumia-section products-showcase-section category-products-section"
               >
                 <div className="jumia-section-title">
                   <div>
@@ -5572,6 +5732,461 @@ function Home({
           @media (max-width: 680px){
             .customer-games-section{margin:18px 8px;padding:22px 10px;border-radius:22px}.customer-games-heading{align-items:flex-start;flex-direction:column}.customer-games-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.customer-game-card{min-height:315px;padding:14px}.customer-game-art{height:105px}.cards-stage{gap:7px}.flip-card{width:95px;height:145px}.mystery-stage{gap:7px}.mystery-box{width:100px;height:125px}.mystery-box span{font-size:42px}.pick-stage{gap:8px}.home-floating-whatsapp{width:54px;height:54px;right:12px;bottom:76px}.home-whatsapp-label{display:none}}
           @media (max-width: 430px){.customer-games-grid{grid-template-columns:1fr}.customer-game-card{min-height:300px}.customer-game-art{height:100px}}
+
+          /* =================================================
+             PREMIUM STORE BACKGROUND + CATEGORY EXPERIENCE
+             - الخلفية العامة من الأدمن
+             - المساحة خلف الأقسام شفافة/بنفس لون الصفحة
+             - تصميم أقسام احترافي Responsive
+          ================================================= */
+
+          .jumia-home {
+            min-height: 100vh;
+            width: 100%;
+            background: var(--store-page-background, #F0F4F8) !important;
+            color: var(--store-text-primary, #071A36);
+          }
+
+          .jumia-home::before {
+            content: "";
+            display: block;
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background: var(--store-page-background, #F0F4F8);
+          }
+
+          .jumia-section {
+            background: var(--store-page-background, #F0F4F8) !important;
+          }
+
+          .quick-shop-section {
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: clamp(22px, 3vw, 34px) clamp(12px, 2.4vw, 28px) !important;
+            background: var(--store-page-background, #F0F4F8) !important;
+            box-sizing: border-box;
+            overflow: visible;
+          }
+
+          .quick-shop-section .jumia-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin: 0 0 20px;
+            padding: 0 2px;
+          }
+
+          .quick-shop-section .jumia-section-title h2 {
+            position: relative;
+            margin: 0;
+            padding: 0 15px 0 0;
+            font-size: clamp(22px, 2.5vw, 30px);
+            line-height: 1.25;
+            font-weight: 950;
+            color: var(--store-heading-color, #071A36);
+            letter-spacing: -.3px;
+          }
+
+          .quick-shop-section .jumia-section-title h2::before {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 50%;
+            width: 5px;
+            height: 70%;
+            min-height: 25px;
+            border-radius: 99px;
+            transform: translateY(-50%);
+            background: linear-gradient(
+              180deg,
+              var(--store-accent, #D4AF37),
+              var(--store-primary, #071A36)
+            );
+          }
+
+          .quick-shop-section .jumia-section-title h2::after {
+            content: "";
+            display: block;
+            width: 58px;
+            height: 3px;
+            margin-top: 8px;
+            margin-right: 0;
+            border-radius: 99px;
+            background: var(--store-accent, #D4AF37);
+            opacity: .85;
+          }
+
+          .quick-shop-section .jumia-categories {
+            width: 100%;
+            display: grid !important;
+            grid-template-columns: repeat(
+              auto-fill,
+              minmax(170px, 1fr)
+            ) !important;
+            gap: clamp(13px, 1.7vw, 20px) !important;
+            align-items: stretch;
+            box-sizing: border-box;
+          }
+
+          .quick-shop-section .store-choice-card {
+            position: relative;
+            isolation: isolate;
+            width: 100%;
+            min-width: 0;
+            min-height: 205px;
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 9px;
+            padding: 15px 13px 16px !important;
+            box-sizing: border-box;
+            border: 1px solid var(--store-border, #D9DFE8) !important;
+            border-radius: 20px !important;
+            background:
+              linear-gradient(
+                180deg,
+                var(--store-category-card-background, #FFFFFF) 0%,
+                var(--store-card-background, #FFFFFF) 100%
+              ) !important;
+            color: var(--store-text-primary, #071A36) !important;
+            box-shadow:
+              0 5px 18px rgba(7, 26, 54, .055),
+              0 1px 2px rgba(7, 26, 54, .04) !important;
+            cursor: pointer;
+            text-align: center;
+            overflow: hidden;
+            transition:
+              transform .28s cubic-bezier(.2,.8,.2,1),
+              box-shadow .28s ease,
+              border-color .28s ease;
+          }
+
+          .quick-shop-section .store-choice-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 4px;
+            z-index: 0;
+            background:
+              linear-gradient(
+                90deg,
+                var(--category-color, var(--store-accent, #D4AF37)),
+                var(--store-accent, #D4AF37)
+              );
+            opacity: .95;
+          }
+
+          .quick-shop-section .store-choice-card::after {
+            content: "";
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            left: -45px;
+            bottom: -62px;
+            z-index: -1;
+            border-radius: 50%;
+            background: var(
+              --category-color-light,
+              rgba(212,175,55,.10)
+            );
+            pointer-events: none;
+          }
+
+          .quick-shop-section .store-choice-card:hover {
+            transform: translateY(-6px);
+            border-color: var(
+              --category-color,
+              var(--store-accent, #D4AF37)
+            ) !important;
+            box-shadow:
+              0 16px 32px rgba(7, 26, 54, .12),
+              0 4px 10px rgba(7, 26, 54, .05) !important;
+          }
+
+          .quick-shop-section .store-choice-card:active {
+            transform: translateY(-2px) scale(.99);
+          }
+
+          .quick-shop-section .store-choice-image {
+            position: relative;
+            z-index: 1;
+            width: 112px !important;
+            height: 112px !important;
+            min-width: 112px;
+            min-height: 112px;
+            margin: 7px auto 2px !important;
+            padding: 7px;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            border-radius: 50% !important;
+            background:
+              linear-gradient(
+                145deg,
+                var(--category-color-light, rgba(212,175,55,.10)),
+                rgba(255,255,255,.96)
+              ) !important;
+            border: 1px solid var(
+              --category-color-medium,
+              rgba(212,175,55,.18)
+            ) !important;
+            box-shadow:
+              inset 0 0 0 5px rgba(255,255,255,.72),
+              0 8px 20px rgba(7,26,54,.08);
+            overflow: hidden;
+            transition: transform .3s ease, box-shadow .3s ease;
+          }
+
+          .quick-shop-section .store-choice-card:hover
+          .store-choice-image {
+            transform: scale(1.055);
+            box-shadow:
+              inset 0 0 0 5px rgba(255,255,255,.76),
+              0 12px 26px rgba(7,26,54,.13);
+          }
+
+          .quick-shop-section .store-choice-image img {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+          }
+
+          .quick-shop-section .store-choice-image span {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 46px;
+            line-height: 1;
+            background: var(
+              --category-color-light,
+              rgba(212,175,55,.10)
+            );
+          }
+
+          .quick-shop-section .store-choice-card strong {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            margin: 2px 0 0;
+            padding: 0 4px;
+            box-sizing: border-box;
+            color: var(--store-text-primary, #071A36) !important;
+            font-size: 16px;
+            line-height: 1.5;
+            font-weight: 950;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+
+          .quick-shop-section .store-choice-card small {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 25px;
+            max-width: 90%;
+            margin-top: auto;
+            padding: 4px 10px;
+            border: 1px solid var(
+              --category-color-medium,
+              rgba(212,175,55,.18)
+            );
+            border-radius: 999px;
+            box-sizing: border-box;
+            background: var(
+              --category-color-light,
+              rgba(212,175,55,.08)
+            );
+            color: var(--store-text-secondary, #64748B) !important;
+            font-size: 11px;
+            line-height: 1.25;
+            font-weight: 800;
+            white-space: nowrap;
+          }
+
+          .quick-shop-section .store-choice-card:focus-visible {
+            outline: 3px solid var(
+              --category-color-medium,
+              rgba(212,175,55,.30)
+            );
+            outline-offset: 3px;
+          }
+
+          .quick-shop-section .store-empty-choice {
+            width: 100%;
+            min-height: 210px;
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+            border: 1px dashed var(--store-border, #D9DFE8);
+            border-radius: 20px;
+            background: var(--store-card-background, #FFFFFF);
+            color: var(--store-text-secondary, #64748B);
+          }
+
+          .quick-shop-section .store-empty-choice > div {
+            font-size: 42px;
+            margin-bottom: 7px;
+          }
+
+          .quick-shop-section .store-empty-choice h3 {
+            margin: 0 0 4px;
+            color: var(--store-heading-color, #071A36);
+          }
+
+          .quick-shop-section .store-empty-choice p {
+            margin: 0;
+            color: var(--store-text-secondary, #64748B);
+          }
+
+          @media (min-width: 1500px) {
+            .quick-shop-section {
+              max-width: 1360px;
+            }
+
+            .quick-shop-section .jumia-categories {
+              grid-template-columns: repeat(
+                auto-fill,
+                minmax(185px, 1fr)
+              ) !important;
+            }
+
+            .quick-shop-section .store-choice-card {
+              min-height: 220px;
+            }
+
+            .quick-shop-section .store-choice-image {
+              width: 122px !important;
+              height: 122px !important;
+              min-width: 122px;
+              min-height: 122px;
+            }
+          }
+
+          @media (max-width: 900px) {
+            .quick-shop-section .jumia-categories {
+              grid-template-columns: repeat(
+                auto-fill,
+                minmax(150px, 1fr)
+              ) !important;
+            }
+
+            .quick-shop-section .store-choice-card {
+              min-height: 190px;
+              border-radius: 18px !important;
+            }
+
+            .quick-shop-section .store-choice-image {
+              width: 96px !important;
+              height: 96px !important;
+              min-width: 96px;
+              min-height: 96px;
+            }
+
+            .quick-shop-section .store-choice-image span {
+              font-size: 38px;
+            }
+          }
+
+          @media (max-width: 600px) {
+            .quick-shop-section {
+              padding: 20px 10px 26px !important;
+            }
+
+            .quick-shop-section .jumia-section-title {
+              margin-bottom: 15px;
+            }
+
+            .quick-shop-section .jumia-section-title h2 {
+              font-size: 21px;
+            }
+
+            .quick-shop-section .jumia-categories {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 11px !important;
+            }
+
+            .quick-shop-section .store-choice-card {
+              min-height: 174px;
+              padding: 12px 9px 13px !important;
+              border-radius: 16px !important;
+            }
+
+            .quick-shop-section .store-choice-image {
+              width: 82px !important;
+              height: 82px !important;
+              min-width: 82px;
+              min-height: 82px;
+              padding: 5px;
+              margin-top: 5px !important;
+            }
+
+            .quick-shop-section .store-choice-image span {
+              font-size: 32px;
+            }
+
+            .quick-shop-section .store-choice-card strong {
+              font-size: 14px;
+              line-height: 1.4;
+            }
+
+            .quick-shop-section .store-choice-card small {
+              font-size: 10px;
+              padding: 3px 8px;
+            }
+          }
+
+          @media (max-width: 380px) {
+            .quick-shop-section .jumia-categories {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .quick-shop-section .store-choice-card {
+              min-height: 162px;
+              padding-inline: 7px !important;
+            }
+
+            .quick-shop-section .store-choice-image {
+              width: 72px !important;
+              height: 72px !important;
+              min-width: 72px;
+              min-height: 72px;
+            }
+
+            .quick-shop-section .store-choice-image span {
+              font-size: 28px;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .quick-shop-section .store-choice-card,
+            .quick-shop-section .store-choice-image {
+              transition: none !important;
+            }
+
+            .quick-shop-section .store-choice-card:hover {
+              transform: none;
+            }
+          }
         `}
 
       </style>

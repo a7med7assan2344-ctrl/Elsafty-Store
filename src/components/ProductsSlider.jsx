@@ -143,6 +143,97 @@ function ProductsSlider({
 
 
   // =====================================================
+  // NORMALIZE PRICE
+  // =====================================================
+  // يدعم:
+  // 1000
+  // "1000"
+  // "1,000"
+  // "١٠٠٠"
+  // "١٬٠٠٠"
+  // =====================================================
+
+  const normalizePrice =
+    (value) => {
+
+      if (
+        value === null ||
+        value === undefined ||
+        value === ""
+      ) {
+
+        return 0;
+
+      }
+
+
+      let normalized =
+        String(value)
+          .trim();
+
+
+      // Arabic digits → English digits
+      normalized =
+        normalized
+          .replace(
+            /[٠-٩]/g,
+            (digit) =>
+              String(
+                "٠١٢٣٤٥٦٧٨٩".indexOf(
+                  digit
+                )
+              )
+          );
+
+
+      // Arabic decimal separator
+      normalized =
+        normalized.replace(
+          /٫/g,
+          "."
+        );
+
+
+      // Arabic / Persian thousands separators
+      normalized =
+        normalized.replace(
+          /[٬،]/g,
+          ""
+        );
+
+
+      // English thousands separator
+      normalized =
+        normalized.replace(
+          /,/g,
+          ""
+        );
+
+
+      // Remove currency / spaces / unwanted characters
+      normalized =
+        normalized.replace(
+          /[^\d.-]/g,
+          ""
+        );
+
+
+      const number =
+        Number(
+          normalized
+        );
+
+
+      return Number.isFinite(
+        number
+      ) && number >= 0
+        ? number
+        : 0;
+
+    };
+
+
+  // =====================================================
   // RATING
   // =====================================================
 
@@ -361,8 +452,7 @@ function ProductsSlider({
 
               const ratingValue =
                 Number(
-                  product?.rating ??
-                  0
+                  product?.rating ?? 0
                 );
 
 
@@ -381,47 +471,59 @@ function ProductsSlider({
 
 
               // =========================================
-              // PRICE
+              // CURRENT PRICE
+              // =========================================
+              // السعر الفعلي الحالي
               // =========================================
 
               const safePrice =
-                Number.isFinite(
-                  Number(
-                    product?.price
-                  )
-                )
-                  ? Number(
-                      product?.price
-                    )
-                  : 0;
+                normalizePrice(
+                  product?.price
+                );
 
 
               // =========================================
               // OLD PRICE
               // =========================================
+              // السعر قبل الخصم
+              // =========================================
 
               const safeOldPrice =
-                Number.isFinite(
-                  Number(
-                    product?.oldPrice
-                  )
-                )
-                  ? Number(
-                      product?.oldPrice
-                    )
-                  : 0;
+                normalizePrice(
+                  product?.oldPrice
+                );
 
 
               // =========================================
-              // DISCOUNT
+              // VALID DISCOUNT
+              // =========================================
+              // الخصم يظهر فقط عندما:
+              //
+              // oldPrice > price
+              // oldPrice > 0
+              // price >= 0
+              //
+              // مثال:
+              // القديم 1000
+              // الحالي 750
+              // الخصم = 25%
               // =========================================
 
-              const discount =
+              const hasValidDiscount =
                 safeOldPrice >
-                  safePrice &&
+                  0 &&
+                safePrice >=
+                  0 &&
                 safeOldPrice >
-                  0
+                  safePrice;
 
+
+              // =========================================
+              // DISCOUNT PERCENTAGE
+              // =========================================
+
+              const calculatedDiscount =
+                hasValidDiscount
                   ? Math.round(
                       (
                         (
@@ -432,8 +534,25 @@ function ProductsSlider({
                       ) *
                       100
                     )
-
                   : 0;
+
+
+              // =========================================
+              // FINAL DISCOUNT
+              // =========================================
+              // حماية إضافية:
+              // لا يمكن أن تكون النسبة أقل من 0
+              // ولا أكبر من 100
+              // =========================================
+
+              const discount =
+                Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    calculatedDiscount
+                  )
+                );
 
 
               // =========================================
@@ -507,6 +626,7 @@ function ProductsSlider({
 
                       <span
                         className="discount-badge"
+                        aria-label={`خصم ${discount}%`}
                       >
 
                         -{discount}%
@@ -665,8 +785,7 @@ function ProductsSlider({
                         </strong>
 
 
-                        {safeOldPrice >
-                          safePrice && (
+                        {hasValidDiscount && (
 
                           <del>
 

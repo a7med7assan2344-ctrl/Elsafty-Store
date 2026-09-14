@@ -1,316 +1,463 @@
-/* ============================================================
-   HERO
-   ============================================================ */
+/* =========================================================
+   HERO - NO ZOOM / NO CROP / NO STRETCH
+   ========================================================= */
 
 .hero {
-  --hero-height-desktop: 420px;
-  --hero-height-tablet: 350px;
-  --hero-height-mobile: 240px;
-
   --hero-overlay-opacity: 0.35;
-
   --hero-border-radius: 20px;
+  --hero-transition-duration: 0.45s;
 
-  --hero-transition-duration: 0.5s;
-
-  --hero-object-position: center;
+  --hero-primary: #071a36;
+  --hero-accent: #d4af37;
+  --hero-accent-light: #f4d06f;
 
   position: relative;
 
   width: 100%;
 
-  height: var(--hero-height-desktop);
+  margin: 0 auto;
 
-  margin: 0 0 40px;
+  padding: 0;
 
   overflow: hidden;
-
-  border-radius:
-    var(--hero-border-radius);
-
-  background:
-    #071A36;
 
   isolation: isolate;
 
   direction: rtl;
 
-  box-sizing: border-box;
+  background:
+    var(--hero-primary);
+
+  border-radius:
+    var(--hero-border-radius);
 
   box-shadow:
-    0 12px 35px
-    rgba(7, 26, 54, 0.10);
+    0 18px 50px
+      rgba(0, 0, 0, 0.14);
 }
 
+/* =========================================================
+   BORDER
+   ========================================================= */
 
-/* ============================================================
-   IMAGE WRAPPER
-   ============================================================ */
+.hero::before {
+  content: "";
 
-.hero-image-wrapper {
   position: absolute;
 
   inset: 0;
 
+  z-index: 20;
+
+  pointer-events: none;
+
+  border:
+    1px solid
+      rgba(212, 175, 55, 0.18);
+
+  border-radius: inherit;
+}
+
+/* =========================================================
+   IMAGE WRAPPER
+   ========================================================= */
+
+.hero-image-wrapper {
+  position: relative;
+
   width: 100%;
 
-  height: 100%;
+  height: auto;
+
+  margin: 0;
+
+  padding: 0;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: center;
 
   overflow: hidden;
 
-  background:
-    #071A36;
+  line-height: 0;
 
-  z-index: 0;
+  background:
+    var(--hero-primary);
 }
 
+/* =========================================================
+   THE IMPORTANT PART
+   ========================================================= */
 
-/* ============================================================
-   IMAGE
-   ============================================================ */
+/*
+ * ممنوع تكبير الصورة عن حجمها الطبيعي.
+ *
+ * الصورة:
+ *
+ * 1. width: auto
+ * 2. height: auto
+ * 3. max-width: 100%
+ *
+ * النتيجة:
+ *
+ * - لو الصورة أصغر من الشاشة:
+ *   تفضل بحجمها الطبيعي.
+ *
+ * - لو الصورة أكبر من الشاشة:
+ *   تصغر فقط حتى تدخل الشاشة.
+ *
+ * - لا Crop.
+ * - لا Stretch.
+ * - لا Zoom.
+ */
 
 .hero-image {
-  position: absolute;
-
-  inset: 0;
-
-  width: 100%;
-
-  height: 100%;
-
   display: block;
 
-  object-fit: cover;
+  width: auto;
 
-  object-position:
-    var(--hero-object-position);
+  height: auto;
 
-  opacity: 0;
+  max-width: 100%;
 
-  transform:
-    scale(1.015);
+  /*
+   * لا نفرض Height.
+   */
+  min-height: 0;
+
+  /*
+   * لا object-fit.
+   */
+  object-fit: initial;
+
+  object-position: initial;
+
+  /*
+   * ممنوع أي Zoom.
+   */
+  transform: none !important;
+
+  /*
+   * ممنوع أي Filter.
+   */
+  filter: none !important;
+
+  /*
+   * الحفاظ على النسبة الطبيعية للصورة.
+   */
+  aspect-ratio: auto;
+
+  /*
+   * جودة المتصفح الطبيعية.
+   */
+  image-rendering: auto;
+
+  /*
+   * إزالة baseline.
+   */
+  vertical-align: top;
+
+  /*
+   * منع سحب الصورة.
+   */
+  user-select: none;
+
+  -webkit-user-drag: none;
+
+  -webkit-touch-callout: none;
+
+  opacity: 1;
 
   transition:
     opacity
       var(--hero-transition-duration)
-      ease,
-
-    transform
-      6s
       ease;
 }
 
+/* =========================================================
+   LOADING
+   ========================================================= */
 
-.hero-image-wrapper.is-loaded
-.hero-image {
-  opacity: 1;
-
-  transform:
-    scale(1);
+.hero.image-loading
+  .hero-image {
+  opacity: 0.001;
 }
 
+.hero.image-ready
+  .hero-image {
+  opacity: 1;
+}
 
-/* ============================================================
+/* =========================================================
    OVERLAY
-   ============================================================ */
+   ========================================================= */
 
 .hero-overlay {
   position: absolute;
 
   inset: 0;
 
-  z-index: 2;
+  z-index: 5;
 
   display: flex;
 
   align-items: center;
 
   justify-content:
-    var(--hero-content-position);
-
-  box-sizing: border-box;
+    var(
+      --hero-content-position,
+      flex-end
+    );
 
   padding:
-    50px 60px;
+    clamp(
+      24px,
+      5vw,
+      72px
+    );
 
-  color: #ffffff;
+  pointer-events: none;
 
   background:
     linear-gradient(
       90deg,
-      rgba(0, 0, 0, 0.08) 0%,
-      rgba(0, 0, 0, 0.18) 35%,
-      rgba(0, 0, 0, var(--hero-overlay-opacity)) 100%
+      rgba(7, 26, 54, 0.01),
+      rgba(7, 26, 54, 0.08) 45%,
+      rgba(7, 26, 54, 0.3)
     );
 }
 
+.hero-overlay::after {
+  content: "";
 
-/* ============================================================
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 80% 50%,
+      rgba(0, 0, 0, 0.08),
+      transparent 48%
+    );
+
+  opacity:
+    var(--hero-overlay-opacity);
+}
+
+/* =========================================================
    CONTENT
-   ============================================================ */
+   ========================================================= */
 
 .hero-content {
-  width: min(
-    650px,
-    100%
-  );
+  position: relative;
+
+  z-index: 6;
+
+  width:
+    min(
+      620px,
+      100%
+    );
 
   display: flex;
 
   flex-direction: column;
 
-  align-items:
-    flex-start;
+  align-items: flex-start;
+
+  gap: 15px;
 
   text-align:
-    var(--hero-text-align);
+    var(
+      --hero-text-align,
+      right
+    );
+
+  pointer-events: auto;
 
   animation:
     heroContentIn
-    0.65s
+    0.45s
     ease both;
 }
 
+.hero-content::before {
+  content: "";
 
-/* ============================================================
+  width: 55px;
+
+  height: 3px;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--hero-accent),
+      var(--hero-accent-light)
+    );
+}
+
+/* =========================================================
    TITLE
-   ============================================================ */
+   ========================================================= */
 
 .hero-content h1 {
-  margin: 0 0 18px;
+  margin: 0;
 
-  color: #ffffff;
+  max-width: 100%;
 
-  font-size: clamp(
-    30px,
-    4vw,
-    52px
-  );
+  color: #fff;
 
-  font-weight: 900;
+  font-size:
+    clamp(
+      26px,
+      4vw,
+      58px
+    );
 
-  line-height: 1.2;
+  line-height: 1.08;
 
-  letter-spacing:
-    -0.5px;
+  font-weight: 800;
+
+  letter-spacing: -0.025em;
 
   text-shadow:
-    0 3px 14px
-    rgba(0, 0, 0, 0.35);
+    0 3px 18px
+      rgba(0, 0, 0, 0.3);
 }
 
-
-/* ============================================================
+/* =========================================================
    DESCRIPTION
-   ============================================================ */
+   ========================================================= */
 
 .hero-content p {
-  margin: 0 0 28px;
+  margin: 0;
 
-  max-width: 600px;
+  max-width: 560px;
 
-  color: #ffffff;
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.94
+    );
 
-  font-size: clamp(
-    16px,
-    2vw,
-    22px
-  );
+  font-size:
+    clamp(
+      14px,
+      1.4vw,
+      19px
+    );
 
-  font-weight: 600;
+  line-height: 1.7;
 
-  line-height: 1.8;
+  font-weight: 500;
 
   text-shadow:
-    0 2px 8px
-    rgba(0, 0, 0, 0.35);
+    0 2px 10px
+      rgba(0, 0, 0, 0.24);
 }
 
-
-/* ============================================================
+/* =========================================================
    BUTTON
-   ============================================================ */
+   ========================================================= */
 
 .hero-content button {
-  min-width: 150px;
+  position: relative;
 
-  min-height: 50px;
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 11px;
+
+  min-height: 48px;
 
   padding:
-    13px 30px;
+    11px 21px;
+
+  margin-top: 3px;
 
   border:
-    0;
+    1px solid
+      rgba(255, 255, 255, 0.15);
 
-  border-radius:
-    12px;
+  border-radius: 12px;
 
   background:
     linear-gradient(
       135deg,
-      #D4AF37,
-      #F4D06F
+      var(--hero-accent),
+      var(--hero-accent-light)
     );
 
   color:
-    #071A36;
+    var(--hero-primary);
 
-  font-family:
-    inherit;
+  font-size: 15px;
 
-  font-size:
-    17px;
+  font-weight: 800;
 
-  font-weight:
-    800;
+  cursor: pointer;
 
-  cursor:
-    pointer;
+  overflow: hidden;
 
   box-shadow:
-    0 8px 22px
-    rgba(0, 0, 0, 0.20);
+    0 10px 28px
+      rgba(0, 0, 0, 0.22);
 
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
 }
-
 
 .hero-content button:hover {
   transform:
     translateY(-2px);
 
-  filter:
-    brightness(1.05);
-
   box-shadow:
-    0 12px 28px
-    rgba(0, 0, 0, 0.28);
-}
+    0 15px 35px
+      rgba(0, 0, 0, 0.28);
 
+  filter:
+    brightness(1.04);
+}
 
 .hero-content button:active {
   transform:
     translateY(0);
 }
 
+.hero-content button span {
+  position: relative;
 
-/* ============================================================
+  z-index: 2;
+}
+
+/* =========================================================
    ARROWS
-   ============================================================ */
+   ========================================================= */
 
 .hero-arrow {
   position: absolute;
 
   top: 50%;
 
-  z-index: 5;
+  z-index: 10;
 
-  width: 46px;
+  width: 48px;
 
-  height: 46px;
+  height: 48px;
 
   display: flex;
 
@@ -325,82 +472,80 @@
 
   border:
     1px solid
-    rgba(255, 255, 255, 0.25);
+      rgba(255, 255, 255, 0.18);
 
-  border-radius:
-    50%;
+  border-radius: 50%;
 
   background:
-    rgba(7, 26, 54, 0.58);
+    rgba(
+      7,
+      26,
+      54,
+      0.52
+    );
 
-  color:
-    #ffffff;
-
-  font-family:
-    Arial, sans-serif;
-
-  font-size: 38px;
-
-  font-weight: 300;
-
-  line-height: 1;
-
-  cursor:
-    pointer;
+  color: #fff;
 
   backdrop-filter:
-    blur(8px);
+    blur(12px);
 
   -webkit-backdrop-filter:
-    blur(8px);
+    blur(12px);
 
-  opacity: 0;
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 24px
+      rgba(0, 0, 0, 0.18);
 
   transition:
-    opacity 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s ease;
+    background 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
 }
-
-
-.hero:hover
-.hero-arrow {
-  opacity: 1;
-}
-
 
 .hero-arrow:hover {
   background:
-    rgba(7, 26, 54, 0.82);
+    var(--hero-accent);
+
+  color:
+    var(--hero-primary);
+
+  border-color:
+    var(--hero-accent);
 
   transform:
     translateY(-50%)
-    scale(1.06);
+    scale(1.05);
 }
-
 
 .hero-arrow-prev {
   right: 20px;
 }
 
-
 .hero-arrow-next {
   left: 20px;
 }
 
+.hero-arrow span {
+  font-size: 20px;
 
-/* ============================================================
+  line-height: 1;
+}
+
+/* =========================================================
    DOTS
-   ============================================================ */
+   ========================================================= */
 
 .hero-dots {
   position: absolute;
 
-  bottom: 18px;
-
   left: 50%;
 
-  z-index: 6;
+  bottom: 20px;
+
+  z-index: 11;
 
   display: flex;
 
@@ -416,143 +561,154 @@
   padding:
     7px 10px;
 
-  border-radius:
-    999px;
+  border:
+    1px solid
+      rgba(255, 255, 255, 0.1);
+
+  border-radius: 999px;
 
   background:
-    rgba(7, 26, 54, 0.42);
+    rgba(
+      7,
+      26,
+      54,
+      0.4
+    );
 
   backdrop-filter:
-    blur(8px);
+    blur(10px);
 
   -webkit-backdrop-filter:
-    blur(8px);
+    blur(10px);
 }
 
-
 .hero-dot {
-  width: 8px;
+  width: 7px;
 
-  height: 8px;
+  height: 7px;
 
   padding: 0;
 
   border: 0;
 
-  border-radius:
-    50%;
+  border-radius: 999px;
 
   background:
-    rgba(255, 255, 255, 0.55);
+    rgba(
+      255,
+      255,
+      255,
+      0.55
+    );
 
-  cursor:
-    pointer;
+  cursor: pointer;
 
   transition:
     width 0.25s ease,
-    background 0.25s ease,
-    transform 0.25s ease;
+    background 0.25s ease;
 }
-
-
-.hero-dot:hover {
-  transform:
-    scale(1.15);
-}
-
 
 .hero-dot.active {
-  width: 26px;
-
-  border-radius:
-    999px;
+  width: 24px;
 
   background:
-    #D4AF37;
+    var(--hero-accent);
 }
 
-
-/* ============================================================
+/* =========================================================
    COUNTER
-   ============================================================ */
+   ========================================================= */
 
 .hero-counter {
   position: absolute;
 
-  left: 18px;
+  left: 22px;
 
-  bottom: 18px;
+  bottom: 20px;
 
-  z-index: 6;
+  z-index: 11;
 
-  min-width: 52px;
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
 
   padding:
-    7px 10px;
+    7px 11px;
 
-  border-radius:
-    999px;
+  border:
+    1px solid
+      rgba(255, 255, 255, 0.1);
+
+  border-radius: 999px;
 
   background:
-    rgba(7, 26, 54, 0.55);
+    rgba(
+      7,
+      26,
+      54,
+      0.42
+    );
 
-  color:
-    #ffffff;
+  color: #fff;
 
-  font-size:
-    12px;
+  font-size: 12px;
 
-  font-weight:
-    700;
-
-  text-align:
-    center;
-
-  direction: ltr;
+  font-weight: 700;
 
   backdrop-filter:
-    blur(8px);
+    blur(10px);
 
   -webkit-backdrop-filter:
-    blur(8px);
+    blur(10px);
 }
-
 
 .hero-counter span {
-  margin:
-    0 4px;
-
   color:
-    #D4AF37;
+    var(--hero-accent);
 }
 
+/* =========================================================
+   SCREEN READER
+   ========================================================= */
 
-/* ============================================================
-   ACCESSIBILITY
-   ============================================================ */
+.hero-slide-status {
+  position: absolute;
 
-.hero-arrow:focus-visible,
-.hero-dot:focus-visible,
-.hero-content button:focus-visible {
-  outline:
-    3px solid
-    #F4D06F;
+  width: 1px;
 
-  outline-offset:
-    3px;
+  height: 1px;
+
+  padding: 0;
+
+  margin: -1px;
+
+  overflow: hidden;
+
+  clip:
+    rect(
+      0,
+      0,
+      0,
+      0
+    );
+
+  white-space: nowrap;
+
+  border: 0;
 }
 
-
-/* ============================================================
+/* =========================================================
    ANIMATION
-   ============================================================ */
+   ========================================================= */
 
 @keyframes heroContentIn {
   from {
     opacity: 0;
 
     transform:
-      translateY(18px);
+      translateY(14px);
   }
 
   to {
@@ -563,27 +719,44 @@
   }
 }
 
-
-/* ============================================================
+/* =========================================================
    TABLET
-   ============================================================ */
+   ========================================================= */
 
 @media (max-width: 1024px) {
-  .hero {
-    height:
-      var(--hero-height-tablet);
-
-    margin-bottom:
-      30px;
-  }
-
   .hero-overlay {
     padding:
-      40px;
+      28px;
+  }
+
+  .hero-content {
+    max-width: 520px;
+
+    gap: 12px;
+  }
+
+  .hero-content h1 {
+    font-size:
+      clamp(
+        24px,
+        4.8vw,
+        44px
+      );
+  }
+
+  .hero-content p {
+    font-size:
+      clamp(
+        13px,
+        1.8vw,
+        17px
+      );
   }
 
   .hero-arrow {
-    opacity: 0.9;
+    width: 42px;
+
+    height: 42px;
   }
 
   .hero-arrow-prev {
@@ -595,110 +768,167 @@
   }
 }
 
-
-/* ============================================================
+/* =========================================================
    MOBILE
-   ============================================================ */
+   ========================================================= */
 
 @media (max-width: 768px) {
   .hero {
-    height:
-      var(--hero-height-mobile);
-
-    margin-bottom:
-      24px;
-
     border-radius:
-      14px;
+      min(
+        var(--hero-border-radius),
+        14px
+      );
+  }
+
+  /*
+   * نفس القاعدة على الموبايل:
+   *
+   * الصورة لا تكبر.
+   * فقط تصغر لو كانت أكبر من الشاشة.
+   */
+  .hero-image {
+    width: auto;
+
+    height: auto;
+
+    max-width: 100%;
   }
 
   .hero-overlay {
-    padding:
-      25px;
-
-    background:
-      linear-gradient(
-        90deg,
-        rgba(0, 0, 0, 0.12),
-        rgba(0, 0, 0, var(--hero-overlay-opacity))
-      );
+    padding: 20px;
   }
 
   .hero-content {
     width: 100%;
 
-    align-items:
-      flex-start;
+    max-width: 420px;
+
+    gap: 9px;
+  }
+
+  .hero-content::before {
+    width: 42px;
+
+    height: 2px;
   }
 
   .hero-content h1 {
-    margin-bottom:
-      10px;
-
     font-size:
-      clamp(24px, 7vw, 34px);
+      clamp(
+        21px,
+        7vw,
+        32px
+      );
   }
 
   .hero-content p {
-    margin-bottom:
-      17px;
+    max-width: 90%;
 
     font-size:
-      15px;
+      clamp(
+        12px,
+        3.4vw,
+        15px
+      );
 
-    line-height:
-      1.6;
+    line-height: 1.55;
   }
 
   .hero-content button {
-    min-width:
-      125px;
-
-    min-height:
-      44px;
+    min-height: 41px;
 
     padding:
-      10px 20px;
+      9px 15px;
 
-    border-radius:
-      10px;
-
-    font-size:
-      14px;
+    font-size: 13px;
   }
 
   .hero-arrow {
     width: 36px;
 
     height: 36px;
-
-    font-size: 29px;
-
-    opacity: 0.9;
   }
 
   .hero-arrow-prev {
-    right: 10px;
+    right: 9px;
   }
 
   .hero-arrow-next {
-    left: 10px;
+    left: 9px;
+  }
+
+  .hero-arrow span {
+    font-size: 16px;
   }
 
   .hero-dots {
-    bottom: 12px;
+    bottom: 10px;
 
-    gap: 6px;
+    padding:
+      6px 8px;
   }
 
-  .hero-dot {
-    width: 7px;
+  .hero-counter {
+    left: 10px;
 
-    height: 7px;
+    bottom: 10px;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .hero-overlay {
+    padding: 15px;
   }
 
-  .hero-dot.active {
-    width: 21px;
+  .hero-content {
+    gap: 7px;
+  }
+
+  .hero-content h1 {
+    font-size:
+      clamp(
+        19px,
+        7.5vw,
+        28px
+      );
+  }
+
+  .hero-content p {
+    font-size: 11.5px;
+  }
+
+  .hero-content button {
+    min-height: 36px;
+
+    padding:
+      7px 12px;
+
+    border-radius: 9px;
+
+    font-size: 11px;
+  }
+
+  .hero-arrow {
+    width: 31px;
+
+    height: 31px;
+  }
+
+  .hero-arrow-prev {
+    right: 6px;
+  }
+
+  .hero-arrow-next {
+    left: 6px;
+  }
+
+  .hero-dots {
+    bottom: 7px;
   }
 
   .hero-counter {
@@ -706,98 +936,70 @@
   }
 }
 
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
 
-/* ============================================================
-   SMALL MOBILE
-   ============================================================ */
-
-@media (max-width: 480px) {
-  .hero {
-    height:
-      var(--hero-height-mobile);
-
-    border-radius:
-      10px;
-  }
-
+@media (max-width: 360px) {
   .hero-overlay {
-    padding:
-      20px;
+    padding: 11px;
   }
 
   .hero-content h1 {
-    font-size:
-      23px;
-
-    margin-bottom:
-      8px;
+    font-size: 18px;
   }
 
   .hero-content p {
-    max-width:
-      85%;
-
-    font-size:
-      13px;
-
-    margin-bottom:
-      13px;
+    font-size: 10.5px;
   }
 
   .hero-content button {
-    min-width:
-      110px;
-
-    min-height:
-      40px;
+    min-height: 33px;
 
     padding:
-      8px 16px;
+      6px 10px;
 
-    font-size:
-      13px;
+    font-size: 10px;
   }
 
   .hero-arrow {
-    width: 32px;
+    width: 28px;
 
-    height: 32px;
-
-    font-size: 25px;
-  }
-
-  .hero-arrow-prev {
-    right: 7px;
-  }
-
-  .hero-arrow-next {
-    left: 7px;
+    height: 28px;
   }
 }
 
+/* =========================================================
+   FOCUS
+   ========================================================= */
 
-/* ============================================================
+.hero-arrow:focus-visible,
+.hero-dot:focus-visible,
+.hero-content button:focus-visible {
+  outline:
+    2px solid
+      var(--hero-accent);
+
+  outline-offset: 3px;
+}
+
+/* =========================================================
    REDUCED MOTION
-   ============================================================ */
+   ========================================================= */
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-image {
-    transition:
-      opacity 0.2s ease;
+@media (
+  prefers-reduced-motion: reduce
+) {
+  .hero *,
+  .hero *::before,
+  .hero *::after {
+    animation-duration:
+      0.01ms !important;
 
-    transform:
-      none !important;
-  }
+    animation-iteration-count:
+      1 !important;
 
-  .hero-content {
-    animation:
-      none;
-  }
-
-  .hero-arrow,
-  .hero-dot,
-  .hero-content button {
-    transition:
-      none;
+    transition-duration:
+      0.01ms !important;
   }
 }

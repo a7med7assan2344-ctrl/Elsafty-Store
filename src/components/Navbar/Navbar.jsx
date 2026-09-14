@@ -2395,6 +2395,14 @@ export default function Navbar() {
       "--category-text":
         theme.categoryBarText,
 
+      "--page-background":
+        theme.pageBackground ||
+        DEFAULT_STORE_SETTINGS.theme.pageBackground,
+
+      "--card-background":
+        theme.cardBackground ||
+        DEFAULT_STORE_SETTINGS.theme.cardBackground,
+
       "--mega-menu-top":
         "var(--navbar-fixed-height, 120px)",
 
@@ -2412,6 +2420,78 @@ export default function Navbar() {
     {
       ...navbarStyle,
     };
+
+
+  /* ===================================================
+     GLOBAL STORE THEME BACKGROUND
+
+     IMPORTANT:
+     - pageBackground controls the full store page background
+     - cardBackground remains available for cards/sections
+     - updates immediately when Admin changes the theme
+  =================================================== */
+
+  useEffect(() => {
+    const pageBackground =
+      theme.pageBackground ||
+      DEFAULT_STORE_SETTINGS.theme.pageBackground ||
+      "#f5f6f8";
+
+    const cardBackground =
+      theme.cardBackground ||
+      DEFAULT_STORE_SETTINGS.theme.cardBackground ||
+      "#ffffff";
+
+    document.documentElement.style.setProperty(
+      "--store-page-background",
+      pageBackground
+    );
+
+    document.documentElement.style.setProperty(
+      "--store-card-background",
+      cardBackground
+    );
+
+    document.body.style.setProperty(
+      "--store-page-background",
+      pageBackground
+    );
+
+    document.body.style.setProperty(
+      "--store-card-background",
+      cardBackground
+    );
+
+    const root =
+      document.getElementById("root");
+
+    const previousBodyBackground =
+      document.body.style.backgroundColor;
+
+    const previousRootBackground =
+      root?.style.backgroundColor || "";
+
+    document.body.style.backgroundColor =
+      pageBackground;
+
+    if (root) {
+      root.style.backgroundColor =
+        pageBackground;
+    }
+
+    return () => {
+      document.body.style.backgroundColor =
+        previousBodyBackground;
+
+      if (root) {
+        root.style.backgroundColor =
+          previousRootBackground;
+      }
+    };
+  }, [
+    theme.pageBackground,
+    theme.cardBackground,
+  ]);
 
 
   /* ===================================================

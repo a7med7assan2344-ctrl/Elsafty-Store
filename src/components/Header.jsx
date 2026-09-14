@@ -1,15 +1,36 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+
+import {
+  collection,
+  doc,
+  onSnapshot,
+} from "firebase/firestore";
 
 import { CartContext } from "../context/CartContext";
 import { db } from "../firebase";
 
 import "./Header.css";
 
+
+/* ============================================================
+   DEFAULT SETTINGS
+   ============================================================ */
+
 const DEFAULT_SETTINGS = {
   storeName: "ســـــَــــــــوا",
+
   logo: "",
+
   theme: {
     primary: "#071A36",
     secondary: "#0B1F3A",
@@ -18,6 +39,11 @@ const DEFAULT_SETTINGS = {
     fontFamily: "Cairo",
   },
 };
+
+
+/* ============================================================
+   DEFAULT MENU
+   ============================================================ */
 
 const DEFAULT_MENU = [
   {
@@ -46,106 +72,208 @@ const DEFAULT_MENU = [
   },
 ];
 
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const { cart = [] } = useContext(CartContext);
 
-  const [storeSettings, setStoreSettings] = useState(DEFAULT_SETTINGS);
-  const [menuItems, setMenuItems] = useState([]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
 
-  /* =========================
+  /* ============================================================
+     STATE
+     ============================================================ */
+
+  const [storeSettings, setStoreSettings] =
+    useState(DEFAULT_SETTINGS);
+
+  const [menuItems, setMenuItems] =
+    useState([]);
+
+  const [menuOpen, setMenuOpen] =
+    useState(false);
+
+  const [searchOpen, setSearchOpen] =
+    useState(false);
+
+  const [searchValue, setSearchValue] =
+    useState("");
+
+  const [scrolled, setScrolled] =
+    useState(false);
+
+
+  /* ============================================================
+     SCROLL EFFECT
+     ============================================================ */
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 12);
+    };
+
+    handleScroll();
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      { passive: true }
+    );
+
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+    };
+  }, []);
+
+
+  /* ============================================================
      LOAD STORE SETTINGS
-  ========================= */
+     ============================================================ */
 
   useEffect(() => {
-    const storeRef = doc(db, "settings", "store");
+    const storeRef =
+      doc(db, "settings", "store");
 
-    const unsubscribe = onSnapshot(
-      storeRef,
-      (snapshot) => {
-        if (!snapshot.exists()) {
-          setStoreSettings(DEFAULT_SETTINGS);
-          return;
-        }
+    const unsubscribe =
+      onSnapshot(
+        storeRef,
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            setStoreSettings(
+              DEFAULT_SETTINGS
+            );
 
-        const data = snapshot.data() || {};
+            return;
+          }
 
-        setStoreSettings({
-          ...DEFAULT_SETTINGS,
-          ...data,
-          theme: {
-            ...DEFAULT_SETTINGS.theme,
-            ...(data.theme || {}),
-          },
-        });
-      },
-      () => {
-        setStoreSettings(DEFAULT_SETTINGS);
-      }
-    );
+          const data =
+            snapshot.data() || {};
 
-    return () => unsubscribe();
-  }, []);
+          setStoreSettings({
+            ...DEFAULT_SETTINGS,
+            ...data,
 
-  /* =========================
-     LOAD ADMIN MENU
-  ========================= */
+            theme: {
+              ...DEFAULT_SETTINGS.theme,
+              ...(data.theme || {}),
+            },
+          });
+        },
 
-  useEffect(() => {
-    const menuRef = collection(db, "storeMenuItems");
-
-    const unsubscribe = onSnapshot(
-      menuRef,
-      (snapshot) => {
-        const data = snapshot.docs
-          .map((item) => ({
-            id: item.id,
-            ...item.data(),
-          }))
-          .filter((item) => item.active !== false)
-          .sort(
-            (a, b) =>
-              Number(a.order ?? a.sortOrder ?? 999) -
-              Number(b.order ?? b.sortOrder ?? 999)
+        () => {
+          setStoreSettings(
+            DEFAULT_SETTINGS
           );
-
-        setMenuItems(data);
-      },
-      () => {
-        setMenuItems([]);
-      }
-    );
+        }
+      );
 
     return () => unsubscribe();
   }, []);
 
-  /* =========================
-     CART
-  ========================= */
+
+  /* ============================================================
+     LOAD ADMIN MENU
+     ============================================================ */
+
+  useEffect(() => {
+    const menuRef =
+      collection(db, "storeMenuItems");
+
+    const unsubscribe =
+      onSnapshot(
+        menuRef,
+        (snapshot) => {
+          const data =
+            snapshot.docs
+              .map((item) => ({
+                id: item.id,
+                ...item.data(),
+              }))
+              .filter(
+                (item) =>
+                  item.active !== false
+              )
+              .sort(
+                (a, b) =>
+                  Number(
+                    a.order ??
+                    a.sortOrder ??
+                    999
+                  ) -
+                  Number(
+                    b.order ??
+                    b.sortOrder ??
+                    999
+                  )
+              );
+
+          setMenuItems(data);
+        },
+
+        () => {
+          setMenuItems([]);
+        }
+      );
+
+    return () => unsubscribe();
+  }, []);
+
+
+  /* ============================================================
+     CART COUNT
+     ============================================================ */
 
   const cartCount = useMemo(() => {
     return cart.reduce(
-      (sum, item) => sum + Number(item.quantity || 0),
+      (sum, item) =>
+        sum +
+        Number(
+          item.quantity || 0
+        ),
       0
     );
   }, [cart]);
 
-  /* =========================
-     SETTINGS
-  ========================= */
 
-  const theme = storeSettings.theme || DEFAULT_SETTINGS.theme;
+  /* ============================================================
+     THEME
+     ============================================================ */
 
-  const primary = theme.primary || "#071A36";
-  const secondary = theme.secondary || "#0B1F3A";
-  const accent = theme.accent || "#D4AF37";
-  const textColor = theme.textColor || "#FFFFFF";
-  const fontFamily = theme.fontFamily || "Cairo";
+  const theme =
+    storeSettings.theme ||
+    DEFAULT_SETTINGS.theme;
+
+  const primary =
+    theme.primary ||
+    "#071A36";
+
+  const secondary =
+    theme.secondary ||
+    "#0B1F3A";
+
+  const accent =
+    theme.accent ||
+    "#D4AF37";
+
+  const textColor =
+    theme.textColor ||
+    "#FFFFFF";
+
+  const fontFamily =
+    theme.fontFamily ||
+    "Cairo";
+
+
+  /* ============================================================
+     STORE DATA
+     ============================================================ */
 
   const storeName =
     storeSettings.storeName ||
@@ -154,12 +282,14 @@ function Header() {
   const logo =
     storeSettings.logo ||
     storeSettings.logoUrl ||
+    storeSettings.logoURL ||
     "";
 
-  /*
-   * لو الأدمن مش عامل عناصر في storeMenuItems
-   * نستخدم القائمة الافتراضية بدون ما الصفحة تفضى.
-   */
+
+  /* ============================================================
+     FINAL MENU
+     ============================================================ */
+
   const finalMenu = useMemo(() => {
     if (menuItems.length > 0) {
       return menuItems;
@@ -168,9 +298,10 @@ function Header() {
     return DEFAULT_MENU;
   }, [menuItems]);
 
-  /* =========================
+
+  /* ============================================================
      NAVIGATION
-  ========================= */
+     ============================================================ */
 
   const handleNavigate = (item) => {
     const path =
@@ -181,7 +312,9 @@ function Header() {
 
     setMenuOpen(false);
 
-    if (!path) return;
+    if (!path) {
+      return;
+    }
 
     if (
       path.startsWith("http://") ||
@@ -194,6 +327,11 @@ function Header() {
     navigate(path);
   };
 
+
+  /* ============================================================
+     ACTIVE MENU
+     ============================================================ */
+
   const isActive = (item) => {
     const path =
       item.path ||
@@ -202,34 +340,63 @@ function Header() {
       "/";
 
     if (path === "/") {
-      return location.pathname === "/";
+      return (
+        location.pathname === "/"
+      );
     }
 
-    return location.pathname === path ||
-      location.pathname.startsWith(`${path}/`);
+    return (
+      location.pathname === path ||
+      location.pathname.startsWith(
+        `${path}/`
+      )
+    );
   };
+
+
+  /* ============================================================
+     SEARCH
+     ============================================================ */
 
   const handleSearch = (event) => {
     event.preventDefault();
 
-    const value = searchValue.trim();
+    const value =
+      searchValue.trim();
 
     if (!value) {
       navigate("/products");
+
+      setSearchOpen(false);
+
       return;
     }
 
     navigate(
-      `/products?search=${encodeURIComponent(value)}`
+      `/products?search=${encodeURIComponent(
+        value
+      )}`
     );
 
     setSearchValue("");
+
     setSearchOpen(false);
   };
 
-  /* =========================
+
+  /* ============================================================
+     CLOSE MOBILE MENU WHEN ROUTE CHANGES
+     ============================================================ */
+
+  useEffect(() => {
+    setMenuOpen(false);
+    setSearchOpen(false);
+  }, [location.pathname]);
+
+
+  /* ============================================================
      CSS VARIABLES
-  ========================= */
+     ============================================================ */
 
   const headerStyle = {
     "--header-primary": primary,
@@ -239,17 +406,32 @@ function Header() {
     "--header-font": fontFamily,
   };
 
+
+  /* ============================================================
+     RENDER
+     ============================================================ */
+
   return (
     <header
-      className="main-header"
+      className={`main-header ${
+        scrolled
+          ? "is-scrolled"
+          : ""
+      }`}
       style={headerStyle}
       dir="rtl"
     >
+
+      {/* ======================================================
+          TOP HEADER
+          ====================================================== */}
+
       <div className="header-inner">
 
-        {/* =========================
-            LOGO
-        ========================= */}
+
+        {/* ====================================================
+            BRAND
+            ==================================================== */}
 
         <button
           type="button"
@@ -260,65 +442,107 @@ function Header() {
           }}
           aria-label={storeName}
         >
-          {logo ? (
-            <img
-              src={logo}
-              alt={storeName}
-              className="header-logo-image"
-            />
-          ) : (
+
+          <span className="header-brand-mark">
+
+            {logo ? (
+              <img
+                src={logo}
+                alt={storeName}
+                className="header-logo-image"
+              />
+            ) : (
+              <span className="header-logo-fallback">
+                {storeName.charAt(0)}
+              </span>
+            )}
+
+          </span>
+
+
+          <span className="header-brand-copy">
+
             <span className="header-logo-text">
               {storeName}
             </span>
-          )}
+
+            <span className="header-brand-subtitle">
+              تسوق بثقة
+            </span>
+
+          </span>
+
         </button>
 
-        {/* =========================
-            DESKTOP MENU
-        ========================= */}
+
+        {/* ====================================================
+            DESKTOP NAVIGATION
+            ==================================================== */}
 
         <nav
           className="header-navigation"
           aria-label="القائمة الرئيسية"
         >
-          {finalMenu.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`header-nav-item ${
-                isActive(item)
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                handleNavigate(item)
-              }
-            >
-              {item.icon && (
-                <span className="header-nav-icon">
-                  {item.icon}
-                </span>
-              )}
 
-              <span>
-                {item.label ||
-                  item.name ||
-                  "صفحة"}
-              </span>
-            </button>
-          ))}
+          {finalMenu.map((item) => {
+
+            const active =
+              isActive(item);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`header-nav-item ${
+                  active
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() =>
+                  handleNavigate(item)
+                }
+              >
+
+                {item.icon && (
+                  <span className="header-nav-icon">
+                    {item.icon}
+                  </span>
+                )}
+
+                <span className="header-nav-label">
+                  {item.label ||
+                    item.name ||
+                    "صفحة"}
+                </span>
+
+              </button>
+            );
+          })}
+
         </nav>
 
-        {/* =========================
+
+        {/* ====================================================
             SEARCH
-        ========================= */}
+            ==================================================== */}
 
         <div
           className={`header-search ${
-            searchOpen ? "open" : ""
+            searchOpen
+              ? "open"
+              : ""
           }`}
         >
-          <form onSubmit={handleSearch}>
+
+          <form
+            onSubmit={handleSearch}
+            className="header-search-form"
+          >
+
+            <span className="header-search-icon">
+              🔍
+            </span>
+
             <input
               type="search"
               value={searchValue}
@@ -327,146 +551,264 @@ function Header() {
                   event.target.value
                 )
               }
-              placeholder="ابحث عن منتج..."
+              placeholder="ابحث عن منتج أو عرض..."
               aria-label="البحث عن منتج"
             />
 
             <button
               type="submit"
-              aria-label="بحث"
               className="search-submit"
+              aria-label="بحث"
             >
-              🔍
+              بحث
             </button>
+
           </form>
+
         </div>
+
+
+        {/* ====================================================
+            MOBILE SEARCH BUTTON
+            ==================================================== */}
 
         <button
           type="button"
           className="header-search-toggle"
           onClick={() =>
-            setSearchOpen((value) => !value)
+            setSearchOpen(
+              (value) => !value
+            )
           }
           aria-label="فتح البحث"
+          aria-expanded={searchOpen}
         >
-          🔍
+          <span>
+            🔍
+          </span>
         </button>
 
-        {/* =========================
+
+        {/* ====================================================
             CART
-        ========================= */}
+            ==================================================== */}
 
         <button
           type="button"
           className="header-cart"
-          onClick={() => navigate("/cart")}
+          onClick={() =>
+            navigate("/cart")
+          }
           aria-label="السلة"
         >
-          <span className="cart-icon">
-            🛒
-          </span>
 
-          <span className="cart-text">
-            السلة
-          </span>
+          <span className="cart-icon-wrap">
 
-          {cartCount > 0 && (
-            <span className="cart-count">
-              {cartCount}
+            <span className="cart-icon">
+              🛒
             </span>
-          )}
+
+            {cartCount > 0 && (
+              <span className="cart-count">
+                {cartCount}
+              </span>
+            )}
+
+          </span>
+
+          <span className="cart-copy">
+
+            <span className="cart-label">
+              السلة
+            </span>
+
+            <span className="cart-subtitle">
+              {cartCount > 0
+                ? `${cartCount} منتج`
+                : "فارغة"}
+            </span>
+
+          </span>
+
         </button>
 
-        {/* =========================
-            MOBILE MENU BUTTON
-        ========================= */}
+
+        {/* ====================================================
+            MOBILE MENU
+            ==================================================== */}
 
         <button
           type="button"
           className={`header-menu-toggle ${
-            menuOpen ? "active" : ""
+            menuOpen
+              ? "active"
+              : ""
           }`}
           onClick={() =>
-            setMenuOpen((value) => !value)
+            setMenuOpen(
+              (value) => !value
+            )
           }
           aria-label="القائمة"
           aria-expanded={menuOpen}
         >
+
           <span />
           <span />
           <span />
+
         </button>
+
       </div>
 
-      {/* =========================
+
+      {/* ======================================================
           MOBILE NAVIGATION
-      ========================= */}
+          ====================================================== */}
 
       <div
         className={`mobile-navigation ${
-          menuOpen ? "open" : ""
+          menuOpen
+            ? "open"
+            : ""
         }`}
       >
+
         <div className="mobile-navigation-inner">
 
-          {finalMenu.map((item) => (
+          <div className="mobile-menu-header">
+
+            <div>
+              <strong>
+                {storeName}
+              </strong>
+
+              <span>
+                القائمة الرئيسية
+              </span>
+            </div>
+
             <button
-              key={item.id}
+              type="button"
+              onClick={() =>
+                setMenuOpen(false)
+              }
+              aria-label="إغلاق القائمة"
+            >
+              ×
+            </button>
+
+          </div>
+
+
+          <div className="mobile-menu-items">
+
+            {finalMenu.map((item) => {
+
+              const active =
+                isActive(item);
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`mobile-nav-item ${
+                    active
+                      ? "active"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    handleNavigate(item)
+                  }
+                >
+
+                  <span className="mobile-nav-icon">
+                    {item.icon || "•"}
+                  </span>
+
+                  <span className="mobile-nav-label">
+                    {item.label ||
+                      item.name ||
+                      "صفحة"}
+                  </span>
+
+                  <span className="mobile-nav-arrow">
+                    ‹
+                  </span>
+
+                </button>
+              );
+            })}
+
+
+            <button
               type="button"
               className={`mobile-nav-item ${
-                isActive(item)
+                location.pathname ===
+                "/cart"
                   ? "active"
                   : ""
               }`}
-              onClick={() =>
-                handleNavigate(item)
-              }
+              onClick={() => {
+                navigate("/cart");
+                setMenuOpen(false);
+              }}
             >
+
               <span className="mobile-nav-icon">
-                {item.icon || "•"}
+                🛒
               </span>
 
-              <span>
-                {item.label ||
-                  item.name ||
-                  "صفحة"}
+              <span className="mobile-nav-label">
+                السلة
               </span>
+
+              {cartCount > 0 && (
+                <span className="mobile-cart-count">
+                  {cartCount}
+                </span>
+              )}
+
+              <span className="mobile-nav-arrow">
+                ‹
+              </span>
+
             </button>
-          ))}
 
-          <button
-            type="button"
-            className={`mobile-nav-item ${
-              location.pathname === "/cart"
-                ? "active"
-                : ""
-            }`}
-            onClick={() => {
-              navigate("/cart");
-              setMenuOpen(false);
-            }}
-          >
-            <span className="mobile-nav-icon">
-              🛒
+          </div>
+
+
+          <div className="mobile-menu-footer">
+            <span>
+              {storeName}
             </span>
 
             <span>
-              السلة
-              {cartCount > 0
-                ? ` (${cartCount})`
-                : ""}
+              تسوق بأمان • جودة • ثقة
             </span>
-          </button>
+          </div>
+
         </div>
+
       </div>
 
-      {/* =========================
-          SEARCH MOBILE
-      ========================= */}
+
+      {/* ======================================================
+          MOBILE SEARCH
+          ====================================================== */}
 
       {searchOpen && (
         <div className="mobile-search">
-          <form onSubmit={handleSearch}>
+
+          <form
+            onSubmit={handleSearch}
+            className="mobile-search-form"
+          >
+
+            <span>
+              🔍
+            </span>
+
             <input
               type="search"
               value={searchValue}
@@ -479,12 +821,17 @@ function Header() {
               autoFocus
             />
 
-            <button type="submit">
+            <button
+              type="submit"
+            >
               بحث
             </button>
+
           </form>
+
         </div>
       )}
+
     </header>
   );
 }
