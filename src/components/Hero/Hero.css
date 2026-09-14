@@ -1,5 +1,7 @@
 /* =========================================================
-   HERO - NO ZOOM / NO CROP / NO STRETCH
+   HERO
+   NO UNWANTED ZOOM / NO CROP / NO STRETCH
+   ADMIN CONTROLLED TYPOGRAPHY
    ========================================================= */
 
 .hero {
@@ -10,6 +12,23 @@
   --hero-primary: #071a36;
   --hero-accent: #d4af37;
   --hero-accent-light: #f4d06f;
+
+  /* Admin typography variables */
+  --hero-title-font-family: Cairo, sans-serif;
+  --hero-description-font-family: Cairo, sans-serif;
+  --hero-button-font-family: Cairo, sans-serif;
+
+  --hero-title-font-size-desktop: 42px;
+  --hero-title-font-size-tablet: 36px;
+  --hero-title-font-size-mobile: 30px;
+
+  --hero-description-font-size-desktop: 20px;
+  --hero-description-font-size-tablet: 18px;
+  --hero-description-font-size-mobile: 16px;
+
+  --hero-button-font-size-desktop: 16px;
+  --hero-button-font-size-tablet: 15px;
+  --hero-button-font-size-mobile: 14px;
 
   position: relative;
 
@@ -25,16 +44,14 @@
 
   direction: rtl;
 
-  background:
-    var(--hero-primary);
+  background: var(--hero-primary);
 
-  border-radius:
-    var(--hero-border-radius);
+  border-radius: var(--hero-border-radius);
 
   box-shadow:
-    0 18px 50px
-      rgba(0, 0, 0, 0.14);
+    0 18px 50px rgba(0, 0, 0, 0.14);
 }
+
 
 /* =========================================================
    BORDER
@@ -52,11 +69,11 @@
   pointer-events: none;
 
   border:
-    1px solid
-      rgba(212, 175, 55, 0.18);
+    1px solid rgba(212, 175, 55, 0.18);
 
   border-radius: inherit;
 }
+
 
 /* =========================================================
    IMAGE WRAPPER
@@ -83,35 +100,23 @@
 
   line-height: 0;
 
-  background:
-    var(--hero-primary);
+  background: var(--hero-primary);
 }
 
+
 /* =========================================================
-   THE IMPORTANT PART
+   IMAGE
    ========================================================= */
 
 /*
- * ممنوع تكبير الصورة عن حجمها الطبيعي.
- *
- * الصورة:
- *
- * 1. width: auto
- * 2. height: auto
- * 3. max-width: 100%
- *
- * النتيجة:
- *
- * - لو الصورة أصغر من الشاشة:
- *   تفضل بحجمها الطبيعي.
- *
- * - لو الصورة أكبر من الشاشة:
- *   تصغر فقط حتى تدخل الشاشة.
- *
- * - لا Crop.
- * - لا Stretch.
- * - لا Zoom.
- */
+  القاعدة الأساسية:
+
+  - لا نكبر الصورة عن حجمها الطبيعي.
+  - لو أكبر من الشاشة تصغر فقط.
+  - لا Crop.
+  - لا Stretch.
+  - لا Zoom.
+*/
 
 .hero-image {
   display: block;
@@ -122,46 +127,22 @@
 
   max-width: 100%;
 
-  /*
-   * لا نفرض Height.
-   */
   min-height: 0;
 
-  /*
-   * لا object-fit.
-   */
   object-fit: initial;
 
   object-position: initial;
 
-  /*
-   * ممنوع أي Zoom.
-   */
   transform: none !important;
 
-  /*
-   * ممنوع أي Filter.
-   */
   filter: none !important;
 
-  /*
-   * الحفاظ على النسبة الطبيعية للصورة.
-   */
   aspect-ratio: auto;
 
-  /*
-   * جودة المتصفح الطبيعية.
-   */
   image-rendering: auto;
 
-  /*
-   * إزالة baseline.
-   */
   vertical-align: top;
 
-  /*
-   * منع سحب الصورة.
-   */
   user-select: none;
 
   -webkit-user-drag: none;
@@ -171,24 +152,22 @@
   opacity: 1;
 
   transition:
-    opacity
-      var(--hero-transition-duration)
-      ease;
+    opacity var(--hero-transition-duration) ease;
 }
+
 
 /* =========================================================
    LOADING
    ========================================================= */
 
-.hero.image-loading
-  .hero-image {
+.hero.image-loading .hero-image {
   opacity: 0.001;
 }
 
-.hero.image-ready
-  .hero-image {
+.hero.image-ready .hero-image {
   opacity: 1;
 }
+
 
 /* =========================================================
    OVERLAY
@@ -229,6 +208,7 @@
     );
 }
 
+
 .hero-overlay::after {
   content: "";
 
@@ -248,6 +228,7 @@
   opacity:
     var(--hero-overlay-opacity);
 }
+
 
 /* =========================================================
    CONTENT
@@ -286,12 +267,19 @@
     ease both;
 }
 
+
+/*
+  الخط الذهبي الصغير فوق المحتوى
+*/
+
 .hero-content::before {
   content: "";
 
   width: 55px;
 
   height: 3px;
+
+  flex: 0 0 auto;
 
   border-radius: 999px;
 
@@ -303,6 +291,7 @@
     );
 }
 
+
 /* =========================================================
    TITLE
    ========================================================= */
@@ -312,13 +301,17 @@
 
   max-width: 100%;
 
-  color: #fff;
+  font-family:
+    var(
+      --hero-title-font-family,
+      Cairo,
+      sans-serif
+    );
 
   font-size:
-    clamp(
-      26px,
-      4vw,
-      58px
+    var(
+      --hero-title-font-size-desktop,
+      42px
     );
 
   line-height: 1.08;
@@ -327,19 +320,52 @@
 
   letter-spacing: -0.025em;
 
+  color: #fff;
+
   text-shadow:
-    0 3px 18px
-      rgba(0, 0, 0, 0.3);
+    0 3px 18px rgba(0, 0, 0, 0.3);
+
+  word-break: normal;
+
+  overflow-wrap: break-word;
 }
+
 
 /* =========================================================
    DESCRIPTION
    ========================================================= */
 
+/*
+  مهم جدًا:
+
+  font-family هنا مربوط مباشرة
+  بـ descriptionFontFamily
+  القادم من Admin.jsx.
+*/
+
 .hero-content p {
   margin: 0;
 
   max-width: 560px;
+
+  font-family:
+    var(
+      --hero-description-font-family,
+      Cairo,
+      sans-serif
+    );
+
+  font-size:
+    var(
+      --hero-description-font-size-desktop,
+      20px
+    );
+
+  line-height: 1.7;
+
+  font-weight: 500;
+
+  letter-spacing: normal;
 
   color:
     rgba(
@@ -349,21 +375,14 @@
       0.94
     );
 
-  font-size:
-    clamp(
-      14px,
-      1.4vw,
-      19px
-    );
-
-  line-height: 1.7;
-
-  font-weight: 500;
-
   text-shadow:
-    0 2px 10px
-      rgba(0, 0, 0, 0.24);
+    0 2px 10px rgba(0, 0, 0, 0.24);
+
+  word-break: normal;
+
+  overflow-wrap: break-word;
 }
+
 
 /* =========================================================
    BUTTON
@@ -388,8 +407,7 @@
   margin-top: 3px;
 
   border:
-    1px solid
-      rgba(255, 255, 255, 0.15);
+    1px solid rgba(255, 255, 255, 0.15);
 
   border-radius: 12px;
 
@@ -400,49 +418,64 @@
       var(--hero-accent-light)
     );
 
-  color:
-    var(--hero-primary);
+  color: var(--hero-primary);
 
-  font-size: 15px;
+  font-family:
+    var(
+      --hero-button-font-family,
+      Cairo,
+      sans-serif
+    );
+
+  font-size:
+    var(
+      --hero-button-font-size-desktop,
+      16px
+    );
 
   font-weight: 800;
+
+  line-height: 1.2;
 
   cursor: pointer;
 
   overflow: hidden;
 
   box-shadow:
-    0 10px 28px
-      rgba(0, 0, 0, 0.22);
+    0 10px 28px rgba(0, 0, 0, 0.22);
 
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease,
-    filter 0.25s ease;
+    filter 0.25s ease,
+    background 0.25s ease;
 }
+
 
 .hero-content button:hover {
   transform:
     translateY(-2px);
 
   box-shadow:
-    0 15px 35px
-      rgba(0, 0, 0, 0.28);
+    0 15px 35px rgba(0, 0, 0, 0.28);
 
   filter:
     brightness(1.04);
 }
+
 
 .hero-content button:active {
   transform:
     translateY(0);
 }
 
+
 .hero-content button span {
   position: relative;
 
   z-index: 2;
 }
+
 
 /* =========================================================
    ARROWS
@@ -471,8 +504,7 @@
     translateY(-50%);
 
   border:
-    1px solid
-      rgba(255, 255, 255, 0.18);
+    1px solid rgba(255, 255, 255, 0.18);
 
   border-radius: 50%;
 
@@ -495,8 +527,7 @@
   cursor: pointer;
 
   box-shadow:
-    0 8px 24px
-      rgba(0, 0, 0, 0.18);
+    0 8px 24px rgba(0, 0, 0, 0.18);
 
   transition:
     background 0.25s ease,
@@ -504,6 +535,7 @@
     border-color 0.25s ease,
     transform 0.25s ease;
 }
+
 
 .hero-arrow:hover {
   background:
@@ -520,19 +552,23 @@
     scale(1.05);
 }
 
+
 .hero-arrow-prev {
   right: 20px;
 }
 
+
 .hero-arrow-next {
   left: 20px;
 }
+
 
 .hero-arrow span {
   font-size: 20px;
 
   line-height: 1;
 }
+
 
 /* =========================================================
    DOTS
@@ -562,8 +598,7 @@
     7px 10px;
 
   border:
-    1px solid
-      rgba(255, 255, 255, 0.1);
+    1px solid rgba(255, 255, 255, 0.1);
 
   border-radius: 999px;
 
@@ -581,6 +616,7 @@
   -webkit-backdrop-filter:
     blur(10px);
 }
+
 
 .hero-dot {
   width: 7px;
@@ -608,12 +644,14 @@
     background 0.25s ease;
 }
 
+
 .hero-dot.active {
   width: 24px;
 
   background:
     var(--hero-accent);
 }
+
 
 /* =========================================================
    COUNTER
@@ -638,8 +676,7 @@
     7px 11px;
 
   border:
-    1px solid
-      rgba(255, 255, 255, 0.1);
+    1px solid rgba(255, 255, 255, 0.1);
 
   border-radius: 999px;
 
@@ -664,10 +701,12 @@
     blur(10px);
 }
 
+
 .hero-counter span {
   color:
     var(--hero-accent);
 }
+
 
 /* =========================================================
    SCREEN READER
@@ -699,6 +738,7 @@
   border: 0;
 }
 
+
 /* =========================================================
    ANIMATION
    ========================================================= */
@@ -719,6 +759,7 @@
   }
 }
 
+
 /* =========================================================
    TABLET
    ========================================================= */
@@ -737,19 +778,25 @@
 
   .hero-content h1 {
     font-size:
-      clamp(
-        24px,
-        4.8vw,
-        44px
+      var(
+        --hero-title-font-size-tablet,
+        36px
       );
   }
 
   .hero-content p {
     font-size:
-      clamp(
-        13px,
-        1.8vw,
-        17px
+      var(
+        --hero-description-font-size-tablet,
+        18px
+      );
+  }
+
+  .hero-content button {
+    font-size:
+      var(
+        --hero-button-font-size-tablet,
+        15px
       );
   }
 
@@ -768,6 +815,7 @@
   }
 }
 
+
 /* =========================================================
    MOBILE
    ========================================================= */
@@ -782,11 +830,10 @@
   }
 
   /*
-   * نفس القاعدة على الموبايل:
-   *
-   * الصورة لا تكبر.
-   * فقط تصغر لو كانت أكبر من الشاشة.
-   */
+    نفس قاعدة عدم التكبير:
+    الصورة تفضل auto.
+  */
+
   .hero-image {
     width: auto;
 
@@ -796,7 +843,8 @@
   }
 
   .hero-overlay {
-    padding: 20px;
+    padding:
+      20px;
   }
 
   .hero-content {
@@ -815,10 +863,9 @@
 
   .hero-content h1 {
     font-size:
-      clamp(
-        21px,
-        7vw,
-        32px
+      var(
+        --hero-title-font-size-mobile,
+        30px
       );
   }
 
@@ -826,10 +873,9 @@
     max-width: 90%;
 
     font-size:
-      clamp(
-        12px,
-        3.4vw,
-        15px
+      var(
+        --hero-description-font-size-mobile,
+        16px
       );
 
     line-height: 1.55;
@@ -841,7 +887,11 @@
     padding:
       9px 15px;
 
-    font-size: 13px;
+    font-size:
+      var(
+        --hero-button-font-size-mobile,
+        14px
+      );
   }
 
   .hero-arrow {
@@ -876,13 +926,15 @@
   }
 }
 
+
 /* =========================================================
    SMALL MOBILE
    ========================================================= */
 
 @media (max-width: 480px) {
   .hero-overlay {
-    padding: 15px;
+    padding:
+      15px;
   }
 
   .hero-content {
@@ -891,15 +943,18 @@
 
   .hero-content h1 {
     font-size:
-      clamp(
-        19px,
-        7.5vw,
+      var(
+        --hero-title-font-size-mobile,
         28px
       );
   }
 
   .hero-content p {
-    font-size: 11.5px;
+    font-size:
+      var(
+        --hero-description-font-size-mobile,
+        11.5px
+      );
   }
 
   .hero-content button {
@@ -910,7 +965,11 @@
 
     border-radius: 9px;
 
-    font-size: 11px;
+    font-size:
+      var(
+        --hero-button-font-size-mobile,
+        11px
+      );
   }
 
   .hero-arrow {
@@ -936,21 +995,31 @@
   }
 }
 
+
 /* =========================================================
    VERY SMALL MOBILE
    ========================================================= */
 
 @media (max-width: 360px) {
   .hero-overlay {
-    padding: 11px;
+    padding:
+      11px;
   }
 
   .hero-content h1 {
-    font-size: 18px;
+    font-size:
+      var(
+        --hero-title-font-size-mobile,
+        18px
+      );
   }
 
   .hero-content p {
-    font-size: 10.5px;
+    font-size:
+      var(
+        --hero-description-font-size-mobile,
+        10.5px
+      );
   }
 
   .hero-content button {
@@ -959,7 +1028,11 @@
     padding:
       6px 10px;
 
-    font-size: 10px;
+    font-size:
+      var(
+        --hero-button-font-size-mobile,
+        10px
+      );
   }
 
   .hero-arrow {
@@ -969,6 +1042,7 @@
   }
 }
 
+
 /* =========================================================
    FOCUS
    ========================================================= */
@@ -977,11 +1051,11 @@
 .hero-dot:focus-visible,
 .hero-content button:focus-visible {
   outline:
-    2px solid
-      var(--hero-accent);
+    2px solid var(--hero-accent);
 
   outline-offset: 3px;
 }
+
 
 /* =========================================================
    REDUCED MOTION
@@ -1002,4 +1076,43 @@
     transition-duration:
       0.01ms !important;
   }
+}
+
+
+/* =========================================================
+   GLOBAL IMAGE SAFETY
+   ========================================================= */
+
+/*
+  لو عندك CSS عام فيه:
+
+  img {
+    width: 100%;
+  }
+
+  أو:
+
+  img {
+    height: 100%;
+  }
+
+  القواعد دي تمنعه من التحكم في صورة الـ Hero.
+*/
+
+.hero .hero-image {
+  width: auto !important;
+
+  height: auto !important;
+
+  max-width: 100% !important;
+
+  max-height: none !important;
+
+  transform: none !important;
+
+  filter: none !important;
+
+  object-fit: initial !important;
+
+  object-position: initial !important;
 }
