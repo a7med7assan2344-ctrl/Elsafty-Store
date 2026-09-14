@@ -1,5 +1,13 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  addDoc,
+  collection,
+  serverTimestamp,
+} from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+
+import { db, auth } from "../../firebase";
 import "./Category.css";
 
 function Category({
@@ -48,11 +56,219 @@ function Category({
 
 
   // =====================================================
+  // GET PARENT CATEGORY
+  // =====================================================
+
+  const getParentCategory =
+    (category) => {
+
+      if (!category?.parentId) {
+        return null;
+      }
+
+      return (
+        activeCategories.find(
+          (parent) =>
+            String(parent?.id || "") ===
+            String(category.parentId || "")
+        ) || null
+      );
+
+    };
+
+
+  // =====================================================
+  // TRACK CATEGORY VISIT
+  // =====================================================
+
+  const trackCategoryVisit =
+    async (category) => {
+
+      if (!category) {
+        return;
+      }
+
+      try {
+
+        /*
+         * بنجيب المستخدم الحالي من Firebase Auth.
+         *
+         * لو العميل مش مسجل دخول:
+         * مش هنسجل الزيارة باسم مستخدم،
+         * لكن التنقل للقسم هيكمل طبيعي.
+         */
+
+        const currentUser =
+          await new Promise((resolve) => {
+
+            let unsubscribe = null;
+
+            unsubscribe =
+              onAuthStateChanged(
+                auth,
+                (user) => {
+
+                  if (unsubscribe) {
+                    unsubscribe();
+                  }
+
+                  resolve(user || null);
+
+                }
+              );
+
+          });
+
+
+        /*
+         * لو مفيش مستخدم مسجل دخول،
+         * منسجلش زيارة مرتبطة بحساب.
+         */
+
+        if (!currentUser) {
+          return;
+        }
+
+
+        const parentCategory =
+          getParentCategory(category);
+
+
+        const categoryId =
+          category?.id ||
+          null;
+
+
+        const categoryName =
+          category?.name ||
+          "قسم غير معروف";
+
+
+        const parentId =
+          category?.parentId ||
+          null;
+
+
+        const parentName =
+          parentCategory?.name ||
+          null;
+
+
+        /*
+         * المسار الكامل للقسم.
+         *
+         * مثال:
+         * الموضة > ملابس رجالي
+         */
+
+        const categoryPath =
+          parentName
+            ? `${parentName} > ${categoryName}`
+            : categoryName;
+
+
+        await addDoc(
+          collection(
+            db,
+            "categoryVisits"
+          ),
+          {
+
+            // =============================================
+            // USER
+            // =============================================
+
+            userId:
+              currentUser.uid,
+
+            uid:
+              currentUser.uid,
+
+            customerId:
+              currentUser.uid,
+
+            customerEmail:
+              currentUser.email ||
+              "",
+
+
+            customerName:
+              currentUser.displayName ||
+              "",
+
+
+            // =============================================
+            // CATEGORY
+            // =============================================
+
+            categoryId,
+
+            categoryName,
+
+            parentId,
+
+            parentName,
+
+            categoryPath,
+
+
+            // =============================================
+            // VISIT
+            // =============================================
+
+            type:
+              "category_view",
+
+            source:
+              "category_grid",
+
+            route:
+              categoryId
+                ? `/category/${encodeURIComponent(
+                    categoryId
+                  )}`
+                : `/category/${encodeURIComponent(
+                    categoryName
+                  )}`,
+
+
+            // =============================================
+            // TIMESTAMP
+            // =============================================
+
+            visitedAt:
+              serverTimestamp(),
+
+            createdAt:
+              serverTimestamp(),
+
+          }
+        );
+
+      } catch (error) {
+
+        /*
+         * مهم:
+         * لو حصل خطأ في تسجيل الزيارة،
+         * ما نوقفش العميل عن تصفح الموقع.
+         */
+
+        console.error(
+          "Category visit tracking error:",
+          error
+        );
+
+      }
+
+    };
+
+
+  // =====================================================
   // OPEN CATEGORY
   // =====================================================
 
   const openCategory =
-    (category) => {
+    async (category) => {
 
       if (!category) {
         return;
@@ -66,7 +282,50 @@ function Category({
 
 
       // =================================================
-      // ID
+      // SAVE SELECTED CATEGORY
+      // =================================================
+
+      try {
+
+        if (
+          typeof setSelectedCategory ===
+          "function"
+        ) {
+
+          setSelectedCategory(
+            category
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "setSelectedCategory error:",
+          error
+        );
+
+      }
+
+
+      // =================================================
+      // TRACK VISIT
+      // =================================================
+
+      /*
+       * بنبدأ التسجيل،
+       * لكن مش بنستنى Firestore قبل التنقل.
+       *
+       * كده الموقع يفضل سريع حتى لو الشبكة بطيئة.
+       */
+
+      trackCategoryVisit(
+        category
+      );
+
+
+      // =================================================
+      // NAVIGATE BY ID
       // =================================================
 
       if (categoryId) {
@@ -258,6 +517,7 @@ function Category({
                         "قسم"
                       }
                       loading="lazy"
+
                       onError={(
                         event
                       ) => {

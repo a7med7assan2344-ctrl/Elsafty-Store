@@ -1,0 +1,628 @@
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================================
+    // AUTH
+    // ==========================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // ----------------------------------------------------------
+    // بيانات المشرف الحالي
+    // ----------------------------------------------------------
+
+    function adminDoc() {
+      return get(
+        /databases/$(database)/documents/admins/$(request.auth.uid)
+      );
+    }
+
+    function adminExists() {
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        );
+    }
+
+    // ----------------------------------------------------------
+    // أي مشرف مفعل
+    // يدعم admin + superadmin
+    // ----------------------------------------------------------
+
+    function isAdmin() {
+      return adminExists()
+        && adminDoc().data.active != false
+        && (
+          adminDoc().data.role == "admin"
+          || adminDoc().data.role == "superadmin"
+          || adminDoc().data.isSuperAdmin == true
+        );
+    }
+
+    // ----------------------------------------------------------
+    // مدير رئيسي
+    // ----------------------------------------------------------
+
+    function isSuperAdmin() {
+      return isAdmin()
+        && (
+          adminDoc().data.role == "superadmin"
+          || adminDoc().data.isSuperAdmin == true
+        );
+    }
+
+    // ==========================================================
+    // PERMISSIONS
+    // ==========================================================
+
+    function hasPermission(permission) {
+      return isSuperAdmin()
+        || (
+          isAdmin()
+          && (
+            (
+              adminDoc().data.permissions is list
+              && permission in adminDoc().data.permissions
+            )
+          )
+        );
+    }
+
+    // ----------------------------------------------------------
+    // صلاحية عامة أو صلاحية داخل قسم محدد
+    // categoryId يتم أخذه من بيانات المستند
+    // ----------------------------------------------------------
+
+    function hasCategoryPermission(permission, categoryId) {
+      return isSuperAdmin()
+        || (
+          isAdmin()
+          && (
+            (
+              adminDoc().data.permissions is list
+              && permission in adminDoc().data.permissions
+            )
+            ||
+            (
+              adminDoc().data.categoryPermissions is map
+              && categoryId is string
+              && categoryId != ""
+              && adminDoc().data.categoryPermissions[categoryId] is list
+              && permission in adminDoc().data.categoryPermissions[categoryId]
+            )
+          )
+        );
+    }
+
+    // ----------------------------------------------------------
+    // صلاحية قسم من بيانات المنتج
+    // يدعم categoryId / category / categoryID
+    // ----------------------------------------------------------
+
+    function productCategoryId(data) {
+      return data.categoryId is string
+        ? data.categoryId
+        : (
+            data.categoryID is string
+              ? data.categoryID
+              : (
+                  data.category is string
+                    ? data.category
+                    : ""
+                )
+          );
+    }
+
+    // ==========================================================
+    // USERS
+    // ==========================================================
+
+    match /users/{userId} {
+
+      // العميل ينشئ حسابه فقط
+      allow create: if isSignedIn()
+                    && request.auth.uid == userId;
+
+      // العميل يقرأ بياناته
+      // الأدمن يقرأ العملاء
+      allow read: if isSignedIn()
+                  && (
+                    request.auth.uid == userId
+                    || hasPermission("users.view")
+                  );
+
+      // العميل يعدل بياناته
+      // الأدمن يحتاج users.edit
+      allow update: if isSignedIn()
+                    && (
+                      request.auth.uid == userId
+                      || hasPermission("users.edit")
+                    );
+
+      allow delete: if hasPermission("users.edit");
+    }
+
+
+    // ==========================================================
+    // PRODUCTS
+    // ==========================================================
+
+    match /products/{productId} {
+
+      // المنتجات متاحة للجميع
+      allow read: if true;
+
+      // --------------------------------------------------------
+      // إضافة منتج
+      // الإضافة العامة تحتاج products.add
+      // --------------------------------------------------------
+
+      allow create: if hasPermission("products.add")
+                    || (
+                      isAdmin()
+                      && request.resource.data.categoryId is string
+                      && hasCategoryPermission(
+                        "products.add",
+                        request.resource.data.categoryId
+                      )
+                    );
+
+      // --------------------------------------------------------
+      // تعديل منتج
+      // يسمح بالصلاحية العامة أو صلاحية قسم المنتج
+      // --------------------------------------------------------
+
+      allow update: if hasPermission("products.edit")
+                    || (
+                      isAdmin()
+                      && hasCategoryPermission(
+                        "products.edit",
+                        productCategoryId(resource.data)
+                      )
+                    );
+
+      // --------------------------------------------------------
+      // حذف منتج
+      // --------------------------------------------------------
+
+      allow delete: if hasPermission("products.delete")
+                    || (
+                      isAdmin()
+                      && hasCategoryPermission(
+                        "products.delete",
+                        productCategoryId(resource.data)
+                      )
+                    );
+    }
+
+
+    // ==========================================================
+    // CATEGORIES
+    // ==========================================================
+
+    match /categories/{categoryId} {
+
+      // الأقسام متاحة للجميع
+      allow read: if true;
+
+      // إضافة قسم تحتاج صلاحية عامة
+      allow create: if hasPermission("categories.add");
+
+      // تعديل القسم نفسه
+      allow update: if hasPermission("categories.edit")
+                    || hasCategoryPermission(
+                      "categories.edit",
+                      categoryId
+                    );
+
+      // حذف القسم
+      allow delete: if hasPermission("categories.delete")
+                    || hasCategoryPermission(
+                      "categories.delete",
+                      categoryId
+                    );
+    }
+
+
+    // ==========================================================
+    // ORDERS
+    // ==========================================================
+
+    match /orders/{orderId} {
+
+      // العميل يستطيع إنشاء طلب
+      allow create: if true;
+
+      // قراءة الطلبات للأدمن
+      allow read: if hasPermission("orders.view");
+
+      // تعديل الطلب
+      allow update: if hasPermission("orders.edit");
+
+      // حذف الطلب
+      allow delete: if hasPermission("orders.delete");
+    }
+
+
+    // ==========================================================
+    // REVIEWS
+    // ==========================================================
+
+    match /reviews/{reviewId} {
+
+      allow read: if true;
+
+      allow create: if isSignedIn()
+                    && request.resource.data.userId ==
+                       request.auth.uid;
+
+      allow update: if isSignedIn()
+                    && (
+                      resource.data.userId ==
+                        request.auth.uid
+                      || request.resource.data.userId ==
+                        request.auth.uid
+                      || isAdmin()
+                    );
+
+      allow delete: if isSignedIn()
+                    && (
+                      resource.data.userId ==
+                        request.auth.uid
+                      || isAdmin()
+                    );
+    }
+
+
+    // ==========================================================
+    // BANNERS
+    // ==========================================================
+
+    match /banners/{bannerId} {
+
+      allow read: if true;
+
+      allow create: if hasPermission("banners.add");
+
+      allow update: if hasPermission("banners.edit");
+
+      allow delete: if hasPermission("banners.delete");
+    }
+
+
+    // ==========================================================
+    // COUPONS
+    // ==========================================================
+
+    match /coupons/{couponId} {
+
+      allow read: if true;
+
+      allow create: if hasPermission("coupons.add");
+
+      allow update: if hasPermission("coupons.edit");
+
+      allow delete: if hasPermission("coupons.delete");
+    }
+
+
+    // ==========================================================
+    // ANNOUNCEMENTS
+    // ==========================================================
+
+    match /announcements/{announcementId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission("announcements.view");
+    }
+
+
+    // ==========================================================
+    // ANNOUNCEMENT BARS
+    // ==========================================================
+
+    match /announcementBars/{announcementBarId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission("announcement-bars.view");
+    }
+
+
+    // ==========================================================
+    // NOTIFICATIONS
+    // ==========================================================
+
+    match /notifications/{notificationId} {
+
+      allow read: if hasPermission("notifications.view");
+
+      allow create, update, delete: if hasPermission("notifications.view");
+    }
+
+
+    // ==========================================================
+    // SUPPORT
+    // ==========================================================
+
+    match /supportMessages/{messageId} {
+
+      // العميل يستطيع إرسال رسالة
+      allow create: if true;
+
+      // المشرف يستطيع القراءة
+      allow read: if hasPermission("support.view");
+
+      // الرد والتعديل
+      allow update: if hasPermission("support.reply")
+                    || hasPermission("support.view");
+
+      // الحذف
+      allow delete: if hasPermission("support.view");
+    }
+
+
+    // ==========================================================
+    // FAVORITES
+    // ==========================================================
+
+    match /favorites/{favoriteId} {
+
+      allow read: if true;
+
+      allow create: if isSignedIn()
+                    && request.resource.data.userId ==
+                       request.auth.uid;
+
+      allow update: if isSignedIn()
+                    && (
+                      resource.data.userId ==
+                        request.auth.uid
+                      || request.resource.data.userId ==
+                        request.auth.uid
+                      || hasPermission("favorites.view")
+                    );
+
+      allow delete: if isSignedIn()
+                    && (
+                      resource.data.userId ==
+                        request.auth.uid
+                      || hasPermission("favorites.view")
+                    );
+    }
+
+
+    // ==========================================================
+    // BLOCKED USERS
+    // ==========================================================
+
+    match /blockedUsers/{blockedUserId} {
+
+      allow read: if hasPermission("blocked-users.view");
+
+      allow create, update, delete: if hasPermission("users.block");
+    }
+
+
+    // ==========================================================
+    // SHIPPING
+    // ==========================================================
+
+    match /shippingZones/{zoneId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission("shipping.view");
+    }
+
+
+    // ==========================================================
+    // PAYMENT METHODS
+    // ==========================================================
+
+    match /paymentMethods/{paymentId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission("payments.view");
+    }
+
+
+    // ==========================================================
+    // ADMINS
+    // ==========================================================
+
+    match /admins/{adminId} {
+
+      // --------------------------------------------------------
+      // المشرف يستطيع قراءة بياناته فقط
+      // --------------------------------------------------------
+
+      allow read: if isSignedIn()
+                  && request.auth.uid == adminId
+
+                  || hasPermission("admins.view");
+
+      // --------------------------------------------------------
+      // إضافة مشرف
+      // المدير الذي لديه admins.add فقط
+      // --------------------------------------------------------
+
+      allow create: if hasPermission("admins.add");
+
+      // --------------------------------------------------------
+      // تعديل مشرف
+      // --------------------------------------------------------
+
+      allow update: if hasPermission("admins.edit");
+
+      // --------------------------------------------------------
+      // حذف مشرف
+      // --------------------------------------------------------
+
+      allow delete: if hasPermission("admins.delete");
+    }
+
+
+    // ==========================================================
+    // ACTIVITY LOGS
+    // ==========================================================
+
+    match /activityLogs/{logId} {
+
+      allow read: if hasPermission("activity-log.view");
+
+      allow create: if isAdmin();
+
+      allow update, delete: if hasPermission("activity-log.view");
+    }
+
+
+    // ==========================================================
+    // STORE SETTINGS
+    // ==========================================================
+
+    match /settings/{settingId} {
+
+      // إعدادات المتجر العامة متاحة للواجهة
+      allow read: if true;
+
+      // تعديل الإعدادات
+      allow create, update, delete: if hasPermission("settings.view");
+    }
+
+
+    // ==========================================================
+    // WHEEL ATTEMPTS
+    // ==========================================================
+
+    match /wheelAttempts/{attemptId} {
+
+      // العميل يقرأ محاولاته فقط
+      // الأدمن يستطيع القراءة إذا كان لديه صلاحية عجلة الحظ
+      allow read: if hasPermission("wheel.view")
+                  || (
+                    isSignedIn()
+                    && resource.data.uid == request.auth.uid
+                  );
+
+      // إنشاء أول سجل للمحاولات
+      allow create: if isSignedIn()
+                    && request.resource.data.uid ==
+                       request.auth.uid
+                    && request.resource.data.attempts == 1
+                    && request.resource.data.date is string;
+
+      // تحديث عدد المحاولات
+      allow update: if hasPermission("wheel.view")
+                    || (
+                      isSignedIn()
+                      && resource.data.uid ==
+                         request.auth.uid
+                      && request.resource.data.uid ==
+                         request.auth.uid
+                      && request.resource.data.attempts ==
+                         resource.data.attempts + 1
+                      && request.resource.data.attempts >= 1
+                      && request.resource.data.attempts <= 2
+                      && request.resource.data.date is string
+                    );
+
+      // الحذف للأدمن
+      allow delete: if hasPermission("wheel.view");
+    }
+
+
+    // ==========================================================
+    // GAME ATTEMPTS
+    // ==========================================================
+
+    match /gameAttempts/{attemptId} {
+
+      allow read: if isAdmin()
+                  || (
+                    isSignedIn()
+                    && resource.data.uid == request.auth.uid
+                  );
+
+      allow create: if isSignedIn()
+                    && request.resource.data.uid ==
+                       request.auth.uid;
+
+      allow update: if isAdmin()
+                    || (
+                      isSignedIn()
+                      && resource.data.uid ==
+                         request.auth.uid
+                      && request.resource.data.uid ==
+                         request.auth.uid
+                    );
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ==========================================================
+    // POPUP ADS
+    // ==========================================================
+
+    match /popupAds/{popupAdId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission("popup-ads.view");
+    }
+
+
+    // ==========================================================
+    // STORE MENU ITEMS
+    // ==========================================================
+
+    match /storeMenuItems/{menuItemId} {
+
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission("store-menu.view");
+    }
+
+
+    // ==========================================================
+    // CATEGORY VISITS
+    // ==========================================================
+
+    match /categoryVisits/{visitId} {
+
+      // العميل يسجل زيارته
+      allow create: if isSignedIn()
+                    && (
+                      request.resource.data.userId ==
+                        request.auth.uid
+                      || request.resource.data.uid ==
+                        request.auth.uid
+                      || request.resource.data.customerId ==
+                        request.auth.uid
+                    );
+
+      // الأدمن يقرأ الزيارات
+      allow read: if hasPermission("users.view")
+                  || hasPermission("reports.view");
+
+      // لا نسمح للعميل بتعديل سجل الزيارة
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ==========================================================
+    // DEFAULT DENY
+    // ==========================================================
+
+    match /{document=**} {
+
+      allow read, write: if false;
+    }
+  }
+}

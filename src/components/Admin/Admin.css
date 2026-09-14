@@ -52,6 +52,525 @@
 }
 
 /* =========================================================
+   CUSTOMER PROFILE - NEW CUSTOMER DETAILS PAGE
+========================================================= */
+
+.customer-profile-header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+  background:
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(212, 175, 55, 0.14),
+      transparent 30%
+    ),
+    linear-gradient(135deg, #071a36 0%, #182a45 100%);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: var(--admin-radius-md);
+  box-shadow: 0 10px 30px rgba(7, 26, 54, 0.12);
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.customer-profile-header .customer-profile-avatar {
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37, #f4d06f);
+  color: #071a36;
+  border: 4px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.customer-profile-main {
+  min-width: 0;
+}
+
+.customer-profile-main h2,
+.customer-profile-main h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.customer-profile-main p {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.customer-profile-main .customer-id {
+  margin-top: 7px;
+  color: #e4c46d;
+  font-size: 9px;
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
+
+.customer-profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.customer-profile-actions button {
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+.customer-profile-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.customer-profile-status.active {
+  background: rgba(34, 197, 94, 0.13);
+  color: #86efac;
+  border: 1px solid rgba(134, 239, 172, 0.18);
+}
+
+.customer-profile-status.blocked {
+  background: rgba(239, 68, 68, 0.13);
+  color: #fca5a5;
+  border: 1px solid rgba(252, 165, 165, 0.18);
+}
+
+/* =========================================================
+   CUSTOMER STATS
+========================================================= */
+
+.customer-stats-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.customer-stat {
+  position: relative;
+  min-width: 0;
+  padding: 13px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  box-shadow: var(--admin-shadow);
+  overflow: hidden;
+  transition:
+    transform var(--admin-transition),
+    box-shadow var(--admin-transition),
+    border-color var(--admin-transition);
+}
+
+.customer-stat:hover {
+  transform: translateY(-2px);
+  border-color: #d5dce5;
+  box-shadow: var(--admin-shadow-md);
+}
+
+.customer-stat::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #071a36, #d4af37);
+}
+
+.customer-stat-icon {
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  font-size: 15px;
+}
+
+.customer-stat-label {
+  display: block;
+  color: var(--admin-muted);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.customer-stat-value {
+  display: block;
+  margin-top: 3px;
+  color: var(--admin-primary);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.customer-stat-value.gold {
+  color: #a07800;
+}
+
+.customer-stat-value.green {
+  color: #15803d;
+}
+
+.customer-stat-value.blue {
+  color: var(--admin-blue);
+}
+
+.customer-stat-value.red {
+  color: #b91c1c;
+}
+
+/* =========================================================
+   CUSTOMER DETAILS SECTIONS
+========================================================= */
+
+.customer-detail-section {
+  width: 100%;
+  margin-top: 13px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  box-shadow: var(--admin-shadow);
+  box-sizing: border-box;
+}
+
+.customer-detail-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 11px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.customer-detail-section-header h3 {
+  margin: 0;
+  color: var(--admin-primary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.customer-detail-section-header span {
+  color: var(--admin-muted);
+  font-size: 9px;
+}
+
+.customer-detail-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.customer-detail-item {
+  min-width: 0;
+  padding: 9px;
+  background: #f8fafc;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+}
+
+.customer-detail-item small {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--admin-muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.customer-detail-item strong {
+  display: block;
+  color: var(--admin-primary);
+  font-size: 10px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* =========================================================
+   CUSTOMER ORDERS
+========================================================= */
+
+.customer-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.customer-order-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(110px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px;
+  background: #f8fafc;
+  border: 1px solid #e5eaf0;
+  border-radius: 9px;
+  transition:
+    background var(--admin-transition),
+    border-color var(--admin-transition),
+    transform var(--admin-transition);
+}
+
+.customer-order-row:hover {
+  background: #ffffff;
+  border-color: #d7dee8;
+  transform: translateY(-1px);
+}
+
+.customer-order-main {
+  min-width: 0;
+}
+
+.customer-order-main strong {
+  display: block;
+  color: var(--admin-blue);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.customer-order-main small {
+  display: block;
+  margin-top: 3px;
+  color: var(--admin-muted);
+  font-size: 9px;
+}
+
+.customer-order-info {
+  min-width: 0;
+}
+
+.customer-order-info small {
+  display: block;
+  color: var(--admin-muted);
+  font-size: 9px;
+}
+
+.customer-order-info strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--admin-primary);
+  font-size: 11px;
+}
+
+.customer-order-amount {
+  color: var(--admin-primary);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.customer-order-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.customer-order-action button {
+  min-height: 31px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.customer-empty {
+  padding: 20px;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed #d9e0e8;
+  border-radius: 9px;
+  color: var(--admin-muted);
+  font-size: 10px;
+}
+
+/* =========================================================
+   CUSTOMER VISITS
+========================================================= */
+
+.customer-visits-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.customer-visit-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  background: #f8fafc;
+  border: 1px solid #e8edf2;
+  border-radius: 8px;
+}
+
+.customer-visit-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: var(--admin-blue);
+  font-size: 14px;
+}
+
+.customer-visit-content {
+  min-width: 0;
+}
+
+.customer-visit-content strong {
+  display: block;
+  color: var(--admin-primary);
+  font-size: 10px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.customer-visit-content small {
+  display: block;
+  margin-top: 2px;
+  color: var(--admin-muted);
+  font-size: 9px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.customer-visit-time {
+  color: var(--admin-muted);
+  font-size: 8px;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+/* =========================================================
+   CUSTOMER ACTIVITY
+========================================================= */
+
+.customer-activity-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.customer-activity-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  padding: 8px 9px;
+  background: #f8fafc;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+}
+
+.customer-activity-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #d4af37;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+}
+
+.customer-activity-content {
+  min-width: 0;
+}
+
+.customer-activity-content strong {
+  display: block;
+  color: var(--admin-primary);
+  font-size: 10px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.customer-activity-content small {
+  display: block;
+  margin-top: 2px;
+  color: var(--admin-muted);
+  font-size: 9px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.customer-activity-time {
+  color: var(--admin-muted);
+  font-size: 8px;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+/* =========================================================
+   CUSTOMER MINI LISTS
+========================================================= */
+
+.customer-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.customer-mini-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 9px;
+  background: #f8fafc;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+}
+
+.customer-mini-list strong {
+  min-width: 0;
+  color: var(--admin-primary);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.customer-mini-list span {
+  flex-shrink: 0;
+  color: var(--admin-muted);
+  font-size: 9px;
+}
+
+/* =========================================================
    USER ORDERS
 ========================================================= */
 
@@ -203,6 +722,14 @@
   .order-status-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .customer-stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .customer-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* =========================================================
@@ -225,6 +752,23 @@
 
   .admin-top-bar {
     align-items: stretch;
+  }
+
+  .customer-profile-header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .customer-profile-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .customer-order-row {
+    grid-template-columns: minmax(140px, 1fr) auto auto;
+  }
+
+  .customer-order-info {
+    display: none;
   }
 }
 
@@ -293,6 +837,94 @@
     font-size: 22px;
   }
 
+  /* CUSTOMER PROFILE */
+
+  .customer-profile-header {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    padding: 15px;
+  }
+
+  .customer-profile-main {
+    width: 100%;
+  }
+
+  .customer-profile-main h2,
+  .customer-profile-main h3 {
+    font-size: 17px;
+  }
+
+  .customer-profile-main p {
+    font-size: 10px;
+  }
+
+  .customer-profile-actions {
+    width: 100%;
+    grid-column: auto;
+    justify-content: center;
+  }
+
+  .customer-profile-actions button {
+    flex: 1 1 140px;
+  }
+
+  .customer-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .customer-stat {
+    padding: 10px;
+  }
+
+  .customer-stat-value {
+    font-size: 16px;
+  }
+
+  .customer-detail-section {
+    padding: 11px;
+  }
+
+  .customer-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-order-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .customer-order-row .customer-order-icon {
+    display: flex;
+  }
+
+  .customer-order-amount {
+    font-size: 10px;
+  }
+
+  .customer-order-action button {
+    min-width: 0;
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+
+  .customer-visit-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .customer-visit-time {
+    grid-column: 2;
+  }
+
+  .customer-activity-row {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .customer-activity-time {
+    grid-column: 2;
+  }
+
   /* TABS */
 
   .admin-tabs {
@@ -357,7 +989,8 @@
 
   .table-container {
     padding: 9px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     border-radius: var(--admin-radius-md);
   }
 
@@ -480,6 +1113,29 @@
     min-height: 82px;
   }
 
+  .customer-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .customer-profile-avatar {
+    width: 65px;
+    height: 65px;
+    font-size: 24px;
+  }
+
+  .customer-profile-actions {
+    flex-direction: column;
+  }
+
+  .customer-profile-actions button {
+    width: 100%;
+    flex: none;
+  }
+
+  .customer-stat-value {
+    font-size: 15px;
+  }
+
   .store-btn,
   .logout-btn,
   .back-to-store-btn {
@@ -536,6 +1192,19 @@
   .admin-panel-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .customer-order-row {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-order-action {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .customer-order-action button {
+    width: 100%;
   }
 }
 
@@ -594,7 +1263,9 @@
 .admin-container .table-container,
 .admin-container .order-card,
 .admin-container .account-list-item,
-.admin-container .account-info-card {
+.admin-container .account-info-card,
+.admin-container .customer-stat,
+.admin-container .customer-detail-section {
   will-change: transform;
 }
 
@@ -883,6 +1554,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
+
 /* =========================================================
    ADMIN NAVIGATION - MOBILE
 ========================================================= */
@@ -990,9 +1662,10 @@
     font-size: 8px;
   }
 }
+
 /* =========================================================
    CATEGORY TREE
-   ========================================================= */
+========================================================= */
 
 .category-tree-root {
   width: 100%;
@@ -1000,505 +1673,330 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-
-  /* مهم للـ overflow داخل لوحة الأدمن */
   min-width: 0;
   box-sizing: border-box;
 }
 
-
 /* =========================================================
    CATEGORY NODE
-   ========================================================= */
+========================================================= */
 
 .category-tree-node {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   box-sizing: border-box;
 }
 
-
 /* =========================================================
    CATEGORY ITEM
-   ========================================================= */
+========================================================= */
 
 .category-tree-item {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 12px;
-
   padding: 12px 14px;
-
   box-sizing: border-box;
-
   border: 1px solid #e1e6ed;
   border-radius: 10px;
-
   background: #ffffff;
-
   overflow: hidden;
 }
 
-
 /* =========================================================
    CATEGORY INFO
-   ========================================================= */
+========================================================= */
 
 .category-tree-info {
   min-width: 0;
   flex: 1;
-
   display: flex;
   align-items: center;
-
   gap: 10px;
-
   flex-wrap: wrap;
-
   overflow: hidden;
 }
-
 
 .category-tree-info strong {
   min-width: 0;
-
   max-width: 100%;
-
   overflow: hidden;
-
   text-overflow: ellipsis;
-
   white-space: nowrap;
-
   color: #071a36;
 }
 
-
 /* =========================================================
    CATEGORY NUMBER
-   ========================================================= */
+========================================================= */
 
 .category-number {
   flex-shrink: 0;
-
   padding: 4px 8px;
-
   border-radius: 6px;
-
   background: #f1f4f8;
-
   color: #555;
-
   font-size: 12px;
-
   white-space: nowrap;
 }
-
 
 /* =========================================================
    ACTIVE / INACTIVE
-   ========================================================= */
+========================================================= */
 
 .category-status {
   flex-shrink: 0;
-
   padding: 4px 8px;
-
   border-radius: 6px;
-
   font-size: 11px;
-
   white-space: nowrap;
 }
-
 
 .category-status.active {
   background: #e8f7ee;
   color: #16803c;
 }
 
-
 .category-status.inactive {
   background: #fbeaea;
   color: #b42318;
 }
 
-
 /* =========================================================
    CATEGORY ACTIONS
-   ========================================================= */
+========================================================= */
 
 .category-actions {
   flex-shrink: 0;
-
   display: flex;
   align-items: center;
-
   gap: 8px;
-
   white-space: nowrap;
 }
 
-
 /* =========================================================
    DIRECT CHILDREN
-   ========================================================= */
+========================================================= */
 
 .category-tree-node > .category-tree-children {
   width: 100%;
   max-width: 100%;
-
   min-width: 0;
-
   display: grid;
-
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(220px, 1fr)
-    );
-
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
-
   margin-top: 12px;
-
   padding-right: 24px;
-
   box-sizing: border-box;
 }
-
 
 /* =========================================================
    CHILD NODE
-   ========================================================= */
+========================================================= */
 
-.category-tree-children
-  > .category-tree-node {
-
+.category-tree-children > .category-tree-node {
   width: 100%;
   max-width: 100%;
-
   min-width: 0;
-
   box-sizing: border-box;
 }
-
 
 /* =========================================================
    CHILD CATEGORY ITEM
-   ========================================================= */
+========================================================= */
 
-.category-tree-children
-  .category-tree-item {
-
+.category-tree-children .category-tree-item {
   width: 100%;
   max-width: 100%;
-
   min-width: 0;
-
   box-sizing: border-box;
-
   padding-right: 12px !important;
 }
 
-
 /* =========================================================
    NESTED CHILDREN
-   ========================================================= */
+========================================================= */
 
 .category-tree-children
   > .category-tree-node
   > .category-tree-children {
-
   width: 100%;
   max-width: 100%;
-
   min-width: 0;
-
   display: grid;
-
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(200px, 1fr)
-    );
-
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
-
   margin-top: 10px;
-
   padding-right: 18px;
-
   box-sizing: border-box;
 }
 
-
 /* =========================================================
    DEEP NESTING
-   ========================================================= */
+========================================================= */
 
 .category-tree-children
   .category-tree-node
   .category-tree-node {
-
   width: 100%;
   max-width: 100%;
-
   min-width: 0;
-
   box-sizing: border-box;
 }
-
 
 /* =========================================================
    TABLE ACTIONS
-   ========================================================= */
+========================================================= */
 
-.category-tree-item
-  .table-actions {
-
+.category-tree-item .table-actions {
   flex-shrink: 0;
-
   display: flex;
   align-items: center;
-
   gap: 6px;
-
   min-width: fit-content;
 }
 
-
 /* =========================================================
    BUTTONS
-   ========================================================= */
+========================================================= */
 
-.category-tree-item
-  .table-actions button {
-
+.category-tree-item .table-actions button {
   flex-shrink: 0;
-
   white-space: nowrap;
 }
 
-
 /* =========================================================
    SCROLL CONTAINER
-   ========================================================= */
-
-/*
-   لو قائمة الأقسام كبيرة جدًا،
-   الـ Scroll يكون داخل القائمة بدل ما الصفحة كلها تتمدد.
-*/
+========================================================= */
 
 .categories-list,
 .category-tree-container {
-
   width: 100%;
   max-width: 100%;
-
   min-width: 0;
-
   max-height: 65vh;
-
   overflow-y: auto;
   overflow-x: hidden;
-
   box-sizing: border-box;
-
   padding-left: 4px;
   padding-right: 4px;
-
   scroll-behavior: smooth;
-
   -webkit-overflow-scrolling: touch;
 }
 
-
 /* =========================================================
    CUSTOM SCROLLBAR
-   ========================================================= */
+========================================================= */
 
 .categories-list::-webkit-scrollbar,
 .category-tree-container::-webkit-scrollbar {
-
   width: 8px;
 }
 
-
 .categories-list::-webkit-scrollbar-track,
 .category-tree-container::-webkit-scrollbar-track {
-
   background: #f1f3f6;
-
   border-radius: 10px;
 }
-
 
 .categories-list::-webkit-scrollbar-thumb,
 .category-tree-container::-webkit-scrollbar-thumb {
-
   background: #b7c0cc;
-
   border-radius: 10px;
 }
 
-
 .categories-list::-webkit-scrollbar-thumb:hover,
 .category-tree-container::-webkit-scrollbar-thumb:hover {
-
   background: #071a36;
 }
 
-
 /* =========================================================
-   MOBILE
-   ========================================================= */
+   CATEGORY MOBILE
+========================================================= */
 
 @media (max-width: 768px) {
-
   .category-tree-root {
-
     gap: 12px;
-
   }
-
 
   .category-tree-item {
-
     align-items: flex-start;
-
     flex-direction: column;
-
     gap: 10px;
-
     padding: 11px;
-
   }
-
 
   .category-tree-info {
-
     width: 100%;
-
   }
-
 
   .category-tree-info strong {
-
     white-space: normal;
-
     overflow: visible;
-
     text-overflow: unset;
-
     word-break: break-word;
-
   }
 
-
-  .category-tree-item
-    .table-actions {
-
+  .category-tree-item .table-actions {
     width: 100%;
-
     display: flex;
-
   }
 
-
-  .category-tree-item
-    .table-actions button {
-
+  .category-tree-item .table-actions button {
     flex: 1;
-
   }
 
-
-  .category-tree-node
-    > .category-tree-children {
-
+  .category-tree-node > .category-tree-children {
     grid-template-columns: 1fr;
-
     padding-right: 12px;
-
     gap: 10px;
-
   }
-
 
   .category-tree-children
     > .category-tree-node
     > .category-tree-children {
-
     grid-template-columns: 1fr;
-
     padding-right: 10px;
-
   }
-
 
   .categories-list,
   .category-tree-container {
-
     max-height: 60vh;
-
     overflow-y: auto;
-
     overflow-x: hidden;
-
   }
-
 }
-
 
 /* =========================================================
    VERY SMALL MOBILE
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 480px) {
-
   .category-tree-item {
-
     padding: 10px;
-
   }
 
-
-  .category-tree-children
-    .category-tree-item {
-
+  .category-tree-children .category-tree-item {
     padding-right: 8px !important;
-
   }
 
-
-  .category-tree-node
-    > .category-tree-children {
-
+  .category-tree-node > .category-tree-children {
     padding-right: 8px;
-
   }
-
 }
+
 /* =========================================================
    CATEGORY TREE - TABLET
 ========================================================= */
 
 @media (max-width: 900px) {
   .category-tree-node > .category-tree-children {
-    grid-template-columns: repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     padding-right: 18px;
   }
@@ -1506,11 +2004,7 @@
   .category-tree-children
     > .category-tree-node
     > .category-tree-children {
-    grid-template-columns: repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding-right: 12px;
   }
@@ -1521,20 +2015,10 @@
 ========================================================= */
 
 @media (max-width: 700px) {
-  /*
-     نخلي القسمين جنب بعض بدل ما ينزلوا تحت بعض
-  */
-
   .category-tree-node > .category-tree-children {
     display: grid;
-
-    grid-template-columns: repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-
     padding-right: 12px;
     margin-top: 10px;
   }
@@ -1542,13 +2026,8 @@
   .category-tree-children
     > .category-tree-node
     > .category-tree-children {
-    grid-template-columns: repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 7px;
-
     padding-right: 10px;
   }
 
@@ -1566,17 +2045,8 @@
 ========================================================= */
 
 @media (max-width: 450px) {
-  /*
-     حتى على الشاشات الصغيرة جدًا
-     نحافظ على قسمين جنب بعض
-  */
-
   .category-tree-node > .category-tree-children {
-    grid-template-columns: repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     padding-right: 8px;
   }
@@ -1584,15 +2054,12 @@
   .category-tree-children
     > .category-tree-node
     > .category-tree-children {
-    grid-template-columns: repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     padding-right: 6px;
   }
 }
+
 /* =========================================================
    MOBILE HEADER FIX
 ========================================================= */
@@ -1670,15 +2137,11 @@
     font-size: 10px;
   }
 }
+
 /* =========================================================
    CATEGORY FORM - FINAL RESPONSIVE FIX
    Elsafty Store
-   إصلاح مقاسات فورم إضافة / تعديل الأقسام
 ========================================================= */
-
-/* ---------------------------------------------------------
-   CATEGORY FORM - BASE
---------------------------------------------------------- */
 
 .admin-form {
   width: 100%;
@@ -1701,19 +2164,13 @@
   line-height: 1.5;
 }
 
-/* ---------------------------------------------------------
-   FORM GRID
---------------------------------------------------------- */
-
 .admin-form .form-grid {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-
   align-items: start;
 }
 
@@ -1721,33 +2178,20 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   display: flex;
   flex-direction: column;
   gap: 7px;
-
   margin: 0;
 }
-
-/* ---------------------------------------------------------
-   LABEL TEXT
---------------------------------------------------------- */
 
 .admin-form .form-grid > label > span {
   width: 100%;
   max-width: 100%;
-
   display: block;
-
   font-weight: 700;
   line-height: 1.5;
-
   overflow-wrap: anywhere;
 }
-
-/* ---------------------------------------------------------
-   INPUTS / SELECT / TEXTAREA
---------------------------------------------------------- */
 
 .admin-form .form-grid input,
 .admin-form .form-grid select,
@@ -1755,9 +2199,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   margin: 0;
-
   box-sizing: border-box;
   font-family: inherit;
 }
@@ -1776,9 +2218,7 @@
   width: 100%;
   max-width: 100%;
   min-height: 44px;
-
   padding: 8px;
-
   overflow: hidden;
 }
 
@@ -1786,21 +2226,14 @@
   width: 55px !important;
   max-width: 55px !important;
   min-width: 55px !important;
-
   flex: 0 0 55px;
-
   padding: 3px;
 }
-
-/* ---------------------------------------------------------
-   COLOR ROW
---------------------------------------------------------- */
 
 .admin-form .form-grid > label > div {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1812,32 +2245,18 @@
   width: auto;
 }
 
-/* ---------------------------------------------------------
-   DESCRIPTION - FULL WIDTH
---------------------------------------------------------- */
-
 .admin-form .form-grid .form-group-full {
   grid-column: 1 / -1;
   width: 100%;
   min-width: 0;
 }
 
-/* ---------------------------------------------------------
-   SMALL NOTES
---------------------------------------------------------- */
-
 .admin-form .form-grid small {
   width: 100%;
   max-width: 100%;
-
   line-height: 1.6;
-
   overflow-wrap: anywhere;
 }
-
-/* ---------------------------------------------------------
-   IMAGE PREVIEW
---------------------------------------------------------- */
 
 .admin-form .form-grid > label > div:has(img) {
   max-width: 100%;
@@ -1847,58 +2266,41 @@
   max-width: 100%;
 }
 
-/* ---------------------------------------------------------
-   ACTIVE CHECKBOX
---------------------------------------------------------- */
-
 .admin-form .admin-checkboxes {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   margin-top: 18px;
-
   display: flex;
   align-items: center;
 }
 
 .admin-form .admin-checkboxes label {
   max-width: 100%;
-
   display: flex;
   align-items: center;
   gap: 8px;
-
   margin: 0;
-
   cursor: pointer;
 }
 
 .admin-form .admin-checkboxes input[type="checkbox"] {
   width: 18px;
   height: 18px;
-
   flex: 0 0 18px;
 }
-
-/* ---------------------------------------------------------
-   LIVE PREVIEW
---------------------------------------------------------- */
 
 .admin-form .category-live-preview {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   margin-top: 22px;
-
   overflow: hidden;
 }
 
 .admin-form .category-live-preview > h3 {
   width: 100%;
   max-width: 100%;
-
   margin: 0 0 14px;
 }
 
@@ -1906,24 +2308,16 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   display: flex;
   justify-content: center;
   align-items: center;
-
   padding: 15px;
-
   overflow: hidden;
 }
-
-/* ---------------------------------------------------------
-   PREVIEW CARD
---------------------------------------------------------- */
 
 .admin-form .category-preview-card {
   max-width: 100%;
   min-width: 0;
-
   overflow: hidden;
 }
 
@@ -1934,45 +2328,33 @@
 
 .admin-form .category-preview-image img {
   display: block;
-
   max-width: 100%;
   height: auto;
-
   object-fit: cover;
 }
 
 .admin-form .category-preview-content {
   max-width: 100%;
   min-width: 0;
-
   overflow: hidden;
 }
 
 .admin-form .category-preview-content h4,
 .admin-form .category-preview-content p {
   max-width: 100%;
-
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-
-/* ---------------------------------------------------------
-   ACTIONS
---------------------------------------------------------- */
 
 .admin-form .form-actions {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-
   display: flex;
   align-items: center;
   justify-content: flex-start;
-
   gap: 10px;
-
   margin-top: 22px;
-
   flex-wrap: wrap;
 }
 
@@ -1980,16 +2362,14 @@
   min-width: 130px;
   max-width: 100%;
   min-height: 44px;
-
   box-sizing: border-box;
 }
 
 /* =========================================================
-   TABLET
+   CATEGORY FORM TABLET
 ========================================================= */
 
 @media (max-width: 768px) {
-
   .admin-form {
     width: 100%;
     max-width: 100%;
@@ -2033,41 +2413,32 @@
 }
 
 /* =========================================================
-   MOBILE
+   CATEGORY FORM MOBILE
 ========================================================= */
 
 @media (max-width: 600px) {
-
   .admin-form {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
     margin: 0 !important;
     padding: 0 !important;
-
     overflow: hidden !important;
   }
 
   .admin-form h3 {
     width: 100%;
     max-width: 100%;
-
     margin-bottom: 14px;
-
     font-size: 18px;
   }
-
-  /* FORM GRID */
 
   .admin-form .form-grid {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) !important;
-
     gap: 12px !important;
   }
 
@@ -2077,14 +2448,10 @@
     min-width: 0 !important;
   }
 
-  /* LABEL */
-
   .admin-form .form-grid > label > span {
     font-size: 13px;
     line-height: 1.5;
   }
-
-  /* INPUTS */
 
   .admin-form .form-grid input,
   .admin-form .form-grid select,
@@ -2092,9 +2459,7 @@
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
     font-size: 13px;
-
     border-radius: 6px;
   }
 
@@ -2108,24 +2473,17 @@
     min-height: 90px;
   }
 
-  /* FILE INPUT */
-
   .admin-form .form-grid input[type="file"] {
     height: auto;
     min-height: 43px;
-
     padding: 7px;
-
     font-size: 11px;
   }
-
-  /* COLOR */
 
   .admin-form .form-grid > label > div {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
     gap: 8px;
   }
 
@@ -2133,7 +2491,6 @@
     width: 48px !important;
     min-width: 48px !important;
     max-width: 48px !important;
-
     height: 43px;
     flex: 0 0 48px;
   }
@@ -2144,14 +2501,10 @@
     flex: 1 1 auto !important;
   }
 
-  /* NOTES */
-
   .admin-form .form-grid small {
     font-size: 10px;
     line-height: 1.6;
   }
-
-  /* IMAGE PREVIEW */
 
   .admin-form .form-grid > label > div {
     flex-wrap: wrap;
@@ -2161,8 +2514,6 @@
     max-width: 100%;
   }
 
-  /* ACTIVE */
-
   .admin-form .admin-checkboxes {
     margin-top: 14px;
   }
@@ -2171,15 +2522,11 @@
     font-size: 12px;
   }
 
-  /* LIVE PREVIEW */
-
   .admin-form .category-live-preview {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
     margin-top: 18px;
-
     overflow: hidden !important;
   }
 
@@ -2192,9 +2539,7 @@
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
     padding: 8px !important;
-
     overflow: hidden !important;
   }
 
@@ -2202,7 +2547,6 @@
     width: min(100%, 320px) !important;
     max-width: 100% !important;
     min-width: 0 !important;
-
     margin: 0 auto;
   }
 
@@ -2219,40 +2563,30 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
-
     padding: 8px;
   }
 
   .admin-form .category-preview-content h4 {
     max-width: 100%;
-
     font-size: 15px;
-
     overflow-wrap: anywhere;
     word-break: break-word;
   }
 
   .admin-form .category-preview-content p {
     max-width: 100%;
-
     font-size: 11px;
     line-height: 1.6;
-
     overflow-wrap: anywhere;
     word-break: break-word;
   }
 
-  /* ACTIONS */
-
   .admin-form .form-actions {
     width: 100% !important;
     max-width: 100% !important;
-
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-
     gap: 8px;
-
     margin-top: 16px;
   }
 
@@ -2260,11 +2594,8 @@
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-
     min-height: 43px;
-
     padding: 8px 10px;
-
     font-size: 12px;
   }
 }
@@ -2274,7 +2605,6 @@
 ========================================================= */
 
 @media (max-width: 380px) {
-
   .admin-form h3 {
     font-size: 16px;
   }
@@ -2311,7 +2641,6 @@
 ========================================================= */
 
 @media (max-width: 768px) {
-
   .admin-form,
   .admin-form .form-grid,
   .admin-form .category-live-preview,
@@ -2328,64 +2657,99 @@
     max-width: 100% !important;
   }
 }
+
 /* =========================================================
    ADMIN - HORIZONTAL SCROLL
    Products / Categories / Banners / Tables
-   ========================================================= */
+========================================================= */
 
 .admin-table-wrapper,
 .table-wrapper,
+.table-container,
 .data-table-wrapper,
+.data-table-container,
 .products-table-wrapper,
 .categories-table-wrapper,
 .banners-table-wrapper,
 .orders-table-wrapper,
-.admin-table-container {
+.users-table-wrapper,
+.admin-table-container,
+.table-scroll {
   width: 100%;
   max-width: 100%;
-
   min-width: 0;
-
-  overflow-x: auto;
-  overflow-y: visible;
-
+  display: block;
+  position: relative;
+  overflow-x: auto !important;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-
+  overscroll-behavior-x: contain;
   box-sizing: border-box;
+  scrollbar-width: auto;
 }
 
+/* =========================================================
+   TABLE SCROLL - CURRENT JSX WRAPPER
+========================================================= */
+
+.table-scroll {
+  padding-bottom: 4px;
+}
+
+.table-scroll > table,
+.table-scroll .admin-table {
+  width: max-content !important;
+  min-width: 100% !important;
+  max-width: none !important;
+  table-layout: auto;
+  white-space: nowrap;
+}
+
+.table-scroll .table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
+  min-width: max-content;
+}
 
 /* =========================================================
    TABLE
-   ========================================================= */
+========================================================= */
 
 .admin-table-wrapper table,
 .table-wrapper table,
+.table-container table,
 .data-table-wrapper table,
+.data-table-container table,
 .products-table-wrapper table,
 .categories-table-wrapper table,
 .banners-table-wrapper table,
 .orders-table-wrapper table,
+.users-table-wrapper table,
 .admin-table-container table {
-  width: max-content;
+  width: max-content !important;
   min-width: 100%;
-
+  max-width: none;
   border-collapse: collapse;
-
   white-space: nowrap;
 }
 
-
 /* =========================================================
    CELLS
-   ========================================================= */
+========================================================= */
 
 .admin-table-wrapper th,
 .admin-table-wrapper td,
 .table-wrapper th,
 .table-wrapper td,
+.table-container th,
+.table-container td,
 .data-table-wrapper th,
 .data-table-wrapper td,
+.data-table-container th,
+.data-table-container td,
 .products-table-wrapper th,
 .products-table-wrapper td,
 .categories-table-wrapper th,
@@ -2394,129 +2758,18 @@
 .banners-table-wrapper td,
 .orders-table-wrapper th,
 .orders-table-wrapper td,
+.users-table-wrapper th,
+.users-table-wrapper td,
 .admin-table-container th,
 .admin-table-container td {
   white-space: nowrap;
-
   min-width: max-content;
-
   box-sizing: border-box;
 }
 
-
 /* =========================================================
    HORIZONTAL SCROLLBAR
-   ========================================================= */
-
-.admin-table-wrapper::-webkit-scrollbar,
-.table-wrapper::-webkit-scrollbar,
-.data-table-wrapper::-webkit-scrollbar,
-.products-table-wrapper::-webkit-scrollbar,
-.categories-table-wrapper::-webkit-scrollbar,
-.banners-table-wrapper::-webkit-scrollbar,
-.orders-table-wrapper::-webkit-scrollbar,
-.admin-table-container::-webkit-scrollbar {
-  height: 10px;
-}
-
-
-.admin-table-wrapper::-webkit-scrollbar-track,
-.table-wrapper::-webkit-scrollbar-track,
-.data-table-wrapper::-webkit-scrollbar-track,
-.products-table-wrapper::-webkit-scrollbar-track,
-.categories-table-wrapper::-webkit-scrollbar-track,
-.banners-table-wrapper::-webkit-scrollbar-track,
-.orders-table-wrapper::-webkit-scrollbar-track,
-.admin-table-container::-webkit-scrollbar-track {
-  background: #eef1f5;
-  border-radius: 10px;
-}
-
-
-.admin-table-wrapper::-webkit-scrollbar-thumb,
-.table-wrapper::-webkit-scrollbar-thumb,
-.data-table-wrapper::-webkit-scrollbar-thumb,
-.products-table-wrapper::-webkit-scrollbar-thumb,
-.categories-table-wrapper::-webkit-scrollbar-thumb,
-.banners-table-wrapper::-webkit-scrollbar-thumb,
-.orders-table-wrapper::-webkit-scrollbar-thumb,
-.admin-table-container::-webkit-scrollbar-thumb {
-  background: #8b96a5;
-  border-radius: 10px;
-}
-
-
-.admin-table-wrapper::-webkit-scrollbar-thumb:hover,
-.table-wrapper::-webkit-scrollbar-thumb:hover,
-.data-table-wrapper::-webkit-scrollbar-thumb:hover,
-.products-table-wrapper::-webkit-scrollbar-thumb:hover,
-.categories-table-wrapper::-webkit-scrollbar-thumb:hover,
-.banners-table-wrapper::-webkit-scrollbar-thumb:hover,
-.orders-table-wrapper::-webkit-scrollbar-thumb:hover,
-.admin-table-container::-webkit-scrollbar-thumb:hover {
-  background: #071a36;
-}
-
-
-/* =========================================================
-   FIREFOX
-   ========================================================= */
-
-.admin-table-wrapper,
-.table-wrapper,
-.data-table-wrapper,
-.products-table-wrapper,
-.categories-table-wrapper,
-.banners-table-wrapper,
-.orders-table-wrapper,
-.admin-table-container {
-  scrollbar-width: auto;
-}
-
-
-/* =========================================================
-   IMPORTANT:
-   منع الـ parent من قص الـ table
-   ========================================================= */
-
-.admin-content,
-.admin-main,
-.admin-panel,
-.admin-page,
-.admin-dashboard,
-.admin-section,
-.tab-content {
-  min-width: 0;
-  max-width: 100%;
-}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 768px) {
-
-  .admin-table-wrapper,
-  .table-wrapper,
-  .data-table-wrapper,
-  .products-table-wrapper,
-  .categories-table-wrapper,
-  .banners-table-wrapper,
-  .orders-table-wrapper,
-  .admin-table-container {
-    overflow-x: auto;
-
-    width: 100%;
-    max-width: 100%;
-
-    padding-bottom: 8px;
-  }
-
-}
-/* =========================================================
-   GLOBAL HORIZONTAL SCROLLBAR
-   ========================================================= */
+========================================================= */
 
 .admin-table-wrapper::-webkit-scrollbar,
 .table-wrapper::-webkit-scrollbar,
@@ -2533,10 +2786,10 @@
 .orders-table-wrapper::-webkit-scrollbar,
 .orders-table-container::-webkit-scrollbar,
 .users-table-wrapper::-webkit-scrollbar,
-.users-table-container::-webkit-scrollbar {
-  height: 10px;
+.users-table-container::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar {
+  height: 9px;
 }
-
 
 .admin-table-wrapper::-webkit-scrollbar-track,
 .table-wrapper::-webkit-scrollbar-track,
@@ -2553,12 +2806,11 @@
 .orders-table-wrapper::-webkit-scrollbar-track,
 .orders-table-container::-webkit-scrollbar-track,
 .users-table-wrapper::-webkit-scrollbar-track,
-.users-table-container::-webkit-scrollbar-track {
+.users-table-container::-webkit-scrollbar-track,
+.table-scroll::-webkit-scrollbar-track {
   background: #eef1f5;
-
   border-radius: 10px;
 }
-
 
 .admin-table-wrapper::-webkit-scrollbar-thumb,
 .table-wrapper::-webkit-scrollbar-thumb,
@@ -2575,12 +2827,11 @@
 .orders-table-wrapper::-webkit-scrollbar-thumb,
 .orders-table-container::-webkit-scrollbar-thumb,
 .users-table-wrapper::-webkit-scrollbar-thumb,
-.users-table-container::-webkit-scrollbar-thumb {
+.users-table-container::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb {
   background: #8b96a5;
-
   border-radius: 10px;
 }
-
 
 .admin-table-wrapper::-webkit-scrollbar-thumb:hover,
 .table-wrapper::-webkit-scrollbar-thumb:hover,
@@ -2597,17 +2848,116 @@
 .orders-table-wrapper::-webkit-scrollbar-thumb:hover,
 .orders-table-container::-webkit-scrollbar-thumb:hover,
 .users-table-wrapper::-webkit-scrollbar-thumb:hover,
-.users-table-container::-webkit-scrollbar-thumb:hover {
+.users-table-container::-webkit-scrollbar-thumb:hover,
+.table-scroll::-webkit-scrollbar-thumb:hover {
   background: #071a36;
 }
 
+/* =========================================================
+   FIREFOX
+========================================================= */
+
+.admin-table-wrapper,
+.table-wrapper,
+.table-container,
+.data-table-wrapper,
+.data-table-container,
+.products-table-wrapper,
+.categories-table-wrapper,
+.banners-table-wrapper,
+.orders-table-wrapper,
+.users-table-wrapper,
+.admin-table-container,
+.table-scroll {
+  scrollbar-width: auto;
+}
 
 /* =========================================================
-   MOBILE
-   ========================================================= */
+   IMPORTANT:
+   منع الـ parent من قص الـ table
+========================================================= */
+
+.admin-content,
+.admin-main,
+.admin-panel,
+.admin-page,
+.admin-dashboard,
+.admin-section,
+.tab-content {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   TABLE ACTIONS
+========================================================= */
+
+.admin-page .table-actions,
+.admin-panel .table-actions,
+.admin-content .table-actions,
+.admin-main .table-actions,
+.tab-content .table-actions,
+.table-scroll .table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
+}
+
+.admin-page .table-actions button,
+.admin-panel .table-actions button,
+.admin-content .table-actions button,
+.admin-main .table-actions button,
+.tab-content .table-actions button {
+  font-size: 13px;
+  padding: 7px 10px;
+  min-height: 34px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   IMAGE - NORMAL SIZE
+========================================================= */
+
+.admin-page table img,
+.admin-panel table img,
+.admin-content table img,
+.admin-main table img,
+.tab-content table img {
+  max-width: 100px;
+  max-height: 80px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* =========================================================
+   DESKTOP TABLES
+========================================================= */
+
+@media (min-width: 769px) {
+  .table-scroll > table,
+  .table-scroll .admin-table,
+  .admin-table-wrapper > table,
+  .table-wrapper > table,
+  .table-container > table,
+  .data-table-wrapper > table,
+  .data-table-container > table,
+  .admin-table-container > table {
+    width: max-content !important;
+    min-width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* =========================================================
+   MOBILE TABLES
+========================================================= */
 
 @media (max-width: 768px) {
-
   .admin-table-wrapper,
   .table-wrapper,
   .table-container,
@@ -2623,157 +2973,30 @@
   .orders-table-wrapper,
   .orders-table-container,
   .users-table-wrapper,
-  .users-table-container {
-
+  .users-table-container,
+  .table-scroll {
     width: 100%;
     max-width: 100%;
-
-    overflow-x: auto;
-    overflow-y: hidden;
-
-    padding-bottom: 12px;
-  }
-
-
-  .admin-page table,
-  .admin-panel table,
-  .admin-content table,
-  .admin-main table,
-  .tab-content table {
-
-    width: max-content;
-
-  
-  }
-
-}
-/* =========================================================
-   CELLS - NORMAL SIZE
-   ========================================================= */
-
-.admin-page table th,
-.admin-page table td,
-.admin-panel table th,
-.admin-panel table td,
-.admin-content table th,
-.admin-content table td,
-.admin-main table th,
-.admin-main table td,
-.tab-content table th,
-.tab-content table td {
-  font-size: 14px;
-
-  padding: 10px 12px;
-
-  box-sizing: border-box;
-
-  white-space: nowrap;
-}
-
-
-/* =========================================================
-   ACTION BUTTONS
-   ========================================================= */
-
-.admin-page .table-actions,
-.admin-panel .table-actions,
-.admin-content .table-actions,
-.admin-main .table-actions,
-.tab-content .table-actions {
-  display: flex;
-
-  align-items: center;
-
-  gap: 6px;
-
-  flex-wrap: nowrap;
-
-  white-space: nowrap;
-}
-
-
-.admin-page .table-actions button,
-.admin-panel .table-actions button,
-.admin-content .table-actions button,
-.admin-main .table-actions button,
-.tab-content .table-actions button {
-  font-size: 13px;
-
-  padding: 7px 10px;
-
-  min-height: 34px;
-
-  white-space: nowrap;
-
-  flex-shrink: 0;
-}
-
-
-/* =========================================================
-   IMAGE - NORMAL SIZE
-   ========================================================= */
-
-.admin-page table img,
-.admin-panel table img,
-.admin-content table img,
-.admin-main table img,
-.tab-content table img {
-  max-width: 100px;
-
-  max-height: 80px;
-
-  width: auto;
-
-  height: auto;
-
-  object-fit: contain;
-}
-
-
-/* =========================================================
-   DESKTOP
-   ========================================================= */
-
-@media (min-width: 769px) {
-
-  .admin-page table,
-  .admin-panel table,
-  .admin-content table,
-  .admin-main table,
-  .tab-content table {
-    width: 100%;
-
     min-width: 0;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding-bottom: 10px;
+    touch-action: pan-x pan-y;
   }
 
-}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 768px) {
-
-  .admin-page table,
-  .admin-panel table,
-  .admin-content table,
-  .admin-main table,
-  .tab-content table {
-
-    /*
-      الجدول ياخد حجمه الطبيعي.
-      لو محتواه أكبر من الشاشة يظهر Scroll
-      بدون تصغير الصفحة.
-    */
-
-    width: max-content;
-
-    min-width: 100%;
-
+  .admin-table-wrapper > table,
+  .table-wrapper > table,
+  .table-container > table,
+  .data-table-wrapper > table,
+  .data-table-container > table,
+  .admin-table-container > table,
+  .table-scroll > table,
+  .table-scroll .admin-table {
+    width: max-content !important;
+    min-width: 850px !important;
+    max-width: none !important;
     font-size: 13px;
   }
-
 
   .admin-page table th,
   .admin-page table td,
@@ -2785,77 +3008,68 @@
   .admin-main table td,
   .tab-content table th,
   .tab-content table td {
-
     font-size: 13px;
-
     padding: 9px 10px;
   }
-
 
   .admin-page table img,
   .admin-panel table img,
   .admin-content table img,
   .admin-main table img,
   .tab-content table img {
-
     max-width: 80px;
-
     max-height: 65px;
   }
-
 
   .admin-page .table-actions button,
   .admin-panel .table-actions button,
   .admin-content .table-actions button,
   .admin-main .table-actions button,
   .tab-content .table-actions button {
-
     font-size: 12px;
-
     padding: 6px 9px;
-
     min-height: 32px;
   }
-
 }
-
 
 /* =========================================================
    PREVENT PAGE-LEVEL ZOOM / OVERFLOW
-   ========================================================= */
+========================================================= */
 
 .admin-page,
 .admin-panel,
 .admin-content,
 .admin-main,
 .tab-content {
-
   max-width: 100%;
-
   min-width: 0;
-
   box-sizing: border-box;
-
-  overflow-x: hidden;
 }
+
+/*
+  مهم:
+  لا نستخدم overflow-x:hidden هنا لأن ده كان بيقص
+  الـ horizontal scrollbar الخاص بالجداول.
+*/
+
 /* =========================================================
    ADMIN - HORIZONTAL SCROLL ONLY
    لا يغير الحجم أو الخطوط
-   ========================================================= */
+========================================================= */
 
 .admin-table-wrapper,
 .table-wrapper,
 .table-container,
 .data-table-wrapper,
 .data-table-container,
-.admin-table-container {
+.admin-table-container,
+.table-scroll {
   max-width: 100%;
   min-width: 0;
-  overflow-x: auto;
+  overflow-x: auto !important;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
 }
-
 
 /* أي جدول أكبر من المساحة يظهر Scroll فقط */
 
@@ -2864,10 +3078,10 @@
 .table-container > table,
 .data-table-wrapper > table,
 .data-table-container > table,
-.admin-table-container > table {
+.admin-table-container > table,
+.table-scroll > table {
   min-width: max-content;
 }
-
 
 /* منع أزرار التعديل من النزول لسطر جديد */
 
@@ -2876,11 +3090,11 @@
 .table-container .table-actions,
 .data-table-wrapper .table-actions,
 .data-table-container .table-actions,
-.admin-table-container .table-actions {
+.admin-table-container .table-actions,
+.table-scroll .table-actions {
   white-space: nowrap;
-  flex-wrap: nowrap;
+  flex-wrap: nowrap !important;
 }
-
 
 /* Scrollbar */
 
@@ -2889,17 +3103,141 @@
 .table-container::-webkit-scrollbar,
 .data-table-wrapper::-webkit-scrollbar,
 .data-table-container::-webkit-scrollbar,
-.admin-table-container::-webkit-scrollbar {
+.admin-table-container::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar {
   height: 8px;
 }
-
 
 .admin-table-wrapper::-webkit-scrollbar-thumb,
 .table-wrapper::-webkit-scrollbar-thumb,
 .table-container::-webkit-scrollbar-thumb,
 .data-table-wrapper::-webkit-scrollbar-thumb,
 .data-table-container::-webkit-scrollbar-thumb,
-.admin-table-container::-webkit-scrollbar-thumb {
+.admin-table-container::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb {
   background: #999;
   border-radius: 8px;
 }
+
+/* =========================================================
+   CUSTOMER PAGE - MOBILE POLISH
+========================================================= */
+
+@media (max-width: 768px) {
+  .customer-detail-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .customer-detail-section-header h3 {
+    font-size: 12px;
+  }
+
+  .customer-detail-item {
+    padding: 8px;
+  }
+
+  .customer-visit-row {
+    align-items: start;
+  }
+
+  .customer-activity-row {
+    align-items: start;
+  }
+
+  .customer-mini-list > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
+
+/* =========================================================
+   CUSTOMER PAGE - VERY SMALL
+========================================================= */
+
+@media (max-width: 380px) {
+  .customer-stats-grid {
+    gap: 5px;
+  }
+
+  .customer-stat {
+    padding: 8px;
+  }
+
+  .customer-stat-icon {
+    width: 27px;
+    height: 27px;
+    font-size: 13px;
+  }
+
+  .customer-stat-label {
+    font-size: 8px;
+  }
+
+  .customer-stat-value {
+    font-size: 14px;
+  }
+
+  .customer-detail-section {
+    padding: 9px;
+  }
+
+  .customer-profile-header {
+    padding: 12px;
+  }
+
+  .customer-profile-main h2,
+  .customer-profile-main h3 {
+    font-size: 15px;
+  }
+}
+
+/* =========================================================
+   FINAL OVERFLOW SAFETY
+========================================================= */
+
+.admin-container,
+.admin-content,
+.admin-main,
+.admin-panel,
+.admin-page,
+.tab-content,
+.admin-section {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.admin-container *,
+.admin-content *,
+.admin-main *,
+.admin-panel *,
+.admin-page *,
+.tab-content * {
+  box-sizing: border-box;
+}
+
+/*
+  الجداول فقط هي المسموح لها بالتمدد أفقيًا.
+  باقي واجهة الأدمن تفضل داخل عرض الشاشة.
+*/
+
+.table-scroll,
+.table-container,
+.admin-table-wrapper,
+.table-wrapper,
+.data-table-wrapper,
+.data-table-container,
+.products-table-wrapper,
+.categories-table-wrapper,
+.banners-table-wrapper,
+.orders-table-wrapper,
+.users-table-wrapper,
+.admin-table-container {
+  max-width: 100%;
+}
+
+/* =========================================================
+   END
+========================================================= */
