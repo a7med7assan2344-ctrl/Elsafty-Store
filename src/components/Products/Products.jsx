@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+
 import "./Products.css";
 
 import ProductCard from "../ProductCard/ProductCard";
@@ -19,11 +21,40 @@ const getNumber = (value, fallback = 0) => {
     : fallback;
 };
 
+/* =========================================================
+   CATEGORY HELPERS
+========================================================= */
+
+const getProductCategoryId = (product) => {
+  if (!product) return "";
+
+  return safeString(
+    product.categoryId ??
+      product.categoryID ??
+      product.category_id ??
+      product.category?.id ??
+      product.category?.categoryId
+  );
+};
+
+const getProductCategoryName = (product) => {
+  if (!product) return "";
+
+  return safeString(
+    product.categoryName ??
+      product.category?.name ??
+      product.categoryTitle ??
+      product.category
+  );
+};
+
 function Products({
   products = [],
   storeSettings = {},
   onProductClick,
 }) {
+  const [searchParams] = useSearchParams();
+
   /* =====================================================
      PRODUCTS SAFETY
   ===================================================== */
@@ -31,6 +62,70 @@ function Products({
   const safeProducts = Array.isArray(products)
     ? products.filter(Boolean)
     : [];
+
+  /* =====================================================
+     URL CATEGORY
+  ===================================================== */
+
+  const requestedCategory = safeString(
+    searchParams.get("category")
+  );
+
+  /* =====================================================
+     FILTER PRODUCTS BY CATEGORY
+  ===================================================== */
+
+  const filteredProducts = useMemo(() => {
+    /*
+      لو مفيش category في الـURL
+      نعرض كل المنتجات زي ما كانت الصفحة بتعمل قبل كده.
+    */
+
+    if (!requestedCategory) {
+      return safeProducts;
+    }
+
+    const normalizedRequestedCategory =
+      requestedCategory.toLowerCase();
+
+    return safeProducts.filter((product) => {
+      const categoryId =
+        getProductCategoryId(product);
+
+      const categoryName =
+        getProductCategoryName(product);
+
+      /*
+        مطابقة بالـID
+      */
+
+      if (
+        categoryId &&
+        categoryId.toLowerCase() ===
+          normalizedRequestedCategory
+      ) {
+        return true;
+      }
+
+      /*
+        مطابقة باسم القسم
+        كـ fallback لو الـProduct عنده categoryName
+      */
+
+      if (
+        categoryName &&
+        categoryName.toLowerCase() ===
+          normalizedRequestedCategory
+      ) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [
+    safeProducts,
+    requestedCategory,
+  ]);
 
   /* =====================================================
      ADMIN PRODUCT GRID SETTINGS
@@ -50,17 +145,25 @@ function Products({
   const showEmptyIcon =
     emptyStateSettings.showIcon !== false;
 
-  const emptyIcon = safeString(
-    emptyStateSettings.icon
-  ) || "🛍️";
+  const emptyIcon =
+    safeString(
+      emptyStateSettings.icon
+    ) || "🛍️";
 
-  const emptyTitle = safeString(
-    emptyStateSettings.title
-  ) || "لا توجد منتجات";
+  const emptyTitle =
+    safeString(
+      emptyStateSettings.title
+    ) || "لا توجد منتجات";
 
-  const emptyDescription = safeString(
-    emptyStateSettings.description
-  ) || "لا توجد منتجات مطابقة للبحث.";
+  const defaultEmptyDescription =
+    requestedCategory
+      ? "لا توجد منتجات داخل هذا القسم حالياً."
+      : "لا توجد منتجات مطابقة للبحث.";
+
+  const emptyDescription =
+    safeString(
+      emptyStateSettings.description
+    ) || defaultEmptyDescription;
 
   /* =====================================================
      GRID SETTINGS
@@ -101,13 +204,22 @@ function Products({
   const gridStyle = useMemo(() => {
     const style = {
       "--products-columns-desktop":
-        Math.max(1, Math.min(8, columnsDesktop)),
+        Math.max(
+          1,
+          Math.min(8, columnsDesktop)
+        ),
 
       "--products-columns-tablet":
-        Math.max(1, Math.min(6, columnsTablet)),
+        Math.max(
+          1,
+          Math.min(6, columnsTablet)
+        ),
 
       "--products-columns-mobile":
-        Math.max(1, Math.min(4, columnsMobile)),
+        Math.max(
+          1,
+          Math.min(4, columnsMobile)
+        ),
 
       "--products-grid-gap":
         `${Math.max(0, gap)}px`,
@@ -131,7 +243,7 @@ function Products({
      NO PRODUCTS
   ===================================================== */
 
-  if (safeProducts.length === 0) {
+  if (filteredProducts.length === 0) {
     return (
       <section
         className="no-products"
@@ -193,7 +305,7 @@ function Products({
         className="products-grid"
         style={gridStyle}
       >
-        {safeProducts.map(
+        {filteredProducts.map(
           (product, index) => {
             const productId =
               product?.id ||

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   addDoc,
@@ -37,6 +37,7 @@ const defaultTheme = {
   buttonBackground: SECONDARY,
   buttonText: "#FFFFFF",
   navbarBackground: PRIMARY,
+  headerBackground: PRIMARY,
   navbarText: "#FFFFFF",
   categoryBarBackground: "#FFFFFF",
   categoryBarText: PRIMARY,
@@ -62,6 +63,7 @@ const defaultTheme = {
 const defaultStoreSettings = {
   storeName: "ســــَــــــــــوا",
   logo: "",
+  logoFile: null,
   phone: "",
   whatsapp: "",
   email: "",
@@ -101,6 +103,14 @@ const defaultStoreSettings = {
     height: 80,
     fontSize: 16,
     items: [],
+  },
+  // مؤقت عروض اليوم
+  todayOffersTimer: {
+    enabled: false,
+    title: "العرض ينتهي خلال",
+    startAt: "",
+    endAt: "",
+    showDays: true,
   },
   texts: {
     homeTitle: "أهلاً بك في ســــَــــــــــوا",
@@ -421,11 +431,11 @@ const genericConfig = {
   },
   "popup-ads": {
     title: "الإعلانات المنبثقة", icon: "🔔",
-    fields: [["title", "العنوان", "text"], ["text", "النص", "textarea"], ["imageFile", "صورة الإعلان JPG/JPEG", "file"], ["buttonText", "نص الزر", "text"], ["link", "الرابط", "text"], ["delay", "التأخير بالمللي ثانية", "number"], ["width", "عرض النافذة", "number"], ["maxWidth", "أقصى عرض", "number"], ["backgroundColor", "خلفية الإعلان", "color"], ["buttonColor", "لون الزر", "color"], ["active", "مفعل", "checkbox"], ["closable", "قابل للإغلاق", "checkbox"]],
+    fields: [["title", "العنوان", "text"], ["text", "النص", "textarea"], ["imageFile", "صورة الإعلان JPG/JPEG", "file"], ["buttonText", "نص الزر", "text"], ["link", "الرابط", "text"], ["delay", "التأخير بالمللي ثانية", "number"], ["width", "عرض النافذة", "number"], ["maxWidth", "أقصى عرض", "number"], ["backgroundColor", "خلفية الإعلان", "color"], ["buttonColor", "لون الزر", "color"], ["active", "مفعل افتراضيًا", "checkbox"], ["closable", "قابل للإغلاق", "checkbox"]],
   },
   notifications: {
     title: "الإشعارات", icon: "🔔",
-    fields: [["title", "العنوان", "text"], ["message", "الرسالة", "textarea"], ["type", "النوع", "select", [["info", "معلومة"], ["success", "نجاح"], ["warning", "تنبيه"], ["error", "خطأ"]]], ["active", "مفعل", "checkbox"]],
+    fields: [["title", "العنوان", "text"], ["message", "الرسالة", "textarea"], ["type", "النوع", "select", [["info", "معلومة"], ["success", "نجاح"], ["warning", "تنبيه"], ["error", "خطأ"]]], ["active", "مفعل", "checkbox"], ["enabled", "ظاهر للعملاء", "checkbox"], ["closable", "قابل للإغلاق", "checkbox"]],
   },
   support: {
     title: "رسائل خدمة العملاء", icon: "💬", readOnly: true,
@@ -613,7 +623,7 @@ export default function Admin() {
     watch("popupAds", setPopupAds); watch("notifications", setNotifications); watch("supportMessages", setSupport); watch("favorites", setFavorites);
     watch("blockedUsers", setBlockedUsers); watch("shippingZones", setShipping); watch("paymentMethods", setPayments); watch("storeMenuItems", setStoreMenu);
     watch("activityLogs", setActivityLogs); watch("admins", setAdmins);
-    const settingsUnsub = onSnapshot(doc(db, "settings", "store"), snap => { if (snap.exists()) setStoreSettings(p => ({ ...defaultStoreSettings, ...p, ...snap.data(), theme: { ...defaultTheme, ...(p.theme || {}), ...(snap.data().theme || {}) }, texts: { ...defaultStoreSettings.texts, ...(p.texts || {}), ...(snap.data().texts || {}) } })); }, e => console.warn("settings/store", e?.message));
+    const settingsUnsub = onSnapshot(doc(db, "settings", "store"), snap => { if (snap.exists()) setStoreSettings(p => ({ ...defaultStoreSettings, ...p, ...snap.data(), theme: { ...defaultTheme, ...(p.theme || {}), ...(snap.data().theme || {}) }, todayOffersTimer: { ...defaultStoreSettings.todayOffersTimer, ...(p.todayOffersTimer || {}), ...(snap.data().todayOffersTimer || {}) }, texts: { ...defaultStoreSettings.texts, ...(p.texts || {}), ...(snap.data().texts || {}) } })); }, e => console.warn("settings/store", e?.message));
     const wheelUnsub = onSnapshot(doc(db, "settings", "wheel"), snap => { if (snap.exists()) setWheelSettings({ ...defaultWheelSettings, ...snap.data(), prizes: safeArray(snap.data().prizes) }); }, e => console.warn("settings/wheel", e?.message));
     const gamesUnsub = onSnapshot(doc(db, "settings", "games"), snap => { if (snap.exists()) setGamesSettings(mergeGames(defaultGamesSettings, {}, snap.data())); }, e => console.warn("settings/games", e?.message));
     const secUnsub = onSnapshot(doc(db, "settings", "security"), snap => { if (snap.exists()) setSecurity(p => ({ ...p, ...snap.data() })); }, e => console.warn("settings/security", e?.message));
@@ -627,6 +637,16 @@ export default function Admin() {
     sales: orders.filter(o => o.status !== "cancelled").reduce((s, o) => s + asNumber(o.total ?? o.finalTotal), 0),
   }), [products, categories, orders, users]);
 
+  // عدد المحادثات التي فيها رسالة عميل غير مقروءة.
+  const supportUnreadConversationCount = useMemo(() => {
+    const unread = new Set();
+    safeArray(support).forEach((m) => {
+      const id = String(m.conversationId || m.userId || m.uid || m.customerId || m.email || m.phone || m.id || "unknown");
+      if ((m.sender === "customer" || m.senderRole === "customer") && m.readByAdmin !== true) unread.add(id);
+    });
+    return unread.size;
+  }, [support]);
+
   const filteredProducts = useMemo(() => products.filter(p => !search || normalize(`${p.title} ${p.category} ${p.categoryId} ${p.description}`).includes(normalize(search))), [products, search]);
   const filteredUsers = useMemo(() => users.filter(u => !search || normalize(`${u.name} ${u.email} ${u.phone}`).includes(normalize(search))), [users, search]);
   const filteredOrders = useMemo(() => orders.filter(o => {
@@ -639,7 +659,30 @@ export default function Admin() {
   };
 
   const saveSettings = async () => {
-    setSaving(true); try { await setDoc(doc(db, "settings", "store"), { ...storeSettings, updatedAt: serverTimestamp() }, { merge: true }); await log("تعديل إعدادات المتجر", "تم حفظ الألوان والنصوص والإعدادات العامة"); alert("✅ تم حفظ إعدادات المتجر"); } catch (e) { console.error(e); alert(e?.message || "❌ تعذر حفظ الإعدادات"); } finally { setSaving(false); }
+    setSaving(true);
+    try {
+      const payload = { ...storeSettings };
+      if (payload.logoFile) {
+        const file = payload.logoFile;
+        if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type || "")) {
+          throw new Error("اللوجو لازم يكون JPG أو JPEG أو PNG أو WEBP");
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error("حجم اللوجو يجب ألا يتجاوز 5 ميجابايت");
+        }
+        payload.logo = await uploadImage(file);
+      }
+      delete payload.logoFile;
+      await setDoc(doc(db, "settings", "store"), { ...payload, updatedAt: serverTimestamp() }, { merge: true });
+      setStoreSettings((prev) => ({ ...prev, ...payload, logoFile: null }));
+      await log("تعديل إعدادات المتجر", "تم حفظ الألوان والنصوص والإعدادات العامة واللوجو");
+      alert("✅ تم حفظ إعدادات المتجر");
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || "❌ تعذر حفظ الإعدادات");
+    } finally {
+      setSaving(false);
+    }
   };
   const saveWheel = async () => {
     setSaving(true); try { await setDoc(doc(db, "settings", "wheel"), { ...wheelSettings, prizes: safeArray(wheelSettings.prizes), updatedAt: serverTimestamp() }, { merge: true }); await log("تعديل عجلة الحظ", "تم حفظ إعدادات العجلة"); alert("✅ تم حفظ إعدادات عجلة الحظ"); } catch (e) { console.error(e); alert(e?.message || "❌ تعذر الحفظ"); } finally { setSaving(false); }
@@ -762,9 +805,27 @@ export default function Admin() {
       });
     } else {
       setGenericForm(item ? { ...item } : {
-        active: true, enabled: true, visible: true, type: type === "announcement-bars" ? "marquee" : undefined,
-        backgroundColor: PRIMARY, background: PRIMARY, textColor: "#FFFFFF", fontFamily: "Cairo", fontSize: 15, fontWeight: 700,
-        height: 42, speed: 40, direction: "rtl", order: 0, imageFit: "contain", overlayOpacity: 0.35, width: 90, maxWidth: 720, buttonColor: ACCENT,
+        active: true,
+        enabled: true,
+        visible: true,
+        // مهم: ممنوع نحط undefined في Firestore.
+        // الإعلانات المنبثقة محتاجة type واضح، وأشرطة الإعلانات نوعها marquee.
+        type: type === "announcement-bars" ? "marquee" : type === "popup-ads" ? "popup" : "general",
+        backgroundColor: PRIMARY,
+        background: PRIMARY,
+        textColor: "#FFFFFF",
+        fontFamily: "Cairo",
+        fontSize: 15,
+        fontWeight: 700,
+        height: 42,
+        speed: 40,
+        direction: "rtl",
+        order: 0,
+        imageFit: "contain",
+        overlayOpacity: 0.35,
+        width: 90,
+        maxWidth: 720,
+        buttonColor: ACCENT,
       });
     }
     setShowGeneric(true);
@@ -792,8 +853,25 @@ export default function Admin() {
         Object.keys(DEFAULT_BANNER_TEXT_SETTINGS).forEach(key => delete payload[key]);
       }
       delete payload.id; delete payload.createdAt; delete payload.updatedAt; delete payload.imageFile; delete payload.imagePreview;
-      if (genericId) await updateDoc(doc(db, name, genericId), { ...payload, updatedAt: serverTimestamp() });
-      else await addDoc(collection(db, name), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+
+      // Firestore بيرفض أي field قيمته undefined.
+      // ننظف الـ payload بالكامل قبل الحفظ، وده يمنع نفس الخطأ في أي عنصر مستقبلاً.
+      const cleanFirestoreData = (value) => {
+        if (Array.isArray(value)) return value.map(cleanFirestoreData).filter((v) => v !== undefined);
+        if (value && typeof value === "object" && !(value instanceof Date)) {
+          const result = {};
+          Object.entries(value).forEach(([key, val]) => {
+            if (val !== undefined) result[key] = cleanFirestoreData(val);
+          });
+          return result;
+        }
+        return value;
+      };
+
+      const safePayload = cleanFirestoreData(payload);
+      if (genericType === "popup-ads" && !safePayload.type) safePayload.type = "popup";
+      if (genericId) await updateDoc(doc(db, name, genericId), { ...safePayload, updatedAt: serverTimestamp() });
+      else await addDoc(collection(db, name), { ...safePayload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
       await log(genericId ? "تعديل عنصر" : "إضافة عنصر", genericConfig[genericType]?.title || genericType); setShowGeneric(false); alert("✅ تم الحفظ");
     } catch (e2) { console.error(e2); alert(e2?.message || "❌ تعذر الحفظ"); } finally { setSaving(false); }
   };
@@ -822,7 +900,7 @@ export default function Admin() {
     <aside className="admin-sidebar">
       <div className="admin-brand"><div className="brand-mark">س</div><div><strong>ســــَــــــــــوا</strong><small>لوحة الإدارة</small></div></div>
       <div className="admin-profile"><div className="avatar">{String(admin.name || "م").slice(0, 1)}</div><div><strong>{admin.name || "مشرف"}</strong><small>{admin.isSuperAdmin || admin.role === "superadmin" ? "مدير رئيسي" : "مشرف"}</small></div></div>
-      <nav>{menu.map(group => <div className="menu-group" key={group.group}><h4>{group.group}</h4>{group.items.map(([id, icon, text]) => <button type="button" key={id} className={tab === id ? "admin-menu-item active" : "admin-menu-item"} onClick={() => changeTab(id)}><span>{icon}</span><span>{text}</span>{id === "orders" && counts.pending > 0 && <b>{counts.pending}</b>}</button>)}</div>)}</nav>
+      <nav>{menu.map(group => <div className="menu-group" key={group.group}><h4>{group.group}</h4>{group.items.map(([id, icon, text]) => <button type="button" key={id} className={tab === id ? "admin-menu-item active" : "admin-menu-item"} onClick={() => changeTab(id)}><span>{icon}</span><span style={{flex:1,textAlign:"right"}}>{text}</span>{id === "orders" && counts.pending > 0 && <b>{counts.pending}</b>}{id === "support" && supportUnreadConversationCount > 0 && <b style={{minWidth:24,height:24,padding:"0 6px",borderRadius:999,display:"inline-grid",placeItems:"center",background:"#EF4444",color:"#fff",fontSize:11,fontWeight:950}}>{supportUnreadConversationCount > 99 ? "99+" : supportUnreadConversationCount}</b>}</button>)}</div>)}</nav>
       <button type="button" className="back-store" onClick={() => navigate("/")}>← العودة للمتجر</button>
     </aside>
 
@@ -937,7 +1015,7 @@ export default function Admin() {
       {tab === "new-arrivals" && <ProductFlagSection title="🆕 وصل حديثًا" flag="newArrival" products={products} setTab={changeTab} />}
       {tab === "recommended" && <ProductFlagSection title="❤️ قد يعجبك" flag="recommended" products={products} setTab={changeTab} />}
 
-      {tab === "banners" && <GenericSection type="banners" data={banners} />}
+      {tab === "banners" && GenericSection({ type: "banners", data: banners })}
 
       {tab === "games" && <GamesPanel gamesSettings={gamesSettings} setGamesSettings={setGamesSettings} saveGames={saveGames} saving={saving} />}
 
@@ -949,18 +1027,18 @@ export default function Admin() {
       {tab === "security" && <SecurityPanel security={security} setSecurity={setSecurity} saving={saving} setSaving={setSaving} log={log} />}
       {tab === "reports" && <Reports orders={orders} products={products} users={users} categories={categories} banners={banners} announcementBars={announcementBars} popupAds={popupAds} activityLogs={activityLogs} />}
       {tab === "sales" && <Sales orders={orders} />}
-      {tab === "shipping" && <GenericSection type="shipping" data={shipping} />}
-      {tab === "payments" && <GenericSection type="payments" data={payments} />}
-      {tab === "store-menu" && <GenericSection type="store-menu" data={storeMenu} />}
-      {tab === "coupons" && <GenericSection type="coupons" data={coupons} />}
-      {tab === "announcements" && <GenericSection type="announcements" data={announcements} />}
-      {tab === "announcement-bars" && <GenericSection type="announcement-bars" data={announcementBars} />}
-      {tab === "popup-ads" && <GenericSection type="popup-ads" data={popupAds} />}
-      {tab === "notifications" && <GenericSection type="notifications" data={notifications} />}
-      {tab === "support" && <GenericSection type="support" data={support} />}
-      {tab === "favorites" && <GenericSection type="favorites" data={favorites} />}
-      {tab === "blocked-users" && <GenericSection type="blocked-users" data={blockedUsers} />}
-      {tab === "activity-log" && <GenericSection type="activity-log" data={activityLogs} />}
+      {tab === "shipping" && GenericSection({ type: "shipping", data: shipping })}
+      {tab === "payments" && GenericSection({ type: "payments", data: payments })}
+      {tab === "store-menu" && GenericSection({ type: "store-menu", data: storeMenu })}
+      {tab === "coupons" && GenericSection({ type: "coupons", data: coupons })}
+      {tab === "announcements" && GenericSection({ type: "announcements", data: announcements })}
+      {tab === "announcement-bars" && GenericSection({ type: "announcement-bars", data: announcementBars })}
+      {tab === "popup-ads" && GenericSection({ type: "popup-ads", data: popupAds })}
+      {tab === "notifications" && GenericSection({ type: "notifications", data: notifications })}
+      {tab === "support" && <SupportPanel support={support} admin={admin} users={users} orders={orders} favorites={favorites} activityLogs={activityLogs} notifications={notifications} onOpenCustomer={setUserDetails} />}
+      {tab === "favorites" && GenericSection({ type: "favorites", data: favorites })}
+      {tab === "blocked-users" && GenericSection({ type: "blocked-users", data: blockedUsers })}
+      {tab === "activity-log" && GenericSection({ type: "activity-log", data: activityLogs })}
 
       {orderDetails && <Modal title={`تفاصيل الطلب ${orderDetails.orderNumber || orderDetails.id.slice(0,8)}`} onClose={()=>setOrderDetails(null)}><div className="details-grid"><Info label="العميل" value={orderDetails.customerName||orderDetails.name||"—"}/><Info label="الهاتف" value={orderDetails.phone||"—"}/><Info label="البريد" value={orderDetails.email||"—"}/><Info label="التاريخ" value={dateText(orderDetails.createdAt)}/><Info label="الدفع" value={orderDetails.paymentMethod||"—"}/><Info label="الإجمالي" value={money(orderDetails.total??orderDetails.finalTotal)}/></div><h3>🛍️ المنتجات</h3><div className="order-items">{safeArray(orderDetails.items||orderDetails.products).map((it,i)=><div key={i}><span>{it.title||it.name||"منتج"}</span><strong>{asNumber(it.quantity,1)} × {money(it.price)}</strong></div>)}</div><div className="form-actions"><button type="button" className="delete-btn" onClick={()=>removeOrder(orderDetails)}>🗑️ حذف الطلب</button></div></Modal>}
       {userDetails && <CustomerDetailsModal user={userDetails} orders={orders} favorites={favorites} support={support} activityLogs={activityLogs} notifications={notifications} onClose={()=>setUserDetails(null)} onToggleBlock={toggleUserBlock} />}
@@ -1009,6 +1087,287 @@ function BannerPreview({ form = {} }) {
   </div>;
 }
 
+
+function SupportPanel({ support, admin, users = [], orders = [], favorites = [], activityLogs = [], notifications = [], onOpenCustomer }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [conversationSearch, setConversationSearch] = useState("");
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [closedOnly, setClosedOnly] = useState(false);
+  const [attachment, setAttachment] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const [pinned, setPinned] = useState(() => { try { return JSON.parse(localStorage.getItem("sawa_support_pinned") || "[]"); } catch { return []; } });
+  const fileRef = useRef(null);
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const recordTimerRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  const getConversationId = (item = {}) => String(item.conversationId || item.userId || item.uid || item.customerId || item.email || item.phone || item.id || "unknown");
+  const toMillis = (value) => value?.seconds ? value.seconds * 1000 : (value?.toMillis ? value.toMillis() : new Date(value || 0).getTime());
+  const getPersonName = (item = {}) => item.accountName || item.displayName || item.name || item.customerName || item.customerEmail || item.email || item.customerPhone || item.phone || "عميل";
+  const isCustomerMessage = (m = {}) => m.sender === "customer" || m.senderRole === "customer";
+
+  const conversations = useMemo(() => {
+    const map = new Map();
+    safeArray(support).forEach((message) => { const id = getConversationId(message); if (!map.has(id)) map.set(id, []); map.get(id).push(message); });
+    return Array.from(map.entries()).map(([id, messages]) => {
+      const sorted = messages.slice().sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
+      const last = sorted[sorted.length - 1] || {};
+      const first = sorted.find(isCustomerMessage) || sorted[0] || {};
+      const unread = sorted.filter((m) => isCustomerMessage(m) && m.readByAdmin !== true).length;
+      const hasUnread = unread > 0;
+      const lastCustomer = [...sorted].reverse().find(isCustomerMessage) || null;
+      const lastCustomerTime = toMillis(lastCustomer?.createdAt);
+      const active = lastCustomerTime > Date.now() - 5 * 60 * 1000;
+      const chatClosed = last?.chatClosed === true;
+      const account = safeArray(users).find((u) => {
+        const uid = String(first.userId || first.uid || first.customerId || "").trim();
+        const email = String(first.customerEmail || first.email || "").trim().toLowerCase();
+        const phone = String(first.customerPhone || first.phone || "").replace(/\D/g, "");
+        const uids = String(u.uid || u.userId || u.id || "").trim();
+        const ue = String(u.email || "").trim().toLowerCase();
+        const up = String(u.phone || "").replace(/\D/g, "");
+        return (uid && uids && uid === uids) || (email && ue && email === ue) || (phone && up && phone === up);
+      }) || null;
+      const accountName = account?.displayName || account?.name || account?.username || account?.fullName || "";
+      return { id, messages: sorted, last, first, unread, hasUnread, lastCustomer, lastCustomerTime, active, chatClosed, pinned: pinned.includes(id), account, accountName };
+    }).sort((a, b) => Number(b.pinned) - Number(a.pinned) || toMillis(b.last?.createdAt) - toMillis(a.last?.createdAt));
+  }, [support, pinned, users]);
+
+  const markConversationRead = async (conversation) => {
+    if (!conversation?.messages?.length) return;
+    const unreadCustomerMessages = conversation.messages.filter((message) => isCustomerMessage(message) && message.readByAdmin !== true);
+    if (!unreadCustomerMessages.length) return;
+    await Promise.all(unreadCustomerMessages.filter((message) => message.id).map((message) =>
+      updateDoc(doc(db, "supportMessages", message.id), {
+        readByAdmin: true,
+        adminReadAt: serverTimestamp(),
+      }).catch((error) => console.error("Mark support conversation as read error:", error))
+    ));
+  };
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const conversation = conversations.find((item) => item.id === selectedId);
+    if (conversation?.hasUnread) markConversationRead(conversation);
+  }, [selectedId, conversations]);
+
+  useEffect(() => {
+    if (!conversations.length) { setSelectedId(null); return; }
+    if (!selectedId || !conversations.some((c) => c.id === selectedId)) setSelectedId(conversations[0].id);
+  }, [conversations, selectedId]);
+
+  useEffect(() => { if (selectedId) setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50); }, [selectedId, conversations.length]);
+
+  const filteredConversations = useMemo(() => {
+    const q = conversationSearch.trim().toLowerCase();
+    return conversations.filter((conversation) => {
+      if (unreadOnly && conversation.unread <= 0) return false;
+      if (closedOnly && !conversation.chatClosed) return false;
+      if (!q) return true;
+      const person = conversation.account || conversation.first || conversation.last || {};
+      const name = conversation.accountName || getPersonName(person); const contact = person.customerPhone || person.phone || person.customerEmail || person.email || "";
+      const last = conversation.last?.message || conversation.last?.text || conversation.last?.content || "";
+      return `${name} ${contact} ${last}`.toLowerCase().includes(q);
+    });
+  }, [conversations, conversationSearch, unreadOnly, closedOnly]);
+
+  const totalUnread = conversations.reduce((sum, item) => sum + (item.unread || 0), 0);
+  const totalUnreadConversations = conversations.filter((item) => item.hasUnread).length;
+  const selected = conversations.find((c) => c.id === selectedId) || null;
+  const customer = selected?.first || selected?.last || {};
+  const customerAccount = selected?.account || null;
+
+  const findCustomerAccount = (conversationCustomer = {}) => {
+    const uid = String(conversationCustomer.userId || conversationCustomer.uid || conversationCustomer.customerId || "").trim();
+    const email = String(conversationCustomer.customerEmail || conversationCustomer.email || "").trim().toLowerCase();
+    const phone = String(conversationCustomer.customerPhone || conversationCustomer.phone || "").replace(/\D/g, "");
+    return safeArray(users).find((u) => {
+      const uids = String(u.uid || u.userId || u.id || "").trim();
+      const ue = String(u.email || "").trim().toLowerCase();
+      const up = String(u.phone || "").replace(/\D/g, "");
+      return (uid && uids && uid === uids) || (email && ue && email === ue) || (phone && up && phone === up);
+    }) || null;
+  };
+
+  const openCustomerAccount = () => {
+    if (!customer || !onOpenCustomer) return;
+    const account = customerAccount || findCustomerAccount(customer);
+    if (account) {
+      onOpenCustomer(account);
+      return;
+    }
+    // للزائر غير المسجل: نفتح ملفًا مبنيًا على بيانات المحادثة مع الاحتفاظ بكل التفاصيل المتاحة.
+    onOpenCustomer({
+      id: customer.userId || customer.uid || customer.customerId || selected?.id || `guest-${selected?.id || Date.now()}`,
+      uid: customer.uid || customer.userId || "",
+      guestId: customer.guestId || "",
+      name: customer.customerName || customer.name || customer.displayName || "عميل زائر",
+      displayName: customer.displayName || customer.customerName || customer.name || "عميل زائر",
+      email: customer.customerEmail || customer.email || "",
+      phone: customer.customerPhone || customer.phone || "",
+      role: "guest",
+      createdAt: customer.createdAt || null,
+      lastLoginAt: customer.lastLoginAt || null,
+      address: customer.address || null,
+      governorate: customer.governorate || "",
+      city: customer.city || "",
+      village: customer.village || customer.area || "",
+      detailedAddress: customer.detailedAddress || customer.fullAddress || "",
+      blocked: false,
+    });
+  };
+
+  const togglePin = (id) => {
+    setPinned((prev) => { const next = prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]; try { localStorage.setItem("sawa_support_pinned", JSON.stringify(next)); } catch {} return next; });
+  };
+
+  const setConversationClosed = async (conversation, closed) => {
+    if (!conversation?.messages?.length) return;
+    const latest = conversation.messages[conversation.messages.length - 1];
+    if (!latest?.id) return;
+    try {
+      await updateDoc(doc(db, "supportMessages", latest.id), {
+        chatClosed: closed === true,
+        chatClosedAt: closed === true ? serverTimestamp() : null,
+        chatClosedBy: closed === true ? (admin?.id || "admin") : null,
+      });
+    } catch (error) {
+      console.error("Update support chat status error:", error);
+      alert(error?.message || "حصل خطأ أثناء تغيير حالة المحادثة.");
+    }
+  };
+
+  const getSupportMediaUrl = (message) => String(message?.attachmentUrl || message?.imageUrl || message?.mediaUrl || message?.fileUrl || message?.url || message?.attachment?.url || "").trim();
+  const isSupportImage = (message) => { const url = getSupportMediaUrl(message); const mime = String(message?.attachmentMime || message?.mimeType || message?.fileType || "").toLowerCase(); const type = String(message?.messageType || message?.type || "").toLowerCase(); const resource = String(message?.attachmentResourceType || message?.resourceType || "").toLowerCase(); const name = String(message?.attachmentName || message?.fileName || message?.name || "").toLowerCase(); return !!url && (type === "image" || resource === "image" || mime.startsWith("image/") || /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)(?:[?#].*)?$/i.test(name) || /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)(?:[?#].*)?$/i.test(url)); };
+  const isSupportAudio = (message) => { const url = getSupportMediaUrl(message); const mime = String(message?.attachmentMime || message?.mimeType || message?.fileType || "").toLowerCase(); const type = String(message?.messageType || message?.type || "").toLowerCase(); const resource = String(message?.attachmentResourceType || message?.resourceType || "").toLowerCase(); return !!url && (type === "audio" || resource === "audio" || mime.startsWith("audio/") || /\.(webm|ogg|mp3|wav|m4a|aac)(?:[?#].*)?$/i.test(url)); };
+  const isLocation = (message) => String(message?.messageType || message?.type || "").toLowerCase() === "location" || !!message?.locationUrl;
+
+  const uploadSupportMedia = async (file) => {
+    if (!file) return null;
+    if (file.size > 20 * 1024 * 1024) throw new Error("الحد الأقصى للملف 20MB");
+    const form = new FormData(); form.append("file", file); form.append("upload_preset", "elsafty_store"); form.append("folder", "sawa-support");
+    const response = await fetch("https://api.cloudinary.com/v1_1/wkcpvsqi/auto/upload", { method: "POST", body: form });
+    const data = await response.json(); if (!response.ok || !data?.secure_url) throw new Error(data?.error?.message || "فشل رفع الملف");
+    return { url: data.secure_url, name: file.name || "support-file", mime: file.type || "", bytes: file.size || 0, resourceType: data.resource_type || "auto", duration: data.duration || null };
+  };
+
+  const basePayload = () => ({ conversationId: selected.id, userId: customer.userId || customer.uid || customer.customerId || null, uid: customer.uid || customer.userId || null, guestId: customer.guestId || null, customerName: getPersonName(customer), customerEmail: customer.customerEmail || customer.email || "", customerPhone: customer.customerPhone || customer.phone || "", sender: "admin", senderRole: "admin", adminId: admin?.id || null, adminName: admin?.name || "خدمة العملاء", readByAdmin: true, readByCustomer: false, deliveredToCustomer: false, chatClosed: false, createdAt: serverTimestamp() });
+
+  const sendReply = async (extra = {}) => {
+    const text = draft.trim(); if ((!text && !attachment && !extra.locationUrl) || !selected) return;
+    setSending(true);
+    try {
+      const media = attachment ? await uploadSupportMedia(attachment.file) : null;
+      const messageType = extra.locationUrl ? "location" : media ? (media.mime?.startsWith("image/") ? "image" : media.mime?.startsWith("audio/") ? "audio" : "file") : "text";
+      await addDoc(collection(db, "supportMessages"), { ...basePayload(), ...extra, message: text || "", text: text || "", messageType, attachmentUrl: media?.url || null, attachmentName: media?.name || null, attachmentMime: media?.mime || null, attachmentBytes: media?.bytes || null, attachmentResourceType: media?.resourceType || null, attachmentDuration: media?.duration || null });
+      setDraft(""); setAttachment(null);
+    } catch (error) { console.error("support reply", error); alert(error?.message || "❌ تعذر إرسال الرد"); } finally { setSending(false); }
+  };
+
+  const handleFile = (event) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 20 * 1024 * 1024) { alert("الحد الأقصى للملف 20MB"); return; } setAttachment({ file }); };
+  const sendLocation = () => {
+    if (!selected || sending) return;
+    if (!navigator.geolocation) { alert("المتصفح لا يدعم تحديد الموقع."); return; }
+    setSending(true); navigator.geolocation.getCurrentPosition(async (position) => { const latitude = position.coords.latitude; const longitude = position.coords.longitude; setSending(false); await sendReply({ location: { latitude, longitude }, latitude, longitude, locationUrl: `https://www.google.com/maps?q=${latitude},${longitude}` }); }, () => { setSending(false); alert("مقدرناش نحدد موقع الجهاز. اسمح للموقع باستخدام Location وجرب تاني."); }, { enableHighAccuracy: true, timeout: 10000 });
+  };
+  const toggleRecording = async () => {
+    if (recording) { recorderRef.current?.stop(); return; }
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { alert("المتصفح لا يدعم تسجيل الصوت."); return; }
+    try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find((m) => MediaRecorder.isTypeSupported(m)) || ""; const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); chunksRef.current = []; recorderRef.current = recorder; setRecording(true); setRecordSeconds(0); recordTimerRef.current = setInterval(() => setRecordSeconds((v) => v + 1), 1000); recorder.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); }; recorder.onstop = () => { clearInterval(recordTimerRef.current); stream.getTracks().forEach((track) => track.stop()); setRecording(false); const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" }); const ext = (recorder.mimeType || "").includes("ogg") ? "ogg" : "webm"; setAttachment({ file: new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type }), isVoice: true }); }; recorder.start(); } catch (e) { console.error(e); alert("اسمح للموقع باستخدام الميكروفون وجرب تاني."); }
+  };
+  useEffect(() => () => { try { clearInterval(recordTimerRef.current); } catch {} try { recorderRef.current?.stream?.getTracks?.().forEach((track) => track.stop()); } catch {} }, []);
+
+  const lastSeenText = selected?.lastCustomerTime ? (selected.active ? "متصل/نشط الآن" : `آخر ظهور ${dateText(selected.lastCustomer?.createdAt)}`) : "لم يرسل العميل رسالة بعد";
+  const customerInitial = String(getPersonName(customer)).trim().slice(0, 1) || "ع";
+
+  return (
+    <section className="admin-card" style={{ padding: 0, overflow: "hidden", border: "1px solid #DCE4EE", background: "#F5F7FB", borderRadius: 24, boxShadow: "0 18px 60px rgba(7,26,54,.08)" }}>
+      <div style={{ padding: "22px 24px", background: "linear-gradient(135deg,#06162F,#0B2548 58%,#153E69)", color: "#fff", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", width: 260, height: 260, borderRadius: "50%", background: "rgba(212,175,55,.10)", left: -100, top: -160 }} />
+        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 15, display: "grid", placeItems: "center", background: "rgba(255,255,255,.11)", border: "1px solid rgba(255,255,255,.12)", fontSize: 22 }}>💬</div>
+            <div><div style={{ fontSize: 19, fontWeight: 950 }}>خدمة العملاء</div><div style={{ marginTop: 3, color: "rgba(255,255,255,.68)", fontSize: 11 }}>Inbox احترافي لإدارة محادثات العملاء</div></div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ padding: "8px 11px", borderRadius: 12, background: "rgba(255,255,255,.09)", border: "1px solid rgba(255,255,255,.10)", fontSize: 11, fontWeight: 850 }}>👥 {conversations.length} محادثة</span>
+            <span style={{ padding: "8px 11px", borderRadius: 12, background: totalUnreadConversations ? "rgba(239,68,68,.16)" : "rgba(255,255,255,.09)", border: "1px solid rgba(239,68,68,.18)", color: totalUnreadConversations ? "#FCA5A5" : "#fff", fontSize: 11, fontWeight: 900 }}>🔴 {totalUnreadConversations} غير مقروءة{totalUnread ? ` • ${totalUnread} رسالة` : ""}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(290px, 340px) minmax(0, 1fr)", gap: 14, padding: 14 }}>
+        <aside style={{ border: "1px solid #E0E6EF", borderRadius: 19, background: "#fff", overflow: "hidden", minHeight: 650, display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: 14, borderBottom: "1px solid #EDF1F6" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <div style={{ position: "relative", flex: 1 }}><span style={{ position: "absolute", right: 11, top: 10, color: "#94A3B8" }}>⌕</span><input value={conversationSearch} onChange={(e) => setConversationSearch(e.target.value)} placeholder="ابحث عن عميل أو رسالة..." style={{ width: "100%", boxSizing: "border-box", height: 38, border: "1px solid #E1E7EF", borderRadius: 11, padding: "0 32px 0 10px", outline: "none", background: "#F8FAFC", fontSize: 12 }} /></div>
+              <button type="button" onClick={() => setUnreadOnly((v) => !v)} style={{ width: 40, height: 38, borderRadius: 11, border: unreadOnly ? `1px solid ${ACCENT}` : "1px solid #E1E7EF", background: unreadOnly ? "#FFF8E6" : "#F8FAFC", color: unreadOnly ? "#8A6700" : PRIMARY, cursor: "pointer", fontWeight: 900 }} title="غير المقروء فقط">●</button>
+              <button type="button" onClick={() => setClosedOnly((v) => !v)} style={{ width: 40, height: 38, borderRadius: 11, border: closedOnly ? "1px solid #94A3B8" : "1px solid #E1E7EF", background: closedOnly ? "#EEF2F7" : "#F8FAFC", color: PRIMARY, cursor: "pointer", fontWeight: 900 }} title="المحادثات المقفولة فقط">🔒</button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><strong style={{ color: PRIMARY, fontSize: 14 }}>المحادثات</strong><span style={{ color: "#94A3B8", fontSize: 10 }}>{filteredConversations.length} ظاهرة</span></div>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {filteredConversations.length ? filteredConversations.map((conversation) => {
+              const person = conversation.account || conversation.first || conversation.last || {}; const name = conversation.accountName || getPersonName(person); const active = selectedId === conversation.id; const preview = conversation.last?.deletedByCustomer === true ? "🗑️ رسالة محذوفة — المحتوى محفوظ" : (conversation.last?.message || conversation.last?.text || conversation.last?.content || (isSupportImage(conversation.last) ? "🖼️ صورة" : isSupportAudio(conversation.last) ? "🎙️ رسالة صوتية" : isLocation(conversation.last) ? "📍 موقع" : "رسالة"));
+              return <button key={conversation.id} type="button" onClick={() => { setSelectedId(conversation.id); if (conversation.hasUnread) markConversationRead(conversation); }} style={{ width: "100%", border: 0, borderBottom: "1px solid #F0F3F7", background: active ? "linear-gradient(90deg,#F2F6FA,#FFFFFF)" : "#fff", padding: "12px 13px", textAlign: "right", cursor: "pointer", borderRight: active ? `3px solid ${ACCENT}` : "3px solid transparent" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ position: "relative", width: 42, height: 42, minWidth: 42, borderRadius: 13, display: "grid", placeItems: "center", background: active ? "linear-gradient(135deg,#071A36,#153E69)" : "#EEF3F8", color: active ? "#fff" : PRIMARY, fontWeight: 950 }}>{String(name).slice(0, 1)}{conversation.active && <i style={{ position: "absolute", left: -2, bottom: -1, width: 10, height: 10, borderRadius: 99, background: "#22C55E", border: "2px solid #fff" }} />}</span>
+                  <span style={{ minWidth: 0, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 6 }}><strong style={{ fontSize: 13, color: PRIMARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</strong>{conversation.pinned && <span title="مثبت">📌</span>}{conversation.chatClosed && <span title="محادثة مقفولة" style={{fontSize:10}}>🔒</span>}{conversation.unread > 0 && <b style={{ marginRight: "auto", minWidth: 20, height: 20, borderRadius: 7, display: "grid", placeItems: "center", background: ACCENT, color: PRIMARY, fontSize: 10 }}>{conversation.unread}</b>}</span><small style={{ display: "block", color: conversation.unread ? "#334155" : "#94A3B8", fontWeight: conversation.unread ? 750 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 5 }}>{preview}</small><small style={{ display: "block", color: conversation.chatClosed ? "#64748B" : "#B0B8C5", fontSize: 9, marginTop: 4 }}>{conversation.chatClosed ? "🔒 الشات مقفول" : conversation.active ? "متصل الآن" : conversation.lastCustomer ? `آخر ظهور: ${dateText(conversation.lastCustomer.createdAt)}` : "—"}</small></span>
+                </div>
+              </button>;
+            }) : <div style={{ padding: 42, textAlign: "center", color: "#94A3B8" }}><div style={{ fontSize: 34, marginBottom: 10 }}>💬</div><strong style={{ color: PRIMARY }}>مفيش محادثات</strong><p style={{ fontSize: 11, lineHeight: 1.7 }}>جرب تغيير البحث أو فلتر غير المقروء.</p></div>}
+          </div>
+        </aside>
+
+        <main style={{ border: "1px solid #E0E6EF", borderRadius: 19, overflow: "hidden", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 650, background: "#fff", boxShadow: "0 10px 35px rgba(15,23,42,.05)" }}>
+          {selected ? <>
+            <div style={{ padding: "13px 16px", borderBottom: "1px solid #E9EEF4", background: "rgba(255,255,255,.98)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}><button type="button" onClick={openCustomerAccount} title="فتح حساب العميل بالكامل" style={{ position: "relative", width: 45, height: 45, minWidth: 45, border: 0, borderRadius: 14, display: "grid", placeItems: "center", background: "linear-gradient(135deg,#071A36,#153E69)", color: "#fff", fontWeight: 950, fontSize: 17, cursor: "pointer" }}>{customerInitial}{selected.active && <i style={{ position: "absolute", left: -1, bottom: -1, width: 11, height: 11, borderRadius: 99, background: "#22C55E", border: "2px solid #fff" }} />}</button><div style={{ minWidth: 0 }}><button type="button" onClick={openCustomerAccount} title="فتح حساب العميل بالكامل" style={{ display: "block", maxWidth: 330, border: 0, padding: 0, background: "transparent", color: PRIMARY, fontSize: 15, fontWeight: 950, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textAlign: "right" }}>{getPersonName(customer)} <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700 }}>↗ الملف الكامل</span></button><div style={{ display: "flex", alignItems: "center", gap: 8, color: selected.active ? "#16A34A" : "#94A3B8", fontSize: 10, marginTop: 4 }}><span>{selected.active ? "● متصل الآن" : "○ غير متصل"}</span><span>•</span><span>{lastSeenText}</span></div></div></div>
+              <div style={{ display: "flex", gap: 7, alignItems: "center" }}><button type="button" onClick={() => togglePin(selected.id)} title={selected.pinned ? "إلغاء تثبيت" : "تثبيت المحادثة"} style={{ width: 38, height: 36, borderRadius: 10, border: selected.pinned ? `1px solid ${ACCENT}` : "1px solid #E1E7EF", background: selected.pinned ? "#FFF8E6" : "#F8FAFC", cursor: "pointer" }}>{selected.pinned ? "📌" : "📍"}</button><button type="button" onClick={async () => { await setConversationClosed(selected, true); setSelectedId(null); }} title="إغلاق المحادثة" aria-label="إغلاق المحادثة" style={{ width: 38, height: 36, borderRadius: 10, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", cursor: "pointer", fontSize: 20, fontWeight: 800, lineHeight: 1, display: "grid", placeItems: "center" }}>×</button><span style={{ padding: "7px 9px", borderRadius: 9, background: selected.chatClosed ? "#F1F5F9" : "#F6F8FB", color: "#64748B", fontSize: 10, fontWeight: 800 }}>{selected.chatClosed ? "🔒 مغلقة" : `#${String(selected.id).slice(-7)}`}</span></div>
+            </div>
+
+            <div style={{ flex: 1, minHeight: 390, maxHeight: 510, overflowY: "auto", padding: "22px 18px", background: "radial-gradient(circle at 12% 8%,rgba(212,175,55,.07),transparent 24%),linear-gradient(180deg,#F8FAFC,#F2F5F9)" }}>
+              <div style={{ textAlign: "center", marginBottom: 18 }}><span style={{ display: "inline-block", padding: "6px 11px", borderRadius: 999, background: "rgba(255,255,255,.9)", border: "1px solid #E5EAF0", color: "#94A3B8", fontSize: 10, fontWeight: 800 }}>بداية المحادثة</span></div>
+              {(selected.messages || []).map((message, index) => {
+                const isAdmin = message.sender === "admin" || message.senderRole === "admin"; const deleted = message.deletedByCustomer === true && !isAdmin; const url = getSupportMediaUrl(message);
+                return <div key={message.id || index} style={{ display: "flex", justifyContent: isAdmin ? "flex-start" : "flex-end", marginBottom: 12 }}><div style={{ maxWidth: "min(76%, 540px)", minWidth: 90 }}><div style={{ padding: "10px 12px", borderRadius: isAdmin ? "17px 17px 17px 5px" : "17px 17px 5px 17px", background: isAdmin ? "linear-gradient(135deg,#071A36,#123C69)" : "#fff", color: isAdmin ? "#fff" : PRIMARY, boxShadow: isAdmin ? "0 7px 20px rgba(7,26,54,.14)" : "0 5px 18px rgba(15,23,42,.07)", border: isAdmin ? "1px solid rgba(255,255,255,.05)" : "1px solid #E5EAF0" }}>
+                  {isSupportImage(message) && <a href={url} target="_blank" rel="noreferrer" style={{ display: "block", marginBottom: message.message ? 8 : 0 }}><img src={url} alt={message.attachmentName || "صورة"} loading="lazy" style={{ display: "block", width: "100%", maxWidth: 370, maxHeight: 290, objectFit: "cover", borderRadius: 13, background: "#EEF2F7" }} /></a>}
+                  {isSupportAudio(message) && <div style={{ padding: 7, borderRadius: 12, background: isAdmin ? "rgba(255,255,255,.08)" : "#F7F9FC", marginBottom: message.message ? 8 : 0 }}><audio controls src={url} style={{ width: "100%", height: 38 }} /></div>}
+                  {isLocation(message) && <a href={message.locationUrl || url || `https://www.google.com/maps?q=${message.latitude},${message.longitude}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", marginBottom: message.message ? 8 : 0, borderRadius: 13, textDecoration: "none", background: isAdmin ? "rgba(255,255,255,.10)" : "#F7FAFC", color: isAdmin ? "#fff" : PRIMARY, border: isAdmin ? "1px solid rgba(255,255,255,.12)" : "1px solid #E3EAF2" }}><span style={{ fontSize: 24 }}>📍</span><span><strong style={{ display: "block", fontSize: 12 }}>موقع جغرافي</strong><small style={{ opacity: .65, fontSize: 9 }}>فتح الموقع على Google Maps</small></span></a>}
+                  {!isSupportImage(message) && !isSupportAudio(message) && !isLocation(message) && message.attachmentUrl && <a href={url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px", marginBottom: message.message ? 8 : 0, borderRadius: 12, background: isAdmin ? "rgba(255,255,255,.08)" : "#F7F9FC", color: isAdmin ? "#fff" : PRIMARY, textDecoration: "none" }}><span style={{ fontSize: 20 }}>📎</span><span style={{ minWidth: 0 }}><strong style={{ display: "block", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{message.attachmentName || "ملف مرفق"}</strong><small style={{ opacity: .65, fontSize: 9 }}>فتح / معاينة الملف</small></span></a>}
+                  {message.message && <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7, fontSize: 13 }}>{message.message}</div>}
+                  {deleted && <div style={{ marginTop: message.message ? 9 : 0, padding: "8px 10px", borderRadius: 10, background: "#FFF7E6", color: "#946200", fontSize: 11, fontWeight: 800 }}>🗑️ تم حذف الرسالة بواسطة العميل — المحتوى محفوظ</div>}
+                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 5, marginTop: 6, fontSize: 9, opacity: .58 }}>{isAdmin && <span>أنت</span>}<span>{dateText(message.createdAt)}</span>{isAdmin && (
+  <span title={message.readByCustomer === true ? "تمت مشاهدة الرسالة" : message.deliveredToCustomer === true ? "وصلت للعميل" : "تم إرسال الرسالة"} style={{ color: message.readByCustomer === true ? "#60A5FA" : "#94A3B8", fontWeight: 950, letterSpacing: -2 }}>✓{message.deliveredToCustomer === true || message.readByCustomer === true ? "✓" : ""}</span>
+)}</div>
+                </div></div></div>;
+              })}<div ref={messagesEndRef} />
+            </div>
+
+            <div style={{ padding: 13, borderTop: "1px solid #E8EDF4", background: "#fff" }}>
+              {selected.chatClosed && <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 12, background: "#F1F5F9", border: "1px solid #E2E8F0", color: "#64748B", fontSize: 11, fontWeight: 800, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}><span>🔒 المحادثة مقفولة حاليًا — الرسائل القديمة محفوظة.</span><button type="button" onClick={() => setConversationClosed(selected, false)} style={{border:0,borderRadius:9,padding:"7px 10px",background:"#071A36",color:"#fff",cursor:"pointer",fontWeight:900,fontSize:10}}>🔓 فتح المحادثة</button></div>}
+              <input ref={fileRef} type="file" hidden onChange={handleFile} />
+              {attachment && <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9, padding: "8px 10px", borderRadius: 13, background: "#F7F9FC", border: "1px solid #E4EAF2" }}><span style={{ width: 30, height: 30, borderRadius: 9, display: "grid", placeItems: "center", background: "#EAF1FA" }}>{attachment.isVoice ? "🎙️" : "📎"}</span><span style={{ flex: 1, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#475569" }}>{attachment.file?.name}</span><button type="button" onClick={() => setAttachment(null)} style={{ border: 0, background: "#E5EAF0", color: "#64748B", borderRadius: 8, width: 28, height: 28, cursor: "pointer", fontSize: 17 }}>×</button></div>}
+              <div style={{ display: "flex", gap: 7, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={sending || recording || selected.chatClosed} title="إرسال ملف أو صورة" style={{ width: 42, height: 46, border: "1px solid #E2E8F0", borderRadius: 12, background: "#F8FAFC", color: PRIMARY, cursor: "pointer", fontSize: 18 }}>📎</button>
+                <button type="button" onClick={sendLocation} disabled={sending || recording || selected.chatClosed} title="إرسال الموقع" style={{ width: 42, height: 46, border: "1px solid #E2E8F0", borderRadius: 12, background: "#F8FAFC", color: PRIMARY, cursor: "pointer", fontSize: 18 }}>📍</button>
+                <button type="button" onClick={toggleRecording} disabled={sending || selected.chatClosed} title={recording ? "إيقاف التسجيل" : "تسجيل صوت"} style={{ minWidth: 42, height: 46, border: recording ? "1px solid #FECACA" : "1px solid #E2E8F0", borderRadius: 12, background: recording ? "#FEF2F2" : "#F8FAFC", color: recording ? "#DC2626" : PRIMARY, cursor: "pointer", fontSize: recording ? 10 : 17, fontWeight: 800 }}>{recording ? `⏹️ ${recordSeconds}s` : "🎙️"}</button>
+                <textarea disabled={selected.chatClosed} rows="2" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }} placeholder="اكتب ردًا للعميل..." style={{ flex: 1, minWidth: 180, resize: "none", minHeight: 46, maxHeight: 110, border: "1px solid #DCE3EC", borderRadius: 12, padding: "11px 13px", outline: "none", background: "#FBFCFE", lineHeight: 1.5 }} />
+                <button type="button" className="save-btn" disabled={sending || selected.chatClosed || (!draft.trim() && !attachment)} onClick={() => sendReply()} style={{ minWidth: 82, height: 46, borderRadius: 12, fontWeight: 900 }}>{sending ? "⏳" : "📤 إرسال"}</button>
+              </div>
+              <div style={{ marginTop: 7, display: "flex", justifyContent: "space-between", gap: 10, color: "#A0AABD", fontSize: 10 }}><span>📎 ملفات وصور حتى 20MB • 📍 موقع • 🎙️ صوت</span><span>Enter إرسال • Shift + Enter سطر جديد</span></div>
+            </div>
+          </> : <div style={{ flex: 1, display: "grid", placeItems: "center", padding: 30, textAlign: "center", background: "linear-gradient(180deg,#FBFCFE,#F5F7FA)" }}><div><div style={{ width: 78, height: 78, borderRadius: 26, margin: "0 auto 14px", display: "grid", placeItems: "center", background: "#EEF3F8", fontSize: 34 }}>💬</div><h3 style={{ margin: 0, color: PRIMARY }}>اختار محادثة</h3><p style={{ color: "#94A3B8", fontSize: 12 }}>اختار عميل من القائمة عشان تبدأ الرد.</p></div></div>}
+        </main>
+      </div>
+    </section>
+  );
+}
+
 function CustomerDetailsModal({ user, orders, favorites, support, activityLogs, notifications, onClose, onToggleBlock }) {
   const [view, setView] = useState("overview");
   const uid = user?.id;
@@ -1039,10 +1398,25 @@ function CustomerDetailsModal({ user, orders, favorites, support, activityLogs, 
     ["تاريخ التسجيل", dateText(user.createdAt || user.registeredAt)], ["آخر تحديث", dateText(user.updatedAt)], ["آخر دخول", dateText(user.lastLoginAt || user.lastLogin || user.loginAt)],
     ["الحالة", user.blocked ? "🔴 محظور" : "🟢 نشط"], ["الدور", user.role || "عميل"],
   ];
-  const tabs = [["overview","نظرة عامة"],["orders","الطلبات"],["activity","النشاط"],["favorites","المفضلة"],["support","خدمة العملاء"],["notifications","الإشعارات"]];
-  return <Modal title={`ملف العميل: ${user.name || user.email || "عميل"}`} onClose={onClose}>
-    <div style={{display:"flex",gap:14,alignItems:"center",padding:16,borderRadius:18,background:"linear-gradient(135deg,#071A36,#0B1F3A)",color:"#fff",marginBottom:16}}>
-      <div className="large-avatar" style={{margin:0}}>{String(user.name||"ع").slice(0,1)}</div><div style={{flex:1}}><h3 style={{margin:"0 0 4px"}}>{user.name||"عميل"}</h3><div style={{opacity:.8}}>{user.email||user.phone||"بدون بيانات اتصال"}</div></div><span className={user.blocked?"status-inactive":"status-active"}>{user.blocked?"🔴 محظور":"🟢 نشط"}</span>
+  const tabs = [["overview","🏠 نظرة عامة"],["orders","🛒 الطلبات"],["activity","🧾 النشاط"],["favorites","❤️ المفضلة"],["support","💬 خدمة العملاء"],["notifications","🔔 الإشعارات"]];
+  const profileName = user.name || user.displayName || user.username || user.fullName || "عميل";
+  const profileContact = user.email || user.phone || "بدون بيانات اتصال";
+  const profileInitial = String(profileName).trim().slice(0, 1) || "ع";
+  return <Modal title="ملف العميل" onClose={onClose}>
+    <div style={{position:"relative",overflow:"hidden",display:"flex",gap:16,alignItems:"center",padding:"20px",borderRadius:22,background:"linear-gradient(135deg,#06162F 0%,#0B2548 62%,#153E69 100%)",color:"#fff",marginBottom:16,boxShadow:"0 14px 35px rgba(7,26,54,.16)"}}>
+      <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(212,175,55,.10)",left:-70,top:-105}} />
+      <div className="large-avatar" style={{position:"relative",margin:0,width:62,height:62,minWidth:62,borderRadius:19,display:"grid",placeItems:"center",background:"linear-gradient(145deg,#D4AF37,#F4D06F)",color:"#071A36",fontSize:25,fontWeight:950,boxShadow:"0 8px 24px rgba(0,0,0,.18)"}}>{profileInitial}</div>
+      <div style={{position:"relative",flex:1,minWidth:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <h3 style={{margin:0,fontSize:19,fontWeight:950}}>{profileName}</h3>
+          <span style={{padding:"4px 8px",borderRadius:999,background:user.blocked?"rgba(248,113,113,.16)":"rgba(74,222,128,.14)",border:user.blocked?"1px solid rgba(248,113,113,.25)":"1px solid rgba(74,222,128,.22)",fontSize:9,fontWeight:900}}>{user.blocked?"🔴 محظور":"🟢 حساب نشط"}</span>
+        </div>
+        <div style={{marginTop:6,opacity:.78,fontSize:11,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{profileContact}</div>
+        <div style={{display:"flex",gap:7,marginTop:11,flexWrap:"wrap"}}>
+          {user.phone&&<a href={`tel:${user.phone}`} style={{textDecoration:"none",padding:"7px 10px",borderRadius:10,background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",color:"#fff",fontSize:10,fontWeight:800}}>📞 اتصال</a>}
+          {user.phone&&<a href={`https://wa.me/${String(user.phone).replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{textDecoration:"none",padding:"7px 10px",borderRadius:10,background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",color:"#fff",fontSize:10,fontWeight:800}}>💬 واتساب</a>}
+        </div>
+      </div>
     </div>
     <div className="table-actions" style={{marginBottom:16,flexWrap:"wrap"}}>{tabs.map(([id,label])=><button type="button" key={id} className={view===id?"edit-btn":"ghost-btn"} onClick={()=>setView(id)}>{label}</button>)}</div>
     {view === "overview" && <><div className="dashboard-grid"><div className="admin-stat-card"><span className="stat-label">إجمالي الطلبات</span><strong>{userOrders.length}</strong></div><div className="admin-stat-card"><span className="stat-label">إجمالي المشتريات</span><strong>{money(totalSpent)}</strong></div><div className="admin-stat-card"><span className="stat-label">المفضلة</span><strong>{userFavorites.length}</strong></div><div className="admin-stat-card"><span className="stat-label">رسائل الدعم</span><strong>{userSupport.length}</strong></div></div><div className="details-grid">{info.map(([label,value])=><Info key={label} label={label} value={value}/>)}</div>{addresses.length>0&&<><h3>📍 العناوين المستخدمة</h3><div className="order-items">{addresses.map((a,i)=><div key={i}><span>{a}</span></div>)}</div></>}{lastOrder&&<><h3>🛒 آخر طلب</h3><div className="order-items"><div><span>{lastOrder.orderNumber||lastOrder.id}</span><strong>{money(lastOrder.total??lastOrder.finalTotal)}</strong></div><div><span>{dateText(lastOrder.createdAt)}</span><strong>{lastOrder.status||"pending"}</strong></div></div></>}</>}
@@ -1074,8 +1448,8 @@ function SettingsPanel({ storeSettings, setStoreSettings, saveSettings, saving }
   const setTheme = (key,value)=>setStoreSettings(p=>({...p,theme:{...defaultTheme,...p.theme,[key]:value}}));
   const text = storeSettings.texts || defaultStoreSettings.texts;
   const setText = (key,value)=>setStoreSettings(p=>({...p,texts:{...defaultStoreSettings.texts,...p.texts,[key]:value}}));
-  const colors = [["primary","اللون الأساسي"],["secondary","اللون الثانوي"],["accent","اللون المميز"],["pageBackground","خلفية الموقع"],["cardBackground","خلفية البطاقات"],["textPrimary","لون النص الرئيسي"],["textSecondary","لون النص الثانوي"],["border","لون الحدود"],["buttonBackground","خلفية الأزرار"],["buttonText","نص الأزرار"],["navbarBackground","خلفية الشريط الرئيسي"],["navbarText","نص الشريط الرئيسي"],["categoryBarBackground","خلفية شريط الأقسام"],["categoryBarText","نص شريط الأقسام"],["topStripBackground","خلفية الشريط المتحرك"],["topStripText","نص الشريط المتحرك"],["footerBackground","خلفية الفوتر"],["footerText","نص الفوتر"],["footerBrand","لون اسم المتجر في الفوتر"],["footerButtonBackground","زر الفوتر"],["footerButtonText","نص زر الفوتر"],["headingColor","العناوين"],["linkColor","الروابط"],["priceColor","الأسعار"],["saleColor","لون الخصم"],["successColor","لون النجاح"],["warningColor","لون التنبيه"],["errorColor","لون الخطأ"],["inputBackground","خلفية الحقول"]];
-  return <section className="admin-card"><div className="section-header"><div><h2>🎨 مظهر المتجر وإعداداته</h2><p>تحكم كامل في الهوية والألوان والنصوص والأشرطة.</p></div></div><div className="settings-tabs"><div className="settings-block"><h3>🏪 البيانات الأساسية</h3><div className="form-grid"><label><span>اسم المتجر</span><input value={storeSettings.storeName||""} onChange={e=>setStoreSettings(p=>({...p,storeName:e.target.value}))}/></label><label><span>رابط اللوجو</span><input dir="ltr" value={storeSettings.logo||""} onChange={e=>setStoreSettings(p=>({...p,logo:e.target.value}))}/></label><label className="form-group-full"><span>الإعلان الافتراضي</span><textarea rows="3" value={storeSettings.announcement||""} onChange={e=>setStoreSettings(p=>({...p,announcement:e.target.value}))}/></label></div></div><div className="settings-block"><h3>🎨 جميع ألوان الموقع</h3><div className="color-grid">{colors.map(([k,l])=><ColorField key={k} name={k} label={l} value={theme[k]} onChange={e=>setTheme(k,e.target.value)} />)}</div></div><div className="settings-block"><h3>📝 نصوص الموقع</h3><div className="form-grid">{Object.entries(text).map(([k,v])=><label key={k}><span>{textLabel(k)}</span><input value={v||""} onChange={e=>setText(k,e.target.value)}/></label>)}</div></div><div className="settings-block"><h3>📢 الشريط المتحرك الافتراضي</h3><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.topStrip?.enabled!==false} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,enabled:e.target.checked}}))}/><span>إظهار الشريط</span></label><label><span>الاتجاه</span><select value={storeSettings.topStrip?.direction||"rtl"} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,direction:e.target.value}}))}><option value="rtl">يمين ← يسار</option><option value="ltr">يسار ← يمين</option></select></label><label><span>السرعة</span><input type="number" min="1" value={storeSettings.topStrip?.speed??40} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,speed:asNumber(e.target.value,40)}}))}/></label><label><span>الارتفاع</span><input type="number" min="20" value={storeSettings.topStrip?.height??42} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,height:asNumber(e.target.value,42)}}))}/></label><label><span>حجم الخط</span><input type="number" min="8" value={storeSettings.topStrip?.fontSize??15} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,fontSize:asNumber(e.target.value,15)}}))}/></label></div></div><div className="settings-block"><h3>🖼️ استجابة البانرات</h3><div className="form-grid"><label><span>ارتفاع سطح المكتب</span><input type="number" min="160" value={storeSettings.bannerSettings?.heightDesktop??420} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightDesktop:asNumber(e.target.value,420)}}))}/></label><label><span>ارتفاع التابلت</span><input type="number" min="140" value={storeSettings.bannerSettings?.heightTablet??350} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightTablet:asNumber(e.target.value,350)}}))}/></label><label><span>ارتفاع الموبايل</span><input type="number" min="120" value={storeSettings.bannerSettings?.heightMobile??240} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightMobile:asNumber(e.target.value,240)}}))}/></label><label><span>انحناء الحواف</span><input type="number" min="0" value={storeSettings.bannerSettings?.borderRadius??16} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,borderRadius:asNumber(e.target.value,16)}}))}/></label><label><span>شفافية Overlay</span><input type="number" min="0" max="1" step="0.05" value={storeSettings.bannerSettings?.overlayOpacity??0.35} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,overlayOpacity:asNumber(e.target.value,0.35)}}))}/></label><label><span>تأخير السلايدر</span><input type="number" min="1000" value={storeSettings.bannerSettings?.autoplayDelay??5000} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplayDelay:asNumber(e.target.value,5000)}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.bannerSettings?.autoplay!==false} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplay:e.target.checked}}))}/><span>تشغيل تلقائي</span></label></div></div><div className="form-actions"><button type="button" className="save-btn" disabled={saving} onClick={saveSettings}>{saving?"⏳ جاري الحفظ...":"💾 حفظ كل إعدادات المتجر"}</button></div></div></section>;
+  const colors = [["primary","اللون الأساسي"],["secondary","اللون الثانوي"],["accent","اللون المميز"],["pageBackground","خلفية الموقع"],["cardBackground","خلفية البطاقات"],["textPrimary","لون النص الرئيسي"],["textSecondary","لون النص الثانوي"],["border","لون الحدود"],["buttonBackground","خلفية الأزرار"],["buttonText","نص الأزرار"],["navbarBackground","خلفية الشريط الرئيسي"],["headerBackground","لون الهيدر"],["navbarText","نص الشريط الرئيسي"],["categoryBarBackground","خلفية شريط الأقسام"],["categoryBarText","نص شريط الأقسام"],["topStripBackground","خلفية الشريط المتحرك"],["topStripText","نص الشريط المتحرك"],["footerBackground","خلفية الفوتر"],["footerText","نص الفوتر"],["footerBrand","لون اسم المتجر في الفوتر"],["footerButtonBackground","زر الفوتر"],["footerButtonText","نص زر الفوتر"],["headingColor","العناوين"],["linkColor","الروابط"],["priceColor","الأسعار"],["saleColor","لون الخصم"],["successColor","لون النجاح"],["warningColor","لون التنبيه"],["errorColor","لون الخطأ"],["inputBackground","خلفية الحقول"]];
+  return <section className="admin-card"><div className="section-header"><div><h2>🎨 مظهر المتجر وإعداداته</h2><p>تحكم كامل في الهوية والألوان والنصوص والأشرطة.</p></div></div><div className="settings-tabs"><div className="settings-block"><h3>🏪 البيانات الأساسية</h3><div className="form-grid"><label><span>اسم المتجر</span><input value={storeSettings.storeName||""} onChange={e=>setStoreSettings(p=>({...p,storeName:e.target.value}))}/></label><label><span>لوجو المتجر — رفع ملف</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0]||null;setStoreSettings(p=>({...p,logoFile:file}));}}/><small style={{display:"block",marginTop:6,color:"#64748B"}}>JPG / JPEG / PNG / WEBP — بحد أقصى 5MB</small>{storeSettings.logoFile ? <small style={{display:"block",marginTop:4,color:"#16803C"}}>📥 {storeSettings.logoFile.name} جاهز للرفع</small> : null}{storeSettings.logo ? <img src={storeSettings.logo} alt="Logo preview" style={{display:"block",marginTop:10,maxWidth:180,maxHeight:80,objectFit:"contain",borderRadius:10,border:"1px solid #D9DFE8",padding:6,background:"#fff"}} /> : null}</label><label className="form-group-full"><span>الإعلان الافتراضي</span><textarea rows="3" value={storeSettings.announcement||""} onChange={e=>setStoreSettings(p=>({...p,announcement:e.target.value}))}/></label></div></div><div className="settings-block"><h3>🎨 جميع ألوان الموقع</h3><div className="color-grid">{colors.map(([k,l])=><ColorField key={k} name={k} label={l} value={theme[k]} onChange={e=>setTheme(k,e.target.value)} />)}</div></div><div className="settings-block"><h3>📝 نصوص الموقع</h3><div className="form-grid">{Object.entries(text).map(([k,v])=><label key={k}><span>{textLabel(k)}</span><input value={v||""} onChange={e=>setText(k,e.target.value)}/></label>)}</div></div><div className="settings-block"><h3>📢 الشريط المتحرك الافتراضي</h3><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.topStrip?.enabled!==false} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,enabled:e.target.checked}}))}/><span>إظهار الشريط</span></label><label><span>الاتجاه</span><select value={storeSettings.topStrip?.direction||"rtl"} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,direction:e.target.value}}))}><option value="rtl">يمين ← يسار</option><option value="ltr">يسار ← يمين</option></select></label><label><span>السرعة</span><input type="number" min="1" value={storeSettings.topStrip?.speed??40} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,speed:asNumber(e.target.value,40)}}))}/></label><label><span>الارتفاع</span><input type="number" min="20" value={storeSettings.topStrip?.height??42} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,height:asNumber(e.target.value,42)}}))}/></label><label><span>حجم الخط</span><input type="number" min="8" value={storeSettings.topStrip?.fontSize??15} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,fontSize:asNumber(e.target.value,15)}}))}/></label></div></div><div className="settings-block"><h3>🖼️ استجابة البانرات</h3><div className="form-grid"><label><span>ارتفاع سطح المكتب</span><input type="number" min="160" value={storeSettings.bannerSettings?.heightDesktop??420} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightDesktop:asNumber(e.target.value,420)}}))}/></label><label><span>ارتفاع التابلت</span><input type="number" min="140" value={storeSettings.bannerSettings?.heightTablet??350} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightTablet:asNumber(e.target.value,350)}}))}/></label><label><span>ارتفاع الموبايل</span><input type="number" min="120" value={storeSettings.bannerSettings?.heightMobile??240} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightMobile:asNumber(e.target.value,240)}}))}/></label><label><span>انحناء الحواف</span><input type="number" min="0" value={storeSettings.bannerSettings?.borderRadius??16} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,borderRadius:asNumber(e.target.value,16)}}))}/></label><label><span>شفافية Overlay</span><input type="number" min="0" max="1" step="0.05" value={storeSettings.bannerSettings?.overlayOpacity??0.35} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,overlayOpacity:asNumber(e.target.value,0.35)}}))}/></label><label><span>تأخير السلايدر</span><input type="number" min="1000" value={storeSettings.bannerSettings?.autoplayDelay??5000} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplayDelay:asNumber(e.target.value,5000)}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.bannerSettings?.autoplay!==false} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplay:e.target.checked}}))}/><span>تشغيل تلقائي</span></label></div></div><div className="settings-block"><h3>⏳ مؤقت عروض اليوم</h3><p style={{marginTop:0,color:"#64748B"}}>العرض يفضل ظاهرًا بعد انتهاء الوقت، لكن يتحول لحالة منتهية وبهتان ولا يمكن التفاعل معه.</p><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.enabled===true} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),enabled:e.target.checked}}))}/><span>تفعيل مؤقت عروض اليوم</span></label><label><span>عنوان المؤقت</span><input value={storeSettings.todayOffersTimer?.title||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),title:e.target.value}}))}/></label><label><span>بداية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.startAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),startAt:e.target.value}}))}/></label><label><span>نهاية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.endAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),endAt:e.target.value}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.showDays!==false} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),showDays:e.target.checked}}))}/><span>إظهار خانة الأيام</span></label></div><div className="info-box" style={{marginTop:12}}>💡 عند وصول العداد للصفر لن يختفي قسم العروض: سيظل موجودًا لكن ببهتان وطبقة تعطيل، مع ظهور «انتهى العرض».</div></div><div className="form-actions"><button type="button" className="save-btn" disabled={saving} onClick={saveSettings}>{saving?"⏳ جاري الحفظ...":"💾 حفظ كل إعدادات المتجر"}</button></div></div></section>;
 }
 
 function mergeGames(defaults, previous, incoming) {

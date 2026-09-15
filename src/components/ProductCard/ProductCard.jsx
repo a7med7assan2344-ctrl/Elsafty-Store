@@ -6,6 +6,10 @@ import "./ProductCard.css";
 import { CartContext } from "../../context/CartContext";
 import { WishlistContext } from "../../context/WishlistContext";
 
+/* =========================================================
+   HELPERS
+========================================================= */
+
 const safeString = (value) => {
   if (value === null || value === undefined) {
     return "";
@@ -45,14 +49,37 @@ const getImage = (product) => {
     product.productImage,
     product.thumbnail,
     product.mainImage,
-    Array.isArray(product.images)
-      ? product.images[0]
-      : ""
+    Array.isArray(product.images) ? product.images[0] : ""
   );
 };
 
 const isExternalUrl = (value) =>
   /^https?:\/\//i.test(safeString(value));
+
+const getVariants = (product) => {
+  if (!product) {
+    return [];
+  }
+
+  const possibleVariants = [
+    product.variants,
+    product.productVariants,
+    product.options,
+    product.variantOptions,
+  ];
+
+  for (const value of possibleVariants) {
+    if (Array.isArray(value) && value.length > 0) {
+      return value;
+    }
+  }
+
+  return [];
+};
+
+/* =========================================================
+   COMPONENT
+========================================================= */
 
 function ProductCard({
   product,
@@ -151,6 +178,17 @@ function ProductCard({
     product?.outOfStock === true ||
     product?.soldOut === true ||
     (hasStockField && stock <= 0);
+
+  /* =====================================================
+     VARIANTS
+  ===================================================== */
+
+  const variants = useMemo(
+    () => getVariants(product),
+    [product]
+  );
+
+  const hasVariants = variants.length > 0;
 
   /* =====================================================
      OFFER
@@ -297,6 +335,19 @@ function ProductCard({
     event.preventDefault();
     event.stopPropagation();
 
+    /*
+      المنتج الذي يحتوي على متغيرات لا يتم
+      إضافته مباشرة إلى السلة.
+
+      يتم فتح صفحة تفاصيل المنتج حتى يختار
+      العميل المتغير المطلوب وسعره.
+    */
+
+    if (hasVariants) {
+      handleProductClick();
+      return;
+    }
+
     if (
       isOutOfStock ||
       typeof addToCart !== "function"
@@ -305,6 +356,26 @@ function ProductCard({
     }
 
     addToCart(product);
+  };
+
+  /* =====================================================
+     PRODUCT DETAILS BUTTON
+  ===================================================== */
+
+  const handleProductDetails = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!productId) {
+      return;
+    }
+
+    if (typeof onProductClick === "function") {
+      onProductClick(product);
+      return;
+    }
+
+    navigate(`/product/${productId}`);
   };
 
   /* =====================================================
@@ -325,15 +396,14 @@ function ProductCard({
   };
 
   /* =====================================================
-     LINK
+     EXTERNAL PRODUCT LINK
   ===================================================== */
 
-  const productLink =
-    getFirstValue(
-      product?.link,
-      product?.url,
-      product?.productUrl
-    );
+  const productLink = getFirstValue(
+    product?.link,
+    product?.url,
+    product?.productUrl
+  );
 
   const hasExternalProductLink =
     isExternalUrl(productLink);
@@ -350,15 +420,22 @@ function ProductCard({
     <article
       className={[
         "product-card",
+
         isOutOfStock
           ? "product-card-out-of-stock"
           : "",
+
         favorite
           ? "product-card-favorite"
+          : "",
+
+        hasVariants
+          ? "product-card-has-variants"
           : "",
       ]
         .filter(Boolean)
         .join(" ")}
+
       onClick={handleProductClick}
       role="article"
     >
@@ -367,7 +444,6 @@ function ProductCard({
       ================================================= */}
 
       <div className="image-box">
-
         {showWishlist && (
           <button
             type="button"
@@ -379,11 +455,13 @@ function ProductCard({
             ]
               .filter(Boolean)
               .join(" ")}
+
             aria-label={
               favorite
                 ? "إزالة المنتج من المفضلة"
                 : "إضافة المنتج للمفضلة"
             }
+
             aria-pressed={favorite}
             onClick={handleWishlist}
           >
@@ -468,7 +546,10 @@ function ProductCard({
 
         {showDescription &&
           description && (
-            <p className="description">
+            <p
+              className="description"
+              title={description}
+            >
               {description}
             </p>
           )}
@@ -488,14 +569,12 @@ function ProductCard({
         {/* PRICE */}
 
         <div className="product-price">
-
           {showOldPrice &&
             hasOffer && (
               <span className="old-price">
                 {oldPrice.toLocaleString(
                   "ar-EG"
-                )}
-                {" "}
+                )}{" "}
                 {currency}
               </span>
             )}
@@ -503,18 +582,60 @@ function ProductCard({
           <span className="current-price">
             {price.toLocaleString(
               "ar-EG"
-            )}
-            {" "}
+            )}{" "}
             {currency}
           </span>
         </div>
 
-        {/* ACTION */}
+        {/* =================================================
+            PRODUCT DETAILS
+        ================================================= */}
+
+        {hasVariants &&
+          !isOutOfStock && (
+            <button
+              type="button"
+              className="product-variants-btn"
+              onClick={handleProductDetails}
+              aria-label="عرض تفاصيل المنتج واختيار المتغير"
+            >
+              <span
+                className="product-variants-icon"
+                aria-hidden="true"
+              >
+                ⚙
+              </span>
+
+              <span>
+                تفاصيل المنتج
+              </span>
+
+              <span
+                className="product-variants-arrow"
+                aria-hidden="true"
+              >
+                ←
+              </span>
+            </button>
+          )}
+
+        {/* =================================================
+            ACTION
+        ================================================= */}
 
         {showAddToCart && (
           <button
             type="button"
-            className="add-to-cart-btn"
+            className={[
+              "add-to-cart-btn",
+              hasVariants &&
+              !isOutOfStock
+                ? "add-to-cart-has-variants"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+
             disabled={isOutOfStock}
             onClick={handleAddToCart}
           >
@@ -528,6 +649,8 @@ function ProductCard({
             <span>
               {isOutOfStock
                 ? outOfStockText
+                : hasVariants
+                ? "عرض التفاصيل والاختيارات"
                 : addToCartText}
             </span>
           </button>

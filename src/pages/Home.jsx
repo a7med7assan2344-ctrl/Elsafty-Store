@@ -9,11 +9,14 @@ import React, {
 import { useNavigate } from "react-router-dom";
 
 import {
+  addDoc,
   collection,
   doc,
   onSnapshot,
   getDoc,
   runTransaction,
+  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 
 import {
@@ -45,7 +48,7 @@ const defaultStoreSettings = {
   theme: {
     primary:"#071A36", secondary:"#0B1F3A", accent:"#D4AF37", pageBackground:"#F0F4F8",
     cardBackground:"#FFFFFF", textPrimary:"#071A36", textSecondary:"#64748B", border:"#D9DFE8",
-    buttonBackground:"#0B1F3A", buttonText:"#FFFFFF", navbarBackground:"#071A36", navbarText:"#FFFFFF",
+    buttonBackground:"#0B1F3A", buttonText:"#FFFFFF", navbarBackground:"#071A36", headerBackground:"#071A36", navbarText:"#FFFFFF",
     categoryBarBackground:"#FFFFFF", categoryBarText:"#071A36", topStripBackground:"#071A36",
     topStripText:"#FFFFFF", footerBackground:"#071A36", footerText:"#FFFFFF", footerBrand:"#D4AF37",
     footerButtonBackground:"#D4AF37", footerButtonText:"#071A36", footerButtonHover:"#B8941F",
@@ -67,7 +70,7 @@ const defaultStoreSettings = {
     cartTitle:"سلة المشتريات",checkoutTitle:"إتمام الطلب",addToCart:"أضف للسلة",
     buyNow:"اشترِ الآن",viewAll:"عرض الكل",footerAbout:"متجر ســــَــــــــــوا للتسوق الإلكتروني",
     footerRights:"جميع الحقوق محفوظة",
-    contactLink:"/support",
+    contactLink:"#customer-support",
     hotlineWhatsApp:"",
     categoryEmptyTitle:"لا توجد أقسام حاليًا", categoryEmptyText:"أضف الأقسام من لوحة الأدمن",
     gamesTitle:"ألعاب الجوائز", gamesSubtitle:"اختار لعبتك وجرب حظك واربح جائزتك",
@@ -348,6 +351,12 @@ function Home({
     useState([]);
   const [popupAds, setPopupAds] =
     useState([]);
+
+  const [notifications, setNotifications] =
+    useState([]);
+
+  const [dismissedNotifications, setDismissedNotifications] =
+    useState(() => new Set());
   const [storeMenuItems, setStoreMenuItems] =
     useState([]);
   const [adminAnnouncements, setAdminAnnouncements] =
@@ -395,6 +404,38 @@ function Home({
 
   const [currentUser, setCurrentUser] =
     useState(null);
+
+  // ===================================================
+  // INTERNAL CUSTOMER SUPPORT CHAT
+  // ===================================================
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [supportMessages, setSupportMessages] = useState([]);
+  const [supportDraft, setSupportDraft] = useState("");
+  const [supportSending, setSupportSending] = useState(false);
+  const [supportAttachment, setSupportAttachment] = useState(null);
+  const [supportRecording, setSupportRecording] = useState(false);
+  const [supportEmojiOpen, setSupportEmojiOpen] = useState(false);
+  const [supportRecordSeconds, setSupportRecordSeconds] = useState(0);
+  const supportFileRef = useRef(null);
+  const supportRecorderRef = useRef(null);
+  const supportRecordChunksRef = useRef([]);
+  const supportRecordTimerRef = useRef(null);
+  const [supportGuestId] = useState(() => {
+    try {
+      const key = "sawa_support_guest_id";
+      const saved = localStorage.getItem(key);
+      if (saved) return saved;
+      const id = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(key, id);
+      return id;
+    } catch {
+      return `guest_${Date.now()}`;
+    }
+  });
+
+  const [supportCustomerName, setSupportCustomerName] = useState(() => {
+    try { return localStorage.getItem("sawa_support_customer_name") || ""; } catch { return ""; }
+  });
 
   const [timeUntilReset, setTimeUntilReset] =
     useState("");
@@ -462,6 +503,106 @@ function Home({
       );
 
     return () => unsubscribe();
+  }, []);
+
+  // تأكيد وصول رسائل الأدمن للمتجر عند استلامها من Firestore.
+  // ✓ = تم الإرسال، ✓✓ = وصلت، ✓✓ أزرق = تمت المشاهدة.
+  useEffect(() => {
+    if (!supportMessages.length) return;
+    const notDelivered = supportMessages.filter((message) =>
+      (message.sender === "admin" || message.senderRole === "admin") &&
+      message.deliveredToCustomer !== true &&
+      message.deletedByCustomer !== true
+    );
+    if (!notDelivered.length) return;
+    notDelivered.forEach((message) => {
+      if (!message.id) return;
+      updateDoc(doc(db, "supportMessages", message.id), {
+        deliveredToCustomer: true,
+        deliveredAt: serverTimestamp(),
+      }).catch((error) => console.error("Mark support message delivered error:", error));
+    });
+  }, [supportMessages]);
+
+  // تعليم رسائل خدمة العملاء المرسلة من الأدمن كمقروءة عند فتح الشات.
+  // ده كمان بيحوّل حالة الرسالة من ✓ إلى ✓✓ عند العميل.
+  useEffect(() => {
+    if (!supportOpen || !supportMessages.length) return;
+    const unreadAdminMessages = supportMessages.filter((message) =>
+      (message.sender === "admin" || message.senderRole === "admin") &&
+      message.readByCustomer !== true &&
+      message.deletedByCustomer !== true
+    );
+    if (!unreadAdminMessages.length) return;
+    unreadAdminMessages.forEach((message) => {
+      if (!message.id) return;
+      updateDoc(doc(db, "supportMessages", message.id), {
+        readByCustomer: true,
+        deliveredToCustomer: true,
+        customerReadAt: serverTimestamp(),
+      }).catch((error) => console.error("Mark support message as read error:", error));
+    });
+  }, [supportOpen, supportMessages]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "supportMessages"),
+      (snapshot) => {
+        const conversationId = currentUser?.uid ? `user_${currentUser.uid}` : `guest_${supportGuestId}`;
+        const own = snapshot.docs
+          .map((item) => ({ id: item.id, ...(item.data() || {}) }))
+          .filter((item) => String(item.conversationId || "") === conversationId)
+          .sort((a, b) => {
+            const av = a?.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a?.createdAt || 0).getTime();
+            const bv = b?.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b?.createdAt || 0).getTime();
+            return av - bv;
+          });
+        setSupportMessages(own);
+      },
+      (error) => {
+        console.error("Customer support chat error:", error);
+        setSupportMessages([]);
+      }
+    );
+    return () => unsubscribe();
+  }, [currentUser?.uid, supportGuestId]);
+
+  // ===================================================
+  // KEEP CUSTOMER-SUPPORT LINKS INSIDE THE STORE
+  // IMPORTANT: بعض روابط الفوتر القديمة كانت تفتح /support
+  // وهي Route غير موجودة، وده كان بيظهر صفحة بيضاء.
+  // أي رابط داخلي لخدمة العملاء يفتح الشات بدل التنقل لصفحة.
+  // ===================================================
+  useEffect(() => {
+    const handleSupportLink = (event) => {
+      const anchor = event.target?.closest?.("a");
+      if (!anchor) return;
+
+      const rawHref = anchor.getAttribute("href") || "";
+      const href = rawHref.trim().toLowerCase();
+
+      const isSupportLink =
+        href === "/support" ||
+        href === "/support/" ||
+        href.endsWith("/support") ||
+        href.endsWith("/support/") ||
+        href === "#customer-support" ||
+        anchor.dataset?.supportLink === "true";
+
+      if (!isSupportLink) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      setSupportOpen(true);
+
+      window.requestAnimationFrame(() => {
+        const chat = document.getElementById("customer-support-chat");
+        chat?.scrollIntoView?.({ block: "nearest" });
+      });
+    };
+
+    document.addEventListener("click", handleSupportLink, true);
+    return () => document.removeEventListener("click", handleSupportLink, true);
   }, []);
 
   // ===================================================
@@ -566,6 +707,7 @@ function Home({
     watch("products", setLiveProducts);
     watch("banners", setBanners);
     watch("popupAds", setPopupAds);
+    watch("notifications", setNotifications);
     watch("storeMenuItems", setStoreMenuItems);
     watch("announcements", setAdminAnnouncements);
 
@@ -789,6 +931,18 @@ function Home({
     adminAnnouncements,
     storeSettings?.announcement,
   ]);
+
+  const activeNotifications = useMemo(() => {
+    return (notifications || [])
+      .filter((item) =>
+        item?.active !== false &&
+        item?.enabled !== false &&
+        item?.visible !== false &&
+        String(item?.message || item?.text || item?.title || "").trim() &&
+        !dismissedNotifications.has(item.id)
+      )
+      .sort((a, b) => Number(b?.order ?? 0) - Number(a?.order ?? 0));
+  }, [notifications, dismissedNotifications]);
 
   const activePopupAd = useMemo(
     () =>
@@ -2032,6 +2186,158 @@ function Home({
   };
 
   // ===================================================
+  // INTERNAL CUSTOMER SUPPORT CHAT
+  // ===================================================
+  const supportConversationId = currentUser?.uid ? `user_${currentUser.uid}` : `guest_${supportGuestId}`;
+
+  const uploadSupportMedia = async (file) => {
+    if (!file) return null;
+    if (file.size > 10 * 1024 * 1024) throw new Error("الحد الأقصى للملف 10MB");
+    const form = new FormData();
+    form.append("file", file);
+    form.append("upload_preset", "elsafty_store");
+    form.append("folder", "sawa-support");
+    const response = await fetch("https://api.cloudinary.com/v1_1/wkcpvsqi/auto/upload", { method: "POST", body: form });
+    const data = await response.json();
+    if (!response.ok || !data?.secure_url) throw new Error(data?.error?.message || "فشل رفع الملف");
+    return { url: data.secure_url, name: file.name || "support-file", mime: file.type || "", bytes: file.size || 0, resourceType: data.resource_type || "auto", duration: data.duration || null };
+  };
+
+  const deleteSupportMessage = async (message) => {
+    if (!message?.id) return;
+    const isCustomerMessage = message.sender === "customer" || message.senderRole === "customer";
+    if (!isCustomerMessage || message.deletedByCustomer === true) return;
+    if (!window.confirm("حذف الرسالة؟\n\nالرسالة هتختفي من عندك، لكن هتفضل محفوظة عند خدمة العملاء للمراجعة.")) return;
+    try {
+      await updateDoc(doc(db, "supportMessages", message.id), {
+        deletedByCustomer: true,
+        deletedForCustomer: true,
+        deletedBy: "customer",
+        deletedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Delete support message error:", error);
+      alert(error?.message || "حصل خطأ ومقدرناش نحذف الرسالة دلوقتي.");
+    }
+  };
+
+  const sendSupportMessage = async (forcedAttachment = null) => {
+    const text = supportDraft.trim();
+    const attachment = forcedAttachment || supportAttachment;
+    if ((!text && !attachment) || supportSending) return;
+    const customerName = supportCustomerName.trim() || currentUser?.displayName || "عميل";
+    setSupportSending(true);
+    try {
+      try { localStorage.setItem("sawa_support_customer_name", customerName); } catch {}
+      let media = attachment?.uploaded || null;
+      if (attachment?.file && !media) media = await uploadSupportMedia(attachment.file);
+      const messageType = media ? (media.mime?.startsWith("image/") ? "image" : media.mime?.startsWith("audio/") ? "audio" : "file") : "text";
+      await addDoc(collection(db, "supportMessages"), {
+        conversationId: supportConversationId, userId: currentUser?.uid || null, uid: currentUser?.uid || null, guestId: currentUser?.uid ? null : supportGuestId,
+        customerName, customerEmail: currentUser?.email || "", customerPhone: "", sender: "customer", senderRole: "customer",
+        message: text || "", text: text || "", messageType, attachmentUrl: media?.url || null, attachmentName: media?.name || null, attachmentMime: media?.mime || null, attachmentBytes: media?.bytes || null, attachmentResourceType: media?.resourceType || null, attachmentDuration: media?.duration || null,
+        readByAdmin: false, readByCustomer: true, createdAt: serverTimestamp(),
+      });
+      setSupportDraft(""); setSupportAttachment(null);
+    } catch (error) { console.error("Send support message error:", error); alert(error?.message || "حصل خطأ ومقدرناش نبعت الرسالة دلوقتي."); }
+    finally { setSupportSending(false); }
+  };
+
+  const sendSupportLocation = async () => {
+    if (supportSending) return;
+    if (!navigator.geolocation) {
+      alert("المتصفح الحالي مش بيدعم مشاركة الموقع.");
+      return;
+    }
+
+    const customerName = supportCustomerName.trim() || currentUser?.displayName || "عميل";
+    setSupportSending(true);
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 0,
+        });
+      });
+
+      const latitude = Number(position.coords.latitude);
+      const longitude = Number(position.coords.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new Error("تعذر تحديد الموقع.");
+      }
+
+      try { localStorage.setItem("sawa_support_customer_name", customerName); } catch {}
+
+      await addDoc(collection(db, "supportMessages"), {
+        conversationId: supportConversationId,
+        userId: currentUser?.uid || null,
+        uid: currentUser?.uid || null,
+        guestId: currentUser?.uid ? null : supportGuestId,
+        customerName,
+        customerEmail: currentUser?.email || "",
+        customerPhone: "",
+        sender: "customer",
+        senderRole: "customer",
+        message: "📍 موقعي الحالي",
+        text: "📍 موقعي الحالي",
+        messageType: "location",
+        location: { latitude, longitude },
+        latitude,
+        longitude,
+        locationUrl: `https://www.google.com/maps?q=${latitude},${longitude}`,
+        readByAdmin: false,
+        readByCustomer: true,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Send support location error:", error);
+      const code = error?.code;
+      if (code === 1) alert("الموقع مرفوض. اسمح للموقع بالوصول لموقعك من إعدادات المتصفح وجرب تاني.");
+      else if (code === 2) alert("مش قادرين نحدد موقعك دلوقتي. اتأكد إن تحديد الموقع شغال وجرب تاني.");
+      else if (code === 3) alert("تحديد الموقع أخد وقت أطول من اللازم. جرّب تاني.");
+      else alert(error?.message || "حصل خطأ ومقدرناش نبعت موقعك دلوقتي.");
+    } finally {
+      setSupportSending(false);
+    }
+  };
+
+  const handleSupportFile = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("الصور فقط في اختيار الصور."); return; }
+    if (file.size > 10 * 1024 * 1024) { alert("الحد الأقصى للصورة 10MB"); return; }
+    setSupportAttachment({ file });
+  };
+
+  const toggleSupportRecording = async () => {
+    if (supportRecording) { supportRecorderRef.current?.stop(); return; }
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { alert("المتصفح الحالي لا يدعم تسجيل الصوت."); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find((m) => MediaRecorder.isTypeSupported(m)) || "";
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      supportRecordChunksRef.current = [];
+      supportRecorderRef.current = recorder; setSupportRecording(true); setSupportRecordSeconds(0);
+      supportRecordTimerRef.current = setInterval(() => setSupportRecordSeconds((v) => v + 1), 1000);
+      recorder.ondataavailable = (e) => { if (e.data.size) supportRecordChunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        clearInterval(supportRecordTimerRef.current); stream.getTracks().forEach((t) => t.stop()); setSupportRecording(false);
+        const blob = new Blob(supportRecordChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        const ext = (recorder.mimeType || "audio/webm").includes("ogg") ? "ogg" : "webm";
+        setSupportAttachment({ file: new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type }), isVoice: true, duration: supportRecordSeconds });
+      };
+      recorder.start();
+    } catch (error) { console.error(error); alert("مش قادرين نوصل للمايك. اسمح للموقع باستخدام الميكروفون وجرب تاني."); }
+  };
+
+  useEffect(() => () => {
+    clearInterval(supportRecordTimerRef.current);
+    try { supportRecorderRef.current?.stop(); } catch {}
+  }, []);
+
+  // ===================================================
   // FLOATING WHATSAPP DRAG
   // ===================================================
   const hotlineWhatsApp = String(storeSettings?.hotlineWhatsApp || storeSettings?.whatsapp || "").trim();
@@ -2512,6 +2818,7 @@ function Home({
       "#FFFFFF",
 
     "--store-navbar-background":
+      theme?.headerBackground ||
       theme?.navbarBackground ||
       "#FFFFFF",
 
@@ -2661,6 +2968,12 @@ function Home({
   // ===================================================
   // RENDER
   // ===================================================
+
+  const supportQuickEmojis = [
+    "😀", "😂", "😍", "🥰", "😘", "🤍", "❤️", "💛", "💙", "💚", "🙏", "👍",
+    "👏", "🎉", "🔥", "✨", "🥳", "😎", "🤝", "👌", "💯", "🛍️", "📦", "📍",
+    "❓", "❗", "😊", "😉", "😅", "😭", "😢", "😡", "🤔", "🙌", "💬", "🎁",
+  ];
 
   return (
     <div
@@ -2893,6 +3206,48 @@ function Home({
               );
             }
           )}
+        </div>
+      )}
+
+      {activeNotifications.length > 0 && (
+        <div
+          className="home-customer-notifications"
+          dir="rtl"
+          style={{
+            position: "fixed",
+            top: 76,
+            right: 18,
+            zIndex: 9998,
+            width: "min(390px, calc(100vw - 36px))",
+            display: "grid",
+            gap: 10,
+            pointerEvents: "none",
+          }}
+        >
+          {activeNotifications.slice(0, 5).map((item) => {
+            const type = item?.type || "info";
+            const colors = {
+              info: { bg: "#EEF6FF", border: "#60A5FA", icon: "ℹ️" },
+              success: { bg: "#ECFDF3", border: "#34D399", icon: "✅" },
+              warning: { bg: "#FFFBEB", border: "#F59E0B", icon: "⚠️" },
+              error: { bg: "#FEF2F2", border: "#EF4444", icon: "🚨" },
+            };
+            const c = colors[type] || colors.info;
+            return (
+              <div key={item.id} style={{ pointerEvents: "auto", position: "relative", background: c.bg, border: `1px solid ${c.border}`, borderRadius: 14, padding: "13px 44px 13px 15px", boxShadow: "0 12px 35px rgba(0,0,0,.16)", color: "#071A36" }}>
+                {item?.closable !== false && (
+                  <button type="button" onClick={() => setDismissedNotifications((prev) => { const next = new Set(prev); next.add(item.id); return next; })} style={{ position: "absolute", top: 7, right: 8, width: 28, height: 28, border: 0, borderRadius: "50%", background: "rgba(0,0,0,.08)", cursor: "pointer", fontSize: 18 }}>×</button>
+                )}
+                <div style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 20 }}>{c.icon}</span>
+                  <div style={{ minWidth: 0 }}>
+                    {item?.title && <strong style={{ display: "block", marginBottom: 4 }}>{item.title}</strong>}
+                    <div style={{ lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{item.message || item.text}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -4284,8 +4639,9 @@ function Home({
 
         {offers.length > 0 && (
           <section
-            className="jumia-section products-showcase-section today-offers-section"
+            className={`jumia-section products-showcase-section today-offers-section${todayOffersTimerRemaining?.status === "expired" ? " today-offers-section-expired" : ""}`}
             id="today-offers"
+            aria-label="عروض اليوم"
           >
             {todayOffersTimerRemaining?.status === "active" && (
               <div className="today-offers-countdown" dir="rtl" aria-label="عداد انتهاء عروض اليوم">
@@ -4316,20 +4672,44 @@ function Home({
               </div>
             )}
 
-            <ProductsSlider
-              title={texts.offersTitle}
-              badge="عرض اليوم"
-              badgeClass="offer"
-              products={offers}
-              addToCart={
-                addToCart
-              }
-              onTitleClick={() =>
-                scrollToSection(
-                  "#today-offers"
-                )
-              }
-            />
+            <div
+              className={todayOffersTimerRemaining?.status === "expired" ? "today-offers-expired-products" : ""}
+              style={todayOffersTimerRemaining?.status === "expired" ? {
+                opacity: 0.48,
+                filter: "grayscale(0.18) saturate(0.72)",
+                position: "relative",
+                pointerEvents: "none",
+                userSelect: "none",
+              } : undefined}
+              aria-disabled={todayOffersTimerRemaining?.status === "expired" ? "true" : undefined}
+            >
+              <ProductsSlider
+                title={texts.offersTitle}
+                badge={todayOffersTimerRemaining?.status === "expired" ? "انتهى العرض" : "عرض اليوم"}
+                badgeClass="offer"
+                products={offers}
+                addToCart={
+                  todayOffersTimerRemaining?.status === "expired"
+                    ? () => {}
+                    : addToCart
+                }
+                onTitleClick={() =>
+                  scrollToSection(
+                    "#today-offers"
+                  )
+                }
+              />
+            </div>
+
+            {todayOffersTimerRemaining?.status === "expired" && (
+              <div
+                className="today-offers-expired-overlay"
+                aria-hidden="true"
+              >
+                <span>⏳</span>
+                <strong>انتهى العرض</strong>
+              </div>
+            )}
           </section>
         )}
 
@@ -4615,6 +4995,339 @@ function Home({
       </main>
 
       {/* =================================================
+          PREMIUM INTERNAL CUSTOMER SERVICE CHAT
+      ================================================= */}
+      {supportOpen && (
+        <div
+          id="customer-support-chat"
+          role="dialog"
+          aria-modal="true"
+          aria-label="خدمة العملاء"
+          dir="rtl"
+          style={{
+            position: "fixed",
+            right: 18,
+            bottom: 88,
+            zIndex: 10020,
+            width: "min(420px, calc(100vw - 24px))",
+            height: "min(650px, calc(100vh - 105px))",
+            minHeight: 480,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            borderRadius: 26,
+            background: "#fff",
+            border: "1px solid rgba(212,175,55,.35)",
+            boxShadow: "0 28px 90px rgba(7,26,54,.30), 0 8px 28px rgba(7,26,54,.12)",
+            animation: "sawaSupportChatIn .22s ease-out",
+          }}
+        >
+          <style>{`
+            @keyframes sawaSupportChatIn {
+              from { opacity: 0; transform: translateY(16px) scale(.97); }
+              to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes sawaSupportDot {
+              0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+              30% { transform: translateY(-3px); opacity: 1; }
+            }
+            #customer-support-chat * { box-sizing: border-box; }
+            #customer-support-chat .sawa-support-scroll::-webkit-scrollbar { width: 6px; }
+            #customer-support-chat .sawa-support-scroll::-webkit-scrollbar-thumb { background: rgba(7,26,54,.18); border-radius: 99px; }
+            @media (max-width: 560px) {
+              #customer-support-chat {
+                right: 8px !important;
+                left: 8px !important;
+                bottom: 76px !important;
+                width: auto !important;
+                height: min(690px, calc(100vh - 88px)) !important;
+                min-height: 0 !important;
+                border-radius: 22px !important;
+              }
+            }
+          `}</style>
+
+          {/* Header */}
+          <div
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              padding: "17px 16px 16px",
+              color: "#fff",
+              background: `linear-gradient(135deg, ${theme?.headerBackground || theme?.primary || "#071A36"} 0%, ${theme?.secondary || "#0B1F3A"} 68%, #102C4F 100%)`,
+            }}
+          >
+            <div style={{ position: "absolute", width: 150, height: 150, borderRadius: "50%", background: "rgba(212,175,55,.12)", left: -55, top: -80 }} />
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 11 }}>
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  flex: "0 0 48px",
+                  borderRadius: 16,
+                  display: "grid",
+                  placeItems: "center",
+                  background: `linear-gradient(145deg, ${theme?.accent || "#D4AF37"}, ${theme?.accentSecondary || "#F4D06F"})`,
+                  color: theme?.primary || "#071A36",
+                  fontSize: 24,
+                  boxShadow: "0 8px 22px rgba(0,0,0,.20)",
+                }}
+              >
+                💬
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ display: "block", fontSize: 18, lineHeight: 1.35 }}>خدمة العملاء</strong>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, fontSize: 12, opacity: .86 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#38D996", boxShadow: "0 0 0 4px rgba(56,217,150,.12)" }} />
+                  <span>متاحين لمساعدتك</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSupportOpen(false)}
+                aria-label="إغلاق الشات"
+                style={{ width: 36, height: 36, flex: "0 0 36px", border: "1px solid rgba(255,255,255,.16)", borderRadius: 12, background: "rgba(255,255,255,.10)", color: "#fff", cursor: "pointer", fontSize: 22, lineHeight: 1 }}
+              >×</button>
+            </div>
+            <div style={{ position: "relative", marginTop: 13, padding: "9px 11px", borderRadius: 12, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.08)", fontSize: 12, lineHeight: 1.6, color: "rgba(255,255,255,.88)" }}>
+              👋 أهلاً بيك! ابعت سؤالك وإحنا هنساعدك بأسرع وقت.
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div
+            className="sawa-support-scroll"
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              padding: "18px 14px 16px",
+              background: "linear-gradient(180deg,#F7F9FC 0%,#F2F5F9 100%)",
+            }}
+          >
+            {supportMessages.length === 0 ? (
+              <div style={{ height: "100%", minHeight: 270, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24 }}>
+                <div style={{ maxWidth: 300 }}>
+                  <div style={{ width: 76, height: 76, margin: "0 auto 14px", borderRadius: 24, display: "grid", placeItems: "center", fontSize: 37, background: `linear-gradient(145deg, ${theme?.accent || "#D4AF37"}22, ${theme?.accent || "#D4AF37"}44)`, border: `1px solid ${theme?.accent || "#D4AF37"}55` }}>👋</div>
+                  <strong style={{ display: "block", color: theme?.primary || "#071A36", fontSize: 18, marginBottom: 8 }}>أهلاً بيك في ســـــَــــــــوا</strong>
+                  <p style={{ margin: 0, color: "#64748B", lineHeight: 1.8, fontSize: 13 }}>إحنا هنا عشان نساعدك. اكتب رسالتك تحت وهنرد عليك من داخل المتجر.</p>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 7, marginTop: 16, flexWrap: "wrap" }}>
+                    {["🛍️ مساعدة في الطلب", "📦 متابعة الطلب", "❓ استفسار"].map((item) => (
+                      <span key={item} style={{ padding: "7px 10px", borderRadius: 999, background: "#fff", border: "1px solid #E1E7EF", color: "#475569", fontSize: 11, fontWeight: 700 }}>{item}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ textAlign: "center", marginBottom: 14 }}>
+                  <span style={{ display: "inline-block", padding: "5px 10px", borderRadius: 999, background: "#E9EEF5", color: "#64748B", fontSize: 10, fontWeight: 800 }}>المحادثة بينك وبين خدمة العملاء</span>
+                </div>
+                {supportMessages.map((message, index) => {
+                  const isAdminMessage = message.sender === "admin" || message.senderRole === "admin";
+                  const time = message.createdAt?.toDate
+                    ? message.createdAt.toDate().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })
+                    : "";
+                  return (
+                    <div key={message.id || index} style={{ display: "flex", justifyContent: isAdminMessage ? "flex-start" : "flex-end", alignItems: "flex-end", gap: 7, marginBottom: 12 }}>
+                      {isAdminMessage && (
+                        <div style={{ width: 30, height: 30, flex: "0 0 30px", borderRadius: 10, display: "grid", placeItems: "center", background: theme?.primary || "#071A36", color: theme?.accent || "#D4AF37", fontSize: 15, boxShadow: "0 3px 10px rgba(7,26,54,.14)" }}>💬</div>
+                      )}
+                      <div
+                        style={{
+                          position: "relative",
+                          maxWidth: "82%",
+                          padding: "10px 13px 8px",
+                          borderRadius: isAdminMessage ? "16px 16px 16px 5px" : "16px 16px 5px 16px",
+                          background: isAdminMessage ? (theme?.primary || "#071A36") : "#fff",
+                          color: isAdminMessage ? "#fff" : (theme?.textPrimary || "#071A36"),
+                          border: isAdminMessage ? "1px solid rgba(255,255,255,.05)" : "1px solid #E0E6EF",
+                          boxShadow: isAdminMessage ? "0 7px 20px rgba(7,26,54,.16)" : "0 5px 16px rgba(7,26,54,.06)",
+                        }}
+                      >
+                        {!message.deletedByCustomer && message.attachmentUrl && (message.messageType === "image" || message.attachmentMime?.startsWith("image/")) && (
+                          <a href={message.attachmentUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginBottom: message.message ? 7 : 0 }}>
+                            <img src={message.attachmentUrl} alt={message.attachmentName || "صورة"} style={{ display: "block", width: "min(250px,100%)", maxHeight: 260, objectFit: "cover", borderRadius: 13, border: "1px solid rgba(255,255,255,.14)" }} />
+                          </a>
+                        )}
+                        {!message.deletedByCustomer && message.attachmentUrl && (message.messageType === "audio" || message.attachmentMime?.startsWith("audio/")) && (
+                          <div style={{ marginBottom: message.message ? 7 : 0, padding: 8, borderRadius: 12, background: isAdminMessage ? "rgba(255,255,255,.08)" : "#F3F6FA" }}>
+                            <audio controls src={message.attachmentUrl} style={{ width: "min(270px,100%)", height: 38 }} />
+                          </div>
+                        )}
+                        {!message.deletedByCustomer && (message.messageType === "location" || message.locationUrl || message.location?.latitude) && (
+                          <a
+                            href={message.locationUrl || `https://www.google.com/maps?q=${message.location?.latitude ?? message.latitude},${message.location?.longitude ?? message.longitude}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                              minWidth: 190,
+                              padding: "10px 12px",
+                              marginBottom: message.message ? 7 : 0,
+                              borderRadius: 14,
+                              textDecoration: "none",
+                              color: isAdminMessage ? "#fff" : (theme?.primary || "#071A36"),
+                              background: isAdminMessage ? "rgba(255,255,255,.09)" : "#F7FAFC",
+                              border: isAdminMessage ? "1px solid rgba(255,255,255,.12)" : "1px solid #E1E8F0",
+                            }}
+                          >
+                            <span style={{ width: 38, height: 38, flex: "0 0 38px", display: "grid", placeItems: "center", borderRadius: 12, background: isAdminMessage ? "rgba(212,175,55,.18)" : "#FFF4CF", fontSize: 20 }}>📍</span>
+                            <span style={{ minWidth: 0 }}>
+                              <strong style={{ display: "block", fontSize: 12 }}>الموقع الحالي</strong>
+                              <small style={{ display: "block", marginTop: 2, opacity: .72, fontSize: 10 }}>اضغط لفتح الموقع على الخريطة</small>
+                            </span>
+                          </a>
+                        )}
+                        {message.deletedByCustomer ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 7, color: isAdminMessage ? "rgba(255,255,255,.72)" : "#94A3B8", fontStyle: "italic", fontSize: 12 }}>
+                            <span>🗑️</span><span>تم حذف الرسالة</span>
+                          </div>
+                        ) : (
+                          message.message && message.messageType !== "location" && <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7, fontSize: 13 }}>{message.message}</div>
+                        )}
+                        {time && (
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 5, marginTop: 5, fontSize: 9, opacity: .58 }}>
+                            <small>{time}</small>
+                            {isAdminMessage && (
+                              <span title={message.readByCustomer === true ? "تمت مشاهدة الرسالة" : message.deliveredToCustomer === true ? "وصلت للعميل" : "تم إرسال الرسالة"} style={{ fontSize: 13, letterSpacing: -2, color: message.readByCustomer === true ? "#60A5FA" : "rgba(255,255,255,.65)", fontWeight: 950 }}>✓{message.deliveredToCustomer === true || message.readByCustomer === true ? "✓" : ""}</span>
+                            )}
+                          </div>
+                        )}
+                        {!message.deletedByCustomer && !isAdminMessage && (
+                          <button type="button" onClick={() => deleteSupportMessage(message)} title="حذف الرسالة" aria-label="حذف الرسالة" style={{ position: "absolute", left: -8, top: -8, width: 27, height: 27, border: "1px solid rgba(148,163,184,.22)", borderRadius: 9, background: "rgba(255,255,255,.98)", color: "#64748B", boxShadow: "0 4px 12px rgba(7,26,54,.12)", cursor: "pointer", fontSize: 13, zIndex: 2 }}>🗑️</button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {supportSending && (
+                  <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 7, marginBottom: 4 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 10, display: "grid", placeItems: "center", background: theme?.primary || "#071A36", color: theme?.accent || "#D4AF37" }}>💬</div>
+                    <div style={{ padding: "10px 13px", borderRadius: "16px 16px 16px 5px", background: theme?.primary || "#071A36", display: "flex", gap: 4 }}>
+                      {[0,1,2].map((dot) => <span key={dot} style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff", animation: `sawaSupportDot 1s ${dot * .14}s infinite` }} />)}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Composer */}
+          <div style={{ position: "relative", borderTop: "1px solid #E2E8F0", background: "rgba(255,255,255,.99)", padding: "10px 11px 9px", boxShadow: "0 -8px 24px rgba(7,26,54,.04)" }}>
+            {!currentUser?.uid && (
+              <div style={{ position: "relative", marginBottom: 8 }}>
+                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 15, opacity: .55 }}>👤</span>
+                <input
+                  type="text"
+                  value={supportCustomerName}
+                  onChange={(e) => setSupportCustomerName(e.target.value)}
+                  placeholder="اسمك عشان نقدر نخدمك أسرع (اختياري)"
+                  style={{ width: "100%", height: 38, padding: "0 36px 0 12px", borderRadius: 12, border: "1px solid #DCE3EC", background: "#F8FAFC", outline: "none", fontSize: 12.5 }}
+                />
+              </div>
+            )}
+
+            {supportEmojiOpen && (
+              <div style={{ position: "absolute", left: 10, right: 10, bottom: "calc(100% - 2px)", zIndex: 5, padding: 10, borderRadius: 18, background: "rgba(255,255,255,.98)", border: "1px solid #DCE4EE", boxShadow: "0 18px 50px rgba(7,26,54,.16)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                  <strong style={{ fontSize: 12, color: theme?.primary || "#071A36" }}>اختار إيموجي 😊</strong>
+                  <button type="button" onClick={() => setSupportEmojiOpen(false)} style={{ border: 0, background: "#F1F5F9", width: 26, height: 26, borderRadius: 8, cursor: "pointer", color: "#64748B" }}>×</button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 4 }}>
+                  {supportQuickEmojis.map((emoji) => (
+                    <button key={emoji} type="button" onClick={() => { setSupportDraft((value) => `${value}${emoji}`); setSupportEmojiOpen(false); }} style={{ border: 0, background: "transparent", borderRadius: 9, minHeight: 34, cursor: "pointer", fontSize: 20 }}>{emoji}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {supportAttachment && (
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8, padding: "8px 10px", borderRadius: 13, background: "#F3F6FA", border: "1px solid #DCE4EE" }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, display: "grid", placeItems: "center", background: supportAttachment.isVoice ? "#E9EEF7" : "#FFF6D8", fontSize: 17 }}>{supportAttachment.isVoice ? "🎙️" : "🖼️"}</span>
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: "#475569" }}>{supportAttachment.file?.name || "ملف مرفق"}</span>
+                <button type="button" onClick={() => setSupportAttachment(null)} aria-label="إلغاء المرفق" style={{ width: 28, height: 28, border: 0, borderRadius: 9, background: "#E5EAF1", color: "#475569", cursor: "pointer" }}>×</button>
+              </div>
+            )}
+
+            <input ref={supportFileRef} type="file" accept="image/*" hidden onChange={handleSupportFile} />
+            <div style={{ display: "flex", gap: 5, alignItems: "flex-end", padding: 5, borderRadius: 17, background: "#F5F7FA", border: "1px solid #DDE5EE" }}>
+              <button type="button" onClick={() => setSupportEmojiOpen((v) => !v)} disabled={supportSending || supportRecording} aria-label="إيموجي" title="إيموجي" style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: supportEmojiOpen ? "#EAF0F7" : "transparent", color: theme?.primary || "#071A36", fontSize: 20, cursor: "pointer" }}>😊</button>
+              <button type="button" onClick={() => supportFileRef.current?.click()} disabled={supportSending || supportRecording} aria-label="إرسال صورة" title="إرسال صورة" style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: "transparent", color: theme?.primary || "#071A36", fontSize: 19, cursor: "pointer", opacity: supportSending ? .5 : 1 }}>🖼️</button>
+              <button type="button" onClick={sendSupportLocation} disabled={supportSending || supportRecording} aria-label="إرسال موقعي" title="إرسال موقعي الحالي" style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: "transparent", color: theme?.primary || "#071A36", fontSize: 19, cursor: "pointer", opacity: supportSending ? .5 : 1 }}>📍</button>
+              <button type="button" onClick={toggleSupportRecording} disabled={supportSending} aria-label={supportRecording ? "إيقاف التسجيل" : "تسجيل صوت"} title={supportRecording ? "إيقاف التسجيل" : "تسجيل صوت"} style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: supportRecording ? "#FEE2E2" : "transparent", color: supportRecording ? "#DC2626" : (theme?.primary || "#071A36"), fontSize: 18, cursor: "pointer" }}>{supportRecording ? `⏹️ ${String(Math.floor(supportRecordSeconds/60)).padStart(2,"0")}:${String(supportRecordSeconds%60).padStart(2,"0")}` : "🎙️"}</button>
+              <textarea
+                rows="1"
+                value={supportDraft}
+                onChange={(e) => setSupportDraft(e.target.value)}
+                onFocus={() => setSupportEmojiOpen(false)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendSupportMessage(); } }}
+                placeholder="اكتب رسالتك..."
+                aria-label="رسالتك"
+                style={{ flex: 1, minWidth: 0, resize: "none", minHeight: 46, maxHeight: 110, padding: "12px 7px", border: 0, outline: "none", background: "transparent", fontSize: 13, lineHeight: 1.55, fontFamily: "inherit" }}
+              />
+              <button
+                type="button"
+                onClick={sendSupportMessage}
+                disabled={supportSending || (!supportDraft.trim() && !supportAttachment)}
+                style={{ width: 46, height: 46, flex: "0 0 46px", border: 0, borderRadius: 14, display: "grid", placeItems: "center", background: supportSending || (!supportDraft.trim() && !supportAttachment) ? "#DDE3EA" : `linear-gradient(145deg, ${theme?.accent || "#D4AF37"}, ${theme?.accentSecondary || "#F4D06F"})`, color: supportSending || (!supportDraft.trim() && !supportAttachment) ? "#94A3B8" : (theme?.primary || "#071A36"), fontWeight: 900, fontSize: 20, cursor: supportSending || (!supportDraft.trim() && !supportAttachment) ? "not-allowed" : "pointer", boxShadow: supportSending || (!supportDraft.trim() && !supportAttachment) ? "none" : "0 7px 18px rgba(212,175,55,.25)" }}
+                aria-label="إرسال الرسالة"
+              >
+                {supportSending ? "⏳" : "➤"}
+              </button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 6, padding: "0 3px", color: "#94A3B8", fontSize: 10 }}>
+              <span>😊 إيموجي • 📍 موقع • 🎙️ صوت • 🖼️ صورة</span>
+              <span>🔒 آمنة</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setSupportOpen((value) => !value)}
+        aria-label={supportOpen ? "إغلاق خدمة العملاء" : "فتح خدمة العملاء"}
+        title={supportOpen ? "إغلاق خدمة العملاء" : "خدمة العملاء"}
+        style={{
+          position: "fixed",
+          right: 18,
+          bottom: 20,
+          zIndex: 10021,
+          minWidth: 64,
+          height: 64,
+          padding: "0 10px",
+          borderRadius: 22,
+          border: `2px solid ${theme?.accent || "#D4AF37"}`,
+          background: `linear-gradient(145deg, ${theme?.primary || "#071A36"}, ${theme?.secondary || "#0B1F3A"})`,
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          cursor: "pointer",
+          boxShadow: "0 14px 34px rgba(7,26,54,.28), 0 0 0 6px rgba(212,175,55,.08)",
+          fontSize: 25,
+          transition: "transform .2s ease, box-shadow .2s ease",
+        }}
+      >
+        <span style={{ position: "relative", width: 42, height: 42, borderRadius: 15, display: "grid", placeItems: "center", background: `linear-gradient(145deg, ${theme?.accent || "#D4AF37"}, ${theme?.accentSecondary || "#F4D06F"})`, color: theme?.primary || "#071A36", boxShadow: "0 6px 16px rgba(0,0,0,.16)" }}>
+          {supportOpen ? "×" : "💬"}
+          {!supportOpen && supportMessages.filter((message) => (message.sender === "admin" || message.senderRole === "admin") && message.readByCustomer !== true && message.deletedByCustomer !== true).length > 0 && (
+            <span style={{ position: "absolute", top: -8, left: -8, minWidth: 21, height: 21, padding: "0 5px", borderRadius: 999, display: "grid", placeItems: "center", background: "#EF4444", color: "#fff", border: "2px solid #fff", fontSize: 9, fontWeight: 950, boxShadow: "0 4px 12px rgba(239,68,68,.35)" }}>
+              {Math.min(99, supportMessages.filter((message) => (message.sender === "admin" || message.senderRole === "admin") && message.readByCustomer !== true && message.deletedByCustomer !== true).length)}
+            </span>
+          )}
+        </span>
+        {!supportOpen && <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1, paddingLeft: 1 }}>
+          <strong style={{ fontSize: 11, fontWeight: 900, whiteSpace: "nowrap" }}>خدمة العملاء</strong>
+          <small style={{ fontSize: 9, opacity: .72, marginTop: 3, whiteSpace: "nowrap" }}>إحنا معاك 👋</small>
+        </span>}
+      </button>
+
+      {/* =================================================
           FLOATING CUSTOMER SERVICE WHATSAPP
       ================================================= */}
       {whatsappHref && (
@@ -4623,7 +5336,7 @@ function Home({
           target="_blank"
           rel="noopener noreferrer"
           className={`home-floating-whatsapp ${draggingWhatsapp ? "is-dragging" : ""}`}
-          style={whatsappPosition?.x !== null && whatsappPosition?.y !== null ? { left: whatsappPosition.x, top: whatsappPosition.y, right: "auto", bottom: "auto" } : undefined}
+          style={whatsappPosition?.x !== null && whatsappPosition?.y !== null ? { left: whatsappPosition.x, top: whatsappPosition.y, right: "auto", bottom: "auto" } : { bottom: 92 }}
           onPointerDown={startWhatsappDrag}
           onClick={(event) => {
             if (draggingWhatsapp) event.preventDefault();
@@ -4684,7 +5397,7 @@ function Home({
         contactLink={
           storeSettings?.contactLink ||
           storeSettings?.contactUrl ||
-          "/support"
+          "#customer-support"
         }
         hotlineWhatsApp={
           storeSettings?.hotlineWhatsApp ||
