@@ -1284,8 +1284,52 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
   const lastSeenText = selected?.lastCustomerTime ? (selected.active ? "متصل/نشط الآن" : `آخر ظهور ${dateText(selected.lastCustomer?.createdAt)}`) : "لم يرسل العميل رسالة بعد";
   const customerInitial = String(getPersonName(customer)).trim().slice(0, 1) || "ع";
 
+  const supportMobileCss = `
+    .support-panel { width:100%; max-width:100%; box-sizing:border-box; }
+    .support-layout { width:100%; box-sizing:border-box; }
+    .support-conversations, .support-chat-main { min-width:0 !important; width:100%; box-sizing:border-box; }
+    .support-chat-main { overflow:hidden !important; }
+    .support-chat-main > div:nth-child(2) { min-width:0; }
+    @media (max-width: 820px) {
+      .support-layout { grid-template-columns:1fr !important; padding:8px !important; gap:10px !important; }
+      .support-conversations { min-height:260px !important; max-height:320px; }
+      .support-chat-main { min-height:560px !important; }
+      .support-chat-main > div:first-child { padding:10px !important; }
+      .support-chat-main > div:first-child > div:first-child { min-width:0; max-width:calc(100% - 86px); }
+      .support-chat-main > div:first-child > div:last-child { flex-shrink:0; }
+      .support-chat-main > div:nth-child(2) { padding:14px 10px !important; min-height:360px !important; max-height:none !important; }
+      .support-chat-main > div:nth-child(2) > div { max-width:100% !important; }
+      .support-chat-main > div:nth-child(2) > div > div { max-width:88% !important; }
+      .support-chat-main > div:nth-child(2) img { max-width:100% !important; height:auto !important; }
+      .support-chat-main > div:last-child { padding:10px !important; }
+      .support-chat-main > div:last-child > div:last-child { flex-wrap:nowrap !important; align-items:stretch !important; }
+      .support-chat-main textarea { min-width:0 !important; width:auto !important; flex:1 1 auto !important; }
+      .support-chat-main > div:last-child button { flex:0 0 auto; }
+      .support-panel input, .support-panel textarea, .support-panel button { max-width:100%; }
+    }
+    @media (max-width: 520px) {
+      .support-conversations { min-height:220px !important; max-height:270px; }
+      .support-chat-main { min-height:540px !important; border-radius:15px !important; }
+      .support-chat-main > div:first-child { gap:7px !important; }
+      .support-chat-main > div:first-child > div:first-child { max-width:calc(100% - 78px); gap:7px !important; }
+      .support-chat-main > div:first-child button { width:39px !important; height:39px !important; min-width:39px !important; }
+      .support-chat-main > div:first-child > div:last-child { gap:4px !important; }
+      .support-chat-main > div:first-child > div:last-child span { display:none; }
+      .support-chat-main > div:nth-child(2) { padding:12px 8px !important; }
+      .support-chat-main > div:nth-child(2) > div > div { max-width:92% !important; min-width:0 !important; }
+      .support-chat-main > div:last-child > div:last-child { display:grid !important; grid-template-columns:38px 38px 38px minmax(0,1fr) 62px; gap:5px !important; }
+      .support-chat-main > div:last-child > div:last-child button { width:38px !important; min-width:38px !important; height:42px !important; padding:0 !important; }
+      .support-chat-main > div:last-child textarea { width:100% !important; min-height:42px !important; height:42px !important; padding:9px !important; font-size:12px !important; }
+      .support-chat-main > div:last-child > div:last-child > button:last-child { width:62px !important; min-width:62px !important; font-size:10px !important; }
+      .support-chat-main > div:last-child > div:first-of-type + input + div { max-width:100%; }
+      .support-chat-main > div:last-child > div:last-child + div { display:none !important; }
+    }
+  `;
+
   return (
-    <section className="admin-card" style={{ padding: 0, overflow: "hidden", border: "1px solid #DCE4EE", background: "#F5F7FB", borderRadius: 24, boxShadow: "0 18px 60px rgba(7,26,54,.08)" }}>
+    <>
+      <style>{supportMobileCss}</style>
+      <section className="admin-card support-panel" style={{ padding: 0, overflow: "hidden", border: "1px solid #DCE4EE", background: "#F5F7FB", borderRadius: 24, boxShadow: "0 18px 60px rgba(7,26,54,.08)" }}>
       <div style={{ padding: "22px 24px", background: "linear-gradient(135deg,#06162F,#0B2548 58%,#153E69)", color: "#fff", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", width: 260, height: 260, borderRadius: "50%", background: "rgba(212,175,55,.10)", left: -100, top: -160 }} />
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
@@ -1300,8 +1344,8 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(290px, 340px) minmax(0, 1fr)", gap: 14, padding: 14 }}>
-        <aside style={{ border: "1px solid #E0E6EF", borderRadius: 19, background: "#fff", overflow: "hidden", minHeight: 650, display: "flex", flexDirection: "column" }}>
+      <div className="support-layout" style={{ display: "grid", gridTemplateColumns: "minmax(290px, 340px) minmax(0, 1fr)", gap: 14, padding: 14 }}>
+        <aside className="support-conversations" style={{ border: "1px solid #E0E6EF", borderRadius: 19, background: "#fff", overflow: "hidden", minHeight: 650, display: "flex", flexDirection: "column" }}>
           <div style={{ padding: 14, borderBottom: "1px solid #EDF1F6" }}>
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <div style={{ position: "relative", flex: 1 }}><span style={{ position: "absolute", right: 11, top: 10, color: "#94A3B8" }}>⌕</span><input value={conversationSearch} onChange={(e) => setConversationSearch(e.target.value)} placeholder="ابحث عن عميل أو رسالة..." style={{ width: "100%", boxSizing: "border-box", height: 38, border: "1px solid #E1E7EF", borderRadius: 11, padding: "0 32px 0 10px", outline: "none", background: "#F8FAFC", fontSize: 12 }} /></div>
@@ -1323,7 +1367,7 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
           </div>
         </aside>
 
-        <main style={{ border: "1px solid #E0E6EF", borderRadius: 19, overflow: "hidden", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 650, background: "#fff", boxShadow: "0 10px 35px rgba(15,23,42,.05)" }}>
+        <main className="support-chat-main" style={{ border: "1px solid #E0E6EF", borderRadius: 19, overflow: "hidden", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 650, background: "#fff", boxShadow: "0 10px 35px rgba(15,23,42,.05)" }}>
           {selected ? <>
             <div style={{ padding: "13px 16px", borderBottom: "1px solid #E9EEF4", background: "rgba(255,255,255,.98)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}><button type="button" onClick={openCustomerAccount} title="فتح حساب العميل بالكامل" style={{ position: "relative", width: 45, height: 45, minWidth: 45, border: 0, borderRadius: 14, display: "grid", placeItems: "center", background: "linear-gradient(135deg,#071A36,#153E69)", color: "#fff", fontWeight: 950, fontSize: 17, cursor: "pointer" }}>{customerInitial}{selected.active && <i style={{ position: "absolute", left: -1, bottom: -1, width: 11, height: 11, borderRadius: 99, background: "#22C55E", border: "2px solid #fff" }} />}</button><div style={{ minWidth: 0 }}><button type="button" onClick={openCustomerAccount} title="فتح حساب العميل بالكامل" style={{ display: "block", maxWidth: 330, border: 0, padding: 0, background: "transparent", color: PRIMARY, fontSize: 15, fontWeight: 950, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textAlign: "right" }}>{getPersonName(customer)} <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700 }}>↗ الملف الكامل</span></button><div style={{ display: "flex", alignItems: "center", gap: 8, color: selected.active ? "#16A34A" : "#94A3B8", fontSize: 10, marginTop: 4 }}><span>{selected.active ? "● متصل الآن" : "○ غير متصل"}</span><span>•</span><span>{lastSeenText}</span></div></div></div>
@@ -1365,6 +1409,7 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
         </main>
       </div>
     </section>
+    </>
   );
 }
 
