@@ -56,9 +56,9 @@ const defaultStoreSettings = {
   logo: "",
   theme: defaultTheme,
   bannerSettings: {
-    heightDesktop: 420,
-    heightTablet: 350,
-    heightMobile: 240,
+    heightDesktop: 600,
+    heightTablet: 450,
+    heightMobile: 675,
     borderRadius: 16,
     overlayOpacity: 0.35,
     autoplay: true,
@@ -195,21 +195,33 @@ const mergeStoreSettings = (data = {}) => ({
 
 const normalizeBanner = (banner, index, theme) => {
   const originalImage = toText(banner?.image);
+  const originalDesktopImage = toText(
+    banner?.desktopImage || banner?.imageDesktop || banner?.desktop || banner?.desktopImageUrl
+  );
+  const originalMobileImage = toText(
+    banner?.mobileImage || banner?.imageMobile || banner?.mobile || banner?.mobileImageUrl
+  );
   const version = getTimestampVersion(banner?.updatedAt);
-  const image = originalImage
-    ? `${originalImage}${originalImage.includes("?") ? "&" : "?"}v=${version}`
-    : "";
+  const withVersion = (url) =>
+    url ? `${url}${url.includes("?") ? "&" : "?"}v=${version}` : "";
+  const image = withVersion(originalImage);
+  const desktopImage = withVersion(originalDesktopImage || originalImage || originalMobileImage);
+  const mobileImage = withVersion(originalMobileImage || originalDesktopImage || originalImage);
   const fallbackFont =
     theme?.bodyFontFamily || theme?.fontFamily || "Cairo, sans-serif";
 
   return {
     id: toText(banner?.id, `banner-${index}`),
     image,
+    desktopImage,
+    mobileImage,
     title: toText(banner?.title),
     text: toText(banner?.text || banner?.description),
     tag: toText(banner?.tag || banner?.badge),
     buttonText: toText(banner?.buttonText || banner?.button),
-    link: toText(banner?.link, "/"),
+    showButton: banner?.showButton ?? banner?.textSettings?.showButton ?? true,
+    link: toText(banner?.link, ""),
+    clickableImage: banner?.clickableImage ?? banner?.textSettings?.clickableImage ?? true,
     active: banner?.active !== false,
     order: toNumber(banner?.order, index),
     fontFamily: toText(banner?.fontFamily, fallbackFont),
@@ -241,60 +253,11 @@ const normalizeBanner = (banner, index, theme) => {
   };
 };
 
-const normalizeAnnouncement = (item, index, topStrip, theme) => {
-  const raw = typeof item === "string" ? { text: item } : item || {};
-  const text = toText(
-    raw?.text || raw?.title || raw?.message || raw?.content || raw?.label
-  );
-  if (!text) return null;
-
-  const enabled =
-    raw?.active !== false &&
-    raw?.enabled !== false &&
-    raw?.visible !== false &&
-    raw?.isActive !== false;
-  if (!enabled) return null;
-
-  return {
-    ...raw,
-    id: raw?.id || `announcement-${index}`,
-    text,
-    type: toText(raw?.type || raw?.animation || "marquee").toLowerCase(),
-    direction: toText(raw?.direction, topStrip?.direction || "rtl"),
-    speed: Math.max(1, toNumber(raw?.speed ?? topStrip?.speed, 40)),
-    height: Math.max(24, toNumber(raw?.height ?? topStrip?.height, 42)),
-    fontSize: Math.max(8, toNumber(raw?.fontSize ?? topStrip?.fontSize, 15)),
-    fontWeight: raw?.fontWeight ?? topStrip?.fontWeight ?? 700,
-    backgroundColor:
-      raw?.backgroundColor ||
-      raw?.background ||
-      topStrip?.backgroundColor ||
-      topStrip?.background ||
-      theme?.topStripBackground ||
-      PRIMARY,
-    textColor:
-      raw?.textColor ||
-      raw?.color ||
-      topStrip?.textColor ||
-      topStrip?.color ||
-      theme?.topStripText ||
-      "#FFFFFF",
-    fontFamily:
-      raw?.fontFamily ||
-      topStrip?.fontFamily ||
-      theme?.bodyFontFamily ||
-      theme?.fontFamily ||
-      "Cairo, sans-serif",
-    link: toText(raw?.link || raw?.url),
-  };
-};
-
 export default function HeroSlider() {
   const navigate = useNavigate();
 
   const [rawBanners, setRawBanners] = useState([]);
   const [storeSettings, setStoreSettings] = useState(defaultStoreSettings);
-  const [announcementBars, setAnnouncementBars] = useState([]);
   const [bannerVersion, setBannerVersion] = useState(0);
 
   useEffect(() => {
@@ -305,7 +268,10 @@ export default function HeroSlider() {
           .map((item) => ({ id: item.id, ...(item.data() || {}) }))
           .filter(
             (banner) =>
-              banner?.active !== false && toText(banner?.image) !== ""
+              banner?.active !== false &&
+              (toText(banner?.image) !== "" ||
+                toText(banner?.desktopImage || banner?.imageDesktop || banner?.desktop) !== "" ||
+                toText(banner?.mobileImage || banner?.imageMobile || banner?.mobile) !== "")
           )
           .sort(
             (a, b) => toNumber(a?.order, 0) - toNumber(b?.order, 0)
@@ -336,47 +302,9 @@ export default function HeroSlider() {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "announcementBars"),
-      (snapshot) => {
-        const bars = snapshot.docs
-          .map((item) => ({ id: item.id, ...(item.data() || {}) }))
-          .filter((item) => {
-            const text = toText(
-              item?.text ||
-                item?.title ||
-                item?.message ||
-                item?.content ||
-                item?.label
-            );
-            return (
-              Boolean(text) &&
-              item?.active !== false &&
-              item?.enabled !== false &&
-              item?.visible !== false &&
-              item?.isActive !== false
-            );
-          })
-          .sort(
-            (a, b) =>
-              toNumber(a?.sortOrder ?? a?.order, 0) -
-              toNumber(b?.sortOrder ?? b?.order, 0)
-          );
-        setAnnouncementBars(bars);
-      },
-      (error) => {
-        console.error("❌ Announcement Bars realtime error:", error);
-        setAnnouncementBars([]);
-      }
-    );
-    return unsubscribe;
-  }, []);
-
   const theme = storeSettings?.theme || defaultTheme;
   const bannerSettings =
     storeSettings?.bannerSettings || defaultStoreSettings.bannerSettings;
-  const topStrip = storeSettings?.topStrip || defaultStoreSettings.topStrip;
   const featuresBar =
     storeSettings?.featuresBar || defaultStoreSettings.featuresBar;
   const texts = storeSettings?.texts || defaultStoreSettings.texts;
@@ -388,50 +316,6 @@ export default function HeroSlider() {
       .filter((banner) => banner?.active !== false)
       .map((banner, index) => normalizeBanner(banner, index, theme));
   }, [rawBanners, theme]);
-
-  const visibleAnnouncementBars = useMemo(
-    () =>
-      announcementBars
-        .map((item, index) =>
-          normalizeAnnouncement(item, index, topStrip, theme)
-        )
-        .filter(Boolean),
-    [announcementBars, topStrip, theme]
-  );
-
-  const firstAnnouncement = visibleAnnouncementBars[0] || {};
-  const topStripEnabled =
-    topStrip?.enabled !== false && visibleAnnouncementBars.length > 0;
-
-  const topStripHeight = Math.max(
-    24,
-    toNumber(firstAnnouncement?.height ?? topStrip?.height, 42)
-  );
-  const topStripFontSize = Math.max(
-    8,
-    toNumber(firstAnnouncement?.fontSize ?? topStrip?.fontSize, 15)
-  );
-  const topStripFontWeight =
-    firstAnnouncement?.fontWeight ?? topStrip?.fontWeight ?? 700;
-  const topStripDirection =
-    firstAnnouncement?.direction || topStrip?.direction || "rtl";
-  const topStripSpeed = Math.max(
-    1,
-    toNumber(firstAnnouncement?.speed ?? topStrip?.speed, 40)
-  );
-  const topStripDuration = getMarqueeDuration(topStripSpeed);
-  const topStripBackground =
-    firstAnnouncement?.backgroundColor ||
-    topStrip?.backgroundColor ||
-    topStrip?.background ||
-    theme?.topStripBackground ||
-    PRIMARY;
-  const topStripTextColor =
-    firstAnnouncement?.textColor ||
-    topStrip?.textColor ||
-    topStrip?.color ||
-    theme?.topStripText ||
-    "#FFFFFF";
 
   const homeFontFamily =
     theme?.fontFamily || theme?.bodyFontFamily || "Cairo, sans-serif";
@@ -475,7 +359,8 @@ export default function HeroSlider() {
   const featureAccentColor =
     featuresBar?.accentColor || theme?.accent || ACCENT;
 
-  const autoplayEnabled = bannerSettings?.autoplay !== false;
+  const sliderMode = bannerSettings?.sliderMode || (bannerSettings?.autoplay === false ? "manual" : "autoplay");
+  const autoplayEnabled = sliderMode === "autoplay" && bannerSettings?.autoplay !== false;
   const autoplayDelay = Math.max(
     1500,
     toNumber(bannerSettings?.autoplayDelay, 5000)
@@ -512,11 +397,6 @@ export default function HeroSlider() {
     )}px`,
     "--hero-border-radius": `${borderRadius}px`,
     "--hero-overlay-opacity": globalOverlayOpacity,
-    "--top-strip-height": `${topStripHeight}px`,
-    "--top-strip-font-size": `${topStripFontSize}px`,
-    "--top-strip-duration": `${topStripDuration}s`,
-    "--top-strip-bg": topStripBackground,
-    "--top-strip-text": topStripTextColor,
     "--hero-primary": theme?.primary || PRIMARY,
     "--hero-secondary": theme?.secondary || SECONDARY,
     "--hero-accent": theme?.accent || ACCENT,
@@ -536,6 +416,44 @@ export default function HeroSlider() {
     "--store-body-font-size": `${bodyFontSize}px`,
     "--store-heading-font-size": `${headingFontSize}px`,
   };
+
+  const responsiveBannerCss = `
+    .hero-section .hero-slider-wrapper,
+    .hero-section .hero-swiper,
+    .hero-section .swiper-slide { width: 100%; }
+    .hero-section .swiper-slide { height: 31.25vw; }
+    .hero-section .hero-slide { height: 100%; min-height: 0; }
+    .hero-section .hero-responsive-image { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; user-select: none; -webkit-user-drag: none; }
+    .hero-section .hero-swiper { width: 100%; }
+    .hero-section .hero-swiper .swiper-button-prev,
+    .hero-section .hero-swiper .swiper-button-next {
+      width: 44px; height: 44px; border-radius: 999px;
+      background: rgba(7,26,54,.58); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.28);
+      box-shadow: 0 10px 28px rgba(0,0,0,.18);
+      transition: transform .2s ease, background .2s ease, opacity .2s ease;
+    }
+    .hero-section .hero-swiper .swiper-button-prev:hover,
+    .hero-section .hero-swiper .swiper-button-next:hover { transform: scale(1.06); background: rgba(7,26,54,.82); }
+    .hero-section .hero-swiper .swiper-button-prev::after,
+    .hero-section .hero-swiper .swiper-button-next::after { font-size: 15px; font-weight: 900; color: #fff; }
+    .hero-section .hero-swiper .swiper-pagination-bullet { width: 7px; height: 7px; opacity: .55; background: #fff; transition: all .25s ease; }
+    .hero-section .hero-swiper .swiper-pagination-bullet-active { width: 24px; border-radius: 999px; opacity: 1; background: var(--hero-accent, #D4AF37); }
+    .hero-section .hero-slide-clickable { cursor: pointer; }
+    .hero-section .hero-slide-clickable:focus-visible { outline: 3px solid var(--hero-accent, #D4AF37); outline-offset: -3px; }
+    @media (max-width: 1024px) {
+      .hero-section .swiper-slide { height: 31.25vw; }
+    }
+    @media (max-width: 767px) {
+      .hero-section .swiper-slide { height: 125vw; }
+      .hero-section .hero-desktop-image { display: none !important; }
+      .hero-section .hero-mobile-image { display: block !important; }
+    }
+    @media (min-width: 768px) {
+      .hero-section .hero-desktop-image { display: block !important; }
+      .hero-section .hero-mobile-image { display: none !important; }
+    }
+  `;
 
   const handleLink = (link) => {
     const target = toText(link, "/");
@@ -563,61 +481,7 @@ export default function HeroSlider() {
       }}
       data-store-name={storeName}
     >
-      <style>{`
-        .hero-offer-strip { width:100%; overflow:hidden; position:relative; display:flex; align-items:center; white-space:nowrap; }
-        .hero-offer-track { display:inline-flex; align-items:center; gap:70px; width:max-content; min-width:max-content; white-space:nowrap; will-change:transform; animation-name:heroAnnouncementMarquee; animation-timing-function:linear; animation-iteration-count:infinite; }
-        .hero-offer-track:hover { animation-play-state:paused; }
-        .hero-offer-item { display:inline-flex; align-items:center; flex:0 0 auto; white-space:nowrap; }
-        @keyframes heroAnnouncementMarquee { from { transform:translate3d(0,0,0); } to { transform:translate3d(-50%,0,0); } }
-      `}</style>
-
-      {topStripEnabled && (
-        <div
-          className="hero-offer-strip"
-          style={{
-            height: `${topStripHeight}px`,
-            minHeight: `${topStripHeight}px`,
-            background: topStripBackground,
-            color: topStripTextColor,
-            direction: topStripDirection,
-            fontFamily: bodyFontFamily,
-            fontSize: `${topStripFontSize}px`,
-            fontWeight: topStripFontWeight,
-          }}
-        >
-          <div
-            className="hero-offer-track"
-            style={{
-              animationDuration: `${topStripDuration}s`,
-              animationDirection:
-                topStripDirection === "rtl" ? "normal" : "reverse",
-              direction: "ltr",
-              fontFamily: bodyFontFamily,
-              fontSize: `${topStripFontSize}px`,
-              fontWeight: topStripFontWeight,
-            }}
-          >
-            {[...visibleAnnouncementBars, ...visibleAnnouncementBars].map(
-              (item, index) => (
-                <span
-                  className="hero-offer-item"
-                  key={`${item.id}-${index}`}
-                  onClick={() => item.link && handleLink(item.link)}
-                  style={{
-                    cursor: item.link ? "pointer" : "default",
-                    color: item.textColor || topStripTextColor,
-                    fontWeight: item.fontWeight || topStripFontWeight,
-                    fontFamily: item.fontFamily || bodyFontFamily,
-                  }}
-                >
-                  {item.text}
-                </span>
-              )
-            )}
-          </div>
-        </div>
-      )}
-
+      <style>{responsiveBannerCss}</style>
       <div
         className="hero-slider-wrapper"
         style={{
@@ -648,6 +512,10 @@ export default function HeroSlider() {
           navigation={navigationEnabled && slides.length > 1}
           loop={loopEnabled && slides.length > 1}
           speed={transitionSpeed}
+          grabCursor={slides.length > 1}
+          simulateTouch={slides.length > 1}
+          allowTouchMove={slides.length > 1}
+          keyboard={{ enabled: slides.length > 1, onlyInViewport: true }}
           observer
           observeParents
           resizeObserver
@@ -683,18 +551,53 @@ export default function HeroSlider() {
             return (
               <SwiperSlide key={`${slide.id}-${bannerVersion}-${index}`}>
                 <div
-                  className="hero-slide"
+                  className={`hero-slide ${slide.clickableImage && slide.link ? "hero-slide-clickable" : ""}`}
+                  onClick={() => {
+                    if (slide.clickableImage && slide.link) handleLink(slide.link);
+                  }}
+                  role={slide.clickableImage && slide.link ? "link" : undefined}
+                  tabIndex={slide.clickableImage && slide.link ? 0 : undefined}
+                  onKeyDown={(event) => {
+                    if (slide.clickableImage && slide.link && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      handleLink(slide.link);
+                    }
+                  }}
                   style={{
-                    backgroundImage: slide.image ? `url("${slide.image}")` : "none",
-                    backgroundPosition: slide.objectPosition || "center",
-                    backgroundSize: "cover",
-                    backgroundRepeat: "no-repeat",
+                    position: "relative",
+                    overflow: "hidden",
                     borderRadius: `${borderRadius}px`,
+                    background: theme?.cardBackground || "#FFFFFF",
+                    cursor: slide.clickableImage && slide.link ? "pointer" : "default",
                   }}
                 >
+                  {slide.desktopImage && (
+                    <img
+                      className="hero-responsive-image hero-desktop-image"
+                      src={slide.desktopImage}
+                      alt={slide.title || storeName}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      fetchPriority={index === 0 ? "high" : "auto"}
+                      draggable="false"
+                      style={{ objectPosition: slide.objectPosition || "center" }}
+                    />
+                  )}
+                  {slide.mobileImage && (
+                    <img
+                      className="hero-responsive-image hero-mobile-image"
+                      src={slide.mobileImage}
+                      alt={slide.title || storeName}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      draggable="false"
+                      style={{ objectPosition: slide.objectPosition || "center" }}
+                    />
+                  )}
                   <div
                     className="hero-overlay"
                     style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 1,
                       background: `linear-gradient(90deg, rgba(0,0,0,${Math.min(
                         1,
                         overlayOpacity + 0.06
@@ -786,11 +689,14 @@ export default function HeroSlider() {
                           </p>
                         )}
 
-                        {(slide.buttonText || texts?.buyNow) && (
+                        {slide.showButton !== false && (slide.buttonText || texts?.buyNow) && (
                           <button
                             type="button"
                             className="hero-button"
-                            onClick={() => handleLink(slide.link)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleLink(slide.link);
+                            }}
                             style={{
                               fontFamily,
                               fontWeight,

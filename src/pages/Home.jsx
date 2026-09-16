@@ -2981,6 +2981,71 @@ function Home({
       style={homeStyle}
       dir="rtl"
     >
+      {activeNotifications.length > 0 && (
+        <div
+          className="home-customer-notifications"
+          dir="rtl"
+          style={{
+            position: "fixed",
+            top: 76,
+            right: 18,
+            zIndex: 9998,
+            width: "min(390px, calc(100vw - 36px))",
+            display: "grid",
+            gap: 10,
+            pointerEvents: "none",
+          }}
+        >
+          {activeNotifications.slice(0, 5).map((item) => {
+            const type = item?.type || "info";
+            const colors = {
+              info: { bg: "#EEF6FF", border: "#60A5FA", icon: "ℹ️" },
+              success: { bg: "#ECFDF3", border: "#34D399", icon: "✅" },
+              warning: { bg: "#FFFBEB", border: "#F59E0B", icon: "⚠️" },
+              error: { bg: "#FEF2F2", border: "#EF4444", icon: "🚨" },
+            };
+            const c = colors[type] || colors.info;
+            return (
+              <div key={item.id} style={{ pointerEvents: "auto", position: "relative", background: c.bg, border: `1px solid ${c.border}`, borderRadius: 14, padding: "13px 44px 13px 15px", boxShadow: "0 12px 35px rgba(0,0,0,.16)", color: "#071A36" }}>
+                {item?.closable !== false && (
+                  <button type="button" onClick={() => setDismissedNotifications((prev) => { const next = new Set(prev); next.add(item.id); return next; })} style={{ position: "absolute", top: 7, right: 8, width: 28, height: 28, border: 0, borderRadius: "50%", background: "rgba(0,0,0,.08)", cursor: "pointer", fontSize: 18 }}>×</button>
+                )}
+                <div style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 20 }}>{c.icon}</span>
+                  <div style={{ minWidth: 0 }}>
+                    {item?.title && <strong style={{ display: "block", marginBottom: 4 }}>{item.title}</strong>}
+                    <div style={{ lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{item.message || item.text}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* =================================================
+          NAVBAR
+      ================================================= */}
+
+      <Navbar
+        setCurrentView={
+          setCurrentView
+        }
+        cartCount={cartCount}
+        searchTerm={searchTerm}
+        setSearchTerm={
+          setSearchTerm
+        }
+        admin={admin}
+        products={visibleProducts}
+        storeSettings={storeSettings}
+        storeMenuItems={storeMenuItems}
+        theme={theme}
+        setSelectedCategory={
+          setSelectedCategory
+        }
+      />
+
       {/* =================================================
           ACTIVE ANNOUNCEMENT BARS
       ================================================= */}
@@ -2992,7 +3057,11 @@ function Home({
             width: "100%",
             overflow: "hidden",
             position: "relative",
-            zIndex: 1000,
+            zIndex: 999,
+            marginTop: "var(--navbar-fixed-height, 120px)",
+            isolation: "isolate",
+            contain: "paint",
+            clipPath: "inset(0)",
           }}
         >
           {visibleAnnouncementBars.map(
@@ -3016,9 +3085,8 @@ function Home({
                 Math.max(
                   5,
                   Number(
-                    bar?.speed ||
-                      storeSettings?.topStrip
-                        ?.speed ||
+                    storeSettings?.topStrip
+                      ?.speed ??
                       40
                   )
                 );
@@ -3209,70 +3277,6 @@ function Home({
         </div>
       )}
 
-      {activeNotifications.length > 0 && (
-        <div
-          className="home-customer-notifications"
-          dir="rtl"
-          style={{
-            position: "fixed",
-            top: 76,
-            right: 18,
-            zIndex: 9998,
-            width: "min(390px, calc(100vw - 36px))",
-            display: "grid",
-            gap: 10,
-            pointerEvents: "none",
-          }}
-        >
-          {activeNotifications.slice(0, 5).map((item) => {
-            const type = item?.type || "info";
-            const colors = {
-              info: { bg: "#EEF6FF", border: "#60A5FA", icon: "ℹ️" },
-              success: { bg: "#ECFDF3", border: "#34D399", icon: "✅" },
-              warning: { bg: "#FFFBEB", border: "#F59E0B", icon: "⚠️" },
-              error: { bg: "#FEF2F2", border: "#EF4444", icon: "🚨" },
-            };
-            const c = colors[type] || colors.info;
-            return (
-              <div key={item.id} style={{ pointerEvents: "auto", position: "relative", background: c.bg, border: `1px solid ${c.border}`, borderRadius: 14, padding: "13px 44px 13px 15px", boxShadow: "0 12px 35px rgba(0,0,0,.16)", color: "#071A36" }}>
-                {item?.closable !== false && (
-                  <button type="button" onClick={() => setDismissedNotifications((prev) => { const next = new Set(prev); next.add(item.id); return next; })} style={{ position: "absolute", top: 7, right: 8, width: 28, height: 28, border: 0, borderRadius: "50%", background: "rgba(0,0,0,.08)", cursor: "pointer", fontSize: 18 }}>×</button>
-                )}
-                <div style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 20 }}>{c.icon}</span>
-                  <div style={{ minWidth: 0 }}>
-                    {item?.title && <strong style={{ display: "block", marginBottom: 4 }}>{item.title}</strong>}
-                    <div style={{ lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{item.message || item.text}</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* =================================================
-          NAVBAR
-      ================================================= */}
-
-      <Navbar
-        setCurrentView={
-          setCurrentView
-        }
-        cartCount={cartCount}
-        searchTerm={searchTerm}
-        setSearchTerm={
-          setSearchTerm
-        }
-        admin={admin}
-        products={visibleProducts}
-        storeSettings={storeSettings}
-        storeMenuItems={storeMenuItems}
-        theme={theme}
-        setSelectedCategory={
-          setSelectedCategory
-        }
-      />
 
       {/* =================================================
           MAIN
@@ -4496,7 +4500,6 @@ function Home({
             )}
           </section>
         )}
-
         {/* =================================================
             ADMIN ANNOUNCEMENTS
         ================================================= */}

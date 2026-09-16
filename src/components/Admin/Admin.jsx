@@ -95,6 +95,19 @@ const defaultStoreSettings = {
     fontWeight: 700,
     items: [],
   },
+  topHeaderAd: {
+    enabled: false,
+    desktopImage: "",
+    mobileImage: "",
+    link: "",
+    clickable: true,
+    heightDesktop: 150,
+    heightMobile: 95,
+    imageFit: "cover",
+    alt: "إعلان المتجر",
+    desktopImageFile: null,
+    mobileImageFile: null,
+  },
   featuresBar: {
     enabled: true,
     background: "#FFFFFF",
@@ -374,8 +387,11 @@ const genericConfig = {
     fields: [
       ["title", "عنوان البنر", "text"],
       ["text", "وصف البنر", "textarea"],
-      ["imageFile", "صورة البنر JPG/JPEG", "file"],
+      ["imageFile", "صورة البنر القديمة / العامة JPG/JPEG", "file"],
+      ["desktopImageFile", "🖥️ صورة الديسكتوب JPG/JPEG — 1920×600", "file"],
+      ["mobileImageFile", "📱 صورة الموبايل JPG/JPEG — 1080×1350", "file"],
       ["link", "رابط البنر", "text"],
+      ["clickableImage", "🖱️ فتح الرابط عند الضغط على البنر بالكامل", "checkbox"],
       ["buttonText", "نص الزر", "text"],
       ["tag", "الشارة / Badge", "text"],
       ["order", "الترتيب", "number"],
@@ -488,17 +504,71 @@ const normalizeVariant = (variant = {}, index = 0) => {
     ...(Array.isArray(variant.images) ? variant.images : []),
     variant.image,
   ].filter((v) => typeof v === "string" && v.trim());
+
+  const attributes =
+    variant.attributes && typeof variant.attributes === "object" && !Array.isArray(variant.attributes)
+      ? variant.attributes
+      : variant.options && typeof variant.options === "object" && !Array.isArray(variant.options)
+        ? variant.options
+        : variant.specifications && typeof variant.specifications === "object" && !Array.isArray(variant.specifications)
+          ? variant.specifications
+          : {};
+
   return {
     id: variant.id || variant._id || `variant-${index}`,
     name: variant.name || variant.title || "",
-    sku: variant.sku || "",
-    price: variant.price ?? 0,
-    oldPrice: variant.oldPrice ?? 0,
+    sku: variant.sku || variant.SKU || "",
+    price: variant.price ?? variant.salePrice ?? variant.finalPrice ?? 0,
+    oldPrice: variant.oldPrice ?? variant.compareAtPrice ?? variant.originalPrice ?? 0,
     stock: variant.stock ?? 0,
     image: images[0] || "",
     images: [...new Set(images)],
     imageFiles: Array.isArray(variant.imageFiles) ? variant.imageFiles : [],
+    attributes: { ...attributes },
+    options: variant.options && typeof variant.options === "object" && !Array.isArray(variant.options) ? { ...variant.options } : undefined,
+    specifications: variant.specifications && typeof variant.specifications === "object" && !Array.isArray(variant.specifications) ? { ...variant.specifications } : undefined,
   };
+};
+
+const normalizeVariantGroup = (group = {}, index = 0) => {
+  const id = String(group.id || group.key || group.attribute || `group-${index}`).trim() || `group-${index}`;
+  // مهم جدًا: أثناء التحرير لا نحذف اسم المجموعة الفارغ، لأن الأدمن ممكن يضيف
+  // مجموعة جديدة ثم يكتب الاسم بعدين. نفس الفكرة تنطبق على العنصر الجديد.
+  const rawName = group.name ?? group.title ?? group.label ?? group.displayName;
+  const name = rawName == null ? "" : String(rawName).trim();
+  const rawOptions = Array.isArray(group.options) ? group.options : [];
+  const options = rawOptions.map((option, optionIndex) => {
+    if (option && typeof option === "object") {
+      const value = String(option.value ?? option.name ?? option.label ?? option.title ?? "").trim();
+      const label = String(option.label ?? option.name ?? option.value ?? option.title ?? "").trim();
+      const rawPrice = option.price ?? option.optionPrice ?? option.amount ?? "";
+      const numericPrice = rawPrice === "" || rawPrice === null || rawPrice === undefined
+        ? ""
+        : Number(rawPrice);
+      return {
+        id: String(option.id || `${id}-option-${optionIndex}`).trim(),
+        value,
+        label,
+        price: Number.isFinite(numericPrice) && numericPrice > 0 ? numericPrice : "",
+      };
+    }
+    const value = String(option ?? "").trim();
+    return { id: `${id}-option-${optionIndex}`, value, label: value, price: "" };
+  });
+  return { id, name, options };
+};
+
+const productVariantGroups = (product = {}) => {
+  const raw = Array.isArray(product.variantGroups)
+    ? product.variantGroups
+    : Array.isArray(product.variantSettings?.groups)
+      ? product.variantSettings.groups
+      : Array.isArray(product.optionGroups)
+        ? product.optionGroups
+        : [];
+  // لا نفلتر هنا. دي بيانات نموذج التحرير، ولازم المجموعة/العنصر الفارغ
+  // يفضل موجودًا عشان زر «إضافة عنصر» يظهر نتيجته فورًا. التنظيف يحصل وقت الحفظ.
+  return raw.map(normalizeVariantGroup);
 };
 
 const productVariantsList = (product = {}) =>
@@ -623,7 +693,7 @@ export default function Admin() {
     watch("popupAds", setPopupAds); watch("notifications", setNotifications); watch("supportMessages", setSupport); watch("favorites", setFavorites);
     watch("blockedUsers", setBlockedUsers); watch("shippingZones", setShipping); watch("paymentMethods", setPayments); watch("storeMenuItems", setStoreMenu);
     watch("activityLogs", setActivityLogs); watch("admins", setAdmins);
-    const settingsUnsub = onSnapshot(doc(db, "settings", "store"), snap => { if (snap.exists()) setStoreSettings(p => ({ ...defaultStoreSettings, ...p, ...snap.data(), theme: { ...defaultTheme, ...(p.theme || {}), ...(snap.data().theme || {}) }, todayOffersTimer: { ...defaultStoreSettings.todayOffersTimer, ...(p.todayOffersTimer || {}), ...(snap.data().todayOffersTimer || {}) }, texts: { ...defaultStoreSettings.texts, ...(p.texts || {}), ...(snap.data().texts || {}) } })); }, e => console.warn("settings/store", e?.message));
+    const settingsUnsub = onSnapshot(doc(db, "settings", "store"), snap => { if (snap.exists()) setStoreSettings(p => ({ ...defaultStoreSettings, ...p, ...snap.data(), theme: { ...defaultTheme, ...(p.theme || {}), ...(snap.data().theme || {}) }, todayOffersTimer: { ...defaultStoreSettings.todayOffersTimer, ...(p.todayOffersTimer || {}), ...(snap.data().todayOffersTimer || {}) }, topHeaderAd: { ...defaultStoreSettings.topHeaderAd, ...(p.topHeaderAd || {}), ...(snap.data().topHeaderAd || {}) }, texts: { ...defaultStoreSettings.texts, ...(p.texts || {}), ...(snap.data().texts || {}) } })); }, e => console.warn("settings/store", e?.message));
     const wheelUnsub = onSnapshot(doc(db, "settings", "wheel"), snap => { if (snap.exists()) setWheelSettings({ ...defaultWheelSettings, ...snap.data(), prizes: safeArray(snap.data().prizes) }); }, e => console.warn("settings/wheel", e?.message));
     const gamesUnsub = onSnapshot(doc(db, "settings", "games"), snap => { if (snap.exists()) setGamesSettings(mergeGames(defaultGamesSettings, {}, snap.data())); }, e => console.warn("settings/games", e?.message));
     const secUnsub = onSnapshot(doc(db, "settings", "security"), snap => { if (snap.exists()) setSecurity(p => ({ ...p, ...snap.data() })); }, e => console.warn("settings/security", e?.message));
@@ -636,16 +706,6 @@ export default function Admin() {
     pending: orders.filter(o => ["pending", "new"].includes(o.status)).length,
     sales: orders.filter(o => o.status !== "cancelled").reduce((s, o) => s + asNumber(o.total ?? o.finalTotal), 0),
   }), [products, categories, orders, users]);
-
-  // عدد المحادثات التي فيها رسالة عميل غير مقروءة.
-  const supportUnreadConversationCount = useMemo(() => {
-    const unread = new Set();
-    safeArray(support).forEach((m) => {
-      const id = String(m.conversationId || m.userId || m.uid || m.customerId || m.email || m.phone || m.id || "unknown");
-      if ((m.sender === "customer" || m.senderRole === "customer") && m.readByAdmin !== true) unread.add(id);
-    });
-    return unread.size;
-  }, [support]);
 
   const filteredProducts = useMemo(() => products.filter(p => !search || normalize(`${p.title} ${p.category} ${p.categoryId} ${p.description}`).includes(normalize(search))), [products, search]);
   const filteredUsers = useMemo(() => users.filter(u => !search || normalize(`${u.name} ${u.email} ${u.phone}`).includes(normalize(search))), [users, search]);
@@ -673,6 +733,31 @@ export default function Admin() {
         payload.logo = await uploadImage(file);
       }
       delete payload.logoFile;
+
+      const topHeaderAd = {
+        ...defaultStoreSettings.topHeaderAd,
+        ...(payload.topHeaderAd || {}),
+      };
+
+      for (const key of ["desktopImageFile", "mobileImageFile"]) {
+        const file = topHeaderAd[key];
+        if (!file) continue;
+        if (!/^image\/(jpeg|jpg)$/i.test(file.type || "")) {
+          throw new Error("صورة الإعلان العلوي لازم تكون JPG أو JPEG");
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error("حجم صورة الإعلان العلوي يجب ألا يتجاوز 5 ميجابايت");
+        }
+        const uploaded = await uploadImage(file);
+        const imageKey = key === "desktopImageFile" ? "desktopImage" : "mobileImage";
+        topHeaderAd[imageKey] = uploaded;
+        delete topHeaderAd[key];
+      }
+
+      delete topHeaderAd.desktopImageFile;
+      delete topHeaderAd.mobileImageFile;
+      payload.topHeaderAd = topHeaderAd;
+
       await setDoc(doc(db, "settings", "store"), { ...payload, updatedAt: serverTimestamp() }, { merge: true });
       setStoreSettings((prev) => ({ ...prev, ...payload, logoFile: null }));
       await log("تعديل إعدادات المتجر", "تم حفظ الألوان والنصوص والإعدادات العامة واللوجو");
@@ -725,7 +810,25 @@ export default function Admin() {
       form.images = images;
       form.image = images.includes(form.image) ? form.image : (images[0] || "");
 
-      // المتغيرات: كل متغير يمكن أن يمتلك صورًا وأسعارًا ومخزونًا وSKU مستقلًا.
+      // مجموعات المتغيرات: أسماء الأزرار وعناصرها يتحكم فيها الأدمن بالكامل.
+      const variantGroups = productVariantGroups(form)
+        .map(group => ({
+          id: group.id,
+          name: String(group.name || "").trim(),
+          options: safeArray(group.options)
+            .map(option => ({
+              id: option.id,
+              value: String(option.value || "").trim(),
+              label: String(option.label || option.value || "").trim(),
+              price: option.price === "" || option.price === null || option.price === undefined
+                ? ""
+                : Math.max(0, Number(option.price) || 0),
+            }))
+            .filter(option => option.value),
+        }))
+        .filter(group => group.name || group.options.length > 0);
+
+      // المتغيرات: كل تركيبة يمكن أن تمتلك صورًا وأسعارًا ومخزونًا وSKU مستقلًا.
       const variants = [];
       for (let i = 0; i < safeArray(form.variants).length; i += 1) {
         const source = normalizeVariant(form.variants[i], i);
@@ -743,9 +846,13 @@ export default function Admin() {
           stock: asNumber(source.stock),
           image: variantImages[0] || "",
           images: variantImages,
+          attributes: { ...source.attributes },
+          ...(source.options ? { options: { ...source.options } } : {}),
+          ...(source.specifications ? { specifications: { ...source.specifications } } : {}),
         });
       }
 
+      form.variantGroups = variantGroups;
       form.variants = variants;
       form.hasVariants = form.hasVariants === true || variants.length > 0;
       form.price = asNumber(form.price);
@@ -800,7 +907,7 @@ export default function Admin() {
     if (type === "banners") {
       const t = bannerTextSettingsFromItem(item || {});
       setGenericForm(item ? flattenBannerForm(item) : {
-        title: "", text: "", imageFile: null, link: "/products", buttonText: "تسوق الآن", tag: "", order: 0,
+        title: "", text: "", imageFile: null, desktopImageFile: null, mobileImageFile: null, link: "/products", clickableImage: true, buttonText: "تسوق الآن", tag: "", order: 0,
         imageFit: "contain", overlayOpacity: 0.35, active: true, enabled: true, ...t,
       });
     } else {
@@ -830,17 +937,44 @@ export default function Admin() {
     }
     setShowGeneric(true);
   };
-  const genericChange = (e) => { const { name, type, value, checked, files } = e.target; setGenericForm(p => ({ ...p, [name]: type === "checkbox" ? checked : type === "number" ? asNumber(value) : type === "file" ? files?.[0] || null : value, ...(type === "file" ? { imageFile: files?.[0] || null, imagePreview: files?.[0] ? URL.createObjectURL(files[0]) : p.imagePreview } : {}) })); };
+  const genericChange = (e) => {
+    const { name, type, value, checked, files } = e.target;
+    const file = files?.[0] || null;
+    setGenericForm((p) => ({
+      ...p,
+      [name]: type === "checkbox" ? checked : type === "number" ? asNumber(value) : type === "file" ? file : value,
+      ...(type === "file"
+        ? {
+            [`${name.replace(/File$/, "")}Preview`]: file ? URL.createObjectURL(file) : "",
+            ...(name === "imageFile" ? { imageFile: file, imagePreview: file ? URL.createObjectURL(file) : p.imagePreview } : {}),
+          }
+        : {}),
+    }));
+  };
   const saveGeneric = async (e) => {
     e.preventDefault(); setSaving(true); try {
       const name = collectionMap[genericType]; if (!name) throw new Error("القسم غير معروف");
       const payload = { ...genericForm };
-      if (genericType === "banners" && payload.imageFile) {
-        const file = payload.imageFile;
-        if (!/image\/(jpeg|jpg)/i.test(file.type || "")) throw new Error("صورة البنر يجب أن تكون JPG أو JPEG فقط");
-        if (file.size > 5 * 1024 * 1024) throw new Error("حجم صورة البنر يجب ألا يتجاوز 5 ميجابايت");
+      if (genericType === "banners") {
+        const bannerFiles = [
+          ["imageFile", "الصورة العامة"],
+          ["desktopImageFile", "صورة الديسكتوب"],
+          ["mobileImageFile", "صورة الموبايل"],
+        ];
+        for (const [key, label] of bannerFiles) {
+          const file = payload[key];
+          if (!file) continue;
+          if (!/image\/(jpeg|jpg)/i.test(file.type || "")) {
+            throw new Error(`${label}: صورة البنر يجب أن تكون JPG أو JPEG فقط`);
+          }
+          if (file.size > 5 * 1024 * 1024) {
+            throw new Error(`${label}: حجم الصورة يجب ألا يتجاوز 5 ميجابايت`);
+          }
+        }
       }
       if (payload.imageFile) payload.image = await uploadImage(payload.imageFile);
+      if (payload.desktopImageFile) payload.desktopImage = await uploadImage(payload.desktopImageFile);
+      if (payload.mobileImageFile) payload.mobileImage = await uploadImage(payload.mobileImageFile);
       if (genericType === "banners") {
         const textSettings = {};
         Object.keys(DEFAULT_BANNER_TEXT_SETTINGS).forEach(key => {
@@ -852,7 +986,10 @@ export default function Admin() {
         delete payload.textSettings.imageFile;
         Object.keys(DEFAULT_BANNER_TEXT_SETTINGS).forEach(key => delete payload[key]);
       }
-      delete payload.id; delete payload.createdAt; delete payload.updatedAt; delete payload.imageFile; delete payload.imagePreview;
+      delete payload.id; delete payload.createdAt; delete payload.updatedAt;
+      delete payload.imageFile; delete payload.imagePreview;
+      delete payload.desktopImageFile; delete payload.desktopImagePreview;
+      delete payload.mobileImageFile; delete payload.mobileImagePreview;
 
       // Firestore بيرفض أي field قيمته undefined.
       // ننظف الـ payload بالكامل قبل الحفظ، وده يمنع نفس الخطأ في أي عنصر مستقبلاً.
@@ -900,7 +1037,7 @@ export default function Admin() {
     <aside className="admin-sidebar">
       <div className="admin-brand"><div className="brand-mark">س</div><div><strong>ســــَــــــــــوا</strong><small>لوحة الإدارة</small></div></div>
       <div className="admin-profile"><div className="avatar">{String(admin.name || "م").slice(0, 1)}</div><div><strong>{admin.name || "مشرف"}</strong><small>{admin.isSuperAdmin || admin.role === "superadmin" ? "مدير رئيسي" : "مشرف"}</small></div></div>
-      <nav>{menu.map(group => <div className="menu-group" key={group.group}><h4>{group.group}</h4>{group.items.map(([id, icon, text]) => <button type="button" key={id} className={tab === id ? "admin-menu-item active" : "admin-menu-item"} onClick={() => changeTab(id)}><span>{icon}</span><span style={{flex:1,textAlign:"right"}}>{text}</span>{id === "orders" && counts.pending > 0 && <b>{counts.pending}</b>}{id === "support" && supportUnreadConversationCount > 0 && <b style={{minWidth:24,height:24,padding:"0 6px",borderRadius:999,display:"inline-grid",placeItems:"center",background:"#EF4444",color:"#fff",fontSize:11,fontWeight:950}}>{supportUnreadConversationCount > 99 ? "99+" : supportUnreadConversationCount}</b>}</button>)}</div>)}</nav>
+      <nav>{menu.map(group => <div className="menu-group" key={group.group}><h4>{group.group}</h4>{group.items.map(([id, icon, text]) => <button type="button" key={id} className={tab === id ? "admin-menu-item active" : "admin-menu-item"} onClick={() => changeTab(id)}><span>{icon}</span><span>{text}</span>{id === "orders" && counts.pending > 0 && <b>{counts.pending}</b>}</button>)}</div>)}</nav>
       <button type="button" className="back-store" onClick={() => navigate("/")}>← العودة للمتجر</button>
     </aside>
 
@@ -919,7 +1056,7 @@ export default function Admin() {
           <button type="button" className="add-btn" onClick={() => setProductForm({
             title: "", description: "", price: 0, oldPrice: 0, stock: 0,
             category: "", categoryId: "", image: "", images: [], imageFiles: [], imagePreview: "",
-            hasVariants: false, variants: [], offer: false, bestSeller: false, newArrival: false, recommended: false, active: true,
+            hasVariants: false, variantGroups: [], variants: [], offer: false, bestSeller: false, newArrival: false, recommended: false, active: true,
           })}>＋ إضافة منتج</button>
         </div>
 
@@ -963,24 +1100,161 @@ export default function Admin() {
           </div>}
 
           <div className="admin-card" style={{ marginTop: 16, padding: 16 }}>
-            <div className="section-header nested"><div><h3>🎨 المتغيرات</h3><p>أضف أي عدد من المتغيرات، مثل المقاس أو اللون أو الخامة، ولكل متغير سعر ومخزون وSKU وصور خاصة.</p></div><button type="button" className="add-btn" onClick={() => setProductForm(p => ({ ...p, hasVariants: true, variants: [...safeArray(p.variants), normalizeVariant({ name: "", sku: "", price: p.price || 0, oldPrice: p.oldPrice || 0, stock: p.stock || 0, images: [] }, safeArray(p.variants).length)] }))}>＋ إضافة متغير</button></div>
-            <label className="admin-checkbox"><input type="checkbox" checked={productForm.hasVariants === true} onChange={e => setProductForm(p => ({ ...p, hasVariants: e.target.checked }))} /><span>تفعيل المتغيرات لهذا المنتج</span></label>
+            <div className="section-header nested">
+              <div>
+                <h3>🎛️ مجموعات خيارات المنتج</h3>
+                <p>أنشئ أي عدد من الأزرار مثل «اللون» و«المقاس» و«الخامة»، وحدد اسم كل زر والعناصر داخله من هنا.</p>
+              </div>
+              <button type="button" className="add-btn" onClick={() => setProductForm(p => ({
+                ...p,
+                hasVariants: true,
+                variantGroups: [
+                  ...productVariantGroups(p),
+                  {
+                    id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    name: "",
+                    options: [],
+                  },
+                ]
+              }))}>＋ إضافة زر خيارات</button>
+            </div>
 
-            {safeArray(productForm.variants).length === 0 && <div className="empty-state" style={{ marginTop: 12 }}>لا توجد متغيرات. يمكنك إضافتها من زر «إضافة متغير».</div>}
+            {productVariantGroups(productForm).length === 0 && (
+              <div className="empty-state" style={{ marginTop: 12 }}>
+                لا توجد مجموعات خيارات. أضف زرًا جديدًا ثم اكتب اسمه والعناصر الموجودة بداخله.
+              </div>
+            )}
+
+            <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
+              {productVariantGroups(productForm).map((group, groupIndex) => (
+                <div key={group.id} style={{ border: `1px solid ${ACCENT}55`, borderRadius: 16, padding: 16, background: "#FBFCFF" }}>
+                  <div className="section-header nested">
+                    <div>
+                      <h4 style={{ margin: 0 }}>زر الخيارات #{groupIndex + 1}</h4>
+                      <small>{group.options.length} عناصر داخل الزر</small>
+                    </div>
+                    <button type="button" className="delete-btn" onClick={() => setProductForm(p => ({
+                      ...p,
+                      variantGroups: productVariantGroups(p).filter((_, i) => i !== groupIndex)
+                    }))}>🗑️ حذف الزر</button>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      <span>اسم الزر / المجموعة</span>
+                      <input
+                        value={group.name}
+                        placeholder="مثال: اللون أو المقاس أو الخامة"
+                        onChange={e => setProductForm(p => ({
+                          ...p,
+                          variantGroups: productVariantGroups(p).map((x, i) => i === groupIndex ? { ...x, name: e.target.value } : x)
+                        }))}
+                      />
+                    </label>
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <strong>عناصر الزر</strong>
+                      <button type="button" className="ghost-btn" onClick={() => setProductForm(p => ({
+                        ...p,
+                        variantGroups: productVariantGroups(p).map((x, i) => i === groupIndex ? { ...x, options: [
+                            ...safeArray(x.options),
+                            {
+                              id: `${x.id}-option-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                              value: "",
+                              label: "",
+                              price: "",
+                            },
+                          ] } : x)
+                      }))}>＋ إضافة عنصر</button>
+                    </div>
+
+                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                      {group.options.map((option, optionIndex) => (
+                        <div key={option.id || `${group.id}-${optionIndex}`} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 150px auto", gap: 8, alignItems: "end" }}>
+                          <label>
+                            <span>القيمة</span>
+                            <input value={option.value} placeholder="مثال: أسود" onChange={e => setProductForm(p => ({
+                              ...p,
+                              variantGroups: productVariantGroups(p).map((x, i) => i === groupIndex ? { ...x, options: x.options.map((o, j) => j === optionIndex ? { ...o, value: e.target.value, label: o.label || e.target.value } : o) } : x)
+                            }))} />
+                          </label>
+                          <label>
+                            <span>الاسم الظاهر للعميل</span>
+                            <input value={option.label} placeholder="مثال: أسود" onChange={e => setProductForm(p => ({
+                              ...p,
+                              variantGroups: productVariantGroups(p).map((x, i) => i === groupIndex ? { ...x, options: x.options.map((o, j) => j === optionIndex ? { ...o, label: e.target.value } : o) } : x)
+                            }))} />
+                          </label>
+                          <label>
+                            <span>السعر (اختياري)</span>
+                            <input type="number" min="0" step="0.01" value={option.price ?? ""} placeholder="بدون سعر" onChange={e => setProductForm(p => ({
+                              ...p,
+                              variantGroups: productVariantGroups(p).map((x, i) => i === groupIndex ? { ...x, options: x.options.map((o, j) => j === optionIndex ? { ...o, price: e.target.value } : o) } : x)
+                            }))} />
+                            <small style={{display:"block",marginTop:4,color:"#64748B"}}>سيظهر للعميل فقط لو تم إدخاله</small>
+                          </label>
+                          <button type="button" className="delete-btn" onClick={() => setProductForm(p => ({
+                            ...p,
+                            variantGroups: productVariantGroups(p).map((x, i) => i === groupIndex ? { ...x, options: x.options.filter((_, j) => j !== optionIndex) } : x)
+                          }))}>حذف</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-card" style={{ marginTop: 16, padding: 16 }}>
+            <div className="section-header nested">
+              <div><h3>🎨 تركيبات المتغيرات</h3><p>كل تركيبة تربط اختيار الأزرار بالسعر والمخزون وSKU والصور.</p></div>
+              <button type="button" className="add-btn" onClick={() => setProductForm(p => ({
+                ...p,
+                hasVariants: true,
+                variants: [...safeArray(p.variants), normalizeVariant({ name: "", sku: "", price: p.price || 0, oldPrice: p.oldPrice || 0, stock: p.stock || 0, images: [], attributes: {} }, safeArray(p.variants).length)]
+              }))}>＋ إضافة تركيبة</button>
+            </div>
+
+            {safeArray(productForm.variants).length === 0 && <div className="empty-state" style={{ marginTop: 12 }}>لا توجد تركيبات. أضف تركيبة لكل مجموعة اختيارات تريد ربطها بسعر ومخزون مستقل.</div>}
 
             <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
               {safeArray(productForm.variants).map((variant, index) => {
                 const v = normalizeVariant(variant, index);
+                const groups = productVariantGroups(productForm);
                 return <div key={v.id} style={{ border: "1px solid #D9DFE8", borderRadius: 14, padding: 14, background: "#FAFCFF" }}>
-                  <div className="section-header nested"><div><h4 style={{ margin: 0 }}>متغير #{index + 1}</h4><small>{v.sku || "بدون SKU"}</small></div><button type="button" className="delete-btn" onClick={() => setProductForm(p => ({ ...p, variants: safeArray(p.variants).filter((_, i) => i !== index), hasVariants: safeArray(p.variants).length > 1 }))}>🗑️ حذف المتغير</button></div>
+                  <div className="section-header nested">
+                    <div><h4 style={{ margin: 0 }}>تركيبة #{index + 1}</h4><small>{v.sku || "بدون SKU"}</small></div>
+                    <button type="button" className="delete-btn" onClick={() => setProductForm(p => ({ ...p, variants: safeArray(p.variants).filter((_, i) => i !== index), hasVariants: safeArray(p.variants).length > 1 || productVariantGroups(p).length > 0 }))}>🗑️ حذف التركيبة</button>
+                  </div>
+
                   <div className="form-grid">
-                    <label><span>اسم المتغير</span><input value={v.name} placeholder="مثال: أحمر - XL" onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), name:e.target.value } : x) }))} /></label>
+                    <label><span>اسم التركيبة</span><input value={v.name} placeholder="مثال: أسود - XL" onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), name:e.target.value } : x) }))} /></label>
                     <label><span>SKU</span><input value={v.sku} onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), sku:e.target.value } : x) }))} /></label>
                     <label><span>السعر</span><input type="number" min="0" value={v.price} onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), price:e.target.value } : x) }))} /></label>
                     <label><span>السعر القديم</span><input type="number" min="0" value={v.oldPrice} onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), oldPrice:e.target.value } : x) }))} /></label>
                     <label><span>المخزون</span><input type="number" min="0" value={v.stock} onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), stock:e.target.value } : x) }))} /></label>
-                    <label className="form-group-full"><span>صور المتغير — بدون حد</span><input type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), imageFiles: [...safeArray(x.imageFiles), ...Array.from(e.target.files || [])] } : x) }))} /></label>
+                    {groups.map(group => {
+                      const current = v.attributes?.[group.id] ?? v.attributes?.[group.name] ?? "";
+                      return <label key={group.id}><span>{group.name}</span><select value={current} onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), attributes: { ...normalizeVariant(x,i).attributes, [group.id]: e.target.value } } : x) }))}>
+                        <option value="">اختر {group.name}</option>
+                        {group.options.map(option => <option key={option.id} value={option.value}>{option.label || option.value}</option>)}
+                      </select></label>;
+                    })}
+                    <label className="form-group-full"><span>صور التركيبة — بدون حد</span><input type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), imageFiles: [...safeArray(normalizeVariant(x,i).imageFiles), ...Array.from(e.target.files || [])] } : x) }))} /></label>
                   </div>
+
+                  {Object.keys(v.attributes || {}).filter(key => v.attributes[key]).length > 0 && (
+                    <div className="mini-tags" style={{ marginTop: 10 }}>
+                      {Object.entries(v.attributes).filter(([, value]) => value).map(([key, value]) => {
+                        const group = groups.find(g => g.id === key);
+                        return <span key={key}>{group?.name || key}: {value}</span>;
+                      })}
+                    </div>
+                  )}
+
                   {v.images.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
                     {v.images.map((src, imageIndex) => <div key={`${src}-${imageIndex}`} style={{ width: 110, border: `1px solid ${src === v.image ? ACCENT : "#D9DFE8"}`, borderRadius: 10, padding: 6 }}>
                       <img src={src} alt="" style={{ width: "100%", height: 80, objectFit: "contain", borderRadius: 7 }} />
@@ -1001,7 +1275,7 @@ export default function Admin() {
         </form>}
 
         <div className="toolbar"><input placeholder="🔎 ابحث باسم المنتج أو القسم..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
-        <div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>المنتج</th><th>القسم</th><th>السعر</th><th>الكمية</th><th>التصنيفات</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{filteredProducts.map(p=>{const imgs=productImageList(p);const category=categories.find(c=>c.id===(p.categoryId||p.category));return <tr key={p.id}><td>{(p.image||imgs[0])?<img className="table-img" src={p.image||imgs[0]} alt=""/>:<span>🖼️</span>}</td><td><strong>{p.title||"بدون اسم"}</strong>{imgs.length>1&&<small style={{display:"block"}}>🖼️ {imgs.length} صور</small>}{safeArray(p.variants).length>0&&<small style={{display:"block"}}>🎨 {p.variants.length} متغير</small>}</td><td>{category?.name||p.categoryName||"—"}</td><td><strong>{money(p.price)}</strong>{asNumber(p.oldPrice)>asNumber(p.price)&&<small className="old-price">{money(p.oldPrice)}</small>}</td><td>{asNumber(p.stock)}</td><td><div className="mini-tags">{p.offer&&<span>🔥</span>}{p.bestSeller&&<span>⭐</span>}{p.newArrival&&<span>🆕</span>}{p.recommended&&<span>❤️</span>}</div></td><td>{p.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setProductForm({...p,categoryId:p.categoryId||p.category||"",category:p.categoryId||p.category||"",images:imgs,image: p.image||imgs[0]||"",imageFiles:[],variants:productVariantsList(p),hasVariants:p.hasVariants===true||safeArray(p.variants).length>0})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeProduct(p)}>🗑️ حذف</button></div></td></tr>})}</tbody></table></div>
+        <div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>المنتج</th><th>القسم</th><th>السعر</th><th>الكمية</th><th>التصنيفات</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{filteredProducts.map(p=>{const imgs=productImageList(p);const category=categories.find(c=>c.id===(p.categoryId||p.category));return <tr key={p.id}><td>{(p.image||imgs[0])?<img className="table-img" src={p.image||imgs[0]} alt=""/>:<span>🖼️</span>}</td><td><strong>{p.title||"بدون اسم"}</strong>{imgs.length>1&&<small style={{display:"block"}}>🖼️ {imgs.length} صور</small>}{safeArray(p.variants).length>0&&<small style={{display:"block"}}>🎨 {p.variants.length} متغير</small>}</td><td>{category?.name||p.categoryName||"—"}</td><td><strong>{money(p.price)}</strong>{asNumber(p.oldPrice)>asNumber(p.price)&&<small className="old-price">{money(p.oldPrice)}</small>}</td><td>{asNumber(p.stock)}</td><td><div className="mini-tags">{p.offer&&<span>🔥</span>}{p.bestSeller&&<span>⭐</span>}{p.newArrival&&<span>🆕</span>}{p.recommended&&<span>❤️</span>}</div></td><td>{p.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setProductForm({...p,categoryId:p.categoryId||p.category||"",category:p.categoryId||p.category||"",images:imgs,image: p.image||imgs[0]||"",imageFiles:[],variantGroups:productVariantGroups(p),variants:productVariantsList(p),hasVariants:p.hasVariants===true||safeArray(p.variants).length>0||productVariantGroups(p).length>0})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeProduct(p)}>🗑️ حذف</button></div></td></tr>})}</tbody></table></div>
       </section>}
 
       {tab === "categories" && <section className="admin-card"><div className="section-header"><div><h2>🗂️ إدارة الأقسام</h2><p>تحكم في الاسم والصورة واللون والترتيب والأقسام الفرعية.</p></div><button type="button" className="add-btn" onClick={()=>setCategoryForm({name:"",categoryNumber:"",parentId:"",image:"",color:ACCENT,cardSize:"medium",sortOrder:0,description:"",active:true})}>＋ إضافة قسم</button></div>{categoryForm&&<form className="admin-form" onSubmit={saveCategory} style={{overflowX:"auto",width:"100%"}}><h3>{categoryForm.id?"✏️ تعديل القسم":"＋ إضافة قسم"}</h3><div className="form-grid"><label><span>اسم القسم</span><input required value={categoryForm.name} onChange={e=>setCategoryForm(p=>({...p,name:e.target.value}))}/></label><label><span>رقم القسم</span><input value={categoryForm.categoryNumber} onChange={e=>setCategoryForm(p=>({...p,categoryNumber:e.target.value}))}/></label><label><span>القسم الرئيسي</span><select value={categoryForm.parentId} onChange={e=>setCategoryForm(p=>({...p,parentId:e.target.value}))}><option value="">قسم رئيسي</option>{categories.filter(c=>c.id!==categoryForm.id).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><ColorField name="categoryColor" label="اللون" value={categoryForm.color || ACCENT} onChange={e=>setCategoryForm(p=>({...p,color:e.target.value}))}/><label><span>حجم البطاقة</span><select value={categoryForm.cardSize} onChange={e=>setCategoryForm(p=>({...p,cardSize:e.target.value}))}><option value="small">صغيرة</option><option value="medium">متوسطة</option><option value="large">كبيرة</option></select></label><label><span>الترتيب</span><input type="number" value={categoryForm.sortOrder} onChange={e=>setCategoryForm(p=>({...p,sortOrder:e.target.value}))}/></label><label><span>الصورة</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const f=e.target.files?.[0];setCategoryForm(p=>({...p,imageFile:f}))}}/></label><label className="form-group-full"><span>الوصف</span><textarea rows="3" value={categoryForm.description} onChange={e=>setCategoryForm(p=>({...p,description:e.target.value}))}/></label></div><label className="admin-checkbox"><input type="checkbox" checked={categoryForm.active!==false} onChange={e=>setCategoryForm(p=>({...p,active:e.target.checked}))}/><span>🟢 القسم مفعل</span></label><div className="form-actions"><button type="submit" className="save-btn" disabled={saving}>{saving?"⏳ جاري الحفظ...":"💾 حفظ القسم"}</button><button type="button" className="cancel-btn" onClick={()=>setCategoryForm(null)}>إلغاء</button></div></form>}<div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>القسم</th><th>اللون</th><th>الحجم</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{categories.slice().sort((a,b)=>asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(c=><tr key={c.id}><td>{c.image?<img className="table-img" src={c.image} alt=""/>:"🗂️"}</td><td><strong>{c.name}</strong></td><td><span className="color-dot" style={{background:c.color||ACCENT}}/>{c.color||ACCENT}</td><td>{c.cardSize||"medium"}</td><td>{asNumber(c.sortOrder)}</td><td>{c.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setCategoryForm({...c})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeCategory(c)}>🗑️ حذف</button></div></td></tr>)}</tbody></table></div></section>}
@@ -1049,6 +1323,8 @@ export default function Admin() {
 
 function BannerPreview({ form = {} }) {
   const image = form.imagePreview || form.image || "";
+  const desktopImage = form.desktopImagePreview || form.desktopImage || image;
+  const mobileImage = form.mobileImagePreview || form.mobileImage || image;
   const title = form.title || "عنوان البنر التجريبي";
   const description = form.text || form.description || "اكتب وصف البنر هنا وشوف شكله مباشرة قبل الحفظ.";
   const buttonText = form.buttonText || "تسوق الآن";
@@ -1074,8 +1350,21 @@ function BannerPreview({ form = {} }) {
     <div style={{padding:"12px 14px",background:"linear-gradient(135deg,#071A36,#0B1F3A)",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
       <strong>👁️ معاينة مباشرة للبنر</strong><span style={{fontSize:12,opacity:.75}}>المعاينة بتتحدث مع كل تعديل</span>
     </div>
-    <div style={{position:"relative",minHeight:300,background:"linear-gradient(135deg,#152A47,#314B6B)"}}>
-      {image ? <img src={image} alt="معاينة البنر" style={imageStyle} /> : <div style={{position:"absolute",inset:0,display:"grid",placeItems:"center",color:"#fff",fontSize:18}}>🖼️ اختار صورة البنر لعرضها هنا</div>}
+    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.6fr) minmax(280px,0.8fr)",gap:12,padding:12,background:"#F8FAFC"}}>
+      {[
+        { label: "🖥️ Desktop — 1920×600", src: desktopImage, ratio: "3.2 / 1" },
+        { label: "📱 Mobile — 1080×1350", src: mobileImage, ratio: "4 / 5" },
+      ].map((preview) => (
+        <div key={preview.label} style={{border:"1px solid #D9DFE8",borderRadius:14,overflow:"hidden",background:"#0B1F3A"}}>
+          <div style={{padding:"8px 10px",background:"#071A36",color:"#fff",fontSize:12,fontWeight:800}}>{preview.label}</div>
+          <div style={{position:"relative",aspectRatio:preview.ratio,background:"linear-gradient(135deg,#152A47,#314B6B)"}}>
+            {preview.src ? <img src={preview.src} alt="معاينة البنر" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} /> : <div style={{position:"absolute",inset:0,display:"grid",placeItems:"center",color:"#fff",fontSize:14,padding:20,textAlign:"center"}}>🖼️ ارفع صورة {preview.label.includes("Mobile") ? "الموبايل" : "الديسكتوب"}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+    <div style={{position:"relative",minHeight:300,background:"linear-gradient(135deg,#152A47,#314B6B)",display:"none"}}>
+      {image ? <img src={image} alt="معاينة البنر" style={imageStyle} /> : null}
       <div style={{position:"absolute",inset:0,background:`rgba(0,0,0,${overlay})`,zIndex:1,pointerEvents:"none"}} />
       <div style={contentStyle}>
         {tag && <span style={{display:"inline-flex",padding:"6px 12px",borderRadius:999,background:form.buttonBackground || ACCENT,color:form.buttonTextColor || PRIMARY,fontFamily:form.titleFontFamily || "Cairo, sans-serif",fontSize:13,fontWeight:700,marginBottom:12}}>{tag}</span>}
@@ -1094,7 +1383,6 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
   const [sending, setSending] = useState(false);
   const [conversationSearch, setConversationSearch] = useState("");
   const [unreadOnly, setUnreadOnly] = useState(false);
-  const [closedOnly, setClosedOnly] = useState(false);
   const [attachment, setAttachment] = useState(null);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
@@ -1122,7 +1410,6 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
       const lastCustomer = [...sorted].reverse().find(isCustomerMessage) || null;
       const lastCustomerTime = toMillis(lastCustomer?.createdAt);
       const active = lastCustomerTime > Date.now() - 5 * 60 * 1000;
-      const chatClosed = last?.chatClosed === true;
       const account = safeArray(users).find((u) => {
         const uid = String(first.userId || first.uid || first.customerId || "").trim();
         const email = String(first.customerEmail || first.email || "").trim().toLowerCase();
@@ -1133,7 +1420,7 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
         return (uid && uids && uid === uids) || (email && ue && email === ue) || (phone && up && phone === up);
       }) || null;
       const accountName = account?.displayName || account?.name || account?.username || account?.fullName || "";
-      return { id, messages: sorted, last, first, unread, hasUnread, lastCustomer, lastCustomerTime, active, chatClosed, pinned: pinned.includes(id), account, accountName };
+      return { id, messages: sorted, last, first, unread, hasUnread, lastCustomer, lastCustomerTime, active, pinned: pinned.includes(id), account, accountName };
     }).sort((a, b) => Number(b.pinned) - Number(a.pinned) || toMillis(b.last?.createdAt) - toMillis(a.last?.createdAt));
   }, [support, pinned, users]);
 
@@ -1166,14 +1453,13 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
     const q = conversationSearch.trim().toLowerCase();
     return conversations.filter((conversation) => {
       if (unreadOnly && conversation.unread <= 0) return false;
-      if (closedOnly && !conversation.chatClosed) return false;
       if (!q) return true;
       const person = conversation.account || conversation.first || conversation.last || {};
       const name = conversation.accountName || getPersonName(person); const contact = person.customerPhone || person.phone || person.customerEmail || person.email || "";
       const last = conversation.last?.message || conversation.last?.text || conversation.last?.content || "";
       return `${name} ${contact} ${last}`.toLowerCase().includes(q);
     });
-  }, [conversations, conversationSearch, unreadOnly, closedOnly]);
+  }, [conversations, conversationSearch, unreadOnly]);
 
   const totalUnread = conversations.reduce((sum, item) => sum + (item.unread || 0), 0);
   const totalUnreadConversations = conversations.filter((item) => item.hasUnread).length;
@@ -1225,22 +1511,6 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
     setPinned((prev) => { const next = prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]; try { localStorage.setItem("sawa_support_pinned", JSON.stringify(next)); } catch {} return next; });
   };
 
-  const setConversationClosed = async (conversation, closed) => {
-    if (!conversation?.messages?.length) return;
-    const latest = conversation.messages[conversation.messages.length - 1];
-    if (!latest?.id) return;
-    try {
-      await updateDoc(doc(db, "supportMessages", latest.id), {
-        chatClosed: closed === true,
-        chatClosedAt: closed === true ? serverTimestamp() : null,
-        chatClosedBy: closed === true ? (admin?.id || "admin") : null,
-      });
-    } catch (error) {
-      console.error("Update support chat status error:", error);
-      alert(error?.message || "حصل خطأ أثناء تغيير حالة المحادثة.");
-    }
-  };
-
   const getSupportMediaUrl = (message) => String(message?.attachmentUrl || message?.imageUrl || message?.mediaUrl || message?.fileUrl || message?.url || message?.attachment?.url || "").trim();
   const isSupportImage = (message) => { const url = getSupportMediaUrl(message); const mime = String(message?.attachmentMime || message?.mimeType || message?.fileType || "").toLowerCase(); const type = String(message?.messageType || message?.type || "").toLowerCase(); const resource = String(message?.attachmentResourceType || message?.resourceType || "").toLowerCase(); const name = String(message?.attachmentName || message?.fileName || message?.name || "").toLowerCase(); return !!url && (type === "image" || resource === "image" || mime.startsWith("image/") || /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)(?:[?#].*)?$/i.test(name) || /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)(?:[?#].*)?$/i.test(url)); };
   const isSupportAudio = (message) => { const url = getSupportMediaUrl(message); const mime = String(message?.attachmentMime || message?.mimeType || message?.fileType || "").toLowerCase(); const type = String(message?.messageType || message?.type || "").toLowerCase(); const resource = String(message?.attachmentResourceType || message?.resourceType || "").toLowerCase(); return !!url && (type === "audio" || resource === "audio" || mime.startsWith("audio/") || /\.(webm|ogg|mp3|wav|m4a|aac)(?:[?#].*)?$/i.test(url)); };
@@ -1255,7 +1525,7 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
     return { url: data.secure_url, name: file.name || "support-file", mime: file.type || "", bytes: file.size || 0, resourceType: data.resource_type || "auto", duration: data.duration || null };
   };
 
-  const basePayload = () => ({ conversationId: selected.id, userId: customer.userId || customer.uid || customer.customerId || null, uid: customer.uid || customer.userId || null, guestId: customer.guestId || null, customerName: getPersonName(customer), customerEmail: customer.customerEmail || customer.email || "", customerPhone: customer.customerPhone || customer.phone || "", sender: "admin", senderRole: "admin", adminId: admin?.id || null, adminName: admin?.name || "خدمة العملاء", readByAdmin: true, readByCustomer: false, deliveredToCustomer: false, chatClosed: false, createdAt: serverTimestamp() });
+  const basePayload = () => ({ conversationId: selected.id, userId: customer.userId || customer.uid || customer.customerId || null, uid: customer.uid || customer.userId || null, guestId: customer.guestId || null, customerName: getPersonName(customer), customerEmail: customer.customerEmail || customer.email || "", customerPhone: customer.customerPhone || customer.phone || "", sender: "admin", senderRole: "admin", adminId: admin?.id || null, adminName: admin?.name || "خدمة العملاء", readByAdmin: true, readByCustomer: false, deliveredToCustomer: false, createdAt: serverTimestamp() });
 
   const sendReply = async (extra = {}) => {
     const text = draft.trim(); if ((!text && !attachment && !extra.locationUrl) || !selected) return;
@@ -1284,52 +1554,8 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
   const lastSeenText = selected?.lastCustomerTime ? (selected.active ? "متصل/نشط الآن" : `آخر ظهور ${dateText(selected.lastCustomer?.createdAt)}`) : "لم يرسل العميل رسالة بعد";
   const customerInitial = String(getPersonName(customer)).trim().slice(0, 1) || "ع";
 
-  const supportMobileCss = `
-    .support-panel { width:100%; max-width:100%; box-sizing:border-box; }
-    .support-layout { width:100%; box-sizing:border-box; }
-    .support-conversations, .support-chat-main { min-width:0 !important; width:100%; box-sizing:border-box; }
-    .support-chat-main { overflow:hidden !important; }
-    .support-chat-main > div:nth-child(2) { min-width:0; }
-    @media (max-width: 820px) {
-      .support-layout { grid-template-columns:1fr !important; padding:8px !important; gap:10px !important; }
-      .support-conversations { min-height:260px !important; max-height:320px; }
-      .support-chat-main { min-height:560px !important; }
-      .support-chat-main > div:first-child { padding:10px !important; }
-      .support-chat-main > div:first-child > div:first-child { min-width:0; max-width:calc(100% - 86px); }
-      .support-chat-main > div:first-child > div:last-child { flex-shrink:0; }
-      .support-chat-main > div:nth-child(2) { padding:14px 10px !important; min-height:360px !important; max-height:none !important; }
-      .support-chat-main > div:nth-child(2) > div { max-width:100% !important; }
-      .support-chat-main > div:nth-child(2) > div > div { max-width:88% !important; }
-      .support-chat-main > div:nth-child(2) img { max-width:100% !important; height:auto !important; }
-      .support-chat-main > div:last-child { padding:10px !important; }
-      .support-chat-main > div:last-child > div:last-child { flex-wrap:nowrap !important; align-items:stretch !important; }
-      .support-chat-main textarea { min-width:0 !important; width:auto !important; flex:1 1 auto !important; }
-      .support-chat-main > div:last-child button { flex:0 0 auto; }
-      .support-panel input, .support-panel textarea, .support-panel button { max-width:100%; }
-    }
-    @media (max-width: 520px) {
-      .support-conversations { min-height:220px !important; max-height:270px; }
-      .support-chat-main { min-height:540px !important; border-radius:15px !important; }
-      .support-chat-main > div:first-child { gap:7px !important; }
-      .support-chat-main > div:first-child > div:first-child { max-width:calc(100% - 78px); gap:7px !important; }
-      .support-chat-main > div:first-child button { width:39px !important; height:39px !important; min-width:39px !important; }
-      .support-chat-main > div:first-child > div:last-child { gap:4px !important; }
-      .support-chat-main > div:first-child > div:last-child span { display:none; }
-      .support-chat-main > div:nth-child(2) { padding:12px 8px !important; }
-      .support-chat-main > div:nth-child(2) > div > div { max-width:92% !important; min-width:0 !important; }
-      .support-chat-main > div:last-child > div:last-child { display:grid !important; grid-template-columns:38px 38px 38px minmax(0,1fr) 62px; gap:5px !important; }
-      .support-chat-main > div:last-child > div:last-child button { width:38px !important; min-width:38px !important; height:42px !important; padding:0 !important; }
-      .support-chat-main > div:last-child textarea { width:100% !important; min-height:42px !important; height:42px !important; padding:9px !important; font-size:12px !important; }
-      .support-chat-main > div:last-child > div:last-child > button:last-child { width:62px !important; min-width:62px !important; font-size:10px !important; }
-      .support-chat-main > div:last-child > div:first-of-type + input + div { max-width:100%; }
-      .support-chat-main > div:last-child > div:last-child + div { display:none !important; }
-    }
-  `;
-
   return (
-    <>
-      <style>{supportMobileCss}</style>
-      <section className="admin-card support-panel" style={{ padding: 0, overflow: "hidden", border: "1px solid #DCE4EE", background: "#F5F7FB", borderRadius: 24, boxShadow: "0 18px 60px rgba(7,26,54,.08)" }}>
+    <section className="admin-card" style={{ padding: 0, overflow: "hidden", border: "1px solid #DCE4EE", background: "#F5F7FB", borderRadius: 24, boxShadow: "0 18px 60px rgba(7,26,54,.08)" }}>
       <div style={{ padding: "22px 24px", background: "linear-gradient(135deg,#06162F,#0B2548 58%,#153E69)", color: "#fff", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", width: 260, height: 260, borderRadius: "50%", background: "rgba(212,175,55,.10)", left: -100, top: -160 }} />
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
@@ -1339,18 +1565,17 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ padding: "8px 11px", borderRadius: 12, background: "rgba(255,255,255,.09)", border: "1px solid rgba(255,255,255,.10)", fontSize: 11, fontWeight: 850 }}>👥 {conversations.length} محادثة</span>
-            <span style={{ padding: "8px 11px", borderRadius: 12, background: totalUnreadConversations ? "rgba(239,68,68,.16)" : "rgba(255,255,255,.09)", border: "1px solid rgba(239,68,68,.18)", color: totalUnreadConversations ? "#FCA5A5" : "#fff", fontSize: 11, fontWeight: 900 }}>🔴 {totalUnreadConversations} غير مقروءة{totalUnread ? ` • ${totalUnread} رسالة` : ""}</span>
+            <span style={{ padding: "8px 11px", borderRadius: 12, background: totalUnreadConversations ? "rgba(212,175,55,.18)" : "rgba(255,255,255,.09)", border: "1px solid rgba(212,175,55,.18)", color: totalUnreadConversations ? "#F4D06F" : "#fff", fontSize: 11, fontWeight: 900 }}>● {totalUnreadConversations} محادثة جديدة{totalUnread ? ` • ${totalUnread} رسالة` : ""}</span>
           </div>
         </div>
       </div>
 
-      <div className="support-layout" style={{ display: "grid", gridTemplateColumns: "minmax(290px, 340px) minmax(0, 1fr)", gap: 14, padding: 14 }}>
-        <aside className="support-conversations" style={{ border: "1px solid #E0E6EF", borderRadius: 19, background: "#fff", overflow: "hidden", minHeight: 650, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(290px, 340px) minmax(0, 1fr)", gap: 14, padding: 14 }}>
+        <aside style={{ border: "1px solid #E0E6EF", borderRadius: 19, background: "#fff", overflow: "hidden", minHeight: 650, display: "flex", flexDirection: "column" }}>
           <div style={{ padding: 14, borderBottom: "1px solid #EDF1F6" }}>
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <div style={{ position: "relative", flex: 1 }}><span style={{ position: "absolute", right: 11, top: 10, color: "#94A3B8" }}>⌕</span><input value={conversationSearch} onChange={(e) => setConversationSearch(e.target.value)} placeholder="ابحث عن عميل أو رسالة..." style={{ width: "100%", boxSizing: "border-box", height: 38, border: "1px solid #E1E7EF", borderRadius: 11, padding: "0 32px 0 10px", outline: "none", background: "#F8FAFC", fontSize: 12 }} /></div>
               <button type="button" onClick={() => setUnreadOnly((v) => !v)} style={{ width: 40, height: 38, borderRadius: 11, border: unreadOnly ? `1px solid ${ACCENT}` : "1px solid #E1E7EF", background: unreadOnly ? "#FFF8E6" : "#F8FAFC", color: unreadOnly ? "#8A6700" : PRIMARY, cursor: "pointer", fontWeight: 900 }} title="غير المقروء فقط">●</button>
-              <button type="button" onClick={() => setClosedOnly((v) => !v)} style={{ width: 40, height: 38, borderRadius: 11, border: closedOnly ? "1px solid #94A3B8" : "1px solid #E1E7EF", background: closedOnly ? "#EEF2F7" : "#F8FAFC", color: PRIMARY, cursor: "pointer", fontWeight: 900 }} title="المحادثات المقفولة فقط">🔒</button>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><strong style={{ color: PRIMARY, fontSize: 14 }}>المحادثات</strong><span style={{ color: "#94A3B8", fontSize: 10 }}>{filteredConversations.length} ظاهرة</span></div>
           </div>
@@ -1360,18 +1585,18 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
               return <button key={conversation.id} type="button" onClick={() => { setSelectedId(conversation.id); if (conversation.hasUnread) markConversationRead(conversation); }} style={{ width: "100%", border: 0, borderBottom: "1px solid #F0F3F7", background: active ? "linear-gradient(90deg,#F2F6FA,#FFFFFF)" : "#fff", padding: "12px 13px", textAlign: "right", cursor: "pointer", borderRight: active ? `3px solid ${ACCENT}` : "3px solid transparent" }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                   <span style={{ position: "relative", width: 42, height: 42, minWidth: 42, borderRadius: 13, display: "grid", placeItems: "center", background: active ? "linear-gradient(135deg,#071A36,#153E69)" : "#EEF3F8", color: active ? "#fff" : PRIMARY, fontWeight: 950 }}>{String(name).slice(0, 1)}{conversation.active && <i style={{ position: "absolute", left: -2, bottom: -1, width: 10, height: 10, borderRadius: 99, background: "#22C55E", border: "2px solid #fff" }} />}</span>
-                  <span style={{ minWidth: 0, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 6 }}><strong style={{ fontSize: 13, color: PRIMARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</strong>{conversation.pinned && <span title="مثبت">📌</span>}{conversation.chatClosed && <span title="محادثة مقفولة" style={{fontSize:10}}>🔒</span>}{conversation.unread > 0 && <b style={{ marginRight: "auto", minWidth: 20, height: 20, borderRadius: 7, display: "grid", placeItems: "center", background: ACCENT, color: PRIMARY, fontSize: 10 }}>{conversation.unread}</b>}</span><small style={{ display: "block", color: conversation.unread ? "#334155" : "#94A3B8", fontWeight: conversation.unread ? 750 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 5 }}>{preview}</small><small style={{ display: "block", color: conversation.chatClosed ? "#64748B" : "#B0B8C5", fontSize: 9, marginTop: 4 }}>{conversation.chatClosed ? "🔒 الشات مقفول" : conversation.active ? "متصل الآن" : conversation.lastCustomer ? `آخر ظهور: ${dateText(conversation.lastCustomer.createdAt)}` : "—"}</small></span>
+                  <span style={{ minWidth: 0, flex: 1 }}><span style={{ display: "flex", alignItems: "center", gap: 6 }}><strong style={{ fontSize: 13, color: PRIMARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</strong>{conversation.pinned && <span title="مثبت">📌</span>}{conversation.unread > 0 && <b style={{ marginRight: "auto", minWidth: 20, height: 20, borderRadius: 7, display: "grid", placeItems: "center", background: ACCENT, color: PRIMARY, fontSize: 10 }}>{conversation.unread}</b>}</span><small style={{ display: "block", color: conversation.unread ? "#334155" : "#94A3B8", fontWeight: conversation.unread ? 750 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 5 }}>{preview}</small><small style={{ display: "block", color: "#B0B8C5", fontSize: 9, marginTop: 4 }}>{conversation.active ? "متصل الآن" : conversation.lastCustomer ? `آخر ظهور: ${dateText(conversation.lastCustomer.createdAt)}` : "—"}</small></span>
                 </div>
               </button>;
             }) : <div style={{ padding: 42, textAlign: "center", color: "#94A3B8" }}><div style={{ fontSize: 34, marginBottom: 10 }}>💬</div><strong style={{ color: PRIMARY }}>مفيش محادثات</strong><p style={{ fontSize: 11, lineHeight: 1.7 }}>جرب تغيير البحث أو فلتر غير المقروء.</p></div>}
           </div>
         </aside>
 
-        <main className="support-chat-main" style={{ border: "1px solid #E0E6EF", borderRadius: 19, overflow: "hidden", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 650, background: "#fff", boxShadow: "0 10px 35px rgba(15,23,42,.05)" }}>
+        <main style={{ border: "1px solid #E0E6EF", borderRadius: 19, overflow: "hidden", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 650, background: "#fff", boxShadow: "0 10px 35px rgba(15,23,42,.05)" }}>
           {selected ? <>
             <div style={{ padding: "13px 16px", borderBottom: "1px solid #E9EEF4", background: "rgba(255,255,255,.98)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}><button type="button" onClick={openCustomerAccount} title="فتح حساب العميل بالكامل" style={{ position: "relative", width: 45, height: 45, minWidth: 45, border: 0, borderRadius: 14, display: "grid", placeItems: "center", background: "linear-gradient(135deg,#071A36,#153E69)", color: "#fff", fontWeight: 950, fontSize: 17, cursor: "pointer" }}>{customerInitial}{selected.active && <i style={{ position: "absolute", left: -1, bottom: -1, width: 11, height: 11, borderRadius: 99, background: "#22C55E", border: "2px solid #fff" }} />}</button><div style={{ minWidth: 0 }}><button type="button" onClick={openCustomerAccount} title="فتح حساب العميل بالكامل" style={{ display: "block", maxWidth: 330, border: 0, padding: 0, background: "transparent", color: PRIMARY, fontSize: 15, fontWeight: 950, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textAlign: "right" }}>{getPersonName(customer)} <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700 }}>↗ الملف الكامل</span></button><div style={{ display: "flex", alignItems: "center", gap: 8, color: selected.active ? "#16A34A" : "#94A3B8", fontSize: 10, marginTop: 4 }}><span>{selected.active ? "● متصل الآن" : "○ غير متصل"}</span><span>•</span><span>{lastSeenText}</span></div></div></div>
-              <div style={{ display: "flex", gap: 7, alignItems: "center" }}><button type="button" onClick={() => togglePin(selected.id)} title={selected.pinned ? "إلغاء تثبيت" : "تثبيت المحادثة"} style={{ width: 38, height: 36, borderRadius: 10, border: selected.pinned ? `1px solid ${ACCENT}` : "1px solid #E1E7EF", background: selected.pinned ? "#FFF8E6" : "#F8FAFC", cursor: "pointer" }}>{selected.pinned ? "📌" : "📍"}</button><button type="button" onClick={async () => { await setConversationClosed(selected, true); setSelectedId(null); }} title="إغلاق المحادثة" aria-label="إغلاق المحادثة" style={{ width: 38, height: 36, borderRadius: 10, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", cursor: "pointer", fontSize: 20, fontWeight: 800, lineHeight: 1, display: "grid", placeItems: "center" }}>×</button><span style={{ padding: "7px 9px", borderRadius: 9, background: selected.chatClosed ? "#F1F5F9" : "#F6F8FB", color: "#64748B", fontSize: 10, fontWeight: 800 }}>{selected.chatClosed ? "🔒 مغلقة" : `#${String(selected.id).slice(-7)}`}</span></div>
+              <div style={{ display: "flex", gap: 7, alignItems: "center" }}><button type="button" onClick={() => togglePin(selected.id)} title={selected.pinned ? "إلغاء تثبيت" : "تثبيت المحادثة"} style={{ width: 38, height: 36, borderRadius: 10, border: selected.pinned ? `1px solid ${ACCENT}` : "1px solid #E1E7EF", background: selected.pinned ? "#FFF8E6" : "#F8FAFC", cursor: "pointer" }}>{selected.pinned ? "📌" : "📍"}</button><span style={{ padding: "7px 9px", borderRadius: 9, background: "#F6F8FB", color: "#64748B", fontSize: 10, fontWeight: 800 }}>#{String(selected.id).slice(-7)}</span></div>
             </div>
 
             <div style={{ flex: 1, minHeight: 390, maxHeight: 510, overflowY: "auto", padding: "22px 18px", background: "radial-gradient(circle at 12% 8%,rgba(212,175,55,.07),transparent 24%),linear-gradient(180deg,#F8FAFC,#F2F5F9)" }}>
@@ -1393,15 +1618,14 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
             </div>
 
             <div style={{ padding: 13, borderTop: "1px solid #E8EDF4", background: "#fff" }}>
-              {selected.chatClosed && <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 12, background: "#F1F5F9", border: "1px solid #E2E8F0", color: "#64748B", fontSize: 11, fontWeight: 800, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}><span>🔒 المحادثة مقفولة حاليًا — الرسائل القديمة محفوظة.</span><button type="button" onClick={() => setConversationClosed(selected, false)} style={{border:0,borderRadius:9,padding:"7px 10px",background:"#071A36",color:"#fff",cursor:"pointer",fontWeight:900,fontSize:10}}>🔓 فتح المحادثة</button></div>}
               <input ref={fileRef} type="file" hidden onChange={handleFile} />
               {attachment && <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9, padding: "8px 10px", borderRadius: 13, background: "#F7F9FC", border: "1px solid #E4EAF2" }}><span style={{ width: 30, height: 30, borderRadius: 9, display: "grid", placeItems: "center", background: "#EAF1FA" }}>{attachment.isVoice ? "🎙️" : "📎"}</span><span style={{ flex: 1, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#475569" }}>{attachment.file?.name}</span><button type="button" onClick={() => setAttachment(null)} style={{ border: 0, background: "#E5EAF0", color: "#64748B", borderRadius: 8, width: 28, height: 28, cursor: "pointer", fontSize: 17 }}>×</button></div>}
               <div style={{ display: "flex", gap: 7, alignItems: "flex-end", flexWrap: "wrap" }}>
-                <button type="button" onClick={() => fileRef.current?.click()} disabled={sending || recording || selected.chatClosed} title="إرسال ملف أو صورة" style={{ width: 42, height: 46, border: "1px solid #E2E8F0", borderRadius: 12, background: "#F8FAFC", color: PRIMARY, cursor: "pointer", fontSize: 18 }}>📎</button>
-                <button type="button" onClick={sendLocation} disabled={sending || recording || selected.chatClosed} title="إرسال الموقع" style={{ width: 42, height: 46, border: "1px solid #E2E8F0", borderRadius: 12, background: "#F8FAFC", color: PRIMARY, cursor: "pointer", fontSize: 18 }}>📍</button>
-                <button type="button" onClick={toggleRecording} disabled={sending || selected.chatClosed} title={recording ? "إيقاف التسجيل" : "تسجيل صوت"} style={{ minWidth: 42, height: 46, border: recording ? "1px solid #FECACA" : "1px solid #E2E8F0", borderRadius: 12, background: recording ? "#FEF2F2" : "#F8FAFC", color: recording ? "#DC2626" : PRIMARY, cursor: "pointer", fontSize: recording ? 10 : 17, fontWeight: 800 }}>{recording ? `⏹️ ${recordSeconds}s` : "🎙️"}</button>
-                <textarea disabled={selected.chatClosed} rows="2" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }} placeholder="اكتب ردًا للعميل..." style={{ flex: 1, minWidth: 180, resize: "none", minHeight: 46, maxHeight: 110, border: "1px solid #DCE3EC", borderRadius: 12, padding: "11px 13px", outline: "none", background: "#FBFCFE", lineHeight: 1.5 }} />
-                <button type="button" className="save-btn" disabled={sending || selected.chatClosed || (!draft.trim() && !attachment)} onClick={() => sendReply()} style={{ minWidth: 82, height: 46, borderRadius: 12, fontWeight: 900 }}>{sending ? "⏳" : "📤 إرسال"}</button>
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={sending || recording} title="إرسال ملف أو صورة" style={{ width: 42, height: 46, border: "1px solid #E2E8F0", borderRadius: 12, background: "#F8FAFC", color: PRIMARY, cursor: "pointer", fontSize: 18 }}>📎</button>
+                <button type="button" onClick={sendLocation} disabled={sending || recording} title="إرسال الموقع" style={{ width: 42, height: 46, border: "1px solid #E2E8F0", borderRadius: 12, background: "#F8FAFC", color: PRIMARY, cursor: "pointer", fontSize: 18 }}>📍</button>
+                <button type="button" onClick={toggleRecording} disabled={sending} title={recording ? "إيقاف التسجيل" : "تسجيل صوت"} style={{ minWidth: 42, height: 46, border: recording ? "1px solid #FECACA" : "1px solid #E2E8F0", borderRadius: 12, background: recording ? "#FEF2F2" : "#F8FAFC", color: recording ? "#DC2626" : PRIMARY, cursor: "pointer", fontSize: recording ? 10 : 17, fontWeight: 800 }}>{recording ? `⏹️ ${recordSeconds}s` : "🎙️"}</button>
+                <textarea rows="2" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }} placeholder="اكتب ردًا للعميل..." style={{ flex: 1, minWidth: 180, resize: "none", minHeight: 46, maxHeight: 110, border: "1px solid #DCE3EC", borderRadius: 12, padding: "11px 13px", outline: "none", background: "#FBFCFE", lineHeight: 1.5 }} />
+                <button type="button" className="save-btn" disabled={sending || (!draft.trim() && !attachment)} onClick={() => sendReply()} style={{ minWidth: 82, height: 46, borderRadius: 12, fontWeight: 900 }}>{sending ? "⏳" : "📤 إرسال"}</button>
               </div>
               <div style={{ marginTop: 7, display: "flex", justifyContent: "space-between", gap: 10, color: "#A0AABD", fontSize: 10 }}><span>📎 ملفات وصور حتى 20MB • 📍 موقع • 🎙️ صوت</span><span>Enter إرسال • Shift + Enter سطر جديد</span></div>
             </div>
@@ -1409,7 +1633,6 @@ function SupportPanel({ support, admin, users = [], orders = [], favorites = [],
         </main>
       </div>
     </section>
-    </>
   );
 }
 
@@ -1443,25 +1666,10 @@ function CustomerDetailsModal({ user, orders, favorites, support, activityLogs, 
     ["تاريخ التسجيل", dateText(user.createdAt || user.registeredAt)], ["آخر تحديث", dateText(user.updatedAt)], ["آخر دخول", dateText(user.lastLoginAt || user.lastLogin || user.loginAt)],
     ["الحالة", user.blocked ? "🔴 محظور" : "🟢 نشط"], ["الدور", user.role || "عميل"],
   ];
-  const tabs = [["overview","🏠 نظرة عامة"],["orders","🛒 الطلبات"],["activity","🧾 النشاط"],["favorites","❤️ المفضلة"],["support","💬 خدمة العملاء"],["notifications","🔔 الإشعارات"]];
-  const profileName = user.name || user.displayName || user.username || user.fullName || "عميل";
-  const profileContact = user.email || user.phone || "بدون بيانات اتصال";
-  const profileInitial = String(profileName).trim().slice(0, 1) || "ع";
-  return <Modal title="ملف العميل" onClose={onClose}>
-    <div style={{position:"relative",overflow:"hidden",display:"flex",gap:16,alignItems:"center",padding:"20px",borderRadius:22,background:"linear-gradient(135deg,#06162F 0%,#0B2548 62%,#153E69 100%)",color:"#fff",marginBottom:16,boxShadow:"0 14px 35px rgba(7,26,54,.16)"}}>
-      <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"rgba(212,175,55,.10)",left:-70,top:-105}} />
-      <div className="large-avatar" style={{position:"relative",margin:0,width:62,height:62,minWidth:62,borderRadius:19,display:"grid",placeItems:"center",background:"linear-gradient(145deg,#D4AF37,#F4D06F)",color:"#071A36",fontSize:25,fontWeight:950,boxShadow:"0 8px 24px rgba(0,0,0,.18)"}}>{profileInitial}</div>
-      <div style={{position:"relative",flex:1,minWidth:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          <h3 style={{margin:0,fontSize:19,fontWeight:950}}>{profileName}</h3>
-          <span style={{padding:"4px 8px",borderRadius:999,background:user.blocked?"rgba(248,113,113,.16)":"rgba(74,222,128,.14)",border:user.blocked?"1px solid rgba(248,113,113,.25)":"1px solid rgba(74,222,128,.22)",fontSize:9,fontWeight:900}}>{user.blocked?"🔴 محظور":"🟢 حساب نشط"}</span>
-        </div>
-        <div style={{marginTop:6,opacity:.78,fontSize:11,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{profileContact}</div>
-        <div style={{display:"flex",gap:7,marginTop:11,flexWrap:"wrap"}}>
-          {user.phone&&<a href={`tel:${user.phone}`} style={{textDecoration:"none",padding:"7px 10px",borderRadius:10,background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",color:"#fff",fontSize:10,fontWeight:800}}>📞 اتصال</a>}
-          {user.phone&&<a href={`https://wa.me/${String(user.phone).replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{textDecoration:"none",padding:"7px 10px",borderRadius:10,background:"rgba(255,255,255,.09)",border:"1px solid rgba(255,255,255,.12)",color:"#fff",fontSize:10,fontWeight:800}}>💬 واتساب</a>}
-        </div>
-      </div>
+  const tabs = [["overview","نظرة عامة"],["orders","الطلبات"],["activity","النشاط"],["favorites","المفضلة"],["support","خدمة العملاء"],["notifications","الإشعارات"]];
+  return <Modal title={`ملف العميل: ${user.name || user.email || "عميل"}`} onClose={onClose}>
+    <div style={{display:"flex",gap:14,alignItems:"center",padding:16,borderRadius:18,background:"linear-gradient(135deg,#071A36,#0B1F3A)",color:"#fff",marginBottom:16}}>
+      <div className="large-avatar" style={{margin:0}}>{String(user.name||"ع").slice(0,1)}</div><div style={{flex:1}}><h3 style={{margin:"0 0 4px"}}>{user.name||"عميل"}</h3><div style={{opacity:.8}}>{user.email||user.phone||"بدون بيانات اتصال"}</div></div><span className={user.blocked?"status-inactive":"status-active"}>{user.blocked?"🔴 محظور":"🟢 نشط"}</span>
     </div>
     <div className="table-actions" style={{marginBottom:16,flexWrap:"wrap"}}>{tabs.map(([id,label])=><button type="button" key={id} className={view===id?"edit-btn":"ghost-btn"} onClick={()=>setView(id)}>{label}</button>)}</div>
     {view === "overview" && <><div className="dashboard-grid"><div className="admin-stat-card"><span className="stat-label">إجمالي الطلبات</span><strong>{userOrders.length}</strong></div><div className="admin-stat-card"><span className="stat-label">إجمالي المشتريات</span><strong>{money(totalSpent)}</strong></div><div className="admin-stat-card"><span className="stat-label">المفضلة</span><strong>{userFavorites.length}</strong></div><div className="admin-stat-card"><span className="stat-label">رسائل الدعم</span><strong>{userSupport.length}</strong></div></div><div className="details-grid">{info.map(([label,value])=><Info key={label} label={label} value={value}/>)}</div>{addresses.length>0&&<><h3>📍 العناوين المستخدمة</h3><div className="order-items">{addresses.map((a,i)=><div key={i}><span>{a}</span></div>)}</div></>}{lastOrder&&<><h3>🛒 آخر طلب</h3><div className="order-items"><div><span>{lastOrder.orderNumber||lastOrder.id}</span><strong>{money(lastOrder.total??lastOrder.finalTotal)}</strong></div><div><span>{dateText(lastOrder.createdAt)}</span><strong>{lastOrder.status||"pending"}</strong></div></div></>}</>}
@@ -1494,7 +1702,34 @@ function SettingsPanel({ storeSettings, setStoreSettings, saveSettings, saving }
   const text = storeSettings.texts || defaultStoreSettings.texts;
   const setText = (key,value)=>setStoreSettings(p=>({...p,texts:{...defaultStoreSettings.texts,...p.texts,[key]:value}}));
   const colors = [["primary","اللون الأساسي"],["secondary","اللون الثانوي"],["accent","اللون المميز"],["pageBackground","خلفية الموقع"],["cardBackground","خلفية البطاقات"],["textPrimary","لون النص الرئيسي"],["textSecondary","لون النص الثانوي"],["border","لون الحدود"],["buttonBackground","خلفية الأزرار"],["buttonText","نص الأزرار"],["navbarBackground","خلفية الشريط الرئيسي"],["headerBackground","لون الهيدر"],["navbarText","نص الشريط الرئيسي"],["categoryBarBackground","خلفية شريط الأقسام"],["categoryBarText","نص شريط الأقسام"],["topStripBackground","خلفية الشريط المتحرك"],["topStripText","نص الشريط المتحرك"],["footerBackground","خلفية الفوتر"],["footerText","نص الفوتر"],["footerBrand","لون اسم المتجر في الفوتر"],["footerButtonBackground","زر الفوتر"],["footerButtonText","نص زر الفوتر"],["headingColor","العناوين"],["linkColor","الروابط"],["priceColor","الأسعار"],["saleColor","لون الخصم"],["successColor","لون النجاح"],["warningColor","لون التنبيه"],["errorColor","لون الخطأ"],["inputBackground","خلفية الحقول"]];
-  return <section className="admin-card"><div className="section-header"><div><h2>🎨 مظهر المتجر وإعداداته</h2><p>تحكم كامل في الهوية والألوان والنصوص والأشرطة.</p></div></div><div className="settings-tabs"><div className="settings-block"><h3>🏪 البيانات الأساسية</h3><div className="form-grid"><label><span>اسم المتجر</span><input value={storeSettings.storeName||""} onChange={e=>setStoreSettings(p=>({...p,storeName:e.target.value}))}/></label><label><span>لوجو المتجر — رفع ملف</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0]||null;setStoreSettings(p=>({...p,logoFile:file}));}}/><small style={{display:"block",marginTop:6,color:"#64748B"}}>JPG / JPEG / PNG / WEBP — بحد أقصى 5MB</small>{storeSettings.logoFile ? <small style={{display:"block",marginTop:4,color:"#16803C"}}>📥 {storeSettings.logoFile.name} جاهز للرفع</small> : null}{storeSettings.logo ? <img src={storeSettings.logo} alt="Logo preview" style={{display:"block",marginTop:10,maxWidth:180,maxHeight:80,objectFit:"contain",borderRadius:10,border:"1px solid #D9DFE8",padding:6,background:"#fff"}} /> : null}</label><label className="form-group-full"><span>الإعلان الافتراضي</span><textarea rows="3" value={storeSettings.announcement||""} onChange={e=>setStoreSettings(p=>({...p,announcement:e.target.value}))}/></label></div></div><div className="settings-block"><h3>🎨 جميع ألوان الموقع</h3><div className="color-grid">{colors.map(([k,l])=><ColorField key={k} name={k} label={l} value={theme[k]} onChange={e=>setTheme(k,e.target.value)} />)}</div></div><div className="settings-block"><h3>📝 نصوص الموقع</h3><div className="form-grid">{Object.entries(text).map(([k,v])=><label key={k}><span>{textLabel(k)}</span><input value={v||""} onChange={e=>setText(k,e.target.value)}/></label>)}</div></div><div className="settings-block"><h3>📢 الشريط المتحرك الافتراضي</h3><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.topStrip?.enabled!==false} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,enabled:e.target.checked}}))}/><span>إظهار الشريط</span></label><label><span>الاتجاه</span><select value={storeSettings.topStrip?.direction||"rtl"} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,direction:e.target.value}}))}><option value="rtl">يمين ← يسار</option><option value="ltr">يسار ← يمين</option></select></label><label><span>السرعة</span><input type="number" min="1" value={storeSettings.topStrip?.speed??40} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,speed:asNumber(e.target.value,40)}}))}/></label><label><span>الارتفاع</span><input type="number" min="20" value={storeSettings.topStrip?.height??42} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,height:asNumber(e.target.value,42)}}))}/></label><label><span>حجم الخط</span><input type="number" min="8" value={storeSettings.topStrip?.fontSize??15} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,fontSize:asNumber(e.target.value,15)}}))}/></label></div></div><div className="settings-block"><h3>🖼️ استجابة البانرات</h3><div className="form-grid"><label><span>ارتفاع سطح المكتب</span><input type="number" min="160" value={storeSettings.bannerSettings?.heightDesktop??420} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightDesktop:asNumber(e.target.value,420)}}))}/></label><label><span>ارتفاع التابلت</span><input type="number" min="140" value={storeSettings.bannerSettings?.heightTablet??350} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightTablet:asNumber(e.target.value,350)}}))}/></label><label><span>ارتفاع الموبايل</span><input type="number" min="120" value={storeSettings.bannerSettings?.heightMobile??240} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightMobile:asNumber(e.target.value,240)}}))}/></label><label><span>انحناء الحواف</span><input type="number" min="0" value={storeSettings.bannerSettings?.borderRadius??16} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,borderRadius:asNumber(e.target.value,16)}}))}/></label><label><span>شفافية Overlay</span><input type="number" min="0" max="1" step="0.05" value={storeSettings.bannerSettings?.overlayOpacity??0.35} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,overlayOpacity:asNumber(e.target.value,0.35)}}))}/></label><label><span>تأخير السلايدر</span><input type="number" min="1000" value={storeSettings.bannerSettings?.autoplayDelay??5000} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplayDelay:asNumber(e.target.value,5000)}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.bannerSettings?.autoplay!==false} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplay:e.target.checked}}))}/><span>تشغيل تلقائي</span></label></div></div><div className="settings-block"><h3>⏳ مؤقت عروض اليوم</h3><p style={{marginTop:0,color:"#64748B"}}>العرض يفضل ظاهرًا بعد انتهاء الوقت، لكن يتحول لحالة منتهية وبهتان ولا يمكن التفاعل معه.</p><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.enabled===true} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),enabled:e.target.checked}}))}/><span>تفعيل مؤقت عروض اليوم</span></label><label><span>عنوان المؤقت</span><input value={storeSettings.todayOffersTimer?.title||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),title:e.target.value}}))}/></label><label><span>بداية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.startAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),startAt:e.target.value}}))}/></label><label><span>نهاية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.endAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),endAt:e.target.value}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.showDays!==false} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),showDays:e.target.checked}}))}/><span>إظهار خانة الأيام</span></label></div><div className="info-box" style={{marginTop:12}}>💡 عند وصول العداد للصفر لن يختفي قسم العروض: سيظل موجودًا لكن ببهتان وطبقة تعطيل، مع ظهور «انتهى العرض».</div></div><div className="form-actions"><button type="button" className="save-btn" disabled={saving} onClick={saveSettings}>{saving?"⏳ جاري الحفظ...":"💾 حفظ كل إعدادات المتجر"}</button></div></div></section>;
+  return <section className="admin-card"><div className="section-header"><div><h2>🎨 مظهر المتجر وإعداداته</h2><p>تحكم كامل في الهوية والألوان والنصوص والأشرطة.</p></div></div><div className="settings-tabs"><div className="settings-block"><h3>🏪 البيانات الأساسية</h3><div className="form-grid"><label><span>اسم المتجر</span><input value={storeSettings.storeName||""} onChange={e=>setStoreSettings(p=>({...p,storeName:e.target.value}))}/></label><label><span>لوجو المتجر — رفع ملف</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0]||null;setStoreSettings(p=>({...p,logoFile:file}));}}/><small style={{display:"block",marginTop:6,color:"#64748B"}}>JPG / JPEG / PNG / WEBP — بحد أقصى 5MB</small>{storeSettings.logoFile ? <small style={{display:"block",marginTop:4,color:"#16803C"}}>📥 {storeSettings.logoFile.name} جاهز للرفع</small> : null}{storeSettings.logo ? <img src={storeSettings.logo} alt="Logo preview" style={{display:"block",marginTop:10,maxWidth:180,maxHeight:80,objectFit:"contain",borderRadius:10,border:"1px solid #D9DFE8",padding:6,background:"#fff"}} /> : null}</label><label className="form-group-full"><span>الإعلان الافتراضي</span><textarea rows="3" value={storeSettings.announcement||""} onChange={e=>setStoreSettings(p=>({...p,announcement:e.target.value}))}/></label></div></div><div className="settings-block"><h3>🎨 جميع ألوان الموقع</h3><div className="color-grid">{colors.map(([k,l])=><ColorField key={k} name={k} label={l} value={theme[k]} onChange={e=>setTheme(k,e.target.value)} />)}</div></div><div className="settings-block"><h3>📝 نصوص الموقع</h3><div className="form-grid">{Object.entries(text).map(([k,v])=><label key={k}><span>{textLabel(k)}</span><input value={v||""} onChange={e=>setText(k,e.target.value)}/></label>)}</div></div><div className="settings-block"><h3>📢 الشريط المتحرك الافتراضي</h3><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.topStrip?.enabled!==false} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,enabled:e.target.checked}}))}/><span>إظهار الشريط</span></label><label><span>الاتجاه</span><select value={storeSettings.topStrip?.direction||"rtl"} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,direction:e.target.value}}))}><option value="rtl">يمين ← يسار</option><option value="ltr">يسار ← يمين</option></select></label><label><span>السرعة</span><input type="number" min="1" value={storeSettings.topStrip?.speed??40} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,speed:asNumber(e.target.value,40)}}))}/></label><label><span>الارتفاع</span><input type="number" min="20" value={storeSettings.topStrip?.height??42} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,height:asNumber(e.target.value,42)}}))}/></label><label><span>حجم الخط</span><input type="number" min="8" value={storeSettings.topStrip?.fontSize??15} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,fontSize:asNumber(e.target.value,15)}}))}/></label></div></div><div className="settings-block">
+<h3>📌 الإعلان الثابت فوق الهيدر</h3>
+<p style={{marginTop:0,color:"#64748B"}}>الإعلان يظهر فوق الهيدر في بداية الصفحة، ومع الـ Scroll يختفي لأعلى بينما الهيدر يفضل ثابت فوق الشاشة.</p>
+<div className="form-grid">
+  <label className="admin-checkbox"><input type="checkbox" checked={storeSettings.topHeaderAd?.enabled===true} onChange={e=>setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),enabled:e.target.checked}}))}/><span>تفعيل الإعلان الثابت</span></label>
+  <label className="admin-checkbox"><input type="checkbox" checked={storeSettings.topHeaderAd?.clickable!==false} onChange={e=>setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),clickable:e.target.checked}}))}/><span>الصورة تفتح الرابط عند الضغط</span></label>
+  <label>
+    <span>صورة Desktop — يُفضل 1920 × 150 px — JPG/JPEG</span>
+    <input type="file" accept="image/jpeg,image/jpg" onChange={e=>{const file=e.target.files?.[0]||null;setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),desktopImageFile:file}}));}}/>
+    <small style={{display:"block",marginTop:6,color:"#64748B"}}>أقصى حجم 5MB</small>
+    {storeSettings.topHeaderAd?.desktopImageFile ? <small style={{display:"block",marginTop:4,color:"#16803C"}}>📥 {storeSettings.topHeaderAd.desktopImageFile.name} جاهز للرفع</small> : null}
+    {storeSettings.topHeaderAd?.desktopImage ? <img src={storeSettings.topHeaderAd.desktopImage} alt="Top ad desktop" style={{display:"block",marginTop:10,width:"100%",maxWidth:620,height:70,objectFit:"cover",borderRadius:12,border:"1px solid #D9DFE8"}} /> : null}
+  </label>
+  <label>
+    <span>صورة Mobile — يُفضل 1080 × 220 px — JPG/JPEG</span>
+    <input type="file" accept="image/jpeg,image/jpg" onChange={e=>{const file=e.target.files?.[0]||null;setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),mobileImageFile:file}}));}}/>
+    <small style={{display:"block",marginTop:6,color:"#64748B"}}>اختيارية — لو مش مرفوعة هيستخدم صورة Desktop تلقائيًا</small>
+    {storeSettings.topHeaderAd?.mobileImageFile ? <small style={{display:"block",marginTop:4,color:"#16803C"}}>📱 {storeSettings.topHeaderAd.mobileImageFile.name} جاهزة للرفع</small> : null}
+    {storeSettings.topHeaderAd?.mobileImage ? <img src={storeSettings.topHeaderAd.mobileImage} alt="Top ad mobile" style={{display:"block",marginTop:10,width:"100%",maxWidth:360,height:90,objectFit:"cover",borderRadius:12,border:"1px solid #D9DFE8"}} /> : null}
+  </label>
+  <label><span>رابط الإعلان</span><input dir="ltr" value={storeSettings.topHeaderAd?.link||""} placeholder="/offers أو https://..." onChange={e=>setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),link:e.target.value}}))}/></label>
+  <label><span>ارتفاع Desktop px</span><input type="number" min="40" max="400" value={storeSettings.topHeaderAd?.heightDesktop??150} onChange={e=>setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),heightDesktop:asNumber(e.target.value,150)}}))}/></label>
+  <label><span>ارتفاع Mobile px</span><input type="number" min="40" max="300" value={storeSettings.topHeaderAd?.heightMobile??95} onChange={e=>setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),heightMobile:asNumber(e.target.value,95)}}))}/></label>
+  <label><span>طريقة احتواء الصورة</span><select value={storeSettings.topHeaderAd?.imageFit||"cover"} onChange={e=>setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),imageFit:e.target.value}}))}><option value="cover">ملء المساحة — Cover</option><option value="contain">إظهار الصورة بالكامل — Contain</option></select></label>
+  <label><span>النص البديل للصورة</span><input value={storeSettings.topHeaderAd?.alt||"إعلان المتجر"} onChange={e=>setStoreSettings(p=>({...p,topHeaderAd:{...defaultStoreSettings.topHeaderAd,...(p.topHeaderAd||{}),alt:e.target.value}}))}/></label>
+</div>
+<div className="info-box" style={{marginTop:12}}>💡 المقاس المقترح: <strong>Desktop 1920×150</strong> و<strong>Mobile 1080×220</strong>. الإعلان يختفي مع النزول والهيدر يثبت أعلى الشاشة.</div>
+</div><div className="settings-block"><h3>🖼️ استجابة البانرات</h3><div className="form-grid"><label><span>ارتفاع سطح المكتب</span><input type="number" min="160" value={storeSettings.bannerSettings?.heightDesktop??420} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightDesktop:asNumber(e.target.value,420)}}))}/></label><label><span>ارتفاع التابلت</span><input type="number" min="140" value={storeSettings.bannerSettings?.heightTablet??350} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightTablet:asNumber(e.target.value,350)}}))}/></label><label><span>ارتفاع الموبايل</span><input type="number" min="120" value={storeSettings.bannerSettings?.heightMobile??240} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightMobile:asNumber(e.target.value,240)}}))}/></label><label><span>انحناء الحواف</span><input type="number" min="0" value={storeSettings.bannerSettings?.borderRadius??16} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,borderRadius:asNumber(e.target.value,16)}}))}/></label><label><span>شفافية Overlay</span><input type="number" min="0" max="1" step="0.05" value={storeSettings.bannerSettings?.overlayOpacity??0.35} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,overlayOpacity:asNumber(e.target.value,0.35)}}))}/></label><label><span>تأخير السلايدر</span><input type="number" min="1000" value={storeSettings.bannerSettings?.autoplayDelay??5000} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplayDelay:asNumber(e.target.value,5000)}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.bannerSettings?.autoplay!==false} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplay:e.target.checked}}))}/><span>تشغيل تلقائي</span></label></div></div><div className="settings-block"><h3>⏳ مؤقت عروض اليوم</h3><p style={{marginTop:0,color:"#64748B"}}>العرض يفضل ظاهرًا بعد انتهاء الوقت، لكن يتحول لحالة منتهية وبهتان ولا يمكن التفاعل معه.</p><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.enabled===true} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),enabled:e.target.checked}}))}/><span>تفعيل مؤقت عروض اليوم</span></label><label><span>عنوان المؤقت</span><input value={storeSettings.todayOffersTimer?.title||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),title:e.target.value}}))}/></label><label><span>بداية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.startAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),startAt:e.target.value}}))}/></label><label><span>نهاية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.endAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),endAt:e.target.value}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.showDays!==false} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),showDays:e.target.checked}}))}/><span>إظهار خانة الأيام</span></label></div><div className="info-box" style={{marginTop:12}}>💡 عند وصول العداد للصفر لن يختفي قسم العروض: سيظل موجودًا لكن ببهتان وطبقة تعطيل، مع ظهور «انتهى العرض».</div></div><div className="form-actions"><button type="button" className="save-btn" disabled={saving} onClick={saveSettings}>{saving?"⏳ جاري الحفظ...":"💾 حفظ كل إعدادات المتجر"}</button></div></div></section>;
 }
 
 function mergeGames(defaults, previous, incoming) {
