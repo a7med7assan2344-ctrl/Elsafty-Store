@@ -259,13 +259,21 @@ function Orders() {
   const isPreparing = (order) => {
 
     const status = normalizeStatus(
-      order.status
+      order?.status
+    );
+
+    const orderStatus = normalizeStatus(
+      order?.orderStatus
     );
 
     return (
       status === "قيد التجهيز" ||
       status === "جاري التجهيز" ||
-      status === "preparing"
+      status === "preparing" ||
+
+      orderStatus === "قيد التجهيز" ||
+      orderStatus === "جاري التجهيز" ||
+      orderStatus === "preparing"
     );
 
   };
@@ -277,14 +285,23 @@ function Orders() {
   const isCancelled = (order) => {
 
     const status = normalizeStatus(
-      order.status
+      order?.status
+    );
+
+    const orderStatus = normalizeStatus(
+      order?.orderStatus
     );
 
     return (
       status === "ملغي" ||
       status === "ملغى" ||
       status === "cancelled" ||
-      status === "canceled"
+      status === "canceled" ||
+
+      orderStatus === "ملغي" ||
+      orderStatus === "ملغى" ||
+      orderStatus === "cancelled" ||
+      orderStatus === "canceled"
     );
 
   };
@@ -326,6 +343,27 @@ function Orders() {
   };
 
   // ======================================================
+  // CAN COMPLETE PAYMENT
+  // ======================================================
+
+  const canCompletePayment = (order) => {
+
+    // أثناء تجهيز الطلب لا يمكن تعديل الطلب
+    // ولا يمكن بدء / استكمال عملية دفع جديدة.
+    if (isPreparing(order)) {
+      return false;
+    }
+
+    // الطلب الملغي لا يمكن استكمال دفعه.
+    if (isCancelled(order)) {
+      return false;
+    }
+
+    return true;
+
+  };
+
+  // ======================================================
   // CANCEL ORDER
   // ======================================================
 
@@ -356,7 +394,9 @@ function Orders() {
         ),
         {
           status: "ملغي",
+          orderStatus: "ملغي",
           cancelledAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         }
       );
 
@@ -529,7 +569,16 @@ function Orders() {
 
   const handleEditOrder = (order) => {
 
+    // حماية إضافية حتى لو تم استدعاء الـhandler
+    // مباشرة أثناء تجهيز الطلب.
     if (!canEdit(order)) {
+
+      if (isPreparing(order)) {
+        setMessage(
+          "لا يمكن تعديل الطلب لأنه جاري التجهيز حاليًا."
+        );
+      }
+
       return;
     }
 
@@ -621,6 +670,20 @@ function Orders() {
   // ======================================================
 
   const handlePayment = (order) => {
+
+    // حماية إضافية:
+    // لا تسمح بإكمال الدفع أثناء تجهيز الطلب
+    // أو بعد إلغاء الطلب.
+    if (!canCompletePayment(order)) {
+
+      if (isPreparing(order)) {
+        setMessage(
+          "لا يمكن إكمال الدفع أثناء تجهيز الطلب."
+        );
+      }
+
+      return;
+    }
 
     try {
 
@@ -969,6 +1032,9 @@ function Orders() {
             const cancelable =
               canCancel(order);
 
+            const paymentAllowed =
+              canCompletePayment(order);
+
             const products =
               Array.isArray(order.products)
                 ? order.products
@@ -1082,6 +1148,7 @@ function Orders() {
                   <div>
                     📱{" "}
                     {order.phone ||
+                      order.customerPhone ||
                       "غير محدد"}
                   </div>
 
@@ -1318,113 +1385,141 @@ function Orders() {
                       EDIT
                   ================================================== */}
 
-                  {editable && (
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleEditOrder(
-                          order
-                        )
-                      }
-                      style={{
-                        flex:
-                          "1 1 180px",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        cursor: "pointer",
-                        background: "#1976d2",
-                        color: "#fff",
-                        fontWeight: "700",
-                        fontFamily:
-                          "inherit",
-                      }}
-                    >
-                      ✏️ تعديل الطلب
-                    </button>
-
-                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleEditOrder(
+                        order
+                      )
+                    }
+                    disabled={!editable}
+                    style={{
+                      flex:
+                        "1 1 180px",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      cursor: editable
+                        ? "pointer"
+                        : "not-allowed",
+                      background: editable
+                        ? "#1976d2"
+                        : "#bdbdbd",
+                      color: "#fff",
+                      fontWeight: "700",
+                      fontFamily:
+                        "inherit",
+                      opacity: editable
+                        ? 1
+                        : 0.65,
+                    }}
+                    title={
+                      !editable
+                        ? preparing
+                          ? "لا يمكن تعديل الطلب أثناء التجهيز"
+                          : cancelled
+                            ? "لا يمكن تعديل طلب ملغي"
+                            : ""
+                        : "تعديل الطلب"
+                    }
+                  >
+                    ✏️ تعديل الطلب
+                  </button>
 
                   {/* ==================================================
                       CANCEL
                   ================================================== */}
 
-                  {cancelable && (
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleCancelOrder(
-                          order
-                        )
-                      }
-                      disabled={
-                        cancelingId ===
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCancelOrder(
+                        order
+                      )
+                    }
+                    disabled={
+                      !cancelable ||
+                      cancelingId ===
                         order.id
-                      }
-                      style={{
-                        flex:
-                          "1 1 180px",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        cursor:
-                          cancelingId ===
+                    }
+                    style={{
+                      flex:
+                        "1 1 180px",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      cursor:
+                        cancelable &&
+                        cancelingId !==
                           order.id
-                            ? "not-allowed"
-                            : "pointer",
-                        background: "#e53935",
-                        color: "#fff",
-                        fontWeight: "700",
-                        opacity:
-                          cancelingId ===
+                          ? "pointer"
+                          : "not-allowed",
+                      background:
+                        cancelable
+                          ? "#e53935"
+                          : "#bdbdbd",
+                      color: "#fff",
+                      fontWeight: "700",
+                      opacity:
+                        cancelable &&
+                        cancelingId !==
                           order.id
-                            ? 0.7
-                            : 1,
-                        fontFamily:
-                          "inherit",
-                      }}
-                    >
-                      {cancelingId ===
-                      order.id
-                        ? "جارٍ الإلغاء..."
-                        : "❌ إلغاء الطلب"}
-                    </button>
-
-                  )}
+                          ? 1
+                          : 0.65,
+                      fontFamily:
+                        "inherit",
+                    }}
+                  >
+                    {cancelingId ===
+                    order.id
+                      ? "جارٍ الإلغاء..."
+                      : "❌ إلغاء الطلب"}
+                  </button>
 
                   {/* ==================================================
                       PAYMENT
                   ================================================== */}
 
-                  {!cancelled && (
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handlePayment(
-                          order
-                        )
-                      }
-                      style={{
-                        flex:
-                          "1 1 180px",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "12px",
-                        cursor: "pointer",
-                        background: "#2e7d32",
-                        color: "#fff",
-                        fontWeight: "700",
-                        fontFamily:
-                          "inherit",
-                      }}
-                    >
-                      💳 إكمال الدفع
-                    </button>
-
-                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePayment(
+                        order
+                      )
+                    }
+                    disabled={!paymentAllowed}
+                    style={{
+                      flex:
+                        "1 1 180px",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      cursor: paymentAllowed
+                        ? "pointer"
+                        : "not-allowed",
+                      background: paymentAllowed
+                        ? "#2e7d32"
+                        : "#bdbdbd",
+                      color: "#fff",
+                      fontWeight: "700",
+                      fontFamily:
+                        "inherit",
+                      opacity: paymentAllowed
+                        ? 1
+                        : 0.65,
+                    }}
+                    title={
+                      !paymentAllowed
+                        ? preparing
+                          ? "لا يمكن إكمال الدفع أثناء تجهيز الطلب"
+                          : cancelled
+                            ? "لا يمكن إكمال الدفع لطلب ملغي"
+                            : ""
+                        : "إكمال الدفع"
+                    }
+                  >
+                    💳 إكمال الدفع
+                  </button>
 
                 </div>
 
@@ -1446,8 +1541,8 @@ function Orders() {
                       fontWeight: "600",
                     }}
                   >
-                    🔒 الطلب قيد التجهيز، لذلك لا يمكن
-                    تعديله أو إلغاؤه حاليًا.
+                    🔒 الطلب جاري التجهيز، لذلك لا يمكن
+                    تعديله أو إلغاؤه أو إكمال الدفع حاليًا.
                   </div>
 
                 )}
