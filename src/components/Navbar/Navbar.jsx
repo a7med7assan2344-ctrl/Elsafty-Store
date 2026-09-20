@@ -579,6 +579,8 @@ const normalizeAnnouncementBar = (
     source.title ??
     "";
 
+  const image = String(source.image || source.imageUrl || "").trim();
+
   return {
     ...DEFAULT_ANNOUNCEMENT_BAR,
 
@@ -591,6 +593,8 @@ const normalizeAnnouncementBar = (
 
     content:
       String(rawContent || "").trim(),
+
+    image,
 
     type:
       String(
@@ -1013,9 +1017,7 @@ export default function Navbar() {
               .filter(
                 (bar) =>
                   bar.active === true &&
-                  String(
-                    bar.content || ""
-                  ).trim() !== ""
+                  (String(bar.content || "").trim() !== "" || String(bar.image || "").trim() !== "")
               )
 
               .sort(
@@ -3434,6 +3436,187 @@ export default function Navbar() {
         </div>
 
       </div>
+
+
+      {/* =================================================
+          ANNOUNCEMENT BARS
+
+          ADMIN / FIRESTORE ONLY
+
+          IMPORTANT:
+          - OUTSIDE FIXED HEADER
+          - SCROLLS WITH PAGE
+          - COLORS FROM ADMIN
+          - SPEED FROM ADMIN
+          - FONT FROM ADMIN
+          - HEIGHT FROM ADMIN
+          - DIRECTION FROM ADMIN
+          - TYPE FROM ADMIN
+      ================================================= */}
+
+      {announcementBars.length >
+        0 && (
+        <div
+          className="navbar-admin-announcement-wrapper"
+        >
+
+          {announcementBars.map(
+            (bar) => {
+              const type =
+                String(
+                  bar.type ||
+                    "marquee"
+                ).toLowerCase();
+
+              const speed =
+                Math.max(
+                  1,
+                  Number(
+                    bar.speed ||
+                      40
+                  )
+                );
+
+              const direction =
+                bar.direction ===
+                "ltr"
+                  ? "ltr"
+                  : "rtl";
+
+              const isStatic =
+                type ===
+                  "static" ||
+                type ===
+                  "normal" ||
+                type ===
+                  "fixed";
+
+
+              const announcementStyle = {
+                height:
+                  `${Math.max(
+                    25,
+                    Number(
+                      bar.height ||
+                        42
+                    )
+                  )}px`,
+              };
+
+
+              /*
+                مهم:
+                مفيش background أو color أو font
+                ثابت هنا.
+                لو الأدمن حددهم Firestore هيطبقهم.
+              */
+
+              if (
+                bar.backgroundColor
+              ) {
+                announcementStyle.backgroundColor =
+                  bar.backgroundColor;
+              }
+
+              if (
+                bar.textColor
+              ) {
+                announcementStyle.color =
+                  bar.textColor;
+              }
+
+              if (
+                bar.fontFamily
+              ) {
+                announcementStyle.fontFamily =
+                  bar.fontFamily;
+              }
+
+              if (
+                Number.isFinite(
+                  Number(
+                    bar.fontSize
+                  )
+                )
+              ) {
+                announcementStyle.fontSize =
+                  `${Number(
+                    bar.fontSize
+                  )}px`;
+              }
+
+
+              const contentStyle = {};
+
+              if (
+                bar.textColor
+              ) {
+                contentStyle.color =
+                  bar.textColor;
+              }
+
+              if (
+                bar.fontFamily
+              ) {
+                contentStyle.fontFamily =
+                  bar.fontFamily;
+              }
+
+              if (
+                Number.isFinite(
+                  Number(
+                    bar.fontSize
+                  )
+                )
+              ) {
+                contentStyle.fontSize =
+                  `${Number(
+                    bar.fontSize
+                  )}px`;
+              }
+
+
+              return (
+                <div
+                  key={
+                    bar.id
+                  }
+                  className="navbar-admin-announcement"
+                  data-type={
+                    isStatic
+                      ? "static"
+                      : "marquee"
+                  }
+                  data-direction={
+                    direction
+                  }
+                  style={
+                    announcementStyle
+                  }
+                  dir={
+                    direction
+                  }
+                >
+
+                  {(() => {
+                    const media = bar.image ? <img src={bar.image} alt={bar.content || "إعلان"} style={{ height: "100%", maxHeight: `${Math.max(19, Number(bar.height || 42) - 6)}px`, width: "auto", maxWidth: "92vw", objectFit: "contain", display: "block", borderRadius: 6 }} /> : bar.content;
+                    const node = bar.link ? <button type="button" className="navbar-admin-announcement-content" style={{ ...contentStyle, border: 0, background: "transparent", cursor: "pointer" }} onClick={() => handleAnnouncementClick(bar)}>{media}</button> : <span className="navbar-admin-announcement-content" style={contentStyle}>{media}</span>;
+                    const repeated = bar.link ? node : <>{node}<span className="navbar-admin-announcement-content" style={contentStyle} aria-hidden="true">{media}</span></>;
+                    return isStatic ? node : (
+                      <div className="navbar-admin-announcement-track" style={{ animationDuration: `${speed}s`, animationName: direction === "ltr" ? "navbarAdminAnnouncementLTR" : "navbarAdminAnnouncementRTL" }}>
+                        {repeated}
+                        {bar.image && (bar.link ? <button type="button" className="navbar-admin-announcement-content" style={{ ...contentStyle, border: 0, background: "transparent", cursor: "pointer" }} onClick={() => handleAnnouncementClick(bar)} aria-hidden="true" tabIndex={-1}>{media}</button> : <span className="navbar-admin-announcement-content" style={contentStyle} aria-hidden="true">{media}</span>)}
+                      </div>
+                    );
+                  })()}
+
+                </div>
+              );
+            }
+          )}
+
+        </div>
+      )}
 
 
       {/* =================================================
