@@ -221,6 +221,139 @@ const getContrastTextColor = (color) => {
 };
 
 // =====================================================
+// CATEGORY HELPERS
+// =====================================================
+// التصنيفات هنا هي نفس التصنيفات التي يحفظها Admin في
+// Firestore > categories.
+// ندعم كذلك أسماء الحقول القديمة/البديلة حتى لا تختفي
+// أي تصنيفات بسبب اختلاف اسم الحقل.
+
+const normalizeCategoryParentId = (category = {}) => {
+  const direct =
+    category?.parentId ??
+    category?.parentCategoryId ??
+    category?.parentID ??
+    category?.parent;
+
+  if (direct && typeof direct === "object") {
+    return String(
+      direct?.id ??
+      direct?.categoryId ??
+      direct?.value ??
+      ""
+    ).trim();
+  }
+
+  return String(direct ?? "").trim();
+};
+
+const normalizeCategory = (category = {}, id = "") => {
+  const raw = category || {};
+
+  const normalizedId = String(
+    id ||
+    raw?.id ||
+    raw?.categoryId ||
+    raw?.docId ||
+    ""
+  ).trim();
+
+  const name = String(
+    raw?.name ??
+    raw?.title ??
+    raw?.label ??
+    raw?.categoryName ??
+    ""
+  ).trim();
+
+  const image = String(
+    raw?.image ??
+    raw?.imageUrl ??
+    raw?.photo ??
+    raw?.thumbnail ??
+    raw?.iconImage ??
+    ""
+  ).trim();
+
+  const link = String(
+    raw?.link ??
+    raw?.url ??
+    raw?.path ??
+    raw?.route ??
+    raw?.href ??
+    ""
+  ).trim();
+
+  const parentId = normalizeCategoryParentId(raw);
+
+  const sortOrder = Number(
+    raw?.sortOrder ??
+    raw?.order ??
+    raw?.displayOrder ??
+    raw?.position ??
+    0
+  );
+
+  const active =
+    raw?.active !== false &&
+    raw?.enabled !== false &&
+    raw?.visible !== false;
+
+  return {
+    ...raw,
+    id: normalizedId,
+    name,
+    image,
+    link,
+    parentId: parentId || "",
+    sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+    active,
+    color:
+      raw?.color ||
+      raw?.categoryColor ||
+      "",
+    cardSize:
+      raw?.cardSize ||
+      raw?.size ||
+      "",
+    whatsapp:
+      raw?.whatsapp ||
+      raw?.whatsApp ||
+      raw?.phone ||
+      "",
+  };
+};
+
+const normalizeCategoryList = (items = []) => {
+  return (Array.isArray(items) ? items : [])
+    .map((item) =>
+      normalizeCategory(
+        item?.data || item,
+        item?.id || ""
+      )
+    )
+    .filter(
+      (category) =>
+        category.active === true &&
+        Boolean(category.id || category.name)
+    )
+    .sort((a, b) => {
+      const orderDifference =
+        Number(a?.sortOrder || 0) -
+        Number(b?.sortOrder || 0);
+
+      if (orderDifference !== 0) {
+        return orderDifference;
+      }
+
+      return String(a?.name || "").localeCompare(
+        String(b?.name || ""),
+        "ar"
+      );
+    });
+};
+
+// =====================================================
 // HOME
 // =====================================================
 
@@ -234,6 +367,13 @@ function Home({
   const navigate = useNavigate();
 
   const productsRef = useRef(null);
+  const categoriesSliderRef = useRef(null);
+  const categoryDragRef = useRef({
+    active: false,
+    startX: 0,
+    startScroll: 0,
+    moved: false,
+  });
 
   const spinTimerRef = useRef(null);
 
@@ -416,6 +556,8 @@ function Home({
   const [supportRecording, setSupportRecording] = useState(false);
   const [supportEmojiOpen, setSupportEmojiOpen] = useState(false);
   const [supportRecordSeconds, setSupportRecordSeconds] = useState(0);
+  const [supportSearch, setSupportSearch] = useState("");
+  const [supportPinnedId, setSupportPinnedId] = useState(null);
   const supportFileRef = useRef(null);
   const supportRecorderRef = useRef(null);
   const supportRecordChunksRef = useRef([]);
@@ -1483,49 +1625,134 @@ function Home({
   const rootCategories =
     useMemo(() => {
       return (categories || [])
-        .filter(
-          (category) =>
-            !category?.parentId ||
-            category.parentId ===
-              null ||
-            category.parentId === ""
-        )
+        .filter((category) => {
+          const parentId =
+            normalizeCategoryParentId(category);
+
+          return !parentId;
+        })
         .slice()
-        .sort(
-          (a, b) =>
-            Number(
-              a?.sortOrder ?? 0
-            ) -
-            Number(
-              b?.sortOrder ?? 0
-            )
-        );
+        .sort((a, b) => {
+          const orderDifference =
+            Number(a?.sortOrder ?? 0) -
+            Number(b?.sortOrder ?? 0);
+
+          if (orderDifference !== 0) {
+            return orderDifference;
+          }
+
+          return String(a?.name || "").localeCompare(
+            String(b?.name || ""),
+            "ar"
+          );
+        });
     }, [categories]);
+
+  // ===================================================
+  // MAIN CATEGORIES SLIDER
+  // ===================================================
+
+  const mainCategoryItems =
+    rootCategories.length > 0
+      ? rootCategories
+      : categories || [];
+
+  const scrollMainCategories = (direction) => {
+    const element = categoriesSliderRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const distance = Math.max(
+      220,
+      Math.min(360, element.clientWidth * 0.72)
+    );
+
+    element.scrollBy({
+      left: direction === "next" ? -distance : distance,
+      behavior: "smooth",
+    });
+  };
+
+  const handleCategoryPointerDown = (event) => {
+    const element = categoriesSliderRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    categoryDragRef.current = {
+      active: true,
+      startX: event.clientX,
+      startScroll: element.scrollLeft,
+      moved: false,
+    };
+
+    if (event.currentTarget.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  };
+
+  const handleCategoryPointerMove = (event) => {
+    const element = categoriesSliderRef.current;
+    const drag = categoryDragRef.current;
+
+    if (!element || !drag.active) {
+      return;
+    }
+
+    const delta = event.clientX - drag.startX;
+
+    if (Math.abs(delta) > 5) {
+      drag.moved = true;
+    }
+
+    element.scrollLeft = drag.startScroll - delta;
+  };
+
+  const handleCategoryPointerUp = (event) => {
+    categoryDragRef.current.active = false;
+
+    if (
+      event?.currentTarget?.releasePointerCapture &&
+      event?.pointerId != null
+    ) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch (_) {
+        // Pointer capture may already be released.
+      }
+    }
+  };
 
   // ===================================================
   // LOAD CATEGORIES FROM ADMIN / FIRESTORE
   // ===================================================
+  // مهم:
+  // - يقرأ collection categories مباشرة من نفس المكان الذي
+  //   يحفظ فيه Admin التصنيفات.
+  // - يدعم parentId / color / whatsapp / cardSize والصور
+  //   والروابط التي يضيفها الأدمن.
+  // - أي تغيير في الأدمن يظهر لحظيًا بسبب onSnapshot.
+  // ===================================================
 
   useEffect(() => {
+    const categoriesRef =
+      collection(db, "categories");
+
     const unsubscribe = onSnapshot(
-      collection(db, "categories"),
+      categoriesRef,
       (snapshot) => {
-        setCategories(
-          snapshot.docs
-            .map((item) => ({
+        const nextCategories =
+          normalizeCategoryList(
+            snapshot.docs.map((item) => ({
               id: item.id,
               ...(item.data() || {}),
             }))
-            .filter(
-              (category) =>
-                category?.active !== false
-            )
-            .sort(
-              (x, y) =>
-                Number(x?.sortOrder ?? 0) -
-                Number(y?.sortOrder ?? 0)
-            )
-        );
+          );
+
+        setCategories(nextCategories);
       },
       (error) => {
         console.error(
@@ -1545,34 +1772,84 @@ function Home({
 
   const getChildCategories =
     (parentId) => {
-      if (!parentId) {
+      const normalizedParentId =
+        String(parentId || "").trim();
+
+      if (!normalizedParentId) {
         return [];
       }
 
       return (categories || [])
         .filter(
           (category) =>
-            String(
-              category?.parentId ||
-                ""
-            ) ===
-            String(parentId)
+            normalizeCategoryParentId(category) ===
+            normalizedParentId
         )
         .slice()
-        .sort(
-          (a, b) =>
-            Number(
-              a?.sortOrder ?? 0
-            ) -
-            Number(
-              b?.sortOrder ?? 0
-            )
-        );
+        .sort((a, b) => {
+          const orderDifference =
+            Number(a?.sortOrder ?? 0) -
+            Number(b?.sortOrder ?? 0);
+
+          if (orderDifference !== 0) {
+            return orderDifference;
+          }
+
+          return String(a?.name || "").localeCompare(
+            String(b?.name || ""),
+            "ar"
+          );
+        });
     };
 
   // ===================================================
+  // ALL CATEGORY DESCENDANTS
+  // ===================================================
+
+  const getCategoryTreeIds =
+    (categoryId) => {
+      const rootId =
+        String(categoryId || "").trim();
+
+      if (!rootId) {
+        return [];
+      }
+
+      const ids = new Set([rootId]);
+      let changed = true;
+
+      while (changed) {
+        changed = false;
+
+        (categories || []).forEach((category) => {
+          const currentId =
+            String(category?.id || "").trim();
+
+          const parentId =
+            normalizeCategoryParentId(category);
+
+          if (
+            currentId &&
+            parentId &&
+            ids.has(parentId) &&
+            !ids.has(currentId)
+          ) {
+            ids.add(currentId);
+            changed = true;
+          }
+        });
+      }
+
+      return Array.from(ids);
+    };
+
+// ===================================================
   // CATEGORY PRODUCTS
   // ===================================================
+  // المنتج ممكن يكون مربوط بالتصنيف عن طريق:
+  // categoryId أو category أو categoryName أو categoryIds.
+  // ولو التصنيف أب له تصنيفات فرعية، يظهر أيضًا منتجات
+  // التصنيفات الفرعية داخل قسم الأب.
 
   const getCategoryProducts =
     (category) => {
@@ -1581,48 +1858,129 @@ function Home({
       }
 
       const categoryId =
-        String(
-          category?.id || ""
-        );
+        String(category?.id || "").trim();
 
       const categoryName =
         String(
-          category?.name || ""
+          category?.name ||
+          category?.title ||
+          ""
         )
           .trim()
           .toLowerCase();
+
+      const categoryIds = new Set(
+        getCategoryTreeIds(categoryId)
+      );
+
+      const categoryNames = new Set(
+        (categories || [])
+          .filter((item) => {
+            const itemId =
+              String(item?.id || "").trim();
+
+            return categoryIds.has(itemId);
+          })
+          .map((item) =>
+            String(
+              item?.name ||
+              item?.title ||
+              ""
+            )
+              .trim()
+              .toLowerCase()
+          )
+          .filter(Boolean)
+      );
+
+      if (categoryName) {
+        categoryNames.add(categoryName);
+      }
 
       return (visibleProducts || []).filter(
         (product) => {
           const productCategoryId =
             String(
               product?.categoryId ||
-                ""
-            );
+              product?.categoryID ||
+              product?.category_id ||
+              ""
+            ).trim();
 
           const productCategory =
             String(
               product?.category ||
-                ""
+              product?.categoryName ||
+              product?.categoryTitle ||
+              ""
             )
               .trim()
               .toLowerCase();
 
+          const productCategoryIds =
+            Array.isArray(product?.categoryIds)
+              ? product.categoryIds
+              : Array.isArray(product?.categories)
+                ? product.categories
+                : [];
+
+          const matchesId =
+            Boolean(productCategoryId) &&
+            categoryIds.has(productCategoryId);
+
+          const matchesName =
+            Boolean(productCategory) &&
+            categoryNames.has(productCategory);
+
+          const matchesArray =
+            productCategoryIds.some((item) => {
+              if (item && typeof item === "object") {
+                const itemId =
+                  String(
+                    item?.id ||
+                    item?.categoryId ||
+                    ""
+                  ).trim();
+
+                const itemName =
+                  String(
+                    item?.name ||
+                    item?.title ||
+                    ""
+                  )
+                    .trim()
+                    .toLowerCase();
+
+                return (
+                  (itemId && categoryIds.has(itemId)) ||
+                  (itemName && categoryNames.has(itemName))
+                );
+              }
+
+              const value =
+                String(item || "").trim();
+
+              return (
+                (value && categoryIds.has(value)) ||
+                (value && categoryNames.has(value.toLowerCase()))
+              );
+            });
+
           return (
-            (categoryId &&
-              productCategoryId ===
-                categoryId) ||
-            (categoryName &&
-              productCategory ===
-                categoryName)
+            matchesId ||
+            matchesName ||
+            matchesArray
           );
         }
       );
     };
 
   // ===================================================
-  // OPEN CATEGORY
+  // OPEN CATEGORY / ADMIN CATEGORY LINK
   // ===================================================
+  // الأولوية للـ link الذي يحدده الأدمن.
+  // لو مفيش رابط، نفتح Route التصنيف بالـ ID.
+  // الروابط الخارجية تفتح بشكل طبيعي.
 
   const openCategory =
     (category) => {
@@ -1630,11 +1988,62 @@ function Home({
         return;
       }
 
+      const categoryLink =
+        String(
+          category?.link ||
+          category?.url ||
+          category?.path ||
+          category?.route ||
+          category?.href ||
+          ""
+        ).trim();
+
+      if (categoryLink) {
+        if (
+          /^https?:\/\//i.test(
+            categoryLink
+          )
+        ) {
+          window.location.href =
+            categoryLink;
+          return;
+        }
+
+        if (
+          categoryLink.startsWith("#")
+        ) {
+          const element =
+            document.querySelector(
+              categoryLink
+            );
+
+          if (element) {
+            element.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+            return;
+          }
+        }
+
+        navigate(categoryLink);
+        return;
+      }
+
       const categoryId =
-        category?.id;
+        String(
+          category?.id ||
+          category?.categoryId ||
+          ""
+        ).trim();
 
       const categoryName =
-        category?.name;
+        String(
+          category?.name ||
+          category?.title ||
+          category?.label ||
+          ""
+        ).trim();
 
       if (categoryId) {
         navigate(
@@ -1642,7 +2051,6 @@ function Home({
             categoryId
           )}`
         );
-
         return;
       }
 
@@ -1656,49 +2064,126 @@ function Home({
     };
 
   // ===================================================
+  // FIND CATEGORY FROM NAVBAR / LINKS
+  // ===================================================
+
+  const findCategory =
+    (value) => {
+      const normalizedValue =
+        String(value ?? "").trim();
+
+      if (!normalizedValue) {
+        return null;
+      }
+
+      const lowerValue =
+        normalizedValue.toLowerCase();
+
+      return (
+        (categories || []).find(
+          (item) => {
+            const id =
+              String(
+                item?.id ||
+                item?.categoryId ||
+                ""
+              ).trim();
+
+            const name =
+              String(
+                item?.name ||
+                item?.title ||
+                item?.label ||
+                ""
+              )
+                .trim()
+                .toLowerCase();
+
+            const slug =
+              String(
+                item?.slug ||
+                ""
+              )
+                .trim()
+                .toLowerCase();
+
+            return (
+              id === normalizedValue ||
+              name === lowerValue ||
+              slug === lowerValue
+            );
+          }
+        ) || null
+      );
+    };
+
+  // ===================================================
   // NAVBAR CATEGORY EVENT
   // ===================================================
 
   useEffect(() => {
     const filterListener =
       (event) => {
-        const categoryValue =
+        const detail =
           event?.detail;
+
+        const categoryValue =
+          detail &&
+          typeof detail === "object"
+            ? (
+                detail?.categoryId ??
+                detail?.id ??
+                detail?.name ??
+                detail?.value ??
+                detail?.slug ??
+                ""
+              )
+            : detail;
 
         if (
           !categoryValue ||
-          categoryValue === "الكل"
+          String(categoryValue).trim() ===
+            "الكل"
         ) {
           setSelectedCategory(
             "الكل"
           );
-
           return;
         }
 
-        const value =
-          String(
-            categoryValue
-          );
-
         const foundCategory =
-          (categories || []).find(
-            (item) =>
-              String(
-                item?.id || ""
-              ) === value ||
-              String(
-                item?.name || ""
-              )
-                .trim() ===
-                value.trim()
+          findCategory(
+            categoryValue
           );
 
         if (foundCategory) {
           openCategory(
             foundCategory
           );
+          return;
+        }
 
+        const value =
+          String(
+            categoryValue
+          ).trim();
+
+        if (!value) {
+          return;
+        }
+
+        if (
+          /^https?:\/\//i.test(value)
+        ) {
+          window.location.href =
+            value;
+          return;
+        }
+
+        if (
+          value.startsWith("/")
+        ) {
+          navigate(value);
           return;
         }
 
@@ -1725,7 +2210,7 @@ function Home({
     navigate,
   ]);
 
-  // ===================================================
+// ===================================================
   // SCROLL
   // ===================================================
 
@@ -3041,6 +3526,9 @@ function Home({
         storeSettings={storeSettings}
         storeMenuItems={storeMenuItems}
         theme={theme}
+        categories={categories}
+        rootCategories={rootCategories}
+        getChildCategories={getChildCategories}
         setSelectedCategory={
           setSelectedCategory
         }
@@ -3283,6 +3771,192 @@ function Home({
       ================================================= */}
 
       <main className="jumia-main">
+
+        {/* =================================================
+            QUICK CATEGORIES
+        ================================================= */}
+
+        <section className="jumia-section quick-shop-section main-categories-slider-section">
+          <div className="jumia-section-title">
+            <h2>
+              {texts.categoriesTitle}
+            </h2>
+          </div>
+
+          <div className="main-categories-slider-wrap">
+
+            <div
+              ref={categoriesSliderRef}
+              className="jumia-categories main-categories-slider"
+              onPointerDown={handleCategoryPointerDown}
+              onPointerMove={handleCategoryPointerMove}
+              onPointerUp={handleCategoryPointerUp}
+              onPointerCancel={handleCategoryPointerUp}
+            >
+            {mainCategoryItems.length > 0 ? (
+              mainCategoryItems.map((category) => {
+                const children =
+                  getChildCategories(
+                    category?.id
+                  );
+
+                const categoryProducts =
+                  getCategoryProducts(
+                    category
+                  );
+
+                const categoryName =
+                  category?.name ||
+                  category?.title ||
+                  category?.label ||
+                  texts.categoryEmptyTitle;
+
+                const categoryImage =
+                  category?.image ||
+                  category?.imageUrl ||
+                  category?.photo ||
+                  category?.thumbnail ||
+                  "";
+
+                const childCount =
+                  children.length;
+
+                const itemCount =
+                  categoryProducts.length;
+
+                return (
+                  <button
+                    type="button"
+                    key={
+                      category?.id ||
+                      category?.name ||
+                      category?.title
+                    }
+                    className="store-choice-card"
+                    style={{
+                      ...getCategoryCardStyle(
+                        category
+                      ),
+                      ...(category?.cardSize
+                        ? {
+                            "--category-card-size":
+                              String(
+                                category.cardSize
+                              ),
+                          }
+                        : {}),
+                    }}
+                    onClick={() =>
+                      openCategory(
+                        category
+                      )
+                    }
+                    aria-label={`فتح تصنيف ${categoryName}`}
+                  >
+                    <div className="store-choice-image">
+                      {categoryImage ? (
+                        <img
+                          src={categoryImage}
+                          alt={categoryName}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span>
+                          {category?.icon ||
+                            "📦"}
+                        </span>
+                      )}
+                    </div>
+
+                    <strong>
+                      {categoryName}
+                    </strong>
+
+                    <small>
+                      {childCount > 0
+                        ? `${childCount} قسم فرعي`
+                        : itemCount > 0
+                          ? `${itemCount} منتج`
+                          : texts.viewAll}
+                    </small>
+                  </button>
+                );
+              })
+            ) : categories.length > 0 ? (
+              categories.map((category) => {
+                const categoryName =
+                  category?.name ||
+                  category?.title ||
+                  category?.label ||
+                  texts.categoryEmptyTitle;
+
+                const categoryImage =
+                  category?.image ||
+                  category?.imageUrl ||
+                  category?.photo ||
+                  category?.thumbnail ||
+                  "";
+
+                return (
+                  <button
+                    type="button"
+                    key={
+                      category?.id ||
+                      categoryName
+                    }
+                    className="store-choice-card"
+                    style={getCategoryCardStyle(
+                      category
+                    )}
+                    onClick={() =>
+                      openCategory(
+                        category
+                      )
+                    }
+                    aria-label={`فتح تصنيف ${categoryName}`}
+                  >
+                    <div className="store-choice-image">
+                      {categoryImage ? (
+                        <img
+                          src={categoryImage}
+                          alt={categoryName}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span>
+                          {category?.icon ||
+                            "📦"}
+                        </span>
+                      )}
+                    </div>
+
+                    <strong>
+                      {categoryName}
+                    </strong>
+
+                    <small>
+                      {texts.viewAll}
+                    </small>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="store-empty-choice">
+                <div>📂</div>
+
+                <h3>
+                  {texts.categoryEmptyTitle}
+                </h3>
+
+                <p>
+                  {texts.categoryEmptyText}
+                </p>
+              </div>
+            )}
+            </div>
+          </div>
+        </section>
+
 
         {/* =================================================
             HERO
@@ -4545,98 +5219,6 @@ function Home({
 
 
         {/* =================================================
-            QUICK CATEGORIES
-        ================================================= */}
-
-        <section className="jumia-section quick-shop-section">
-          <div className="jumia-section-title">
-            <h2>
-              {texts.categoriesTitle}
-            </h2>
-
-          </div>
-
-          <div className="jumia-categories">
-            {rootCategories.length >
-            0 ? (
-                rootCategories.map((category) => {
-                  const children =
-                    getChildCategories(
-                      category?.id
-                    );
-
-                  const categoryProducts =
-                    getCategoryProducts(
-                      category
-                    );
-
-                  return (
-                    <button
-                      type="button"
-                      key={
-                        category?.id ||
-                        category?.name
-                      }
-                      className="store-choice-card"
-                      style={getCategoryCardStyle(
-                        category
-                      )}
-                      onClick={() =>
-                        openCategory(
-                          category
-                        )
-                      }
-                    >
-                      <div className="store-choice-image">
-                        {category?.image ? (
-                          <img
-                            src={
-                              category.image
-                            }
-                            alt={
-                              category?.name ||
-                              texts.categoryEmptyTitle
-                            }
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span>
-                            {category?.icon ||
-                              "📦"}
-                          </span>
-                        )}
-                      </div>
-
-                      <strong>
-                        {category?.name ||
-                          texts.categoryEmptyTitle}
-                      </strong>
-
-                      <small>
-                        {children.length >
-                        0
-                          ? `${children.length} قسم فرعي`
-                          : categoryProducts.length >
-                              0
-                            ? `${categoryProducts.length} منتج`
-                            : texts.viewAll}
-                      </small>
-                    </button>
-                  );
-                })
-            ) : (
-              <div className="store-empty-choice">
-                <div>📂</div>
-
-                <h3>{texts.categoryEmptyTitle}</h3>
-
-                <p>{texts.categoryEmptyText}</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* =================================================
             TODAY OFFERS
         ================================================= */}
 
@@ -4998,296 +5580,185 @@ function Home({
       </main>
 
       {/* =================================================
-          PREMIUM INTERNAL CUSTOMER SERVICE CHAT
+          PREMIUM WORLD-CLASS CUSTOMER SERVICE CHAT
       ================================================= */}
-      {supportOpen && (
-        <div
-          id="customer-support-chat"
-          role="dialog"
-          aria-modal="true"
-          aria-label="خدمة العملاء"
-          dir="rtl"
-          style={{
-            position: "fixed",
-            right: 18,
-            bottom: 88,
-            zIndex: 10020,
-            width: "min(420px, calc(100vw - 24px))",
-            height: "min(650px, calc(100vh - 105px))",
-            minHeight: 480,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            borderRadius: 26,
-            background: "#fff",
-            border: "1px solid rgba(212,175,55,.35)",
-            boxShadow: "0 28px 90px rgba(7,26,54,.30), 0 8px 28px rgba(7,26,54,.12)",
-            animation: "sawaSupportChatIn .22s ease-out",
-          }}
-        >
-          <style>{`
-            @keyframes sawaSupportChatIn {
-              from { opacity: 0; transform: translateY(16px) scale(.97); }
-              to { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @keyframes sawaSupportDot {
-              0%, 60%, 100% { transform: translateY(0); opacity: .45; }
-              30% { transform: translateY(-3px); opacity: 1; }
-            }
-            #customer-support-chat * { box-sizing: border-box; }
-            #customer-support-chat .sawa-support-scroll::-webkit-scrollbar { width: 6px; }
-            #customer-support-chat .sawa-support-scroll::-webkit-scrollbar-thumb { background: rgba(7,26,54,.18); border-radius: 99px; }
-            @media (max-width: 560px) {
-              #customer-support-chat {
-                right: 8px !important;
-                left: 8px !important;
-                bottom: 76px !important;
-                width: auto !important;
-                height: min(690px, calc(100vh - 88px)) !important;
-                min-height: 0 !important;
-                border-radius: 22px !important;
-              }
-            }
-          `}</style>
+      {supportOpen && (() => {
+        const supportUnreadCount = supportMessages.filter((message) =>
+          (message.sender === "admin" || message.senderRole === "admin") &&
+          message.readByCustomer !== true &&
+          message.deletedByCustomer !== true
+        ).length;
 
-          {/* Header */}
+        const filteredSupportMessages = supportSearch.trim()
+          ? supportMessages.filter((message) =>
+              String(message.message || message.text || "")
+                .toLowerCase()
+                .includes(supportSearch.trim().toLowerCase())
+            )
+          : supportMessages;
+
+        const pinnedSupportMessage = supportPinnedId
+          ? supportMessages.find((message) => message.id === supportPinnedId)
+          : null;
+
+        const customerDisplayName =
+          supportCustomerName.trim() ||
+          currentUser?.displayName ||
+          "ضيف ســـــَــــــــوا";
+
+        return (
           <div
+            id="customer-support-chat"
+            role="dialog"
+            aria-modal="true"
+            aria-label="خدمة العملاء"
+            dir="rtl"
             style={{
-              position: "relative",
+              position: "fixed",
+              right: 18,
+              bottom: 88,
+              zIndex: 10020,
+              width: "min(455px, calc(100vw - 24px))",
+              height: "min(720px, calc(100vh - 105px))",
+              minHeight: 520,
+              display: "flex",
+              flexDirection: "column",
               overflow: "hidden",
-              padding: "17px 16px 16px",
-              color: "#fff",
-              background: `linear-gradient(135deg, ${theme?.headerBackground || theme?.primary || "#071A36"} 0%, ${theme?.secondary || "#0B1F3A"} 68%, #102C4F 100%)`,
+              borderRadius: 28,
+              background: "#F7F9FC",
+              border: "1px solid rgba(212,175,55,.28)",
+              boxShadow: "0 32px 100px rgba(7,26,54,.30), 0 10px 35px rgba(7,26,54,.12)",
+              animation: "sawaSupportChatIn .24s cubic-bezier(.2,.8,.2,1)",
             }}
           >
-            <div style={{ position: "absolute", width: 150, height: 150, borderRadius: "50%", background: "rgba(212,175,55,.12)", left: -55, top: -80 }} />
-            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 11 }}>
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  flex: "0 0 48px",
-                  borderRadius: 16,
-                  display: "grid",
-                  placeItems: "center",
-                  background: `linear-gradient(145deg, ${theme?.accent || "#D4AF37"}, ${theme?.accentSecondary || "#F4D06F"})`,
-                  color: theme?.primary || "#071A36",
-                  fontSize: 24,
-                  boxShadow: "0 8px 22px rgba(0,0,0,.20)",
-                }}
-              >
-                💬
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <strong style={{ display: "block", fontSize: 18, lineHeight: 1.35 }}>خدمة العملاء</strong>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, fontSize: 12, opacity: .86 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#38D996", boxShadow: "0 0 0 4px rgba(56,217,150,.12)" }} />
-                  <span>متاحين لمساعدتك</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSupportOpen(false)}
-                aria-label="إغلاق الشات"
-                style={{ width: 36, height: 36, flex: "0 0 36px", border: "1px solid rgba(255,255,255,.16)", borderRadius: 12, background: "rgba(255,255,255,.10)", color: "#fff", cursor: "pointer", fontSize: 22, lineHeight: 1 }}
-              >×</button>
-            </div>
-            <div style={{ position: "relative", marginTop: 13, padding: "9px 11px", borderRadius: 12, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.08)", fontSize: 12, lineHeight: 1.6, color: "rgba(255,255,255,.88)" }}>
-              👋 أهلاً بيك! ابعت سؤالك وإحنا هنساعدك بأسرع وقت.
-            </div>
-          </div>
+            <style>{`
+              @keyframes sawaSupportChatIn { from { opacity: 0; transform: translateY(18px) scale(.965); } to { opacity: 1; transform: translateY(0) scale(1); } }
+              @keyframes sawaSupportDot { 0%,60%,100% { transform: translateY(0); opacity:.42 } 30% { transform: translateY(-4px); opacity:1 } }
+              @keyframes sawaSupportPulse { 0%,100% { box-shadow:0 0 0 0 rgba(56,217,150,.22) } 50% { box-shadow:0 0 0 7px rgba(56,217,150,0) } }
+              @keyframes sawaSupportMessageIn { from { opacity:0; transform:translateY(5px) } to { opacity:1; transform:translateY(0) } }
+              #customer-support-chat * { box-sizing:border-box; }
+              #customer-support-chat button { -webkit-tap-highlight-color:transparent; }
+              #customer-support-chat .sawa-support-scroll { scrollbar-width:thin; scrollbar-color:rgba(7,26,54,.18) transparent; }
+              #customer-support-chat .sawa-support-scroll::-webkit-scrollbar { width:6px; }
+              #customer-support-chat .sawa-support-scroll::-webkit-scrollbar-thumb { background:rgba(7,26,54,.18); border-radius:99px; }
+              @media (max-width:560px) {
+                #customer-support-chat { right:8px !important; left:8px !important; bottom:76px !important; width:auto !important; height:min(720px,calc(100vh - 88px)) !important; min-height:0 !important; border-radius:23px !important; }
+              }
+            `}</style>
 
-          {/* Messages */}
-          <div
-            className="sawa-support-scroll"
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: "auto",
-              padding: "18px 14px 16px",
-              background: "linear-gradient(180deg,#F7F9FC 0%,#F2F5F9 100%)",
-            }}
-          >
-            {supportMessages.length === 0 ? (
-              <div style={{ height: "100%", minHeight: 270, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24 }}>
-                <div style={{ maxWidth: 300 }}>
-                  <div style={{ width: 76, height: 76, margin: "0 auto 14px", borderRadius: 24, display: "grid", placeItems: "center", fontSize: 37, background: `linear-gradient(145deg, ${theme?.accent || "#D4AF37"}22, ${theme?.accent || "#D4AF37"}44)`, border: `1px solid ${theme?.accent || "#D4AF37"}55` }}>👋</div>
-                  <strong style={{ display: "block", color: theme?.primary || "#071A36", fontSize: 18, marginBottom: 8 }}>أهلاً بيك في ســـــَــــــــوا</strong>
-                  <p style={{ margin: 0, color: "#64748B", lineHeight: 1.8, fontSize: 13 }}>إحنا هنا عشان نساعدك. اكتب رسالتك تحت وهنرد عليك من داخل المتجر.</p>
-                  <div style={{ display: "flex", justifyContent: "center", gap: 7, marginTop: 16, flexWrap: "wrap" }}>
-                    {["🛍️ مساعدة في الطلب", "📦 متابعة الطلب", "❓ استفسار"].map((item) => (
-                      <span key={item} style={{ padding: "7px 10px", borderRadius: 999, background: "#fff", border: "1px solid #E1E7EF", color: "#475569", fontSize: 11, fontWeight: 700 }}>{item}</span>
-                    ))}
+            {/* Premium header */}
+            <div style={{ position:"relative", overflow:"hidden", padding:"16px 15px 13px", color:"#fff", background:`linear-gradient(135deg, ${theme?.headerBackground || theme?.primary || "#071A36"} 0%, ${theme?.secondary || "#0B1F3A"} 68%, #17365C 100%)` }}>
+              <div style={{ position:"absolute", width:210, height:210, borderRadius:"50%", background:"rgba(212,175,55,.10)", left:-105, top:-130 }} />
+              <div style={{ position:"absolute", width:120, height:120, borderRadius:"50%", border:"1px solid rgba(255,255,255,.07)", right:-45, bottom:-70 }} />
+
+              <div style={{ position:"relative", display:"flex", alignItems:"center", gap:11 }}>
+                <div style={{ position:"relative", width:50, height:50, flex:"0 0 50px", borderRadius:17, display:"grid", placeItems:"center", background:`linear-gradient(145deg, ${theme?.accent || "#D4AF37"}, ${theme?.accentSecondary || "#F4D06F"})`, color:theme?.primary || "#071A36", fontSize:25, boxShadow:"0 9px 25px rgba(0,0,0,.22)" }}>
+                  💬
+                  <span style={{ position:"absolute", width:10, height:10, borderRadius:"50%", right:-2, bottom:-1, background:"#38D996", border:"2px solid #071A36", animation:"sawaSupportPulse 2s infinite" }} />
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                    <strong style={{ fontSize:18, lineHeight:1.25 }}>خدمة عملاء ســـــَــــــــوا</strong>
+                    {supportUnreadCount > 0 && <span style={{ minWidth:21, height:21, padding:"0 6px", borderRadius:99, display:"grid", placeItems:"center", background:"#EF4444", color:"#fff", fontSize:9, fontWeight:950 }}>{Math.min(99,supportUnreadCount)}</span>}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5, fontSize:11, opacity:.9 }}>
+                    <span style={{ width:7, height:7, borderRadius:"50%", background:"#38D996", boxShadow:"0 0 0 4px rgba(56,217,150,.10)" }} />
+                    <span>متاحين لمساعدتك</span>
+                    <span style={{ opacity:.42 }}>•</span>
+                    <span>{currentUser ? "حسابك مسجل" : "ضيف"}</span>
                   </div>
                 </div>
+                <button type="button" onClick={() => setSupportOpen(false)} aria-label="إغلاق الشات" style={{ width:37,height:37,flex:"0 0 37px",border:"1px solid rgba(255,255,255,.16)",borderRadius:12,background:"rgba(255,255,255,.09)",color:"#fff",cursor:"pointer",fontSize:22,lineHeight:1 }}>×</button>
               </div>
-            ) : (
-              <>
-                <div style={{ textAlign: "center", marginBottom: 14 }}>
-                  <span style={{ display: "inline-block", padding: "5px 10px", borderRadius: 999, background: "#E9EEF5", color: "#64748B", fontSize: 10, fontWeight: 800 }}>المحادثة بينك وبين خدمة العملاء</span>
+
+              <div style={{ position:"relative", marginTop:12, display:"flex", alignItems:"center", gap:8, padding:"9px 11px", borderRadius:14, background:"rgba(255,255,255,.075)", border:"1px solid rgba(255,255,255,.08)" }}>
+                <span style={{ fontSize:15 }}>🛡️</span>
+                <div style={{ flex:1, minWidth:0, fontSize:11, lineHeight:1.6, color:"rgba(255,255,255,.88)" }}>
+                  <strong style={{ display:"block", fontSize:11.5 }}>أهلاً يا {customerDisplayName.split(" ")[0]}</strong>
+                  <span style={{ opacity:.72 }}>اسألنا عن الطلبات، المنتجات أو أي حاجة تخص المتجر.</span>
                 </div>
-                {supportMessages.map((message, index) => {
-                  const isAdminMessage = message.sender === "admin" || message.senderRole === "admin";
-                  const time = message.createdAt?.toDate
-                    ? message.createdAt.toDate().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })
-                    : "";
-                  return (
-                    <div key={message.id || index} style={{ display: "flex", justifyContent: isAdminMessage ? "flex-start" : "flex-end", alignItems: "flex-end", gap: 7, marginBottom: 12 }}>
-                      {isAdminMessage && (
-                        <div style={{ width: 30, height: 30, flex: "0 0 30px", borderRadius: 10, display: "grid", placeItems: "center", background: theme?.primary || "#071A36", color: theme?.accent || "#D4AF37", fontSize: 15, boxShadow: "0 3px 10px rgba(7,26,54,.14)" }}>💬</div>
-                      )}
-                      <div
-                        style={{
-                          position: "relative",
-                          maxWidth: "82%",
-                          padding: "10px 13px 8px",
-                          borderRadius: isAdminMessage ? "16px 16px 16px 5px" : "16px 16px 5px 16px",
-                          background: isAdminMessage ? (theme?.primary || "#071A36") : "#fff",
-                          color: isAdminMessage ? "#fff" : (theme?.textPrimary || "#071A36"),
-                          border: isAdminMessage ? "1px solid rgba(255,255,255,.05)" : "1px solid #E0E6EF",
-                          boxShadow: isAdminMessage ? "0 7px 20px rgba(7,26,54,.16)" : "0 5px 16px rgba(7,26,54,.06)",
-                        }}
-                      >
-                        {!message.deletedByCustomer && message.attachmentUrl && (message.messageType === "image" || message.attachmentMime?.startsWith("image/")) && (
-                          <a href={message.attachmentUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginBottom: message.message ? 7 : 0 }}>
-                            <img src={message.attachmentUrl} alt={message.attachmentName || "صورة"} style={{ display: "block", width: "min(250px,100%)", maxHeight: 260, objectFit: "cover", borderRadius: 13, border: "1px solid rgba(255,255,255,.14)" }} />
-                          </a>
-                        )}
-                        {!message.deletedByCustomer && message.attachmentUrl && (message.messageType === "audio" || message.attachmentMime?.startsWith("audio/")) && (
-                          <div style={{ marginBottom: message.message ? 7 : 0, padding: 8, borderRadius: 12, background: isAdminMessage ? "rgba(255,255,255,.08)" : "#F3F6FA" }}>
-                            <audio controls src={message.attachmentUrl} style={{ width: "min(270px,100%)", height: 38 }} />
-                          </div>
-                        )}
-                        {!message.deletedByCustomer && (message.messageType === "location" || message.locationUrl || message.location?.latitude) && (
-                          <a
-                            href={message.locationUrl || `https://www.google.com/maps?q=${message.location?.latitude ?? message.latitude},${message.location?.longitude ?? message.longitude}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 10,
-                              minWidth: 190,
-                              padding: "10px 12px",
-                              marginBottom: message.message ? 7 : 0,
-                              borderRadius: 14,
-                              textDecoration: "none",
-                              color: isAdminMessage ? "#fff" : (theme?.primary || "#071A36"),
-                              background: isAdminMessage ? "rgba(255,255,255,.09)" : "#F7FAFC",
-                              border: isAdminMessage ? "1px solid rgba(255,255,255,.12)" : "1px solid #E1E8F0",
-                            }}
-                          >
-                            <span style={{ width: 38, height: 38, flex: "0 0 38px", display: "grid", placeItems: "center", borderRadius: 12, background: isAdminMessage ? "rgba(212,175,55,.18)" : "#FFF4CF", fontSize: 20 }}>📍</span>
-                            <span style={{ minWidth: 0 }}>
-                              <strong style={{ display: "block", fontSize: 12 }}>الموقع الحالي</strong>
-                              <small style={{ display: "block", marginTop: 2, opacity: .72, fontSize: 10 }}>اضغط لفتح الموقع على الخريطة</small>
-                            </span>
-                          </a>
-                        )}
-                        {message.deletedByCustomer ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 7, color: isAdminMessage ? "rgba(255,255,255,.72)" : "#94A3B8", fontStyle: "italic", fontSize: 12 }}>
-                            <span>🗑️</span><span>تم حذف الرسالة</span>
-                          </div>
-                        ) : (
-                          message.message && message.messageType !== "location" && <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7, fontSize: 13 }}>{message.message}</div>
-                        )}
-                        {time && (
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 5, marginTop: 5, fontSize: 9, opacity: .58 }}>
-                            <small>{time}</small>
-                            {isAdminMessage && (
-                              <span title={message.readByCustomer === true ? "تمت مشاهدة الرسالة" : message.deliveredToCustomer === true ? "وصلت للعميل" : "تم إرسال الرسالة"} style={{ fontSize: 13, letterSpacing: -2, color: message.readByCustomer === true ? "#60A5FA" : "rgba(255,255,255,.65)", fontWeight: 950 }}>✓{message.deliveredToCustomer === true || message.readByCustomer === true ? "✓" : ""}</span>
-                            )}
-                          </div>
-                        )}
-                        {!message.deletedByCustomer && !isAdminMessage && (
-                          <button type="button" onClick={() => deleteSupportMessage(message)} title="حذف الرسالة" aria-label="حذف الرسالة" style={{ position: "absolute", left: -8, top: -8, width: 27, height: 27, border: "1px solid rgba(148,163,184,.22)", borderRadius: 9, background: "rgba(255,255,255,.98)", color: "#64748B", boxShadow: "0 4px 12px rgba(7,26,54,.12)", cursor: "pointer", fontSize: 13, zIndex: 2 }}>🗑️</button>
-                        )}
+              </div>
+            </div>
+
+            {/* Conversation toolbar */}
+            <div style={{ padding:"9px 10px", background:"rgba(255,255,255,.97)", borderBottom:"1px solid #E4EAF1" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                <div style={{ position:"relative", flex:1 }}>
+                  <span style={{ position:"absolute", right:11, top:"50%", transform:"translateY(-50%)", color:"#94A3B8", fontSize:14 }}>⌕</span>
+                  <input value={supportSearch} onChange={(e)=>setSupportSearch(e.target.value)} placeholder="ابحث داخل المحادثة" style={{ width:"100%", height:36, padding:"0 33px 0 10px", borderRadius:11, border:"1px solid #E0E7EF", background:"#F8FAFC", outline:"none", fontSize:11.5, fontFamily:"inherit" }} />
+                </div>
+                <button type="button" onClick={()=>setSupportSearch("")} title="مسح البحث" style={{ width:36,height:36,border:"1px solid #E0E7EF",borderRadius:11,background:"#fff",color:"#64748B",cursor:"pointer",fontSize:14 }}>⌫</button>
+              </div>
+              {pinnedSupportMessage && (
+                <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:12, background:"#FFF9E7", border:"1px solid #F0D98A" }}>
+                  <span style={{ fontSize:15 }}>📌</span>
+                  <div style={{ flex:1,minWidth:0,fontSize:10.5,color:"#66521A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{pinnedSupportMessage.message || "رسالة مثبتة"}</div>
+                  <button type="button" onClick={()=>setSupportPinnedId(null)} style={{ border:0,background:"transparent",color:"#8A6D1D",cursor:"pointer",fontSize:15 }}>×</button>
+                </div>
+              )}
+            </div>
+
+            {/* Messages */}
+            <div className="sawa-support-scroll" style={{ flex:1,minHeight:0,overflowY:"auto",padding:"15px 13px 12px",background:"radial-gradient(circle at 15% 5%,rgba(212,175,55,.07),transparent 24%),linear-gradient(180deg,#F8FAFC 0%,#F1F5F9 100%)" }}>
+              {filteredSupportMessages.length === 0 ? (
+                <div style={{ height:"100%",minHeight:280,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:25 }}>
+                  <div style={{ maxWidth:315 }}>
+                    <div style={{ width:82,height:82,margin:"0 auto 15px",borderRadius:27,display:"grid",placeItems:"center",fontSize:38,background:`linear-gradient(145deg, ${theme?.accent || "#D4AF37"}18, ${theme?.accent || "#D4AF37"}40)`,border:`1px solid ${theme?.accent || "#D4AF37"}55`,boxShadow:"0 15px 35px rgba(7,26,54,.07)" }}>👋</div>
+                    <strong style={{ display:"block",color:theme?.primary || "#071A36",fontSize:18,marginBottom:8 }}>{supportSearch ? "مفيش نتائج" : "أهلاً بيك في ســـــَــــــــوا"}</strong>
+                    <p style={{ margin:0,color:"#64748B",lineHeight:1.8,fontSize:12.5 }}>{supportSearch ? "جرّب كلمة بحث مختلفة." : "إحنا هنا عشان نساعدك بسرعة. اختار موضوع أو اكتب رسالتك تحت."}</p>
+                    {!supportSearch && <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginTop:16 }}>
+                      {[["🛍️","طلب"],["📦","متابعة"],["❓","استفسار"]].map(([icon,label])=>(
+                        <button key={label} type="button" onClick={()=>{setSupportDraft(label === "طلب" ? "محتاج مساعدة في طلب جديد" : label === "متابعة" ? "محتاج أتابع حالة طلبي" : "عندي استفسار وعايز مساعدة");}} style={{ minHeight:58,border:"1px solid #E1E7EF",borderRadius:13,background:"#fff",color:"#475569",cursor:"pointer",fontFamily:"inherit",fontSize:10.5,fontWeight:800 }}><span style={{display:"block",fontSize:18,marginBottom:4}}>{icon}</span>{label}</button>
+                      ))}
+                    </div>}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ textAlign:"center",marginBottom:13 }}><span style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"5px 10px",borderRadius:999,background:"rgba(226,232,240,.78)",color:"#64748B",fontSize:9.5,fontWeight:800 }}>🔒 محادثتك خاصة مع خدمة العملاء</span></div>
+                  {filteredSupportMessages.map((message,index)=>{
+                    const isAdminMessage = message.sender === "admin" || message.senderRole === "admin";
+                    const time = message.createdAt?.toDate ? message.createdAt.toDate().toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"}) : "";
+                    const isPinned = supportPinnedId === message.id;
+                    return (
+                      <div key={message.id || index} style={{ display:"flex",justifyContent:isAdminMessage?"flex-start":"flex-end",alignItems:"flex-end",gap:7,marginBottom:10,animation:"sawaSupportMessageIn .18s ease-out" }}>
+                        {isAdminMessage && <div style={{ width:30,height:30,flex:"0 0 30px",borderRadius:10,display:"grid",placeItems:"center",background:theme?.primary || "#071A36",color:theme?.accent || "#D4AF37",fontSize:14,boxShadow:"0 3px 10px rgba(7,26,54,.14)" }}>💬</div>}
+                        <div style={{ position:"relative",maxWidth:"83%",padding:"9px 12px 7px",borderRadius:isAdminMessage?"17px 17px 17px 5px":"17px 17px 5px 17px",background:isPinned?(theme?.accent || "#D4AF37")+(isAdminMessage?"":"22"):(isAdminMessage?(theme?.primary || "#071A36"):"#fff"),color:isAdminMessage?(isPinned?(theme?.primary || "#071A36"):"#fff"):(theme?.textPrimary || "#071A36"),border:isAdminMessage?"1px solid rgba(255,255,255,.06)":"1px solid #E0E6EF",boxShadow:isAdminMessage?"0 7px 20px rgba(7,26,54,.14)":"0 5px 16px rgba(7,26,54,.055)" }}>
+                          {!message.deletedByCustomer && message.attachmentUrl && (message.messageType === "image" || message.attachmentMime?.startsWith("image/")) && <a href={message.attachmentUrl} target="_blank" rel="noreferrer" style={{display:"block",marginBottom:message.message?7:0}}><img src={message.attachmentUrl} alt={message.attachmentName || "صورة"} style={{display:"block",width:"min(270px,100%)",maxHeight:290,objectFit:"cover",borderRadius:14,border:"1px solid rgba(255,255,255,.14)"}} /></a>}
+                          {!message.deletedByCustomer && message.attachmentUrl && (message.messageType === "audio" || message.attachmentMime?.startsWith("audio/")) && <div style={{marginBottom:message.message?7:0,padding:8,borderRadius:12,background:isAdminMessage?"rgba(255,255,255,.08)":"#F3F6FA"}}><audio controls src={message.attachmentUrl} style={{width:"min(280px,100%)",height:38}} /></div>}
+                          {!message.deletedByCustomer && (message.messageType === "location" || message.locationUrl || message.location?.latitude) && <a href={message.locationUrl || `https://www.google.com/maps?q=${message.location?.latitude ?? message.latitude},${message.location?.longitude ?? message.longitude}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:9,minWidth:190,padding:"10px 11px",marginBottom:message.message?7:0,borderRadius:14,textDecoration:"none",color:isAdminMessage?"#fff":(theme?.primary || "#071A36"),background:isAdminMessage?"rgba(255,255,255,.09)":"#F7FAFC",border:isAdminMessage?"1px solid rgba(255,255,255,.12)":"1px solid #E1E8F0"}}><span style={{width:38,height:38,flex:"0 0 38px",display:"grid",placeItems:"center",borderRadius:12,background:isAdminMessage?"rgba(212,175,55,.18)":"#FFF4CF",fontSize:20}}>📍</span><span><strong style={{display:"block",fontSize:12}}>الموقع الحالي</strong><small style={{display:"block",marginTop:2,opacity:.72,fontSize:10}}>فتح الموقع على الخريطة</small></span></a>}
+                          {message.deletedByCustomer ? <div style={{display:"flex",alignItems:"center",gap:7,color:isAdminMessage?"rgba(255,255,255,.72)":"#94A3B8",fontStyle:"italic",fontSize:12}}><span>🗑️</span><span>تم حذف الرسالة</span></div> : message.message && message.messageType !== "location" ? <div style={{whiteSpace:"pre-wrap",wordBreak:"break-word",lineHeight:1.72,fontSize:13}}>{message.message}</div> : null}
+                          {time && <div style={{display:"flex",alignItems:"center",justifyContent:"flex-start",gap:5,marginTop:5,fontSize:9,opacity:.58}}><small>{time}</small>{isAdminMessage && <span title={message.readByCustomer===true?"تمت مشاهدة الرسالة":message.deliveredToCustomer===true?"وصلت للعميل":"تم إرسال الرسالة"} style={{fontSize:13,letterSpacing:-2,color:message.readByCustomer===true?"#60A5FA":"rgba(255,255,255,.65)",fontWeight:950}}>✓{message.deliveredToCustomer===true||message.readByCustomer===true?"✓":""}</span>}</div>}
+                          {!message.deletedByCustomer && <button type="button" onClick={()=>setSupportPinnedId(isPinned?null:message.id)} title={isPinned?"إلغاء التثبيت":"تثبيت الرسالة"} aria-label={isPinned?"إلغاء التثبيت":"تثبيت الرسالة"} style={{position:"absolute",left:isAdminMessage?-8:"auto",right:isAdminMessage?"auto":-8,top:-8,width:25,height:25,border:"1px solid rgba(148,163,184,.20)",borderRadius:8,background:"rgba(255,255,255,.97)",color:isPinned?"#C59A14":"#94A3B8",boxShadow:"0 4px 12px rgba(7,26,54,.10)",cursor:"pointer",fontSize:11,opacity:0.72}} aria-hidden="true">📌</button>}
+                          {!message.deletedByCustomer && !isAdminMessage && <button type="button" onClick={()=>deleteSupportMessage(message)} title="حذف الرسالة" aria-label="حذف الرسالة" style={{position:"absolute",left:-8,top:-8,width:27,height:27,border:"1px solid rgba(148,163,184,.22)",borderRadius:9,background:"rgba(255,255,255,.98)",color:"#64748B",boxShadow:"0 4px 12px rgba(7,26,54,.12)",cursor:"pointer",fontSize:13,zIndex:2}}>🗑️</button>}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-                {supportSending && (
-                  <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 10, display: "grid", placeItems: "center", background: theme?.primary || "#071A36", color: theme?.accent || "#D4AF37" }}>💬</div>
-                    <div style={{ padding: "10px 13px", borderRadius: "16px 16px 16px 5px", background: theme?.primary || "#071A36", display: "flex", gap: 4 }}>
-                      {[0,1,2].map((dot) => <span key={dot} style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff", animation: `sawaSupportDot 1s ${dot * .14}s infinite` }} />)}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Composer */}
-          <div style={{ position: "relative", borderTop: "1px solid #E2E8F0", background: "rgba(255,255,255,.99)", padding: "10px 11px 9px", boxShadow: "0 -8px 24px rgba(7,26,54,.04)" }}>
-            {!currentUser?.uid && (
-              <div style={{ position: "relative", marginBottom: 8 }}>
-                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 15, opacity: .55 }}>👤</span>
-                <input
-                  type="text"
-                  value={supportCustomerName}
-                  onChange={(e) => setSupportCustomerName(e.target.value)}
-                  placeholder="اسمك عشان نقدر نخدمك أسرع (اختياري)"
-                  style={{ width: "100%", height: 38, padding: "0 36px 0 12px", borderRadius: 12, border: "1px solid #DCE3EC", background: "#F8FAFC", outline: "none", fontSize: 12.5 }}
-                />
-              </div>
-            )}
-
-            {supportEmojiOpen && (
-              <div style={{ position: "absolute", left: 10, right: 10, bottom: "calc(100% - 2px)", zIndex: 5, padding: 10, borderRadius: 18, background: "rgba(255,255,255,.98)", border: "1px solid #DCE4EE", boxShadow: "0 18px 50px rgba(7,26,54,.16)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                  <strong style={{ fontSize: 12, color: theme?.primary || "#071A36" }}>اختار إيموجي 😊</strong>
-                  <button type="button" onClick={() => setSupportEmojiOpen(false)} style={{ border: 0, background: "#F1F5F9", width: 26, height: 26, borderRadius: 8, cursor: "pointer", color: "#64748B" }}>×</button>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 4 }}>
-                  {supportQuickEmojis.map((emoji) => (
-                    <button key={emoji} type="button" onClick={() => { setSupportDraft((value) => `${value}${emoji}`); setSupportEmojiOpen(false); }} style={{ border: 0, background: "transparent", borderRadius: 9, minHeight: 34, cursor: "pointer", fontSize: 20 }}>{emoji}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {supportAttachment && (
-              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8, padding: "8px 10px", borderRadius: 13, background: "#F3F6FA", border: "1px solid #DCE4EE" }}>
-                <span style={{ width: 34, height: 34, borderRadius: 10, display: "grid", placeItems: "center", background: supportAttachment.isVoice ? "#E9EEF7" : "#FFF6D8", fontSize: 17 }}>{supportAttachment.isVoice ? "🎙️" : "🖼️"}</span>
-                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: "#475569" }}>{supportAttachment.file?.name || "ملف مرفق"}</span>
-                <button type="button" onClick={() => setSupportAttachment(null)} aria-label="إلغاء المرفق" style={{ width: 28, height: 28, border: 0, borderRadius: 9, background: "#E5EAF1", color: "#475569", cursor: "pointer" }}>×</button>
-              </div>
-            )}
-
-            <input ref={supportFileRef} type="file" accept="image/*" hidden onChange={handleSupportFile} />
-            <div style={{ display: "flex", gap: 5, alignItems: "flex-end", padding: 5, borderRadius: 17, background: "#F5F7FA", border: "1px solid #DDE5EE" }}>
-              <button type="button" onClick={() => setSupportEmojiOpen((v) => !v)} disabled={supportSending || supportRecording} aria-label="إيموجي" title="إيموجي" style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: supportEmojiOpen ? "#EAF0F7" : "transparent", color: theme?.primary || "#071A36", fontSize: 20, cursor: "pointer" }}>😊</button>
-              <button type="button" onClick={() => supportFileRef.current?.click()} disabled={supportSending || supportRecording} aria-label="إرسال صورة" title="إرسال صورة" style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: "transparent", color: theme?.primary || "#071A36", fontSize: 19, cursor: "pointer", opacity: supportSending ? .5 : 1 }}>🖼️</button>
-              <button type="button" onClick={sendSupportLocation} disabled={supportSending || supportRecording} aria-label="إرسال موقعي" title="إرسال موقعي الحالي" style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: "transparent", color: theme?.primary || "#071A36", fontSize: 19, cursor: "pointer", opacity: supportSending ? .5 : 1 }}>📍</button>
-              <button type="button" onClick={toggleSupportRecording} disabled={supportSending} aria-label={supportRecording ? "إيقاف التسجيل" : "تسجيل صوت"} title={supportRecording ? "إيقاف التسجيل" : "تسجيل صوت"} style={{ width: 38, height: 46, flex: "0 0 38px", border: 0, borderRadius: 12, background: supportRecording ? "#FEE2E2" : "transparent", color: supportRecording ? "#DC2626" : (theme?.primary || "#071A36"), fontSize: 18, cursor: "pointer" }}>{supportRecording ? `⏹️ ${String(Math.floor(supportRecordSeconds/60)).padStart(2,"0")}:${String(supportRecordSeconds%60).padStart(2,"0")}` : "🎙️"}</button>
-              <textarea
-                rows="1"
-                value={supportDraft}
-                onChange={(e) => setSupportDraft(e.target.value)}
-                onFocus={() => setSupportEmojiOpen(false)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendSupportMessage(); } }}
-                placeholder="اكتب رسالتك..."
-                aria-label="رسالتك"
-                style={{ flex: 1, minWidth: 0, resize: "none", minHeight: 46, maxHeight: 110, padding: "12px 7px", border: 0, outline: "none", background: "transparent", fontSize: 13, lineHeight: 1.55, fontFamily: "inherit" }}
-              />
-              <button
-                type="button"
-                onClick={sendSupportMessage}
-                disabled={supportSending || (!supportDraft.trim() && !supportAttachment)}
-                style={{ width: 46, height: 46, flex: "0 0 46px", border: 0, borderRadius: 14, display: "grid", placeItems: "center", background: supportSending || (!supportDraft.trim() && !supportAttachment) ? "#DDE3EA" : `linear-gradient(145deg, ${theme?.accent || "#D4AF37"}, ${theme?.accentSecondary || "#F4D06F"})`, color: supportSending || (!supportDraft.trim() && !supportAttachment) ? "#94A3B8" : (theme?.primary || "#071A36"), fontWeight: 900, fontSize: 20, cursor: supportSending || (!supportDraft.trim() && !supportAttachment) ? "not-allowed" : "pointer", boxShadow: supportSending || (!supportDraft.trim() && !supportAttachment) ? "none" : "0 7px 18px rgba(212,175,55,.25)" }}
-                aria-label="إرسال الرسالة"
-              >
-                {supportSending ? "⏳" : "➤"}
-              </button>
+                    );
+                  })}
+                  {supportSending && <div style={{display:"flex",justifyContent:"flex-start",alignItems:"center",gap:7,marginBottom:4}}><div style={{width:30,height:30,borderRadius:10,display:"grid",placeItems:"center",background:theme?.primary || "#071A36",color:theme?.accent || "#D4AF37"}}>💬</div><div style={{padding:"10px 13px",borderRadius:"17px 17px 17px 5px",background:theme?.primary || "#071A36",display:"flex",gap:4}}>{[0,1,2].map(dot=><span key={dot} style={{width:5,height:5,borderRadius:"50%",background:"#fff",animation:`sawaSupportDot 1s ${dot*.14}s infinite`}} />)}</div></div>}
+                </>
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 6, padding: "0 3px", color: "#94A3B8", fontSize: 10 }}>
-              <span>😊 إيموجي • 📍 موقع • 🎙️ صوت • 🖼️ صورة</span>
-              <span>🔒 آمنة</span>
+
+            {/* Composer */}
+            <div style={{ position:"relative",borderTop:"1px solid #E2E8F0",background:"rgba(255,255,255,.985)",padding:"10px 10px 9px",boxShadow:"0 -10px 25px rgba(7,26,54,.045)" }}>
+              {!currentUser?.uid && <div style={{position:"relative",marginBottom:8}}><span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:15,opacity:.55}}>👤</span><input type="text" value={supportCustomerName} onChange={(e)=>setSupportCustomerName(e.target.value)} placeholder="اسمك (اختياري)" style={{width:"100%",height:36,padding:"0 36px 0 12px",borderRadius:11,border:"1px solid #DCE3EC",background:"#F8FAFC",outline:"none",fontSize:12,fontFamily:"inherit"}} /></div>}
+              {supportEmojiOpen && <div style={{position:"absolute",left:10,right:10,bottom:"calc(100% - 2px)",zIndex:5,padding:10,borderRadius:18,background:"rgba(255,255,255,.99)",border:"1px solid #DCE4EE",boxShadow:"0 18px 50px rgba(7,26,54,.16)"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}><strong style={{fontSize:12,color:theme?.primary || "#071A36"}}>اختار إيموجي 😊</strong><button type="button" onClick={()=>setSupportEmojiOpen(false)} style={{border:0,background:"#F1F5F9",width:26,height:26,borderRadius:8,cursor:"pointer",color:"#64748B"}}>×</button></div><div style={{display:"grid",gridTemplateColumns:"repeat(9,1fr)",gap:4}}>{supportQuickEmojis.map(emoji=><button key={emoji} type="button" onClick={()=>{setSupportDraft(value=>`${value}${emoji}`);setSupportEmojiOpen(false)}} style={{border:0,background:"transparent",borderRadius:9,minHeight:34,cursor:"pointer",fontSize:20}}>{emoji}</button>)}</div></div>}
+              {supportAttachment && <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:8,padding:"8px 10px",borderRadius:13,background:"#F3F6FA",border:"1px solid #DCE4EE"}}><span style={{width:34,height:34,borderRadius:10,display:"grid",placeItems:"center",background:supportAttachment.isVoice?"#E9EEF7":"#FFF6D8",fontSize:17}}>{supportAttachment.isVoice?"🎙️":"🖼️"}</span><span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:11,color:"#475569"}}>{supportAttachment.file?.name || "ملف مرفق"}</span><button type="button" onClick={()=>setSupportAttachment(null)} aria-label="إلغاء المرفق" style={{width:28,height:28,border:0,borderRadius:9,background:"#E5EAF1",color:"#475569",cursor:"pointer"}}>×</button></div>}
+              <input ref={supportFileRef} type="file" accept="image/*" hidden onChange={handleSupportFile} />
+              <div style={{display:"flex",gap:4,alignItems:"flex-end",padding:5,borderRadius:18,background:"#F5F7FA",border:"1px solid #DDE5EE"}}>
+                <button type="button" onClick={()=>setSupportEmojiOpen(v=>!v)} disabled={supportSending||supportRecording} aria-label="إيموجي" title="إيموجي" style={{width:37,height:46,flex:"0 0 37px",border:0,borderRadius:12,background:supportEmojiOpen?"#EAF0F7":"transparent",color:theme?.primary || "#071A36",fontSize:20,cursor:"pointer"}}>😊</button>
+                <button type="button" onClick={()=>supportFileRef.current?.click()} disabled={supportSending||supportRecording} aria-label="إرسال صورة" title="إرسال صورة" style={{width:37,height:46,flex:"0 0 37px",border:0,borderRadius:12,background:"transparent",color:theme?.primary || "#071A36",fontSize:19,cursor:"pointer",opacity:supportSending?.5:1}}>🖼️</button>
+                <button type="button" onClick={sendSupportLocation} disabled={supportSending||supportRecording} aria-label="إرسال موقعي" title="إرسال موقعي" style={{width:37,height:46,flex:"0 0 37px",border:0,borderRadius:12,background:"transparent",color:theme?.primary || "#071A36",fontSize:19,cursor:"pointer",opacity:supportSending?.5:1}}>📍</button>
+                <button type="button" onClick={toggleSupportRecording} disabled={supportSending} aria-label={supportRecording?"إيقاف التسجيل":"تسجيل صوت"} title={supportRecording?"إيقاف التسجيل":"تسجيل صوت"} style={{width:37,height:46,flex:"0 0 37px",border:0,borderRadius:12,background:supportRecording?"#FEE2E2":"transparent",color:supportRecording?"#DC2626":(theme?.primary || "#071A36"),fontSize:18,cursor:"pointer"}}>{supportRecording?`⏹️ ${String(Math.floor(supportRecordSeconds/60)).padStart(2,"0")}:${String(supportRecordSeconds%60).padStart(2,"0")}`:"🎙️"}</button>
+                <textarea rows="1" value={supportDraft} onChange={(e)=>setSupportDraft(e.target.value)} onFocus={()=>setSupportEmojiOpen(false)} onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendSupportMessage()}}} placeholder="اكتب رسالتك..." aria-label="رسالتك" style={{flex:1,minWidth:0,resize:"none",minHeight:46,maxHeight:110,padding:"12px 7px",border:0,outline:"none",background:"transparent",fontSize:13,lineHeight:1.55,fontFamily:"inherit"}} />
+                <button type="button" onClick={sendSupportMessage} disabled={supportSending||(!supportDraft.trim()&&!supportAttachment)} style={{width:46,height:46,flex:"0 0 46px",border:0,borderRadius:14,display:"grid",placeItems:"center",background:supportSending||(!supportDraft.trim()&&!supportAttachment)?"#DDE3EA":`linear-gradient(145deg, ${theme?.accent || "#D4AF37"}, ${theme?.accentSecondary || "#F4D06F"})`,color:supportSending||(!supportDraft.trim()&&!supportAttachment)?"#94A3B8":(theme?.primary || "#071A36"),fontWeight:900,fontSize:20,cursor:supportSending||(!supportDraft.trim()&&!supportAttachment)?"not-allowed":"pointer",boxShadow:supportSending||(!supportDraft.trim()&&!supportAttachment)?"none":"0 7px 18px rgba(212,175,55,.25)"}} aria-label="إرسال الرسالة">{supportSending?"⏳":"➤"}</button>
+              </div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginTop:6,padding:"0 3px",color:"#94A3B8",fontSize:9.5}}><span>😊 إيموجي • 📍 موقع • 🎙️ صوت • 🖼️ صورة</span><span>🔒 خصوصيتك محفوظة</span></div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <button
         type="button"
@@ -5324,10 +5795,7 @@ function Home({
             </span>
           )}
         </span>
-        {!supportOpen && <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1, paddingLeft: 1 }}>
-          <strong style={{ fontSize: 11, fontWeight: 900, whiteSpace: "nowrap" }}>خدمة العملاء</strong>
-          <small style={{ fontSize: 9, opacity: .72, marginTop: 3, whiteSpace: "nowrap" }}>إحنا معاك 👋</small>
-        </span>}
+        {!supportOpen && <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1, paddingLeft: 1 }}><strong style={{ fontSize: 11, fontWeight: 900, whiteSpace: "nowrap" }}>خدمة العملاء</strong><small style={{ fontSize: 9, opacity: .72, marginTop: 3, whiteSpace: "nowrap" }}>إحنا معاك 👋</small></span>}
       </button>
 
       {/* =================================================
@@ -6890,6 +7358,173 @@ function Home({
 
             .quick-shop-section .store-choice-image span {
               font-size: 28px;
+            }
+          }
+
+          /* =========================================================
+             MAIN CATEGORIES PREMIUM HORIZONTAL SLIDER
+          ========================================================= */
+
+          .main-categories-slider-section {
+            position: relative;
+            width: 100%;
+            max-width: 1420px;
+            margin: 0 auto;
+            padding-top: clamp(16px, 2vw, 26px) !important;
+            padding-bottom: clamp(14px, 2vw, 24px) !important;
+          }
+
+          .main-categories-slider-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+          }
+
+          .main-categories-slider {
+            scroll-behavior: smooth;
+            cursor: grab;
+            -webkit-overflow-scrolling: touch;
+            width: 100% !important;
+            min-width: 0;
+            display: flex !important;
+            flex-direction: row !important;
+            grid-template-columns: none !important;
+            gap: clamp(12px, 1.25vw, 18px) !important;
+            align-items: stretch;
+            box-sizing: border-box;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            padding: 8px 4px 14px !important;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            overscroll-behavior-inline: contain;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            cursor: grab;
+            touch-action: pan-y;
+            user-select: none;
+          }
+
+          .main-categories-slider::-webkit-scrollbar {
+            display: none;
+          }
+
+          .main-categories-slider:active {
+            cursor: grabbing;
+          }
+
+          .main-categories-slider .store-choice-card {
+            flex: 0 0 clamp(145px, 18vw, 205px);
+            min-width: clamp(145px, 18vw, 205px);
+            scroll-snap-align: start;
+            border-radius: 22px;
+            overflow: hidden;
+            transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+          }
+            flex: 0 0 clamp(172px, 15.5vw, 220px) !important;
+            width: clamp(172px, 15.5vw, 220px) !important;
+            min-width: clamp(172px, 15.5vw, 220px) !important;
+            scroll-snap-align: start;
+          }
+
+          @media (min-width: 1500px) {
+            .main-categories-slider-section {
+              max-width: 1420px;
+            }
+
+            .main-categories-slider .store-choice-card {
+              flex-basis: 220px !important;
+              width: 220px !important;
+              min-width: 220px !important;
+              min-height: 220px;
+            }
+
+            .main-categories-slider .store-choice-image {
+              width: 122px !important;
+              height: 122px !important;
+              min-width: 122px;
+              min-height: 122px;
+            }
+          }
+
+          @media (max-width: 900px) {
+            .main-categories-slider-wrap {
+              gap: 6px;
+            }
+
+            .main-categories-slider .store-choice-card {
+              flex-basis: 170px !important;
+              width: 170px !important;
+              min-width: 170px !important;
+              min-height: 190px;
+              border-radius: 18px !important;
+            }
+
+            .main-categories-slider .store-choice-image {
+              width: 96px !important;
+              height: 96px !important;
+              min-width: 96px;
+              min-height: 96px;
+            }
+
+            .main-categories-slider .store-choice-image span {
+              font-size: 38px;
+            }
+          }
+
+          @media (max-width: 600px) {
+            .main-categories-slider-section {
+              padding: 18px 8px 22px !important;
+            }
+
+            .main-categories-slider-section .jumia-section-title {
+              margin-bottom: 13px;
+            }
+
+            .main-categories-slider-section .jumia-section-title h2 {
+              font-size: 21px;
+            }
+
+            .main-categories-slider-wrap {
+              gap: 4px;
+            }
+
+            .main-categories-slider {
+              gap: 9px !important;
+              padding: 6px 2px 12px !important;
+            }
+
+            .main-categories-slider .store-choice-card {
+              flex-basis: 145px !important;
+              width: 145px !important;
+              min-width: 145px !important;
+              min-height: 174px;
+              padding: 12px 9px 13px !important;
+              border-radius: 16px !important;
+            }
+
+            .main-categories-slider .store-choice-image {
+              width: 82px !important;
+              height: 82px !important;
+              min-width: 82px;
+              min-height: 82px;
+              padding: 5px;
+              margin-top: 5px !important;
+            }
+
+            .main-categories-slider .store-choice-image span {
+              font-size: 28px;
+            }
+
+            .main-categories-slider .store-choice-card strong {
+              font-size: 14px;
+            }
+
+            .main-categories-slider .store-choice-card small {
+              font-size: 10px;
+              padding-inline: 8px;
             }
           }
 

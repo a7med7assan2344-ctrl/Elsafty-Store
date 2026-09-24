@@ -133,28 +133,6 @@ const defaultStoreSettings = {
   },
 };
 
-const defaultWheelSettings = {
-  enabled: false,
-  displayMode: "store",
-  popupEnabled: false,
-  popupDelay: 1500,
-  popupClosable: true,
-  popupShowOncePerDay: false,
-  title: "🎡 جرب حظك!",
-  description: "لف العجلة واكسب عرضك",
-  attemptsPerUser: 2,
-  prizes: [],
-};
-
-const defaultGamesSettings = {
-  wheel: { enabled: true, title: "🎡 عجلة الحظ", description: "لف واربح جائزتك", attemptsPerUser: 2, requireLogin: false, startDate: "", endDate: "", winnerLimit: 0, winnerMessage: "مبروك! كسبت جائزتك 🎉", prizes: [] },
-  cards: { enabled: true, title: "🃏 الكروت المقلوبة", description: "اختار كارت واكتشف جائزتك", attemptsPerUser: 2, requireLogin: false, startDate: "", endDate: "", winnerLimit: 0, winnerMessage: "مبروك! 🎉", prizes: [] },
-  scratch: { enabled: true, title: "🪙 اكشط واربح", description: "اكشط واكتشف الجائزة", attemptsPerUser: 2, requireLogin: false, startDate: "", endDate: "", winnerLimit: 0, winnerMessage: "مبروك! 🎉", prizes: [] },
-  mystery: { enabled: true, title: "🎁 الصناديق الغامضة", description: "اختار صندوقك", attemptsPerUser: 2, requireLogin: false, startDate: "", endDate: "", winnerLimit: 0, winnerMessage: "مبروك! 🎉", prizes: [] },
-  pick: { enabled: true, title: "🎯 اختار واربح", description: "اختار هدفك واربح", attemptsPerUser: 2, requireLogin: false, startDate: "", endDate: "", winnerLimit: 0, winnerMessage: "مبروك! 🎉", prizes: [] },
-  dice: { enabled: true, title: "🎲 النرد الرابح", description: "ارمِ النرد واكسب", attemptsPerUser: 2, requireLogin: false, startDate: "", endDate: "", winnerLimit: 0, winnerMessage: "مبروك! 🎉", prizes: [] },
-};
-
 const safeArray = (value) => (Array.isArray(value) ? value : []);
 const asNumber = (value, fallback = 0) => {
   const n = Number(value);
@@ -205,6 +183,7 @@ const menu = [
   { group: "المتجر", items: [
     ["products", "📦", "المنتجات"],
     ["categories", "🗂️", "الأقسام"],
+    ["main-categories", "🧭", "التصنيفات الرئيسية"],
     ["offers", "🔥", "عروض اليوم"],
     ["bestsellers", "⭐", "الأكثر مبيعًا"],
     ["new-arrivals", "🆕", "وصل حديثًا"],
@@ -224,8 +203,6 @@ const menu = [
     ["announcement-bars", "📜", "أشرطة الإعلانات"],
     ["popup-ads", "🔔", "الإعلانات المنبثقة"],
     ["notifications", "🔔", "الإشعارات"],
-    ["games", "🎮", "الألعاب والمسابقات"],
-    ["wheel", "🎡", "عجلة الحظ"],
   ]},
   { group: "الإعدادات", items: [
     ["settings", "🎨", "مظهر المتجر"],
@@ -593,6 +570,8 @@ export default function Admin() {
   const [admin, setAdmin] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [mainCategories, setMainCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [banners, setBanners] = useState([]);
@@ -611,8 +590,6 @@ export default function Admin() {
   const [categoryVisits, setCategoryVisits] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [storeSettings, setStoreSettings] = useState(defaultStoreSettings);
-  const [wheelSettings, setWheelSettings] = useState(defaultWheelSettings);
-  const [gamesSettings, setGamesSettings] = useState(defaultGamesSettings);
   const [security, setSecurity] = useState({ adminProtection: true, extraVerification: false, loginLogging: true });
   const [search, setSearch] = useState("");
   const [orderStatus, setOrderStatus] = useState("all");
@@ -622,6 +599,8 @@ export default function Admin() {
   const [showGeneric, setShowGeneric] = useState(false);
   const [productForm, setProductForm] = useState(null);
   const [categoryForm, setCategoryForm] = useState(null);
+  const [mainCategoryForm, setMainCategoryForm] = useState(null);
+  const [brandForm, setBrandForm] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [adminForm, setAdminForm] = useState(null);
@@ -673,16 +652,14 @@ export default function Admin() {
         listeners.push(unsub);
       } catch (e) { console.error(`Firestore ${name}`, e); }
     };
-    watch("products", setProducts); watch("categories", setCategories); watch("orders", setOrders); watch("users", setUsers);
+    watch("products", setProducts); watch("categories", setCategories); watch("mainCategories", setMainCategories); watch("brands", setBrands); watch("orders", setOrders); watch("users", setUsers);
     watch("banners", setBanners); watch("coupons", setCoupons); watch("announcements", setAnnouncements); watch("announcementBars", setAnnouncementBars);
     watch("popupAds", setPopupAds); watch("notifications", setNotifications); watch("supportMessages", setSupport); watch("favorites", setFavorites);
     watch("blockedUsers", setBlockedUsers); watch("shippingZones", setShipping); watch("paymentMethods", setPayments); watch("storeMenuItems", setStoreMenu);
     watch("activityLogs", setActivityLogs); watch("categoryVisits", setCategoryVisits); watch("admins", setAdmins);
     const settingsUnsub = onSnapshot(doc(db, "settings", "store"), snap => { if (snap.exists()) setStoreSettings(p => ({ ...defaultStoreSettings, ...p, ...snap.data(), theme: { ...defaultTheme, ...(p.theme || {}), ...(snap.data().theme || {}) }, todayOffersTimer: { ...defaultStoreSettings.todayOffersTimer, ...(p.todayOffersTimer || {}), ...(snap.data().todayOffersTimer || {}) }, texts: { ...defaultStoreSettings.texts, ...(p.texts || {}), ...(snap.data().texts || {}) } })); }, e => console.warn("settings/store", e?.message));
-    const wheelUnsub = onSnapshot(doc(db, "settings", "wheel"), snap => { if (snap.exists()) setWheelSettings({ ...defaultWheelSettings, ...snap.data(), prizes: safeArray(snap.data().prizes) }); }, e => console.warn("settings/wheel", e?.message));
-    const gamesUnsub = onSnapshot(doc(db, "settings", "games"), snap => { if (snap.exists()) setGamesSettings(mergeGames(defaultGamesSettings, {}, snap.data())); }, e => console.warn("settings/games", e?.message));
     const secUnsub = onSnapshot(doc(db, "settings", "security"), snap => { if (snap.exists()) setSecurity(p => ({ ...p, ...snap.data() })); }, e => console.warn("settings/security", e?.message));
-    listeners.push(settingsUnsub, wheelUnsub, gamesUnsub, secUnsub);
+    listeners.push(settingsUnsub, secUnsub);
     return () => listeners.forEach(fn => { try { fn(); } catch {} });
   }, []);
 
@@ -729,15 +706,6 @@ export default function Admin() {
       setSaving(false);
     }
   };
-  const saveWheel = async () => {
-    setSaving(true); try { await setDoc(doc(db, "settings", "wheel"), { ...wheelSettings, prizes: safeArray(wheelSettings.prizes), updatedAt: serverTimestamp() }, { merge: true }); await log("تعديل عجلة الحظ", "تم حفظ إعدادات العجلة"); alert("✅ تم حفظ إعدادات عجلة الحظ"); } catch (e) { console.error(e); alert(e?.message || "❌ تعذر الحفظ"); } finally { setSaving(false); }
-  };
-  const saveGames = async () => {
-    setSaving(true);
-    try { await setDoc(doc(db, "settings", "games"), { ...gamesSettings, updatedAt: serverTimestamp() }, { merge: true }); await log("تحديث الألعاب", "تم حفظ إعدادات جميع الألعاب"); alert("✅ تم حفظ إعدادات الألعاب"); }
-    catch (e) { console.error(e); alert(e?.message || "❌ تعذر حفظ الألعاب"); }
-    finally { setSaving(false); }
-  };
 
   const uploadImage = async (file) => {
     if (!file) return "";
@@ -759,6 +727,10 @@ export default function Admin() {
       const selectedCategoryId = String(form.categoryId || form.category || "").trim();
       form.categoryId = selectedCategoryId;
       form.category = selectedCategoryId;
+      form.mainCategoryId = String(form.mainCategoryId || "").trim();
+      form.brandId = String(form.brandId || "").trim();
+      const selectedBrand = brands.find(b => String(b.id) === form.brandId);
+      form.brandName = selectedBrand?.name || String(form.brandName || "").trim();
 
       // الصور: غير محدودة، مع الحفاظ على image كصورة رئيسية للتوافق مع الواجهة القديمة.
       const currentImages = productImageList(form);
@@ -856,6 +828,96 @@ export default function Admin() {
     } catch (e2) { console.error(e2); alert(e2?.message || "❌ تعذر حفظ القسم"); } finally { setSaving(false); }
   };
   const removeCategory = async (c) => { if (!window.confirm(`حذف القسم «${c.name || "بدون اسم"}»؟`)) return; try { await deleteDoc(doc(db, "categories", c.id)); await log("حذف قسم", c.name || c.id); } catch (e) { alert(e?.message || "❌ تعذر الحذف"); } };
+  const cleanAdminFirestoreData = (value) => {
+    if (Array.isArray(value)) return value.map(cleanAdminFirestoreData).filter(v => v !== undefined);
+    if (value && typeof value === "object" && !(value instanceof Date)) {
+      const result = {};
+      Object.entries(value).forEach(([key, val]) => {
+        if (val !== undefined && key !== "imageFile" && key !== "imagePreview" && key !== "file" && key !== "files") {
+          result[key] = cleanAdminFirestoreData(val);
+        }
+      });
+      return result;
+    }
+    return value;
+  };
+
+  const saveMainCategory = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const form = cleanAdminFirestoreData({ ...mainCategoryForm });
+      if (mainCategoryForm.imageFile) {
+        const file = mainCategoryForm.imageFile;
+        if (!/image\/(jpeg|jpg)/i.test(file.type || "")) throw new Error("صورة التصنيف الرئيسي يجب أن تكون JPG أو JPEG فقط");
+        if (file.size > 5 * 1024 * 1024) throw new Error("حجم الصورة يجب ألا يتجاوز 5 ميجابايت");
+        form.image = await uploadImage(file);
+      }
+      delete form.id; delete form.imageFile; delete form.imagePreview;
+      form.name = String(form.name || "").trim();
+      if (!form.name) throw new Error("اكتب اسم التصنيف الرئيسي");
+      form.sortOrder = asNumber(form.sortOrder);
+      form.active = form.active !== false;
+      form.visible = form.visible !== false;
+      form.cardSize = form.cardSize || "medium";
+      form.color = form.color || ACCENT;
+      if (mainCategoryForm.id) await updateDoc(doc(db, "mainCategories", mainCategoryForm.id), { ...form, updatedAt: serverTimestamp() });
+      else await addDoc(collection(db, "mainCategories"), { ...form, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      await log(mainCategoryForm.id ? "تعديل تصنيف رئيسي" : "إضافة تصنيف رئيسي", form.name);
+      setMainCategoryForm(null);
+      alert("✅ تم حفظ التصنيف الرئيسي");
+    } catch (e2) { console.error(e2); alert(e2?.message || "❌ تعذر حفظ التصنيف الرئيسي"); }
+    finally { setSaving(false); }
+  };
+
+  const removeMainCategory = async (item) => {
+    const childBrands = brands.filter(b => String(b.mainCategoryId || "") === String(item.id));
+    const message = childBrands.length
+      ? `التصنيف «${item.name || "بدون اسم"}» يحتوي على ${childBrands.length} براند. حذفه لن يحذف البراندات تلقائيًا. هل تريد المتابعة؟`
+      : `حذف التصنيف «${item.name || "بدون اسم"}»؟`;
+    if (!window.confirm(message)) return;
+    try {
+      await deleteDoc(doc(db, "mainCategories", item.id));
+      await log("حذف تصنيف رئيسي", item.name || item.id);
+    } catch (e) { alert(e?.message || "❌ تعذر الحذف"); }
+  };
+
+  const saveBrand = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const form = cleanAdminFirestoreData({ ...brandForm });
+      if (!form.mainCategoryId) throw new Error("اختر التصنيف الرئيسي للبراند");
+      if (brandForm.imageFile) {
+        const file = brandForm.imageFile;
+        if (!/image\/(jpeg|jpg)/i.test(file.type || "")) throw new Error("صورة البراند يجب أن تكون JPG أو JPEG فقط");
+        if (file.size > 5 * 1024 * 1024) throw new Error("حجم صورة البراند يجب ألا يتجاوز 5 ميجابايت");
+        form.image = await uploadImage(file);
+      }
+      delete form.id; delete form.imageFile; delete form.imagePreview;
+      form.name = String(form.name || "").trim();
+      if (!form.name) throw new Error("اكتب اسم البراند");
+      form.sortOrder = asNumber(form.sortOrder);
+      form.active = form.active !== false;
+      form.visible = form.visible !== false;
+      form.cardSize = form.cardSize || "medium";
+      form.color = form.color || ACCENT;
+      if (brandForm.id) await updateDoc(doc(db, "brands", brandForm.id), { ...form, updatedAt: serverTimestamp() });
+      else await addDoc(collection(db, "brands"), { ...form, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      await log(brandForm.id ? "تعديل براند" : "إضافة براند", form.name);
+      setBrandForm(null);
+      alert("✅ تم حفظ البراند");
+    } catch (e2) { console.error(e2); alert(e2?.message || "❌ تعذر حفظ البراند"); }
+    finally { setSaving(false); }
+  };
+
+  const removeBrand = async (item) => {
+    if (!window.confirm(`حذف البراند «${item.name || "بدون اسم"}»؟`)) return;
+    try {
+      await deleteDoc(doc(db, "brands", item.id));
+      await log("حذف براند", item.name || item.id);
+    } catch (e) { alert(e?.message || "❌ تعذر الحذف"); }
+  };
 
   const changeOrderStatus = async (o, status) => { try { await updateDoc(doc(db, "orders", o.id), { status, updatedAt: serverTimestamp() }); await log("تحديث حالة طلب", `${o.orderNumber || o.id}: ${status}`); } catch (e) { alert(e?.message || "❌ تعذر تحديث الطلب"); } };
   const removeOrder = async (o) => { if (!window.confirm("هل تريد حذف الطلب نهائيًا؟")) return; try { await deleteDoc(doc(db, "orders", o.id)); await log("حذف طلب", o.orderNumber || o.id); setOrderDetails(null); } catch (e) { alert(e?.message || "❌ تعذر الحذف"); } };
@@ -943,9 +1005,6 @@ export default function Admin() {
   };
   const removeGeneric = async (type, item) => { const name = collectionMap[type]; if (!name || !window.confirm("هل تريد حذف هذا العنصر؟")) return; try { await deleteDoc(doc(db, name, item.id)); await log("حذف عنصر", `${genericConfig[type]?.title || type}: ${item.title || item.name || item.text || item.id}`); } catch (e) { alert(e?.message || "❌ تعذر الحذف"); } };
 
-  const addPrize = () => setWheelSettings(p => ({ ...p, prizes: [...safeArray(p.prizes), { id: `${Date.now()}`, title: "جائزة جديدة", type: "discount", value: 10, color: "#D4AF37", enabled: true }] }));
-  const updatePrize = (index, patch) => setWheelSettings(p => ({ ...p, prizes: safeArray(p.prizes).map((x, i) => i === index ? { ...x, ...patch } : x) }));
-  const deletePrize = (index) => setWheelSettings(p => ({ ...p, prizes: safeArray(p.prizes).filter((_, i) => i !== index) }));
 
   const title = menu.flatMap(g => g.items).find(x => x[0] === tab)?.[2] || "لوحة التحكم";
   if (loading) return <div className="admin-page" dir="rtl"><div className="admin-loading">⏳ جاري تحميل لوحة الإدارة...</div></div>;
@@ -983,14 +1042,12 @@ export default function Admin() {
         .admin-horizontal-safe .form-actions { min-width: 0; max-width: 100%; }
         .admin-horizontal-safe .table-scroll,
         .admin-horizontal-safe .admin-wide-scroll,
-        .admin-horizontal-safe .admin-wide-row-scroll,
-        .admin-horizontal-safe .prizes-grid {
+        .admin-horizontal-safe .admin-wide-row-scroll {
           width: 100%; max-width: 100%; min-width: 0;
           overflow-x: auto; overflow-y: hidden;
           -webkit-overflow-scrolling: touch; scrollbar-width: thin;
         }
         .admin-horizontal-safe .table-scroll > .admin-table { width: max-content; min-width: 100%; }
-        .admin-horizontal-safe .prizes-grid { padding-bottom: 6px; }
         .admin-horizontal-safe .admin-wide-row-scroll > * { min-width: 700px; }
         @media (max-width: 900px) {
           .admin-horizontal-safe .form-grid { min-width: 0; }
@@ -1014,7 +1071,7 @@ export default function Admin() {
           <div><h2>📦 إدارة المنتجات</h2><p>إضافة وتعديل المنتجات والتحكم في الأقسام والصور والمتغيرات بدون حد لعدد الصور أو المتغيرات.</p></div>
           <button type="button" className="add-btn" onClick={() => setProductForm({
             title: "", description: "", price: 0, oldPrice: 0, stock: 0,
-            category: "", categoryId: "", image: "", images: [], imageFiles: [], imagePreview: "",
+            category: "", categoryId: "", mainCategoryId: "", brandId: "", brandName: "", image: "", images: [], imageFiles: [], imagePreview: "",
             hasVariants: false, variantGroups: [], variants: [], offer: false, bestSeller: false, newArrival: false, recommended: false, active: true,
           })}>＋ إضافة منتج</button>
         </div>
@@ -1030,6 +1087,14 @@ export default function Admin() {
             <label><span>القسم</span><select value={productForm.categoryId || productForm.category || ""} onChange={e => setProductForm(p => ({ ...p, category: e.target.value, categoryId: e.target.value }))}>
               <option value="">اختر القسم</option>
               {categories.slice().sort((a,b) => asNumber(a.sortOrder) - asNumber(b.sortOrder)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select></label>
+            <label><span>التصنيف الرئيسي</span><select value={productForm.mainCategoryId || ""} onChange={e => setProductForm(p => ({ ...p, mainCategoryId: e.target.value, brandId: "", brandName: "" }))}>
+              <option value="">بدون تصنيف رئيسي</option>
+              {mainCategories.filter(c => c.active !== false && c.visible !== false).slice().sort((a,b) => asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select></label>
+            <label><span>البراند</span><select value={productForm.brandId || ""} onChange={e => { const id=e.target.value; const b=brands.find(x=>String(x.id)===String(id)); setProductForm(p => ({ ...p, brandId:id, brandName:b?.name || "" })); }}>
+              <option value="">بدون براند</option>
+              {brands.filter(b => (!productForm.mainCategoryId || String(b.mainCategoryId) === String(productForm.mainCategoryId)) && b.active !== false && b.visible !== false).slice().sort((a,b) => asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select></label>
             <label className="form-group-full"><span>صور المنتج — يمكنك اختيار عدد غير محدود</span><input type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={e => setProductForm(p => ({ ...p, imageFiles: [...safeArray(p.imageFiles), ...Array.from(e.target.files || [])] }))} /></label>
             <label className="form-group-full"><span>الوصف</span><textarea rows="4" value={productForm.description || ""} onChange={e => setProductForm(p => ({ ...p, description: e.target.value }))} /></label>
@@ -1234,7 +1299,68 @@ export default function Admin() {
         </form>}
 
         <div className="toolbar"><input placeholder="🔎 ابحث باسم المنتج أو القسم..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
-        <div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>المنتج</th><th>القسم</th><th>السعر</th><th>الكمية</th><th>التصنيفات</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{filteredProducts.map(p=>{const imgs=productImageList(p);const category=categories.find(c=>c.id===(p.categoryId||p.category));return <tr key={p.id}><td>{(p.image||imgs[0])?<img className="table-img" src={p.image||imgs[0]} alt=""/>:<span>🖼️</span>}</td><td><strong>{p.title||"بدون اسم"}</strong>{imgs.length>1&&<small style={{display:"block"}}>🖼️ {imgs.length} صور</small>}{safeArray(p.variants).length>0&&<small style={{display:"block"}}>🎨 {p.variants.length} متغير</small>}</td><td>{category?.name||p.categoryName||"—"}</td><td><strong>{money(p.price)}</strong>{asNumber(p.oldPrice)>asNumber(p.price)&&<small className="old-price">{money(p.oldPrice)}</small>}</td><td>{asNumber(p.stock)}</td><td><div className="mini-tags">{p.offer&&<span>🔥</span>}{p.bestSeller&&<span>⭐</span>}{p.newArrival&&<span>🆕</span>}{p.recommended&&<span>❤️</span>}</div></td><td>{p.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setProductForm({...p,categoryId:p.categoryId||p.category||"",category:p.categoryId||p.category||"",images:imgs,image: p.image||imgs[0]||"",imageFiles:[],variantGroups:productVariantGroups(p),variants:productVariantsList(p),hasVariants:p.hasVariants===true||safeArray(p.variants).length>0||productVariantGroups(p).length>0})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeProduct(p)}>🗑️ حذف</button></div></td></tr>})}</tbody></table></div>
+        <div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>المنتج</th><th>القسم</th><th>السعر</th><th>الكمية</th><th>التصنيفات</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{filteredProducts.map(p=>{const imgs=productImageList(p);const category=categories.find(c=>c.id===(p.categoryId||p.category));return <tr key={p.id}><td>{(p.image||imgs[0])?<img className="table-img" src={p.image||imgs[0]} alt=""/>:<span>🖼️</span>}</td><td><strong>{p.title||"بدون اسم"}</strong>{p.brandName&&<small style={{display:"block"}}>🏷️ {p.brandName}</small>}{imgs.length>1&&<small style={{display:"block"}}>🖼️ {imgs.length} صور</small>}{safeArray(p.variants).length>0&&<small style={{display:"block"}}>🎨 {p.variants.length} متغير</small>}</td><td>{category?.name||p.categoryName||"—"}</td><td><strong>{money(p.price)}</strong>{asNumber(p.oldPrice)>asNumber(p.price)&&<small className="old-price">{money(p.oldPrice)}</small>}</td><td>{asNumber(p.stock)}</td><td><div className="mini-tags">{p.offer&&<span>🔥</span>}{p.bestSeller&&<span>⭐</span>}{p.newArrival&&<span>🆕</span>}{p.recommended&&<span>❤️</span>}</div></td><td>{p.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setProductForm({...p,categoryId:p.categoryId||p.category||"",category:p.categoryId||p.category||"",mainCategoryId:p.mainCategoryId||"",brandId:p.brandId||"",brandName:p.brandName||"",images:imgs,image: p.image||imgs[0]||"",imageFiles:[],variantGroups:productVariantGroups(p),variants:productVariantsList(p),hasVariants:p.hasVariants===true||safeArray(p.variants).length>0||productVariantGroups(p).length>0})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeProduct(p)}>🗑️ حذف</button></div></td></tr>})}</tbody></table></div>
+      </section>}
+
+      {tab === "main-categories" && <section className="admin-card">
+        <div className="section-header">
+          <div><h2>🧭 التصنيفات الرئيسية والبراندات</h2><p>أنشئ تصنيفات واسعة مثل مطاعم وكافيهات ومحلات، ثم أضف تحت كل تصنيف البراندات الخاصة به. كل شيء هنا يتحكم فيه الأدمن بالكامل.</p></div>
+          <div className="table-actions">
+            <button type="button" className="add-btn" onClick={() => setMainCategoryForm({name:"",slug:"",image:"",description:"",color:ACCENT,textColor:PRIMARY,cardSize:"medium",sortOrder:0,link:"",openInNewTab:false,active:true,visible:true})}>＋ إضافة تصنيف رئيسي</button>
+            <button type="button" className="ghost-btn" onClick={() => setBrandForm({name:"",slug:"",mainCategoryId:mainCategories[0]?.id||"",image:"",description:"",color:ACCENT,textColor:PRIMARY,cardSize:"medium",sortOrder:0,link:"",openInNewTab:false,active:true,visible:true})}>＋ إضافة براند</button>
+          </div>
+        </div>
+
+        {mainCategoryForm && <form className="admin-form" onSubmit={saveMainCategory} style={{marginBottom:18}}>
+          <h3>{mainCategoryForm.id ? "✏️ تعديل التصنيف الرئيسي" : "＋ إضافة تصنيف رئيسي"}</h3>
+          <div className="form-grid">
+            <label><span>اسم التصنيف</span><input required value={mainCategoryForm.name||""} onChange={e=>setMainCategoryForm(p=>({...p,name:e.target.value}))} placeholder="مثال: مطاعم"/></label>
+            <label><span>Slug اختياري</span><input value={mainCategoryForm.slug||""} onChange={e=>setMainCategoryForm(p=>({...p,slug:e.target.value}))}/></label>
+            <label><span>الرابط</span><input value={mainCategoryForm.link||""} onChange={e=>setMainCategoryForm(p=>({...p,link:e.target.value}))} placeholder="مثال: /main-category/restaurants"/></label>
+            <label><span>حجم البطاقة</span><select value={mainCategoryForm.cardSize||"medium"} onChange={e=>setMainCategoryForm(p=>({...p,cardSize:e.target.value}))}><option value="small">صغيرة</option><option value="medium">متوسطة</option><option value="large">كبيرة</option></select></label>
+            <label><span>الترتيب</span><input type="number" value={mainCategoryForm.sortOrder??0} onChange={e=>setMainCategoryForm(p=>({...p,sortOrder:e.target.value}))}/></label>
+            <ColorField name="mainCategoryColor" label="لون البطاقة" value={mainCategoryForm.color||ACCENT} onChange={e=>setMainCategoryForm(p=>({...p,color:e.target.value}))}/>
+            <ColorField name="mainCategoryTextColor" label="لون النص" value={mainCategoryForm.textColor||PRIMARY} onChange={e=>setMainCategoryForm(p=>({...p,textColor:e.target.value}))}/>
+            <label><span>الصورة JPG/JPEG فقط</span><input type="file" accept="image/jpeg,image/jpg" onChange={e=>{const f=e.target.files?.[0];setMainCategoryForm(p=>({...p,imageFile:f||null,imagePreview:f?URL.createObjectURL(f):p.imagePreview}))}}/></label>
+            <label className="form-group-full"><span>الوصف</span><textarea rows="3" value={mainCategoryForm.description||""} onChange={e=>setMainCategoryForm(p=>({...p,description:e.target.value}))}/></label>
+          </div>
+          <div className="flags-grid"><label className="admin-checkbox"><input type="checkbox" checked={mainCategoryForm.active!==false} onChange={e=>setMainCategoryForm(p=>({...p,active:e.target.checked}))}/><span>🟢 مفعل</span></label><label className="admin-checkbox"><input type="checkbox" checked={mainCategoryForm.visible!==false} onChange={e=>setMainCategoryForm(p=>({...p,visible:e.target.checked}))}/><span>👁️ ظاهر للزوار</span></label><label className="admin-checkbox"><input type="checkbox" checked={mainCategoryForm.openInNewTab===true} onChange={e=>setMainCategoryForm(p=>({...p,openInNewTab:e.target.checked}))}/><span>↗️ فتح الرابط في نافذة جديدة</span></label></div>
+          {mainCategoryForm.imagePreview && <img src={mainCategoryForm.imagePreview} alt="" style={{width:120,height:90,objectFit:"cover",borderRadius:12,marginTop:12}}/>}
+          <div className="form-actions"><button type="submit" className="save-btn" disabled={saving}>{saving?"⏳ جاري الحفظ...":"💾 حفظ التصنيف"}</button><button type="button" className="cancel-btn" onClick={()=>setMainCategoryForm(null)}>إلغاء</button></div>
+        </form>}
+
+        {brandForm && <form className="admin-form" onSubmit={saveBrand} style={{marginBottom:18}}>
+          <h3>{brandForm.id ? "✏️ تعديل البراند" : "＋ إضافة براند"}</h3>
+          <div className="form-grid">
+            <label><span>التصنيف الرئيسي</span><select required value={brandForm.mainCategoryId||""} onChange={e=>setBrandForm(p=>({...p,mainCategoryId:e.target.value}))}><option value="">اختر التصنيف الرئيسي</option>{mainCategories.slice().sort((a,b)=>asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+            <label><span>اسم البراند</span><input required value={brandForm.name||""} onChange={e=>setBrandForm(p=>({...p,name:e.target.value}))} placeholder="مثال: Nike"/></label>
+            <label><span>Slug اختياري</span><input value={brandForm.slug||""} onChange={e=>setBrandForm(p=>({...p,slug:e.target.value}))}/></label>
+            <label><span>الرابط</span><input value={brandForm.link||""} onChange={e=>setBrandForm(p=>({...p,link:e.target.value}))}/></label>
+            <label><span>حجم البطاقة</span><select value={brandForm.cardSize||"medium"} onChange={e=>setBrandForm(p=>({...p,cardSize:e.target.value}))}><option value="small">صغيرة</option><option value="medium">متوسطة</option><option value="large">كبيرة</option></select></label>
+            <label><span>الترتيب</span><input type="number" value={brandForm.sortOrder??0} onChange={e=>setBrandForm(p=>({...p,sortOrder:e.target.value}))}/></label>
+            <ColorField name="brandColor" label="لون البطاقة" value={brandForm.color||ACCENT} onChange={e=>setBrandForm(p=>({...p,color:e.target.value}))}/>
+            <ColorField name="brandTextColor" label="لون النص" value={brandForm.textColor||PRIMARY} onChange={e=>setBrandForm(p=>({...p,textColor:e.target.value}))}/>
+            <label><span>لوجو البراند JPG/JPEG فقط</span><input type="file" accept="image/jpeg,image/jpg" onChange={e=>{const f=e.target.files?.[0];setBrandForm(p=>({...p,imageFile:f||null,imagePreview:f?URL.createObjectURL(f):p.imagePreview}))}}/></label>
+            <label className="form-group-full"><span>وصف البراند</span><textarea rows="3" value={brandForm.description||""} onChange={e=>setBrandForm(p=>({...p,description:e.target.value}))}/></label>
+          </div>
+          <div className="flags-grid"><label className="admin-checkbox"><input type="checkbox" checked={brandForm.active!==false} onChange={e=>setBrandForm(p=>({...p,active:e.target.checked}))}/><span>🟢 البراند مفعل</span></label><label className="admin-checkbox"><input type="checkbox" checked={brandForm.visible!==false} onChange={e=>setBrandForm(p=>({...p,visible:e.target.checked}))}/><span>👁️ ظاهر للزوار</span></label><label className="admin-checkbox"><input type="checkbox" checked={brandForm.openInNewTab===true} onChange={e=>setBrandForm(p=>({...p,openInNewTab:e.target.checked}))}/><span>↗️ فتح الرابط في نافذة جديدة</span></label></div>
+          {brandForm.imagePreview && <img src={brandForm.imagePreview} alt="" style={{width:120,height:90,objectFit:"contain",borderRadius:12,marginTop:12,background:"#fff"}}/>}
+          <div className="form-actions"><button type="submit" className="save-btn" disabled={saving}>{saving?"⏳ جاري الحفظ...":"💾 حفظ البراند"}</button><button type="button" className="cancel-btn" onClick={()=>setBrandForm(null)}>إلغاء</button></div>
+        </form>}
+
+        <div style={{display:"grid",gap:16}}>
+          {mainCategories.slice().sort((a,b)=>asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(main=>{
+            const children=brands.filter(b=>String(b.mainCategoryId||"")===String(main.id)).sort((a,b)=>asNumber(a.sortOrder)-asNumber(b.sortOrder));
+            return <div key={main.id} className="admin-card" style={{padding:16,border:`1px solid ${main.color||ACCENT}55`}}>
+              <div className="section-header nested">
+                <div style={{display:"flex",alignItems:"center",gap:12}}>{main.image?<img src={main.image} alt="" style={{width:64,height:64,borderRadius:14,objectFit:"cover",border:`2px solid ${main.color||ACCENT}`}}/>:<span style={{fontSize:34}}>🧭</span>}<div><h3 style={{margin:0}}>{main.name}</h3><small>{children.length} براند • ترتيب {asNumber(main.sortOrder)} • {main.active!==false&&main.visible!==false?"ظاهر":"مخفي"}</small></div></div>
+                <div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setMainCategoryForm({...main})}>✏️ تعديل</button><button type="button" className="ghost-btn" onClick={()=>setBrandForm({name:"",slug:"",mainCategoryId:main.id,image:"",description:"",color:ACCENT,textColor:PRIMARY,cardSize:"medium",sortOrder:children.length,link:"",openInNewTab:false,active:true,visible:true})}>＋ براند</button><button type="button" className="delete-btn" onClick={()=>removeMainCategory(main)}>🗑️ حذف</button></div>
+              </div>
+              {children.length===0?<div className="empty-state" style={{marginTop:12}}>لا توجد براندات داخل هذا التصنيف حتى الآن.</div>:<div className="table-scroll" style={{marginTop:12}}><table className="admin-table"><thead><tr><th>اللوجو</th><th>البراند</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{children.map(brand=><tr key={brand.id}><td>{brand.image?<img className="table-img" src={brand.image} alt=""/>:"🏷️"}</td><td><strong>{brand.name}</strong>{brand.description&&<small style={{display:"block"}}>{brand.description}</small>}</td><td>{asNumber(brand.sortOrder)}</td><td>{brand.active!==false&&brand.visible!==false?<span className="status-active">🟢 ظاهر</span>:<span className="status-inactive">🔴 مخفي</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setBrandForm({...brand})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeBrand(brand)}>🗑️ حذف</button></div></td></tr>)}</tbody></table></div>}
+            </div>;
+          })}
+          {mainCategories.length===0&&<div className="empty-state"><div>🧭</div><h3>لا توجد تصنيفات رئيسية</h3><p>ابدأ بإضافة تصنيف مثل مطاعم أو كافيهات أو محلات، ثم أضف البراندات بداخله.</p></div>}
+        </div>
       </section>}
 
       {tab === "categories" && <section className="admin-card"><div className="section-header"><div><h2>🗂️ إدارة الأقسام</h2><p>تحكم في الاسم والصورة واللون والترتيب والأقسام الفرعية.</p></div><button type="button" className="add-btn" onClick={()=>setCategoryForm({name:"",categoryNumber:"",parentId:"",image:"",color:ACCENT,cardSize:"medium",sortOrder:0,description:"",active:true})}>＋ إضافة قسم</button></div>{categoryForm&&<form className="admin-form" onSubmit={saveCategory} style={{overflowX:"auto",width:"100%"}}><h3>{categoryForm.id?"✏️ تعديل القسم":"＋ إضافة قسم"}</h3><div className="form-grid"><label><span>اسم القسم</span><input required value={categoryForm.name} onChange={e=>setCategoryForm(p=>({...p,name:e.target.value}))}/></label><label><span>رقم القسم</span><input value={categoryForm.categoryNumber} onChange={e=>setCategoryForm(p=>({...p,categoryNumber:e.target.value}))}/></label><label><span>القسم الرئيسي</span><select value={categoryForm.parentId} onChange={e=>setCategoryForm(p=>({...p,parentId:e.target.value}))}><option value="">قسم رئيسي</option>{categories.filter(c=>c.id!==categoryForm.id).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><ColorField name="categoryColor" label="اللون" value={categoryForm.color || ACCENT} onChange={e=>setCategoryForm(p=>({...p,color:e.target.value}))}/><label><span>حجم البطاقة</span><select value={categoryForm.cardSize} onChange={e=>setCategoryForm(p=>({...p,cardSize:e.target.value}))}><option value="small">صغيرة</option><option value="medium">متوسطة</option><option value="large">كبيرة</option></select></label><label><span>الترتيب</span><input type="number" value={categoryForm.sortOrder} onChange={e=>setCategoryForm(p=>({...p,sortOrder:e.target.value}))}/></label><label><span>الصورة</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const f=e.target.files?.[0];setCategoryForm(p=>({...p,imageFile:f}))}}/></label><label className="form-group-full"><span>الوصف</span><textarea rows="3" value={categoryForm.description} onChange={e=>setCategoryForm(p=>({...p,description:e.target.value}))}/></label></div><label className="admin-checkbox"><input type="checkbox" checked={categoryForm.active!==false} onChange={e=>setCategoryForm(p=>({...p,active:e.target.checked}))}/><span>🟢 القسم مفعل</span></label><div className="form-actions"><button type="submit" className="save-btn" disabled={saving}>{saving?"⏳ جاري الحفظ...":"💾 حفظ القسم"}</button><button type="button" className="cancel-btn" onClick={()=>setCategoryForm(null)}>إلغاء</button></div></form>}<div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>القسم</th><th>اللون</th><th>الحجم</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{categories.slice().sort((a,b)=>asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(c=><tr key={c.id}><td>{c.image?<img className="table-img" src={c.image} alt=""/>:"🗂️"}</td><td><strong>{c.name}</strong></td><td><span className="color-dot" style={{background:c.color||ACCENT}}/>{c.color||ACCENT}</td><td>{c.cardSize||"medium"}</td><td>{asNumber(c.sortOrder)}</td><td>{c.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setCategoryForm({...c})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeCategory(c)}>🗑️ حذف</button></div></td></tr>)}</tbody></table></div></section>}
@@ -1249,10 +1375,6 @@ export default function Admin() {
       {tab === "recommended" && <ProductFlagSection title="❤️ قد يعجبك" flag="recommended" products={products} setTab={changeTab} />}
 
       {tab === "banners" && GenericSection({ type: "banners", data: banners })}
-
-      {tab === "games" && <GamesPanel gamesSettings={gamesSettings} setGamesSettings={setGamesSettings} saveGames={saveGames} saving={saving} />}
-
-      {tab === "wheel" && <section className="admin-card"><div className="section-header"><div><h2>🎡 عجلة الحظ</h2><p>تحكم كامل في الظهور والمحاولات والجوائز.</p></div></div><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={wheelSettings.enabled===true} onChange={e=>setWheelSettings(p=>({...p,enabled:e.target.checked}))}/><span>تفعيل عجلة الحظ</span></label><label><span>طريقة الظهور</span><select value={wheelSettings.displayMode} onChange={e=>setWheelSettings(p=>({...p,displayMode:e.target.value}))}><option value="store">داخل المتجر</option><option value="popup">منبثق</option><option value="both">الاثنين</option></select></label><label><span>العنوان</span><input value={wheelSettings.title||""} onChange={e=>setWheelSettings(p=>({...p,title:e.target.value}))}/></label><label><span>الوصف</span><input value={wheelSettings.description||""} onChange={e=>setWheelSettings(p=>({...p,description:e.target.value}))}/></label><label><span>المحاولات اليومية</span><input type="number" min="1" value={wheelSettings.attemptsPerUser} onChange={e=>setWheelSettings(p=>({...p,attemptsPerUser:Math.max(1,asNumber(e.target.value,1))}))}/></label><label><span>تأخير Popup</span><input type="number" min="0" value={wheelSettings.popupDelay} onChange={e=>setWheelSettings(p=>({...p,popupDelay:Math.max(0,asNumber(e.target.value))}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={wheelSettings.popupEnabled===true} onChange={e=>setWheelSettings(p=>({...p,popupEnabled:e.target.checked}))}/><span>تفعيل Popup</span></label><label className="admin-checkbox"><input type="checkbox" checked={wheelSettings.popupClosable!==false} onChange={e=>setWheelSettings(p=>({...p,popupClosable:e.target.checked}))}/><span>السماح بالإغلاق</span></label><label className="admin-checkbox"><input type="checkbox" checked={wheelSettings.popupShowOncePerDay===true} onChange={e=>setWheelSettings(p=>({...p,popupShowOncePerDay:e.target.checked}))}/><span>مرة واحدة يوميًا</span></label></div><div className="section-header nested"><div><h3>🎁 الجوائز</h3><p>أضف وعدّل الجوائز مباشرة.</p></div><button type="button" className="add-btn" onClick={addPrize}>＋ إضافة جائزة</button></div><div className="prizes-grid">{safeArray(wheelSettings.prizes).map((p,i)=><div className="prize-card" key={p.id||i}><label><span>اسم الجائزة</span><input value={p.title||""} onChange={e=>updatePrize(i,{title:e.target.value})}/></label><label><span>النوع</span><select value={p.type||"discount"} onChange={e=>updatePrize(i,{type:e.target.value})}><option value="discount">نسبة خصم</option><option value="fixed">خصم مبلغ</option><option value="free-shipping">شحن مجاني</option><option value="gift">هدية</option><option value="nothing">حظ أوفر</option></select></label>{!["nothing","free-shipping"].includes(p.type)&&<label><span>القيمة</span><input type="number" min="0" value={p.value??0} onChange={e=>updatePrize(i,{value:asNumber(e.target.value)})}/></label>}<ColorField name={`prizeColor-${i}`} label="اللون" value={p.color || ACCENT} onChange={e=>updatePrize(i,{color:e.target.value})}/><label className="admin-checkbox"><input type="checkbox" checked={p.enabled!==false} onChange={e=>updatePrize(i,{enabled:e.target.checked})}/><span>الجائزة متاحة</span></label><button type="button" className="delete-btn" onClick={()=>deletePrize(i)}>🗑️ حذف الجائزة</button></div>)}</div><div className="form-actions"><button type="button" className="save-btn" disabled={saving} onClick={saveWheel}>{saving?"⏳ جاري الحفظ...":"💾 حفظ إعدادات العجلة"}</button></div></section>}
 
       {tab === "settings" && <SettingsPanel storeSettings={storeSettings} setStoreSettings={setStoreSettings} saveSettings={saveSettings} saving={saving} />}
       {tab === "contact" && <ContactPanel storeSettings={storeSettings} setStoreSettings={setStoreSettings} saveSettings={saveSettings} saving={saving} />}
@@ -1626,15 +1748,6 @@ function CustomerDetailsModal({ user, orders, favorites, support, activityLogs, 
   </Modal>;
 }
 
-function GamesPanel({gamesSettings,setGamesSettings,saveGames,saving}) {
-  const defs=[["wheel","🎡","عجلة الحظ"],["cards","🃏","الكروت المقلوبة"],["scratch","🪙","اكشط واربح"],["mystery","🎁","الصناديق الغامضة"],["pick","🎯","اختار واربح"],["dice","🎲","النرد الرابح"]];
-  const setGame=(key,patch)=>setGamesSettings(p=>({...p,[key]:{...p[key],...patch}}));
-  const addPrize=(key)=>setGame(key,{prizes:[...safeArray(gamesSettings[key]?.prizes),{title:"جائزة جديدة",type:"discount",value:10,probability:10,color:ACCENT,enabled:true}]});
-  const updatePrize=(key,i,patch)=>setGame(key,{prizes:safeArray(gamesSettings[key]?.prizes).map((x,n)=>n===i?{...x,...patch}:x)});
-  const deletePrize=(key,i)=>setGame(key,{prizes:safeArray(gamesSettings[key]?.prizes).filter((_,n)=>n!==i)});
-  return <section className="admin-card"><div className="section-header"><div><h2>🎮 الألعاب والمسابقات</h2><p>كل الألعاب مفعلة من نفس لوحة التحكم مع تحكم كامل في التصميم والجوائز والمحاولات والمواعيد.</p></div></div><div className="games-grid">{defs.map(([key,icon,label])=>{const g=gamesSettings[key]||defaultGamesSettings[key];return <div className="game-admin-card" key={key}><div className="game-admin-head"><h3>{icon} {label}</h3><label className="admin-checkbox"><input type="checkbox" checked={g.enabled!==false} onChange={e=>setGame(key,{enabled:e.target.checked})}/><span>مفعل</span></label></div><div className="form-grid"><label><span>اسم اللعبة</span><input value={g.title||""} onChange={e=>setGame(key,{title:e.target.value})}/></label><label><span>الوصف</span><input value={g.description||""} onChange={e=>setGame(key,{description:e.target.value})}/></label><label><span>المحاولات لكل مستخدم</span><input type="number" min="1" value={g.attemptsPerUser??2} onChange={e=>setGame(key,{attemptsPerUser:Math.max(1,asNumber(e.target.value,2))})}/></label><label className="admin-checkbox"><input type="checkbox" checked={g.requireLogin===true} onChange={e=>setGame(key,{requireLogin:e.target.checked})}/><span>يتطلب تسجيل الدخول</span></label><label><span>تاريخ البداية</span><input type="datetime-local" value={g.startDate||""} onChange={e=>setGame(key,{startDate:e.target.value})}/></label><label><span>تاريخ النهاية</span><input type="datetime-local" value={g.endDate||""} onChange={e=>setGame(key,{endDate:e.target.value})}/></label><label><span>حد الفائزين 0 = بدون حد</span><input type="number" min="0" value={g.winnerLimit??0} onChange={e=>setGame(key,{winnerLimit:asNumber(e.target.value)})}/></label><label className="form-group-full"><span>رسالة الفوز</span><textarea rows="2" value={g.winnerMessage||""} onChange={e=>setGame(key,{winnerMessage:e.target.value})}/></label></div><div className="section-header nested"><div><h4>🎁 الجوائز</h4></div><button type="button" className="add-btn" onClick={()=>addPrize(key)}>＋ إضافة جائزة</button></div><div className="prizes-grid">{safeArray(g.prizes).map((p,i)=><div className="prize-card" key={`${key}-${i}`}><label><span>اسم الجائزة</span><input value={p.title||""} onChange={e=>updatePrize(key,i,{title:e.target.value})}/></label><label><span>النوع</span><select value={p.type||"discount"} onChange={e=>updatePrize(key,i,{type:e.target.value})}><option value="discount">نسبة خصم</option><option value="fixed">خصم مبلغ</option><option value="free-shipping">شحن مجاني</option><option value="gift">هدية</option><option value="nothing">حظ أوفر</option></select></label><label><span>القيمة</span><input type="number" min="0" value={p.value??0} onChange={e=>updatePrize(key,i,{value:asNumber(e.target.value)})}/></label><label><span>احتمال الفوز %</span><input type="number" min="0" max="100" step="0.01" value={p.probability??10} onChange={e=>updatePrize(key,i,{probability:Math.min(100,Math.max(0,asNumber(e.target.value,10)))})}/></label><ColorField name={`gamePrizeColor-${key}-${i}`} label="اللون" value={p.color || ACCENT} onChange={e=>updatePrize(key,i,{color:e.target.value})}/><label className="admin-checkbox"><input type="checkbox" checked={p.enabled!==false} onChange={e=>updatePrize(key,i,{enabled:e.target.checked})}/><span>الجائزة متاحة</span></label><button type="button" className="delete-btn" onClick={()=>deletePrize(key,i)}>🗑️ حذف</button></div>)}</div></div>})}</div><div className="form-actions"><button type="button" className="save-btn" disabled={saving} onClick={saveGames}>{saving?"⏳ جاري الحفظ...":"💾 حفظ جميع الألعاب"}</button></div></section>
-}
-
 function ProductFlagSection({ title, flag, products, setTab }) {
   const items = products.filter(p=>p[flag]===true);
   return <section className="admin-card"><div className="section-header"><div><h2>{title}</h2><p>المنتجات المحددة لهذا القسم: {items.length}</p></div><button type="button" className="ghost-btn" onClick={()=>setTab("products")}>إدارة المنتجات</button></div>{items.length===0?<div className="empty-state"><div>📦</div><h3>لا توجد منتجات</h3><p>فعّل هذا التصنيف من داخل نموذج المنتج.</p></div>:<div className="cards-grid">{items.map(p=><div className="mini-product" key={p.id}>{p.image?<img src={p.image} alt=""/>:<div>📦</div>}<strong>{p.title}</strong><span>{money(p.price)}</span></div>)}</div>}</section>;
@@ -1647,14 +1760,6 @@ function SettingsPanel({ storeSettings, setStoreSettings, saveSettings, saving }
   const setText = (key,value)=>setStoreSettings(p=>({...p,texts:{...defaultStoreSettings.texts,...p.texts,[key]:value}}));
   const colors = [["primary","اللون الأساسي"],["secondary","اللون الثانوي"],["accent","اللون المميز"],["pageBackground","خلفية الموقع"],["cardBackground","خلفية البطاقات"],["textPrimary","لون النص الرئيسي"],["textSecondary","لون النص الثانوي"],["border","لون الحدود"],["buttonBackground","خلفية الأزرار"],["buttonText","نص الأزرار"],["navbarBackground","خلفية الشريط الرئيسي"],["headerBackground","لون الهيدر"],["navbarText","نص الشريط الرئيسي"],["categoryBarBackground","خلفية شريط الأقسام"],["categoryBarText","نص شريط الأقسام"],["topStripBackground","خلفية الشريط المتحرك"],["topStripText","نص الشريط المتحرك"],["footerBackground","خلفية الفوتر"],["footerText","نص الفوتر"],["footerBrand","لون اسم المتجر في الفوتر"],["footerButtonBackground","زر الفوتر"],["footerButtonText","نص زر الفوتر"],["headingColor","العناوين"],["linkColor","الروابط"],["priceColor","الأسعار"],["saleColor","لون الخصم"],["successColor","لون النجاح"],["warningColor","لون التنبيه"],["errorColor","لون الخطأ"],["inputBackground","خلفية الحقول"]];
   return <section className="admin-card"><div className="section-header"><div><h2>🎨 مظهر المتجر وإعداداته</h2><p>تحكم كامل في الهوية والألوان والنصوص والأشرطة.</p></div></div><div className="settings-tabs"><div className="settings-block"><h3>🏪 البيانات الأساسية</h3><div className="form-grid"><label><span>اسم المتجر</span><input value={storeSettings.storeName||""} onChange={e=>setStoreSettings(p=>({...p,storeName:e.target.value}))}/></label><label><span>لوجو المتجر — رفع ملف</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0]||null;setStoreSettings(p=>({...p,logoFile:file}));}}/><small style={{display:"block",marginTop:6,color:"#64748B"}}>JPG / JPEG / PNG / WEBP — بحد أقصى 5MB</small>{storeSettings.logoFile ? <small style={{display:"block",marginTop:4,color:"#16803C"}}>📥 {storeSettings.logoFile.name} جاهز للرفع</small> : null}{storeSettings.logo ? <img src={storeSettings.logo} alt="Logo preview" style={{display:"block",marginTop:10,maxWidth:180,maxHeight:80,objectFit:"contain",borderRadius:10,border:"1px solid #D9DFE8",padding:6,background:"#fff"}} /> : null}</label><label className="form-group-full"><span>الإعلان الافتراضي</span><textarea rows="3" value={storeSettings.announcement||""} onChange={e=>setStoreSettings(p=>({...p,announcement:e.target.value}))}/></label></div></div><div className="settings-block"><h3>🎨 جميع ألوان الموقع</h3><div className="color-grid">{colors.map(([k,l])=><ColorField key={k} name={k} label={l} value={theme[k]} onChange={e=>setTheme(k,e.target.value)} />)}</div></div><div className="settings-block"><h3>📝 نصوص الموقع</h3><div className="form-grid">{Object.entries(text).map(([k,v])=><label key={k}><span>{textLabel(k)}</span><input value={v||""} onChange={e=>setText(k,e.target.value)}/></label>)}</div></div><div className="settings-block"><h3>📢 الشريط المتحرك الافتراضي</h3><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.topStrip?.enabled!==false} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,enabled:e.target.checked}}))}/><span>إظهار الشريط</span></label><label><span>الاتجاه</span><select value={storeSettings.topStrip?.direction||"rtl"} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,direction:e.target.value}}))}><option value="rtl">يمين ← يسار</option><option value="ltr">يسار ← يمين</option></select></label><label><span>السرعة</span><input type="number" min="1" value={storeSettings.topStrip?.speed??40} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,speed:asNumber(e.target.value,40)}}))}/></label><label><span>الارتفاع</span><input type="number" min="20" value={storeSettings.topStrip?.height??42} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,height:asNumber(e.target.value,42)}}))}/></label><label><span>حجم الخط</span><input type="number" min="8" value={storeSettings.topStrip?.fontSize??15} onChange={e=>setStoreSettings(p=>({...p,topStrip:{...p.topStrip,fontSize:asNumber(e.target.value,15)}}))}/></label></div></div><div className="settings-block"><h3>🖼️ استجابة البانرات</h3><div className="form-grid"><label><span>ارتفاع سطح المكتب</span><input type="number" min="160" value={storeSettings.bannerSettings?.heightDesktop??420} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightDesktop:asNumber(e.target.value,420)}}))}/></label><label><span>ارتفاع التابلت</span><input type="number" min="140" value={storeSettings.bannerSettings?.heightTablet??350} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightTablet:asNumber(e.target.value,350)}}))}/></label><label><span>ارتفاع الموبايل</span><input type="number" min="120" value={storeSettings.bannerSettings?.heightMobile??240} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,heightMobile:asNumber(e.target.value,240)}}))}/></label><label><span>انحناء الحواف</span><input type="number" min="0" value={storeSettings.bannerSettings?.borderRadius??16} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,borderRadius:asNumber(e.target.value,16)}}))}/></label><label><span>شفافية Overlay</span><input type="number" min="0" max="1" step="0.05" value={storeSettings.bannerSettings?.overlayOpacity??0.35} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,overlayOpacity:asNumber(e.target.value,0.35)}}))}/></label><label><span>تأخير السلايدر</span><input type="number" min="1000" value={storeSettings.bannerSettings?.autoplayDelay??5000} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplayDelay:asNumber(e.target.value,5000)}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.bannerSettings?.autoplay!==false} onChange={e=>setStoreSettings(p=>({...p,bannerSettings:{...p.bannerSettings,autoplay:e.target.checked}}))}/><span>تشغيل تلقائي</span></label></div></div><div className="settings-block"><h3>⏳ مؤقت عروض اليوم</h3><p style={{marginTop:0,color:"#64748B"}}>العرض يفضل ظاهرًا بعد انتهاء الوقت، لكن يتحول لحالة منتهية وبهتان ولا يمكن التفاعل معه.</p><div className="form-grid"><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.enabled===true} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),enabled:e.target.checked}}))}/><span>تفعيل مؤقت عروض اليوم</span></label><label><span>عنوان المؤقت</span><input value={storeSettings.todayOffersTimer?.title||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),title:e.target.value}}))}/></label><label><span>بداية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.startAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),startAt:e.target.value}}))}/></label><label><span>نهاية العرض</span><input type="datetime-local" value={storeSettings.todayOffersTimer?.endAt||""} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),endAt:e.target.value}}))}/></label><label className="admin-checkbox"><input type="checkbox" checked={storeSettings.todayOffersTimer?.showDays!==false} onChange={e=>setStoreSettings(p=>({...p,todayOffersTimer:{...defaultStoreSettings.todayOffersTimer,...(p.todayOffersTimer||{}),showDays:e.target.checked}}))}/><span>إظهار خانة الأيام</span></label></div><div className="info-box" style={{marginTop:12}}>💡 عند وصول العداد للصفر لن يختفي قسم العروض: سيظل موجودًا لكن ببهتان وطبقة تعطيل، مع ظهور «انتهى العرض».</div></div><div className="form-actions"><button type="button" className="save-btn" disabled={saving} onClick={saveSettings}>{saving?"⏳ جاري الحفظ...":"💾 حفظ كل إعدادات المتجر"}</button></div></div></section>;
-}
-
-function mergeGames(defaults, previous, incoming) {
-  const result = {};
-  Object.keys(defaults).forEach((game) => {
-    result[game] = { ...defaults[game], ...(previous?.[game] || {}), ...(incoming?.[game] || {}), prizes: safeArray(incoming?.[game]?.prizes ?? previous?.[game]?.prizes ?? defaults[game].prizes) };
-  });
-  return result;
 }
 
 function excelEscape(value) {

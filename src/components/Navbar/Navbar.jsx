@@ -872,6 +872,18 @@ export default function Navbar() {
 
 
   /* ===================================================
+     FIXED NAVBAR HEIGHT
+     Keeps page content from hiding underneath the fixed
+     header + categories bar.
+  =================================================== */
+
+  const [
+    navbarFixedHeight,
+    setNavbarFixedHeight,
+  ] = useState(0);
+
+
+  /* ===================================================
      REFS
   =================================================== */
 
@@ -889,6 +901,57 @@ export default function Navbar() {
 
   const wheelTimerRef =
     useRef(null);
+
+
+  const navbarShellRef =
+    useRef(null);
+
+
+  /* ===================================================
+     KEEP HEADER + CATEGORY BAR FIXED
+  =================================================== */
+
+  useEffect(() => {
+    const element =
+      navbarShellRef.current;
+
+    if (!element) {
+      return undefined;
+    }
+
+    const updateHeight = () => {
+      const height =
+        Math.ceil(
+          element.getBoundingClientRect().height
+        );
+
+      setNavbarFixedHeight(height);
+    };
+
+    updateHeight();
+
+    let observer;
+
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(
+        updateHeight
+      );
+      observer.observe(element);
+    }
+
+    window.addEventListener(
+      "resize",
+      updateHeight
+    );
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener(
+        "resize",
+        updateHeight
+      );
+    };
+  }, []);
 
 
   /* ===================================================
@@ -1485,18 +1548,68 @@ export default function Navbar() {
 
 
           const normalized =
-            Array.isArray(result)
+            (Array.isArray(result)
               ? result
-              : [];
-
-
-          setCategories(
-            normalized.filter(
-              (category) =>
-                category?.active !==
-                false
+              : []
             )
-          );
+              .map((category, index) => {
+                if (!category) {
+                  return null;
+                }
+
+                const id =
+                  category.id ||
+                  category.categoryId ||
+                  category.docId ||
+                  `category-${index}`;
+
+                const parentId =
+                  category.parentId ??
+                  category.parentCategoryId ??
+                  category.parentID ??
+                  (typeof category.parent === "string"
+                    ? category.parent
+                    : category.parent?.id) ??
+                  "";
+
+                const name =
+                  category.name ||
+                  category.title ||
+                  category.label ||
+                  category.categoryName ||
+                  "قسم";
+
+                const image =
+                  category.image ||
+                  category.imageUrl ||
+                  category.photo ||
+                  category.thumbnail ||
+                  category.iconImage ||
+                  "";
+
+                return {
+                  ...category,
+                  id: String(id),
+                  parentId: parentId ? String(parentId) : "",
+                  name: String(name),
+                  image,
+                  sortOrder: Number(
+                    category.sortOrder ??
+                    category.order ??
+                    category.displayOrder ??
+                    category.position ??
+                    0
+                  ),
+                };
+              })
+              .filter(Boolean)
+              .filter((category) => category.active !== false)
+              .sort((a, b) => {
+                const order = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+                return order || a.name.localeCompare(b.name, "ar");
+              });
+
+          setCategories(normalized);
         } catch (error) {
           console.error(
             "Failed to load categories:",
@@ -2128,26 +2241,31 @@ export default function Navbar() {
 
   const rootCategories =
     useMemo(() => {
-      return categories.filter(
-        (category) =>
-          !category.parentId ||
-          !categoryMap[
-            category.parentId
-          ]
-      );
-    }, [
-      categories,
-      categoryMap,
-    ]);
+      return categories
+        .filter((category) => {
+          const parentId = String(category?.parentId || "").trim();
+          return !parentId || !categoryMap[parentId];
+        })
+        .sort((a, b) => {
+          const order = Number(a?.sortOrder || 0) - Number(b?.sortOrder || 0);
+          return order || String(a?.name || "").localeCompare(String(b?.name || ""), "ar");
+        });
+    }, [categories, categoryMap]);
 
 
   const getChildren =
     (parentId) => {
-      return categories.filter(
-        (category) =>
-          category.parentId ===
-          parentId
-      );
+      const normalizedParentId = String(parentId || "");
+
+      return categories
+        .filter(
+          (category) =>
+            String(category?.parentId || "") === normalizedParentId
+        )
+        .sort((a, b) => {
+          const order = Number(a?.sortOrder || 0) - Number(b?.sortOrder || 0);
+          return order || String(a?.name || "").localeCompare(String(b?.name || ""), "ar");
+        });
     };
 
 
@@ -2216,6 +2334,36 @@ export default function Navbar() {
      SEARCH SUBMIT
   =================================================== */
 
+  const openMobileSearch = () => {
+    setMobileMenuOpen(false);
+    setTimeout(() => {
+      searchRef.current?.querySelector("input")?.focus();
+    }, 180);
+  };
+
+
+  const openMobileShortcut = (path) => {
+    if (path === "__search__") {
+      openMobileSearch();
+      return;
+    }
+
+    goTo(path);
+  };
+
+
+  const mobileShortcutItems = [
+    { key: "home", icon: "⌂", label: "الرئيسية", path: "/", tone: "primary" },
+    { key: "categories", icon: "☰", label: "كل الأقسام", path: "/categories", tone: "accent" },
+    { key: "products", icon: "🛍️", label: "كل المنتجات", path: "/products", tone: "blue" },
+    { key: "search", icon: "🔎", label: "البحث عن منتج", path: "__search__", tone: "gold" },
+    { key: "orders", icon: "📦", label: "طلباتي", path: "/orders", tone: "green" },
+    { key: "wishlist", icon: "♡", label: `المفضلة${wishlistCount > 0 ? ` (${wishlistCount})` : ""}`, path: "/wishlist", tone: "rose" },
+    { key: "cart", icon: "🛒", label: `السلة${cartCount > 0 ? ` (${cartCount})` : ""}`, path: "/cart", tone: "orange" },
+    { key: "account", icon: "👤", label: currentUser ? "حسابي" : "تسجيل الدخول", path: currentUser ? "/account" : "/login", tone: "purple" },
+  ];
+
+
   const submitSearch =
     (event) => {
       event?.preventDefault();
@@ -2270,47 +2418,49 @@ export default function Navbar() {
 
   const handleCategoryClick =
     (category) => {
-      if (!category) {
+      if (!category?.id) {
         return;
       }
 
+      /*
+        اسم القسم نفسه = فتح صفحة القسم دائمًا.
+        فتح الـ dropdown له زر السهم المنفصل أسفل شوية.
+        كده القسم الرئيسي والفرعي والـ deep category
+        يفضلوا ملتزمين بنفس route الموجود في المتجر.
+      */
+      goTo(
+        `/category/${encodeURIComponent(category.id)}`
+      );
+    };
+
+  const toggleCategoryDropdown =
+    (category) => {
+      if (!category?.id) {
+        return;
+      }
 
       const children =
-        getChildren(
-          category.id
+        getChildren(category.id);
+
+      if (!children.length) {
+        goTo(
+          `/category/${encodeURIComponent(category.id)}`
         );
-
-
-      if (
-        children.length >
-        0
-      ) {
-        setActiveCategory(
-          (current) =>
-            current ===
-            category.id
-              ? null
-              : category.id
-        );
-
-
-        setMegaCategory(
-          (current) =>
-            current ===
-            category.id
-              ? null
-              : category
-        );
-
-
         return;
       }
 
+      setActiveCategory(
+        (current) =>
+          current === category.id
+            ? null
+            : category.id
+      );
 
-      goTo(
-        `/products?category=${encodeURIComponent(
-          category.id
-        )}`
+      setMegaCategory(
+        (current) =>
+          current?.id === category.id
+            ? null
+            : category
       );
     };
 
@@ -2398,7 +2548,7 @@ export default function Navbar() {
         theme.categoryBarText,
 
       "--mega-menu-top":
-        "var(--navbar-fixed-height, 120px)",
+        "0px",
 
       background:
         theme.navbarBackground ||
@@ -2428,12 +2578,52 @@ export default function Navbar() {
   =================================================== */
 
   const announcementStyles = `
+    .navbar-sticky-shell {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      z-index: 99999 !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      transform: none !important;
+      margin: 0 !important;
+      align-self: auto !important;
+      isolation: isolate;
+    }
+
     .navbar-admin-announcement-wrapper {
       width: 100%;
       position: relative;
       z-index: 20;
       overflow: hidden;
       box-sizing: border-box;
+      flex: 0 0 auto;
+    }
+
+    .category-dropdown-trigger,
+    .mega-column-dropdown-trigger {
+      touch-action: manipulation;
+    }
+
+    .mega-column-dropdown-trigger {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      padding: 8px 10px;
+      margin-inline-start: -12px;
+      font: inherit;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .mega-column-dropdown-trigger:hover,
+    .category-dropdown-trigger:hover {
+      color: var(--accent, #D4AF37);
     }
 
     .navbar-admin-announcement {
@@ -2528,11 +2718,197 @@ export default function Navbar() {
       }
     }
 
+    /* =================================================
+       MEGA MENU / CATEGORY DROPDOWNS
+       Always opens below the fixed header + categories
+    ================================================= */
+    .mega-menu {
+      position: fixed !important;
+      top: var(--mega-menu-top, 0px) !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-height: calc(100vh - var(--mega-menu-top, 0px) - 12px) !important;
+      overflow-y: auto !important;
+      z-index: 99990 !important;
+      box-sizing: border-box !important;
+    }
+    .mega-menu-inner {
+      position: relative !important;
+      width: min(1400px, calc(100% - 24px)) !important;
+      margin: 0 auto !important;
+      box-sizing: border-box !important;
+    }
+    .category-dropdown-trigger {
+      min-width: 34px !important;
+      min-height: 34px !important;
+      border-radius: 10px !important;
+      transition: transform .18s ease, background .18s ease, color .18s ease !important;
+    }
+    .category-dropdown-trigger:hover,
+    .category-dropdown-trigger[aria-expanded="true"] {
+      color: ${theme.accent || "#D4AF37"} !important;
+      background: rgba(212,175,55,.10) !important;
+    }
+    .category-dropdown-trigger[aria-expanded="true"] .category-down-arrow {
+      display: inline-block !important;
+      transform: rotate(180deg) !important;
+    }
+    .sawa-premium-category-item[aria-expanded="true"] .category-down-arrow {
+      display: inline-block !important;
+      transform: rotate(180deg) !important;
+      color: ${theme.accent || "#D4AF37"};
+    }
     @media (max-width: 768px) {
       .navbar-admin-announcement-content {
         padding-left: 50px;
         padding-right: 50px;
       }
+    }
+  `;
+
+
+  /* ===================================================
+     PREMIUM CATEGORY BAR
+  =================================================== */
+
+  const categoryBarStyles = `
+    .sawa-premium-category-bar {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: stretch;
+      background: ${theme.categoryBarBackground || "#ffffff"};
+      border-top: 1px solid rgba(7,26,54,.07);
+      border-bottom: 1px solid rgba(7,26,54,.10);
+      box-shadow: 0 8px 22px rgba(7,26,54,.06);
+    }
+    .sawa-premium-category-nav {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      padding: 9px 10px;
+      scroll-behavior: smooth;
+    }
+    .sawa-premium-category-nav::-webkit-scrollbar { display: none; }
+    .sawa-premium-category-item {
+      position: relative;
+      flex: 0 0 auto;
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 7px 13px;
+      border: 1px solid rgba(7,26,54,.09);
+      border-radius: 15px;
+      background: rgba(255,255,255,.92);
+      color: ${theme.categoryBarText || "#071A36"};
+      box-shadow: 0 3px 12px rgba(7,26,54,.05);
+      font: inherit;
+      font-weight: 800;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .sawa-premium-category-item:hover {
+      transform: translateY(-2px);
+      border-color: ${theme.accent || "#D4AF37"};
+      box-shadow: 0 8px 20px rgba(7,26,54,.10);
+    }
+    .sawa-premium-category-item.active-category {
+      background: linear-gradient(135deg, ${theme.primary || "#071A36"}, ${theme.secondary || "#0B1F3A"});
+      color: #fff;
+      border-color: ${theme.accent || "#D4AF37"};
+      box-shadow: 0 8px 22px rgba(7,26,54,.20);
+    }
+    .sawa-premium-category-icon {
+      width: 30px;
+      height: 30px;
+      flex: 0 0 30px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-radius: 10px;
+      background: rgba(7,26,54,.055);
+      font-size: 17px;
+    }
+    .sawa-premium-category-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .sawa-premium-category-arrow {
+      flex: 0 0 40px;
+      width: 40px;
+      min-height: 46px;
+      margin: 9px 7px;
+      border: 1px solid rgba(7,26,54,.10);
+      border-radius: 13px;
+      background: ${theme.categoryBarBackground || "#fff"};
+      color: ${theme.categoryBarText || "#071A36"};
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 900;
+      box-shadow: 0 4px 14px rgba(7,26,54,.06);
+    }
+    .sawa-premium-category-arrow:hover {
+      border-color: ${theme.accent || "#D4AF37"};
+      color: ${theme.primary || "#071A36"};
+    }
+    .sawa-mobile-drawer-backdrop { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; border: 0 !important; padding: 0 !important; margin: 0 !important; background: rgba(3,10,22,.58) !important; backdrop-filter: blur(5px) !important; -webkit-backdrop-filter: blur(5px) !important; z-index: 100000 !important; cursor: pointer !important; }
+    .sawa-mobile-drawer { position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: min(92vw,430px) !important; max-width: 430px !important; height: 100dvh !important; background: linear-gradient(180deg,#fff 0%,#f7f9fc 100%) !important; color: #071A36 !important; z-index: 100001 !important; box-shadow: -18px 0 55px rgba(0,0,0,.22) !important; border-left: 1px solid rgba(212,175,55,.24) !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; animation: sawaMobileDrawerIn .24s cubic-bezier(.2,.8,.2,1) both !important; direction: rtl !important; }
+    @keyframes sawaMobileDrawerIn { from { transform: translateX(105%); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+    .sawa-mobile-drawer-header { flex: 0 0 auto !important; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px !important; padding: 16px 15px !important; background: linear-gradient(135deg, ${theme.primary || "#071A36"}, ${theme.secondary || "#0B1F3A"}) !important; color: #fff !important; border-bottom: 1px solid rgba(212,175,55,.35) !important; }
+    .sawa-mobile-drawer-brand { min-width: 0 !important; display: flex !important; align-items: center !important; gap: 10px !important; }
+    .sawa-mobile-drawer-logo { width: 46px !important; height: 46px !important; flex: 0 0 46px !important; border-radius: 14px !important; overflow: hidden !important; display: grid !important; place-items: center !important; background: #fff !important; border: 1px solid rgba(212,175,55,.65) !important; box-shadow: 0 8px 22px rgba(0,0,0,.18) !important; }
+    .sawa-mobile-drawer-logo img { width: 100% !important; height: 100% !important; object-fit: contain !important; display: block !important; }
+    .sawa-mobile-drawer-brand strong { display: block !important; font-size: 15px !important; line-height: 1.35 !important; }
+    .sawa-mobile-drawer-brand span { display: block !important; margin-top: 3px !important; font-size: 11px !important; opacity: .78 !important; white-space: nowrap !important; }
+    .sawa-mobile-drawer-close { width: 40px !important; height: 40px !important; flex: 0 0 40px !important; border: 1px solid rgba(255,255,255,.22) !important; border-radius: 12px !important; background: rgba(255,255,255,.09) !important; color: #fff !important; font-size: 19px !important; cursor: pointer !important; }
+    .sawa-mobile-drawer-scroll { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overscroll-behavior: contain !important; padding: 14px !important; scrollbar-width: thin !important; }
+    .sawa-mobile-drawer-welcome { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px !important; padding: 14px !important; margin-bottom: 13px !important; border-radius: 18px !important; background: linear-gradient(135deg,rgba(7,26,54,.055),rgba(212,175,55,.09)) !important; border: 1px solid rgba(7,26,54,.08) !important; }
+    .sawa-mobile-drawer-welcome small { display: block !important; color: #667085 !important; font-size: 11px !important; margin-bottom: 3px !important; }
+    .sawa-mobile-drawer-welcome strong { display: block !important; font-size: 15px !important; color: ${theme.primary || "#071A36"} !important; }
+    .sawa-mobile-drawer-welcome > span { font-size: 25px !important; }
+    .sawa-mobile-shortcuts-grid { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 9px !important; margin-bottom: 18px !important; }
+    .sawa-mobile-shortcut { min-height: 78px !important; border: 1px solid rgba(7,26,54,.08) !important; border-radius: 17px !important; background: #fff !important; box-shadow: 0 5px 18px rgba(7,26,54,.055) !important; display: flex !important; align-items: center !important; gap: 10px !important; padding: 11px !important; text-align: right !important; color: #071A36 !important; font: inherit !important; font-weight: 800 !important; cursor: pointer !important; transition: transform .16s ease,border-color .16s ease,box-shadow .16s ease !important; }
+    .sawa-mobile-shortcut:active { transform: scale(.97) !important; }
+    .sawa-mobile-shortcut:hover { border-color: ${theme.accent || "#D4AF37"} !important; box-shadow: 0 10px 24px rgba(7,26,54,.10) !important; }
+    .sawa-mobile-shortcut-icon { width: 40px !important; height: 40px !important; flex: 0 0 40px !important; display: grid !important; place-items: center !important; border-radius: 13px !important; background: rgba(7,26,54,.055) !important; font-size: 20px !important; }
+    .sawa-mobile-shortcut-label { font-size: 12px !important; line-height: 1.35 !important; }
+    .sawa-mobile-shortcut-primary .sawa-mobile-shortcut-icon { background: rgba(7,26,54,.10) !important; }
+    .sawa-mobile-shortcut-accent .sawa-mobile-shortcut-icon,.sawa-mobile-shortcut-gold .sawa-mobile-shortcut-icon { background: rgba(212,175,55,.14) !important; }
+    .sawa-mobile-shortcut-rose .sawa-mobile-shortcut-icon { background: rgba(225,29,72,.09) !important; }
+    .sawa-mobile-section-heading { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 10px !important; margin: 4px 2px 10px !important; }
+    .sawa-mobile-section-heading strong { font-size: 14px !important; color: #071A36 !important; }
+    .sawa-mobile-section-heading button { border: 0 !important; background: transparent !important; color: ${theme.primary || "#071A36"} !important; font: inherit !important; font-size: 11px !important; font-weight: 800 !important; cursor: pointer !important; }
+    .sawa-mobile-category-list { display: grid !important; gap: 9px !important; }
+    .sawa-mobile-category-card { border: 1px solid rgba(7,26,54,.08) !important; border-radius: 16px !important; background: #fff !important; overflow: hidden !important; box-shadow: 0 4px 15px rgba(7,26,54,.045) !important; }
+    .sawa-mobile-category-main { width: 100% !important; min-height: 58px !important; border: 0 !important; background: transparent !important; display: flex !important; align-items: center !important; gap: 10px !important; padding: 8px 10px !important; color: #071A36 !important; font: inherit !important; cursor: pointer !important; text-align: right !important; }
+    .sawa-mobile-category-thumb { width: 40px !important; height: 40px !important; flex: 0 0 40px !important; border-radius: 12px !important; overflow: hidden !important; display: grid !important; place-items: center !important; background: #f1f4f8 !important; font-size: 19px !important; }
+    .sawa-mobile-category-thumb img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+    .sawa-mobile-category-name { flex: 1 !important; min-width: 0 !important; font-size: 13px !important; font-weight: 800 !important; }
+    .sawa-mobile-category-arrow { font-size: 17px !important; color: ${theme.accent || "#D4AF37"} !important; }
+    .sawa-mobile-category-children { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; padding: 0 10px 10px !important; }
+    .sawa-mobile-category-children button { border: 1px solid rgba(7,26,54,.08) !important; border-radius: 999px !important; background: #f8fafc !important; color: #344054 !important; padding: 6px 9px !important; font: inherit !important; font-size: 10px !important; font-weight: 700 !important; cursor: pointer !important; }
+    .sawa-mobile-category-more { color: ${theme.primary || "#071A36"} !important; border-color: rgba(212,175,55,.35) !important; background: rgba(212,175,55,.08) !important; }
+    .sawa-mobile-empty-category { width: 100% !important; min-height: 65px !important; border: 1px dashed rgba(7,26,54,.16) !important; border-radius: 16px !important; background: #fff !important; display: flex !important; align-items: center !important; gap: 10px !important; padding: 12px !important; color: #071A36 !important; font: inherit !important; cursor: pointer !important; }
+    .sawa-mobile-empty-category strong { flex: 1 !important; text-align: right !important; }
+    .sawa-mobile-drawer-footer-actions { display: grid !important; gap: 8px !important; padding: 16px 0 5px !important; }
+    .sawa-mobile-drawer-footer-actions button { min-height: 46px !important; border: 1px solid rgba(7,26,54,.09) !important; border-radius: 13px !important; background: #fff !important; color: #071A36 !important; font: inherit !important; font-size: 12px !important; font-weight: 800 !important; cursor: pointer !important; box-shadow: 0 3px 12px rgba(7,26,54,.04) !important; }
+
+    @media (max-width: 768px) {
+      .sawa-premium-category-nav { padding: 7px 8px; gap: 6px; }
+      .sawa-premium-category-item { min-height: 42px; padding: 6px 10px; border-radius: 13px; }
+      .sawa-premium-category-icon { width: 27px; height: 27px; flex-basis: 27px; border-radius: 8px; }
+      .sawa-premium-category-arrow { display: none; }
     }
   `;
 
@@ -2544,14 +2920,17 @@ export default function Navbar() {
   return (
     <div
       className="store-navbar-theme"
-      style={
-        mobileNavbarStyle
-      }
+      style={{
+        ...mobileNavbarStyle,
+        paddingTop:
+          `${navbarFixedHeight}px`,
+      }}
       dir="rtl"
     >
 
       <style>
         {announcementStyles}
+        {categoryBarStyles}
       </style>
 
 
@@ -2562,6 +2941,7 @@ export default function Navbar() {
 
       <div
         className="navbar-sticky-shell"
+        ref={navbarShellRef}
         style={{
           position:
             "fixed",
@@ -2572,7 +2952,24 @@ export default function Navbar() {
 
           right: 0,
 
-          zIndex: 1000,
+          width: "100%",
+
+          maxWidth: "100%",
+
+          zIndex: 99999,
+
+          display: "block",
+
+          visibility: "visible",
+
+          opacity: 1,
+
+          transform: "none",
+
+          alignSelf: "flex-start",
+
+          isolation: "isolate",
+          boxSizing: "border-box",
         }}
       >
 
@@ -2600,7 +2997,9 @@ export default function Navbar() {
           <button
             type="button"
             className="mobile-menu-button"
-            aria-label="فتح القائمة"
+            aria-label={mobileMenuOpen ? "إغلاق قائمة الاختصارات" : "فتح قائمة الاختصارات"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="sawa-mobile-shortcuts-drawer"
             onClick={() =>
               setMobileMenuOpen(
                 (current) =>
@@ -3046,7 +3445,104 @@ export default function Navbar() {
             )}
 
 
-            {/* CART */}
+            {/* ===============================================
+              PREMIUM MOBILE SHORTCUT DRAWER
+              GLOBAL-STORE STYLE
+          =============================================== */}
+          {mobileMenuOpen && (
+            <>
+              <button
+                type="button"
+                className="sawa-mobile-drawer-backdrop"
+                aria-label="إغلاق القائمة"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+
+              <aside
+                className="sawa-mobile-drawer"
+                id="sawa-mobile-shortcuts-drawer"
+                aria-label="قائمة اختصارات المتجر"
+                aria-hidden={!mobileMenuOpen}
+              >
+                <div className="sawa-mobile-drawer-header">
+                  <div className="sawa-mobile-drawer-brand">
+                    <div className="sawa-mobile-drawer-logo">
+                      <img src={storeSettings.logo || DEFAULT_STORE_SETTINGS.logo} alt={storeSettings.storeName || "سوا"} />
+                    </div>
+                    <div>
+                      <strong>{storeSettings.storeName || "ســـــَــــــــوا"}</strong>
+                      <span>كل اختصارات المتجر في مكان واحد</span>
+                    </div>
+                  </div>
+                  <button type="button" className="sawa-mobile-drawer-close" onClick={() => setMobileMenuOpen(false)} aria-label="إغلاق القائمة">✕</button>
+                </div>
+
+                <div className="sawa-mobile-drawer-scroll">
+                  <div className="sawa-mobile-drawer-welcome">
+                    <div>
+                      <small>{currentUser ? "أهلاً بيك" : "أهلاً بيك في المتجر"}</small>
+                      <strong>{currentUser ? (accountName || "حسابي") : "اختار اللي محتاجه بسرعة"}</strong>
+                    </div>
+                    <span>✨</span>
+                  </div>
+
+                  <div className="sawa-mobile-shortcuts-grid">
+                    {mobileShortcutItems.map((item) => (
+                      <button type="button" key={item.key} className={`sawa-mobile-shortcut sawa-mobile-shortcut-${item.tone}`} onClick={() => openMobileShortcut(item.path)}>
+                        <span className="sawa-mobile-shortcut-icon">{item.icon}</span>
+                        <span className="sawa-mobile-shortcut-label">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="sawa-mobile-section-heading">
+                    <strong>الأقسام الرئيسية</strong>
+                    <button type="button" onClick={() => openMobileShortcut("/categories")}>عرض الكل <span>←</span></button>
+                  </div>
+
+                  <div className="sawa-mobile-category-list">
+                    {rootCategories.length > 0 ? rootCategories.map((category) => {
+                      const children = getChildren(category.id);
+                      return (
+                        <div className="sawa-mobile-category-card" key={category.id}>
+                          <button type="button" className="sawa-mobile-category-main" onClick={() => goTo(`/category/${encodeURIComponent(category.id)}`)}>
+                            <span className="sawa-mobile-category-thumb">
+                              {category.image ? <img src={category.image} alt={category.name} /> : <span>🛍️</span>}
+                            </span>
+                            <span className="sawa-mobile-category-name">{category.name}</span>
+                            <span className="sawa-mobile-category-arrow">←</span>
+                          </button>
+                          {children.length > 0 && (
+                            <div className="sawa-mobile-category-children">
+                              {children.slice(0, 6).map((child) => (
+                                <button type="button" key={child.id} onClick={() => goTo(`/category/${encodeURIComponent(child.id)}`)}>{child.name}</button>
+                              ))}
+                              {children.length > 6 && (
+                                <button type="button" className="sawa-mobile-category-more" onClick={() => goTo(`/category/${encodeURIComponent(category.id)}`)}>+{children.length - 6} أقسام أخرى</button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }) : (
+                      <button type="button" className="sawa-mobile-empty-category" onClick={() => openMobileShortcut("/categories")}>
+                        <span>🗂️</span><strong>استكشف كل الأقسام</strong><span>←</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="sawa-mobile-drawer-footer-actions">
+                    {currentUser ? <button type="button" onClick={() => goTo("/account")}>👤 الملف الشخصي</button> : <button type="button" onClick={() => goTo("/register")}>📝 إنشاء حساب جديد</button>}
+                    <button type="button" onClick={() => goTo("/wishlist")}>❤️ المفضلة</button>
+                    <button type="button" onClick={() => goTo("/cart")}>🛒 السلة</button>
+                  </div>
+                </div>
+              </aside>
+            </>
+          )}
+
+
+          {/* CART */}
 
             <button
               type="button"
@@ -3139,7 +3635,7 @@ export default function Navbar() {
         =============================================== */}
 
         <div
-          className="navbar-bottom-wrapper"
+          className="navbar-bottom-wrapper sawa-premium-category-bar"
           style={{
             background:
               theme.categoryBarBackground ||
@@ -3153,7 +3649,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="category-arrow"
+            className="category-arrow sawa-premium-category-arrow"
             onClick={() => {
               categoryBarRef.current?.scrollBy(
                 {
@@ -3172,7 +3668,7 @@ export default function Navbar() {
 
 
           <nav
-            className="navbar-bottom"
+            className="navbar-bottom sawa-premium-category-nav"
             ref={
               categoryBarRef
             }
@@ -3182,7 +3678,7 @@ export default function Navbar() {
 
               <button
                 type="button"
-                className="nav-category-item"
+                className="nav-category-item sawa-premium-category-item"
                 onClick={() =>
                   goTo("/")
                 }
@@ -3206,9 +3702,13 @@ export default function Navbar() {
                 className={
                   activeCategory ===
                   "all"
-                    ? "nav-category-item active-category"
-                    : "nav-category-item"
+                    ? "nav-category-item sawa-premium-category-item active-category"
+                    : "nav-category-item sawa-premium-category-item"
                 }
+                aria-expanded={
+                  activeCategory === "all"
+                }
+                aria-controls="sawa-mega-menu"
                 onClick={() => {
                   if (
                     activeCategory ===
@@ -3262,8 +3762,8 @@ export default function Navbar() {
                     className={
                       activeCategory ===
                       category.id
-                        ? "nav-category-item active-category"
-                        : "nav-category-item"
+                        ? "nav-category-item sawa-premium-category-item active-category"
+                        : "nav-category-item sawa-premium-category-item"
                     }
                     onClick={() =>
                       handleCategoryClick(
@@ -3272,38 +3772,61 @@ export default function Navbar() {
                     }
                   >
 
-                    {category.image ? (
-                      <img
-                        src={
-                          category.image
-                        }
-                        alt={
-                          category.name
-                        }
-                      />
-                    ) : (
-                      <span>
-                        🛍️
-                      </span>
-                    )}
+                    <span className="sawa-premium-category-icon">
+                      {category.image ? (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                        />
+                      ) : (
+                        <span>🛍️</span>
+                      )}
+                    </span>
 
-                    <strong>
+                    <strong
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCategoryClick(category);
+                      }}
+                    >
                       {
                         category.name
                       }
                     </strong>
 
+                  </button>
 
-                    {getChildren(
-                      category.id
-                    ).length >
-                      0 && (
+                  {getChildren(category.id).length > 0 && (
+                    <button
+                      type="button"
+                      className="category-dropdown-trigger"
+                      aria-label={`فتح أقسام ${category.name}`}
+                      aria-expanded={
+                        activeCategory === category.id
+                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleCategoryDropdown(category);
+                      }}
+                      style={{
+                        border: 0,
+                        background: "transparent",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "4px 7px",
+                        marginInlineStart: "-8px",
+                        color: "inherit",
+                        font: "inherit",
+                        lineHeight: 1,
+                      }}
+                    >
                       <span className="category-down-arrow">
                         ▾
                       </span>
-                    )}
-
-                  </button>
+                    </button>
+                  )}
 
                 </div>
               )
@@ -3337,7 +3860,7 @@ export default function Navbar() {
 
               <button
                 type="button"
-                className="nav-category-item"
+                className="nav-category-item sawa-premium-category-item"
                 onClick={() =>
                   goTo(
                     "/products?sort=best"
@@ -3360,7 +3883,7 @@ export default function Navbar() {
 
               <button
                 type="button"
-                className="nav-category-item"
+                className="nav-category-item sawa-premium-category-item"
                 onClick={() =>
                   goTo(
                     "/products?sort=new"
@@ -3416,7 +3939,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="category-arrow"
+            className="category-arrow sawa-premium-category-arrow"
             onClick={() => {
               categoryBarRef.current?.scrollBy(
                 {
@@ -3439,196 +3962,16 @@ export default function Navbar() {
 
 
       {/* =================================================
-          ANNOUNCEMENT BARS
-
-          ADMIN / FIRESTORE ONLY
-
-          IMPORTANT:
-          - OUTSIDE FIXED HEADER
-          - SCROLLS WITH PAGE
-          - COLORS FROM ADMIN
-          - SPEED FROM ADMIN
-          - FONT FROM ADMIN
-          - HEIGHT FROM ADMIN
-          - DIRECTION FROM ADMIN
-          - TYPE FROM ADMIN
-      ================================================= */}
-
-      {announcementBars.length >
-        0 && (
-        <div
-          className="navbar-admin-announcement-wrapper"
-        >
-
-          {announcementBars.map(
-            (bar) => {
-              const type =
-                String(
-                  bar.type ||
-                    "marquee"
-                ).toLowerCase();
-
-              const speed =
-                Math.max(
-                  1,
-                  Number(
-                    bar.speed ||
-                      40
-                  )
-                );
-
-              const direction =
-                bar.direction ===
-                "ltr"
-                  ? "ltr"
-                  : "rtl";
-
-              const isStatic =
-                type ===
-                  "static" ||
-                type ===
-                  "normal" ||
-                type ===
-                  "fixed";
-
-
-              const announcementStyle = {
-                height:
-                  `${Math.max(
-                    25,
-                    Number(
-                      bar.height ||
-                        42
-                    )
-                  )}px`,
-              };
-
-
-              /*
-                مهم:
-                مفيش background أو color أو font
-                ثابت هنا.
-                لو الأدمن حددهم Firestore هيطبقهم.
-              */
-
-              if (
-                bar.backgroundColor
-              ) {
-                announcementStyle.backgroundColor =
-                  bar.backgroundColor;
-              }
-
-              if (
-                bar.textColor
-              ) {
-                announcementStyle.color =
-                  bar.textColor;
-              }
-
-              if (
-                bar.fontFamily
-              ) {
-                announcementStyle.fontFamily =
-                  bar.fontFamily;
-              }
-
-              if (
-                Number.isFinite(
-                  Number(
-                    bar.fontSize
-                  )
-                )
-              ) {
-                announcementStyle.fontSize =
-                  `${Number(
-                    bar.fontSize
-                  )}px`;
-              }
-
-
-              const contentStyle = {};
-
-              if (
-                bar.textColor
-              ) {
-                contentStyle.color =
-                  bar.textColor;
-              }
-
-              if (
-                bar.fontFamily
-              ) {
-                contentStyle.fontFamily =
-                  bar.fontFamily;
-              }
-
-              if (
-                Number.isFinite(
-                  Number(
-                    bar.fontSize
-                  )
-                )
-              ) {
-                contentStyle.fontSize =
-                  `${Number(
-                    bar.fontSize
-                  )}px`;
-              }
-
-
-              return (
-                <div
-                  key={
-                    bar.id
-                  }
-                  className="navbar-admin-announcement"
-                  data-type={
-                    isStatic
-                      ? "static"
-                      : "marquee"
-                  }
-                  data-direction={
-                    direction
-                  }
-                  style={
-                    announcementStyle
-                  }
-                  dir={
-                    direction
-                  }
-                >
-
-                  {(() => {
-                    const media = bar.image ? <img src={bar.image} alt={bar.content || "إعلان"} style={{ height: "100%", maxHeight: `${Math.max(19, Number(bar.height || 42) - 6)}px`, width: "auto", maxWidth: "92vw", objectFit: "contain", display: "block", borderRadius: 6 }} /> : bar.content;
-                    const node = bar.link ? <button type="button" className="navbar-admin-announcement-content" style={{ ...contentStyle, border: 0, background: "transparent", cursor: "pointer" }} onClick={() => handleAnnouncementClick(bar)}>{media}</button> : <span className="navbar-admin-announcement-content" style={contentStyle}>{media}</span>;
-                    const repeated = bar.link ? node : <>{node}<span className="navbar-admin-announcement-content" style={contentStyle} aria-hidden="true">{media}</span></>;
-                    return isStatic ? node : (
-                      <div className="navbar-admin-announcement-track" style={{ animationDuration: `${speed}s`, animationName: direction === "ltr" ? "navbarAdminAnnouncementLTR" : "navbarAdminAnnouncementRTL" }}>
-                        {repeated}
-                        {bar.image && (bar.link ? <button type="button" className="navbar-admin-announcement-content" style={{ ...contentStyle, border: 0, background: "transparent", cursor: "pointer" }} onClick={() => handleAnnouncementClick(bar)} aria-hidden="true" tabIndex={-1}>{media}</button> : <span className="navbar-admin-announcement-content" style={contentStyle} aria-hidden="true">{media}</span>)}
-                      </div>
-                    );
-                  })()}
-
-                </div>
-              );
-            }
-          )}
-
-        </div>
-      )}
-
-
-      {/* =================================================
           MEGA MENU
       ================================================= */}
 
       {activeCategory && (
         <div
           className="mega-menu"
+          id="sawa-mega-menu"
           style={{
             "--mega-menu-top":
-              "var(--navbar-fixed-height, 120px)",
+              `${navbarFixedHeight}px`,
           }}
         >
 
@@ -3689,27 +4032,11 @@ export default function Navbar() {
                           <button
                             type="button"
                             className="mega-column-title"
-                            onClick={() => {
-                              if (
-                                children.length
-                              ) {
-                                setMegaCategory(
-                                  (
-                                    current
-                                  ) =>
-                                    current?.id ===
-                                    category.id
-                                      ? null
-                                      : category
-                                );
-                              } else {
-                                goTo(
-                                  `/products?category=${encodeURIComponent(
-                                    category.id
-                                  )}`
-                                );
-                              }
-                            }}
+                            onClick={() =>
+                              goTo(
+                                `/category/${encodeURIComponent(category.id)}`
+                              )
+                            }
                           >
 
                             {category.image ? (
@@ -3743,6 +4070,27 @@ export default function Navbar() {
 
                           </button>
 
+                          {children.length > 0 && (
+                            <button
+                              type="button"
+                              className="mega-column-dropdown-trigger"
+                              aria-label={`فتح أقسام ${category.name}`}
+                              aria-expanded={
+                                megaCategory?.id === category.id
+                              }
+                              onClick={() => {
+                                setMegaCategory(
+                                  (current) =>
+                                    current?.id === category.id
+                                      ? null
+                                      : category
+                                );
+                              }}
+                            >
+                              ▾
+                            </button>
+                          )}
+
 
                           {children.length >
                             0 &&
@@ -3762,9 +4110,7 @@ export default function Navbar() {
                                     }
                                     onClick={() =>
                                       goTo(
-                                        `/products?category=${encodeURIComponent(
-                                          child.id
-                                        )}`
+                                        `/category/${encodeURIComponent(child.id)}`
                                       )
                                     }
                                   >
@@ -3872,27 +4218,11 @@ export default function Navbar() {
                           <button
                             type="button"
                             className="mega-column-title"
-                            onClick={() => {
-                              const children =
-                                getChildren(
-                                  child.id
-                                );
-
-
-                              if (
-                                children.length
-                              ) {
-                                setMegaCategory(
-                                  child
-                                );
-                              } else {
-                                goTo(
-                                  `/products?category=${encodeURIComponent(
-                                    child.id
-                                  )}`
-                                );
-                              }
-                            }}
+                            onClick={() =>
+                              goTo(
+                                `/category/${encodeURIComponent(child.id)}`
+                              )
+                            }
                           >
 
                             {child.image ? (
@@ -3917,16 +4247,23 @@ export default function Navbar() {
                             </span>
 
 
-                            {getChildren(
-                              child.id
-                            ).length >
-                              0 && (
-                              <span>
-                                ▾
-                              </span>
-                            )}
-
                           </button>
+
+                          {getChildren(child.id).length > 0 && (
+                            <button
+                              type="button"
+                              className="mega-column-dropdown-trigger"
+                              aria-label={`فتح أقسام ${child.name}`}
+                              aria-expanded={
+                                megaCategory?.id === child.id
+                              }
+                              onClick={() =>
+                                setMegaCategory(child)
+                              }
+                            >
+                              ▾
+                            </button>
+                          )}
 
 
                           <div className="mega-column-items">
@@ -3945,9 +4282,7 @@ export default function Navbar() {
                                   }
                                   onClick={() =>
                                     goTo(
-                                      `/products?category=${encodeURIComponent(
-                                        deepChild.id
-                                      )}`
+                                      `/category/${encodeURIComponent(deepChild.id)}`
                                     )
                                   }
                                 >
