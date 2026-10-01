@@ -819,13 +819,64 @@ export default function Admin() {
   const removeProduct = async (p) => { if (!window.confirm(`حذف المنتج «${p.title || "بدون اسم"}»؟`)) return; try { await deleteDoc(doc(db, "products", p.id)); await log("حذف منتج", p.title || p.id); } catch (e) { alert(e?.message || "❌ تعذر الحذف"); } };
 
   const saveCategory = async (e) => {
-    e.preventDefault(); setSaving(true); try {
-      const form = { ...categoryForm }; if (form.imageFile) form.image = await uploadImage(form.imageFile); delete form.imageFile; delete form.imagePreview;
-      form.sortOrder = asNumber(form.sortOrder); form.active = form.active !== false;
-      if (categoryForm.id) await updateDoc(doc(db, "categories", categoryForm.id), { ...form, updatedAt: serverTimestamp() });
-      else await addDoc(collection(db, "categories"), { ...form, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      await log(categoryForm.id ? "تعديل قسم" : "إضافة قسم", form.name || "قسم"); setCategoryForm(null); alert("✅ تم حفظ القسم");
-    } catch (e2) { console.error(e2); alert(e2?.message || "❌ تعذر حفظ القسم"); } finally { setSaving(false); }
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const form = { ...categoryForm };
+
+      if (form.imageFile) {
+        const file = form.imageFile;
+
+        if (!/image\/(jpeg|jpg)/i.test(file.type || "")) {
+          throw new Error("صورة القسم يجب أن تكون JPG أو JPEG فقط");
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error("حجم صورة القسم يجب ألا يتجاوز 5 ميجابايت");
+        }
+
+        form.image = await uploadImage(file);
+      }
+
+      delete form.imageFile;
+      delete form.imagePreview;
+
+      form.name = String(form.name || "").trim();
+      if (!form.name) {
+        throw new Error("اكتب اسم القسم");
+      }
+
+      form.sortOrder = asNumber(form.sortOrder);
+      form.active = form.active !== false;
+      form.cardSize = form.cardSize || "medium";
+      form.color = form.color || ACCENT;
+
+      if (categoryForm.id) {
+        await updateDoc(
+          doc(db, "categories", categoryForm.id),
+          { ...form, updatedAt: serverTimestamp() }
+        );
+      } else {
+        await addDoc(
+          collection(db, "categories"),
+          { ...form, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }
+        );
+      }
+
+      await log(
+        categoryForm.id ? "تعديل قسم" : "إضافة قسم",
+        form.name || "قسم"
+      );
+
+      setCategoryForm(null);
+      alert("✅ تم حفظ القسم");
+    } catch (e2) {
+      console.error(e2);
+      alert(e2?.message || "❌ تعذر حفظ القسم");
+    } finally {
+      setSaving(false);
+    }
   };
   const removeCategory = async (c) => { if (!window.confirm(`حذف القسم «${c.name || "بدون اسم"}»؟`)) return; try { await deleteDoc(doc(db, "categories", c.id)); await log("حذف قسم", c.name || c.id); } catch (e) { alert(e?.message || "❌ تعذر الحذف"); } };
   const cleanAdminFirestoreData = (value) => {
@@ -1096,7 +1147,7 @@ export default function Admin() {
               <option value="">بدون براند</option>
               {brands.filter(b => (!productForm.mainCategoryId || String(b.mainCategoryId) === String(productForm.mainCategoryId)) && b.active !== false && b.visible !== false).slice().sort((a,b) => asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select></label>
-            <label className="form-group-full"><span>صور المنتج — يمكنك اختيار عدد غير محدود</span><input type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={e => setProductForm(p => ({ ...p, imageFiles: [...safeArray(p.imageFiles), ...Array.from(e.target.files || [])] }))} /></label>
+            <label className="form-group-full"><span>صور المنتج — يمكنك اختيار عدد غير محدود</span><input type="file" multiple accept="image/jpeg,image/jpg" onChange={e => setProductForm(p => ({ ...p, imageFiles: [...safeArray(p.imageFiles), ...Array.from(e.target.files || [])] }))} /></label>
             <label className="form-group-full"><span>الوصف</span><textarea rows="4" value={productForm.description || ""} onChange={e => setProductForm(p => ({ ...p, description: e.target.value }))} /></label>
           </div>
 
@@ -1267,7 +1318,7 @@ export default function Admin() {
                         {group.options.map(option => <option key={option.id} value={option.value}>{option.label || option.value}</option>)}
                       </select></label>;
                     })}
-                    <label className="form-group-full"><span>صور التركيبة — بدون حد</span><input type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), imageFiles: [...safeArray(normalizeVariant(x,i).imageFiles), ...Array.from(e.target.files || [])] } : x) }))} /></label>
+                    <label className="form-group-full"><span>صور التركيبة — بدون حد</span><input type="file" multiple accept="image/jpeg,image/jpg" onChange={e => setProductForm(p => ({ ...p, variants: safeArray(p.variants).map((x,i) => i===index ? { ...normalizeVariant(x,i), imageFiles: [...safeArray(normalizeVariant(x,i).imageFiles), ...Array.from(e.target.files || [])] } : x) }))} /></label>
                   </div>
 
                   {Object.keys(v.attributes || {}).filter(key => v.attributes[key]).length > 0 && (
@@ -1363,7 +1414,7 @@ export default function Admin() {
         </div>
       </section>}
 
-      {tab === "categories" && <section className="admin-card"><div className="section-header"><div><h2>🗂️ إدارة الأقسام</h2><p>تحكم في الاسم والصورة واللون والترتيب والأقسام الفرعية.</p></div><button type="button" className="add-btn" onClick={()=>setCategoryForm({name:"",categoryNumber:"",parentId:"",image:"",color:ACCENT,cardSize:"medium",sortOrder:0,description:"",active:true})}>＋ إضافة قسم</button></div>{categoryForm&&<form className="admin-form" onSubmit={saveCategory} style={{overflowX:"auto",width:"100%"}}><h3>{categoryForm.id?"✏️ تعديل القسم":"＋ إضافة قسم"}</h3><div className="form-grid"><label><span>اسم القسم</span><input required value={categoryForm.name} onChange={e=>setCategoryForm(p=>({...p,name:e.target.value}))}/></label><label><span>رقم القسم</span><input value={categoryForm.categoryNumber} onChange={e=>setCategoryForm(p=>({...p,categoryNumber:e.target.value}))}/></label><label><span>القسم الرئيسي</span><select value={categoryForm.parentId} onChange={e=>setCategoryForm(p=>({...p,parentId:e.target.value}))}><option value="">قسم رئيسي</option>{categories.filter(c=>c.id!==categoryForm.id).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><ColorField name="categoryColor" label="اللون" value={categoryForm.color || ACCENT} onChange={e=>setCategoryForm(p=>({...p,color:e.target.value}))}/><label><span>حجم البطاقة</span><select value={categoryForm.cardSize} onChange={e=>setCategoryForm(p=>({...p,cardSize:e.target.value}))}><option value="small">صغيرة</option><option value="medium">متوسطة</option><option value="large">كبيرة</option></select></label><label><span>الترتيب</span><input type="number" value={categoryForm.sortOrder} onChange={e=>setCategoryForm(p=>({...p,sortOrder:e.target.value}))}/></label><label><span>الصورة</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const f=e.target.files?.[0];setCategoryForm(p=>({...p,imageFile:f}))}}/></label><label className="form-group-full"><span>الوصف</span><textarea rows="3" value={categoryForm.description} onChange={e=>setCategoryForm(p=>({...p,description:e.target.value}))}/></label></div><label className="admin-checkbox"><input type="checkbox" checked={categoryForm.active!==false} onChange={e=>setCategoryForm(p=>({...p,active:e.target.checked}))}/><span>🟢 القسم مفعل</span></label><div className="form-actions"><button type="submit" className="save-btn" disabled={saving}>{saving?"⏳ جاري الحفظ...":"💾 حفظ القسم"}</button><button type="button" className="cancel-btn" onClick={()=>setCategoryForm(null)}>إلغاء</button></div></form>}<div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>القسم</th><th>اللون</th><th>الحجم</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{categories.slice().sort((a,b)=>asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(c=><tr key={c.id}><td>{c.image?<img className="table-img" src={c.image} alt=""/>:"🗂️"}</td><td><strong>{c.name}</strong></td><td><span className="color-dot" style={{background:c.color||ACCENT}}/>{c.color||ACCENT}</td><td>{c.cardSize||"medium"}</td><td>{asNumber(c.sortOrder)}</td><td>{c.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setCategoryForm({...c})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeCategory(c)}>🗑️ حذف</button></div></td></tr>)}</tbody></table></div></section>}
+      {tab === "categories" && <section className="admin-card"><div className="section-header"><div><h2>🗂️ إدارة الأقسام</h2><p>تحكم في الاسم والصورة واللون والترتيب والأقسام الفرعية.</p></div><button type="button" className="add-btn" onClick={()=>setCategoryForm({name:"",categoryNumber:"",parentId:"",image:"",color:ACCENT,cardSize:"medium",sortOrder:0,description:"",active:true})}>＋ إضافة قسم</button></div>{categoryForm&&<form className="admin-form" onSubmit={saveCategory} style={{overflowX:"auto",width:"100%"}}><h3>{categoryForm.id?"✏️ تعديل القسم":"＋ إضافة قسم"}</h3><div className="form-grid"><label><span>اسم القسم</span><input required value={categoryForm.name} onChange={e=>setCategoryForm(p=>({...p,name:e.target.value}))}/></label><label><span>رقم القسم</span><input value={categoryForm.categoryNumber} onChange={e=>setCategoryForm(p=>({...p,categoryNumber:e.target.value}))}/></label><label><span>القسم الرئيسي</span><select value={categoryForm.parentId} onChange={e=>setCategoryForm(p=>({...p,parentId:e.target.value}))}><option value="">قسم رئيسي</option>{categories.filter(c=>c.id!==categoryForm.id).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><ColorField name="categoryColor" label="اللون" value={categoryForm.color || ACCENT} onChange={e=>setCategoryForm(p=>({...p,color:e.target.value}))}/><label><span>حجم البطاقة</span><select value={categoryForm.cardSize} onChange={e=>setCategoryForm(p=>({...p,cardSize:e.target.value}))}><option value="small">صغيرة</option><option value="medium">متوسطة</option><option value="large">كبيرة</option></select></label><label><span>الترتيب</span><input type="number" value={categoryForm.sortOrder} onChange={e=>setCategoryForm(p=>({...p,sortOrder:e.target.value}))}/></label><label><span>الصورة</span><input type="file" accept="image/jpeg,image/jpg" onChange={e=>{const f=e.target.files?.[0];setCategoryForm(p=>({...p,imageFile:f}))}}/></label><label className="form-group-full"><span>الوصف</span><textarea rows="3" value={categoryForm.description} onChange={e=>setCategoryForm(p=>({...p,description:e.target.value}))}/></label></div><label className="admin-checkbox"><input type="checkbox" checked={categoryForm.active!==false} onChange={e=>setCategoryForm(p=>({...p,active:e.target.checked}))}/><span>🟢 القسم مفعل</span></label><div className="form-actions"><button type="submit" className="save-btn" disabled={saving}>{saving?"⏳ جاري الحفظ...":"💾 حفظ القسم"}</button><button type="button" className="cancel-btn" onClick={()=>setCategoryForm(null)}>إلغاء</button></div></form>}<div className="table-scroll"><table className="admin-table"><thead><tr><th>الصورة</th><th>القسم</th><th>اللون</th><th>الحجم</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{categories.slice().sort((a,b)=>asNumber(a.sortOrder)-asNumber(b.sortOrder)).map(c=><tr key={c.id}><td>{c.image?<img className="table-img" src={c.image} alt=""/>:"🗂️"}</td><td><strong>{c.name}</strong></td><td><span className="color-dot" style={{background:c.color||ACCENT}}/>{c.color||ACCENT}</td><td>{c.cardSize||"medium"}</td><td>{asNumber(c.sortOrder)}</td><td>{c.active!==false?<span className="status-active">🟢 مفعل</span>:<span className="status-inactive">🔴 متوقف</span>}</td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setCategoryForm({...c})}>✏️ تعديل</button><button type="button" className="delete-btn" onClick={()=>removeCategory(c)}>🗑️ حذف</button></div></td></tr>)}</tbody></table></div></section>}
 
       {tab === "orders" && <section className="admin-card"><div className="section-header"><div><h2>🛒 إدارة الطلبات</h2><p>متابعة الطلبات وتغيير الحالة والتفاصيل.</p></div></div><div className="toolbar"><input placeholder="🔎 ابحث برقم الطلب أو العميل أو الهاتف..." value={search} onChange={e=>setSearch(e.target.value)}/><select value={orderStatus} onChange={e=>setOrderStatus(e.target.value)}><option value="all">كل الحالات</option><option value="pending">معلق</option><option value="confirmed">مؤكد</option><option value="processing">قيد التجهيز</option><option value="shipped">تم الشحن</option><option value="delivered">تم التسليم</option><option value="cancelled">ملغي</option></select></div><div className="table-scroll"><table className="admin-table"><thead><tr><th>رقم الطلب</th><th>العميل</th><th>الهاتف</th><th>التاريخ</th><th>الإجمالي</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{filteredOrders.map(o=><tr key={o.id}><td><strong>{o.orderNumber||o.id.slice(0,8)}</strong></td><td>{o.customerName||o.name||o.email||"—"}</td><td dir="ltr">{o.phone||"—"}</td><td>{dateText(o.createdAt)}</td><td>{money(o.total??o.finalTotal)}</td><td><select className="status-select" value={o.status||"pending"} onChange={e=>changeOrderStatus(o,e.target.value)}><option value="pending">معلق</option><option value="confirmed">مؤكد</option><option value="processing">قيد التجهيز</option><option value="shipped">تم الشحن</option><option value="delivered">تم التسليم</option><option value="cancelled">ملغي</option></select></td><td><div className="table-actions"><button type="button" className="edit-btn" onClick={()=>setOrderDetails(o)}>👁️ التفاصيل</button><button type="button" className="delete-btn" onClick={()=>removeOrder(o)}>🗑️ حذف</button>{o.phone&&<a className="whatsapp-btn" href={`https://wa.me/${String(o.phone).replace(/\D/g,"")}`} target="_blank" rel="noreferrer">واتساب</a>}</div></td></tr>)}</tbody></table></div></section>}
 

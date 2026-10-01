@@ -232,7 +232,9 @@ const normalizeCategoryParentId = (category = {}) => {
   const direct =
     category?.parentId ??
     category?.parentCategoryId ??
+    category?.parentCategoryID ??
     category?.parentID ??
+    category?.parentCategory ??
     category?.parent;
 
   if (direct && typeof direct === "object") {
@@ -250,11 +252,19 @@ const normalizeCategoryParentId = (category = {}) => {
 const normalizeCategory = (category = {}, id = "") => {
   const raw = category || {};
 
-  const normalizedId = String(
+  // Firestore document ID هو الـID الأساسي للقسم.
+  // نحافظ على أي ID قديم محفوظ داخل الداتا كـlegacyId فقط،
+  // ولا نسمح له إنه يستبدل الـdocument ID الحقيقي.
+  const firestoreDocumentId = String(
     id ||
-    raw?.id ||
-    raw?.categoryId ||
     raw?.docId ||
+    ""
+  ).trim();
+
+  const normalizedId = String(
+    firestoreDocumentId ||
+    raw?.categoryId ||
+    raw?.id ||
     ""
   ).trim();
 
@@ -266,14 +276,28 @@ const normalizeCategory = (category = {}, id = "") => {
     ""
   ).trim();
 
-  const image = String(
+  const imageSource =
     raw?.image ??
     raw?.imageUrl ??
+    raw?.imageURL ??
     raw?.photo ??
     raw?.thumbnail ??
     raw?.iconImage ??
-    ""
-  ).trim();
+    raw?.categoryImage ??
+    raw?.coverImage ??
+    raw?.img ??
+    "";
+
+  const image =
+    imageSource && typeof imageSource === "object"
+      ? String(
+          imageSource?.url ??
+          imageSource?.secure_url ??
+          imageSource?.src ??
+          imageSource?.imageUrl ??
+          ""
+        ).trim()
+      : String(imageSource).trim();
 
   const link = String(
     raw?.link ??
@@ -294,14 +318,27 @@ const normalizeCategory = (category = {}, id = "") => {
     0
   );
 
+  // Admin يحفظ active=true، لكن ندعم أيضًا الحقول القديمة
+  // حتى لا يختفي القسم بسبب اختلاف اسم حالة الظهور.
+  const activeValue =
+    raw?.active ??
+    raw?.isActive ??
+    raw?.enabled ??
+    raw?.visible ??
+    raw?.isVisible ??
+    true;
+
   const active =
-    raw?.active !== false &&
-    raw?.enabled !== false &&
-    raw?.visible !== false;
+    activeValue !== false &&
+    String(activeValue).trim().toLowerCase() !== "false" &&
+    String(raw?.status ?? "active").trim().toLowerCase() !== "inactive" &&
+    String(raw?.status ?? "active").trim().toLowerCase() !== "disabled";
 
   return {
     ...raw,
     id: normalizedId,
+    docId: firestoreDocumentId || normalizedId,
+    legacyId: String(raw?.id || "").trim(),
     name,
     image,
     link,
@@ -332,9 +369,12 @@ const normalizeCategoryList = (items = []) => {
         item?.id || ""
       )
     )
+    // لا نعتمد هنا على active === true حرفيًا؛
+    // الأقسام الجديدة من Admin قد تصل بحقول حالة مختلفة،
+    // و normalizeCategory سبق أن وحّدها إلى active.
     .filter(
       (category) =>
-        category.active === true &&
+        category.active !== false &&
         Boolean(category.id || category.name)
     )
     .sort((a, b) => {
@@ -1689,9 +1729,6 @@ function Home({
       moved: false,
     };
 
-    if (event.currentTarget.setPointerCapture) {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
   };
 
   const handleCategoryPointerMove = (event) => {
@@ -1704,7 +1741,7 @@ function Home({
 
     const delta = event.clientX - drag.startX;
 
-    if (Math.abs(delta) > 5) {
+    if (Math.abs(delta) > 6) {
       drag.moved = true;
     }
 
@@ -1714,16 +1751,36 @@ function Home({
   const handleCategoryPointerUp = (event) => {
     categoryDragRef.current.active = false;
 
-    if (
-      event?.currentTarget?.releasePointerCapture &&
-      event?.pointerId != null
-    ) {
-      try {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      } catch (_) {
-        // Pointer capture may already be released.
-      }
+  };
+
+  const handleCategoryClick = (category) => {
+    // Prevent a drag gesture from accidentally opening a category.
+    if (categoryDragRef.current.moved) {
+      categoryDragRef.current.moved = false;
+      return;
     }
+
+    if (!category) {
+      return;
+    }
+
+    // كروت الأقسام الرئيسية تفتح دائمًا بالـ Firestore document ID.
+    // لا نعتمد هنا على link/url لأن صورة القسم نفسها لازم تفتح
+    // نفس القسم المرتبط بالـ ID الصحيح.
+    const categoryId = String(
+      category?.docId ||
+      category?.id ||
+      category?.categoryId ||
+      ""
+    ).trim();
+
+    if (categoryId) {
+      navigate(`/category/${encodeURIComponent(categoryId)}`);
+      return;
+    }
+
+    // احتياطي لو القسم القديم لا يملك ID.
+    openCategory(category);
   };
 
   // ===================================================
@@ -1744,13 +1801,59 @@ function Home({
     const unsubscribe = onSnapshot(
       categoriesRef,
       (snapshot) => {
+        // مهم جدًا: نضع بيانات Firestore أولًا ثم نعيد id = item.id
+        // في الآخر، حتى لو Admin عنده field اسمه "id" داخل الداتا،
+        // لا يستطيع استبدال الـDocument ID الحقيقي.
+        const rawCategories = snapshot.docs.map((item) => {
+          const data = item.data() || {};
+
+          return {
+            ...data,
+            id: item.id,
+            docId: item.id,
+            legacyId: String(data?.id || "").trim(),
+          };
+        });
+
+        // تحويل أي parentId قديم (سواء كان Document ID أو categoryId
+        // أو id قديم محفوظ داخل الداتا) إلى Firestore Document ID الحقيقي.
+        const categoryIdAliases = new Map();
+
+        rawCategories.forEach((category) => {
+          const documentId = String(
+            category?.docId || category?.id || ""
+          ).trim();
+
+          if (!documentId) return;
+
+          [
+            documentId,
+            category?.legacyId,
+            category?.categoryId,
+          ].forEach((alias) => {
+            const value = String(alias || "").trim();
+            if (value) {
+              categoryIdAliases.set(value, documentId);
+            }
+          });
+        });
+
+        const canonicalCategories = rawCategories.map((category) => {
+          const currentParentId = normalizeCategoryParentId(category);
+          const canonicalParentId =
+            categoryIdAliases.get(currentParentId) ||
+            currentParentId;
+
+          return {
+            ...category,
+            id: String(category?.docId || category?.id || "").trim(),
+            docId: String(category?.docId || category?.id || "").trim(),
+            parentId: canonicalParentId,
+          };
+        });
+
         const nextCategories =
-          normalizeCategoryList(
-            snapshot.docs.map((item) => ({
-              id: item.id,
-              ...(item.data() || {}),
-            }))
-          );
+          normalizeCategoryList(canonicalCategories);
 
         setCategories(nextCategories);
       },
@@ -3778,13 +3881,10 @@ function Home({
 
         <section className="jumia-section quick-shop-section main-categories-slider-section">
           <div className="jumia-section-title">
-            <h2>
-              {texts.categoriesTitle}
-            </h2>
+            <h2>{texts.categoriesTitle}</h2>
           </div>
 
           <div className="main-categories-slider-wrap">
-
             <div
               ref={categoriesSliderRef}
               className="jumia-categories main-categories-slider"
@@ -3793,166 +3893,79 @@ function Home({
               onPointerUp={handleCategoryPointerUp}
               onPointerCancel={handleCategoryPointerUp}
             >
-            {mainCategoryItems.length > 0 ? (
-              mainCategoryItems.map((category) => {
-                const children =
-                  getChildCategories(
-                    category?.id
-                  );
+              {mainCategoryItems.length > 0 ? (
+                mainCategoryItems.map((category) => {
+                  const categoryName =
+                    category?.name ||
+                    category?.title ||
+                    category?.label ||
+                    "تصنيف";
 
-                const categoryProducts =
-                  getCategoryProducts(
-                    category
-                  );
+                  const categoryImage =
+                    String(
+                      category?.image ||
+                      category?.imageUrl ||
+                      category?.imageURL ||
+                      category?.photo ||
+                      category?.thumbnail ||
+                      category?.iconImage ||
+                      category?.categoryImage ||
+                      category?.coverImage ||
+                      category?.img ||
+                      ""
+                    ).trim();
 
-                const categoryName =
-                  category?.name ||
-                  category?.title ||
-                  category?.label ||
-                  texts.categoryEmptyTitle;
-
-                const categoryImage =
-                  category?.image ||
-                  category?.imageUrl ||
-                  category?.photo ||
-                  category?.thumbnail ||
-                  "";
-
-                const childCount =
-                  children.length;
-
-                const itemCount =
-                  categoryProducts.length;
-
-                return (
-                  <button
-                    type="button"
-                    key={
-                      category?.id ||
-                      category?.name ||
-                      category?.title
-                    }
-                    className="store-choice-card"
-                    style={{
-                      ...getCategoryCardStyle(
-                        category
-                      ),
-                      ...(category?.cardSize
-                        ? {
-                            "--category-card-size":
-                              String(
+                  return (
+                    <button
+                      type="button"
+                      key={
+                        category?.id ||
+                        category?.name ||
+                        category?.title ||
+                        categoryName
+                      }
+                      className="store-choice-card category-image-card"
+                      style={{
+                        ...getCategoryCardStyle(category),
+                        ...(category?.cardSize
+                          ? {
+                              "--category-card-size": String(
                                 category.cardSize
                               ),
-                          }
-                        : {}),
-                    }}
-                    onClick={() =>
-                      openCategory(
-                        category
-                      )
-                    }
-                    aria-label={`فتح تصنيف ${categoryName}`}
-                  >
-                    <div className="store-choice-image">
-                      {categoryImage ? (
-                        <img
-                          src={categoryImage}
-                          alt={categoryName}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span>
-                          {category?.icon ||
-                            "📦"}
-                        </span>
-                      )}
-                    </div>
-
-                    <strong>
-                      {categoryName}
-                    </strong>
-
-                    <small>
-                      {childCount > 0
-                        ? `${childCount} قسم فرعي`
-                        : itemCount > 0
-                          ? `${itemCount} منتج`
-                          : texts.viewAll}
-                    </small>
-                  </button>
-                );
-              })
-            ) : categories.length > 0 ? (
-              categories.map((category) => {
-                const categoryName =
-                  category?.name ||
-                  category?.title ||
-                  category?.label ||
-                  texts.categoryEmptyTitle;
-
-                const categoryImage =
-                  category?.image ||
-                  category?.imageUrl ||
-                  category?.photo ||
-                  category?.thumbnail ||
-                  "";
-
-                return (
-                  <button
-                    type="button"
-                    key={
-                      category?.id ||
-                      categoryName
-                    }
-                    className="store-choice-card"
-                    style={getCategoryCardStyle(
-                      category
-                    )}
-                    onClick={() =>
-                      openCategory(
-                        category
-                      )
-                    }
-                    aria-label={`فتح تصنيف ${categoryName}`}
-                  >
-                    <div className="store-choice-image">
-                      {categoryImage ? (
-                        <img
-                          src={categoryImage}
-                          alt={categoryName}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span>
-                          {category?.icon ||
-                            "📦"}
-                        </span>
-                      )}
-                    </div>
-
-                    <strong>
-                      {categoryName}
-                    </strong>
-
-                    <small>
-                      {texts.viewAll}
-                    </small>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="store-empty-choice">
-                <div>📂</div>
-
-                <h3>
-                  {texts.categoryEmptyTitle}
-                </h3>
-
-                <p>
-                  {texts.categoryEmptyText}
-                </p>
-              </div>
-            )}
+                            }
+                          : {}),
+                      }}
+                      onClick={() => handleCategoryClick(category)}
+                      aria-label={`فتح تصنيف ${categoryName}`}
+                    >
+                      <span className="category-image-card-media">
+                        {categoryImage ? (
+                          <img
+                            src={categoryImage}
+                            alt=""
+                            aria-hidden="true"
+                            loading="lazy"
+                            draggable="false"
+                          />
+                        ) : (
+                          <span
+                            className="category-image-card-placeholder"
+                            aria-hidden="true"
+                          >
+                            {category?.icon || "📦"}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="store-empty-choice">
+                  <div>📂</div>
+                  <h3>{texts.categoryEmptyTitle}</h3>
+                  <p>{texts.categoryEmptyText}</p>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -7362,180 +7375,339 @@ function Home({
           }
 
           /* =========================================================
-             MAIN CATEGORIES PREMIUM HORIZONTAL SLIDER
+             SAWA — TALABAT-STYLE CATEGORY IMAGE SLIDER
+             - نفس التصنيفات القادمة من Admin / Firestore
+             - الصورة فقط داخل الكارت
+             - لا اسم / لا عدد منتجات / لا بيانات داخل الكارت
+             - صف أفقي واحد
+             - Swipe + Drag + Scroll Snap
+             - Mobile first
           ========================================================= */
 
           .main-categories-slider-section {
             position: relative;
             width: 100%;
-            max-width: 1420px;
+            max-width: 1440px;
             margin: 0 auto;
-            padding-top: clamp(16px, 2vw, 26px) !important;
-            padding-bottom: clamp(14px, 2vw, 24px) !important;
+            padding: 14px clamp(10px, 2vw, 24px) 22px !important;
+            box-sizing: border-box;
+            background: var(--store-page-background, #F0F4F8) !important;
+          }
+
+          .main-categories-slider-section .jumia-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin: 0 0 14px;
+            padding: 0 2px;
+            box-sizing: border-box;
+          }
+
+          .main-categories-slider-section .jumia-section-title h2 {
+            position: relative;
+            margin: 0;
+            padding-right: 13px;
+            color: var(--store-heading-color, #071A36);
+            font-family: var(--store-heading-font, Cairo, sans-serif);
+            font-size: clamp(20px, 2vw, 27px);
+            font-weight: 900;
+            line-height: 1.3;
+          }
+
+          .main-categories-slider-section .jumia-section-title h2::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 4px;
+            height: 68%;
+            min-height: 22px;
+            border-radius: 999px;
+            transform: translateY(-50%);
+            background: var(--store-accent, #D4AF37);
           }
 
           .main-categories-slider-wrap {
             position: relative;
-            display: flex;
-            align-items: center;
-            gap: 10px;
             width: 100%;
+            min-width: 0;
+            overflow: hidden;
           }
 
           .main-categories-slider {
-            scroll-behavior: smooth;
-            cursor: grab;
-            -webkit-overflow-scrolling: touch;
-            width: 100% !important;
-            min-width: 0;
             display: flex !important;
             flex-direction: row !important;
-            grid-template-columns: none !important;
-            gap: clamp(12px, 1.25vw, 18px) !important;
-            align-items: stretch;
+            flex-wrap: nowrap !important;
+            align-items: center;
+            width: 100% !important;
+            min-width: 0;
+            gap: 12px !important;
+            padding: 5px 2px 10px !important;
+            margin: 0;
             box-sizing: border-box;
+
             overflow-x: auto !important;
             overflow-y: hidden !important;
-            padding: 8px 4px 14px !important;
+            -webkit-overflow-scrolling: touch;
             scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            overscroll-behavior-inline: contain;
+            scroll-padding-inline: 2px;
+            overscroll-behavior-x: contain;
             scrollbar-width: none;
             -ms-overflow-style: none;
+
             cursor: grab;
             touch-action: pan-y;
             user-select: none;
+            -webkit-user-select: none;
           }
 
           .main-categories-slider::-webkit-scrollbar {
             display: none;
+            width: 0;
+            height: 0;
           }
 
           .main-categories-slider:active {
             cursor: grabbing;
           }
 
-          .main-categories-slider .store-choice-card {
-            flex: 0 0 clamp(145px, 18vw, 205px);
-            min-width: clamp(145px, 18vw, 205px);
+          .main-categories-slider .store-choice-card.category-image-card {
+            position: relative;
+            flex: 0 0 124px !important;
+            width: 124px !important;
+            min-width: 124px !important;
+            height: 124px !important;
+            min-height: 124px !important;
+
+            display: block !important;
+            padding: 0 !important;
+            margin: 0;
+            box-sizing: border-box;
+
+            border: 0 !important;
+            border-radius: 22px !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+
+            color: inherit;
+            text-align: center;
             scroll-snap-align: start;
-            border-radius: 22px;
+            scroll-snap-stop: always;
+
+            cursor: pointer;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+
+            transition:
+              transform .22s cubic-bezier(.2,.8,.2,1),
+              filter .22s ease;
+          }
+
+          .main-categories-slider .category-image-card::before,
+          .main-categories-slider .category-image-card::after,
+          .main-categories-slider .category-image-card > strong,
+          .main-categories-slider .category-image-card > small {
+            display: none !important;
+            content: none !important;
+          }
+
+          .category-image-card-media {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            min-width: 100%;
+            min-height: 100%;
+            box-sizing: border-box;
             overflow: hidden;
-            transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
-          }
-            flex: 0 0 clamp(172px, 15.5vw, 220px) !important;
-            width: clamp(172px, 15.5vw, 220px) !important;
-            min-width: clamp(172px, 15.5vw, 220px) !important;
-            scroll-snap-align: start;
-          }
 
-          @media (min-width: 1500px) {
-            .main-categories-slider-section {
-              max-width: 1420px;
-            }
+            border: 1px solid rgba(7, 26, 54, .08);
+            border-radius: 22px;
+            background: var(--store-card-background, #FFFFFF);
 
-            .main-categories-slider .store-choice-card {
-              flex-basis: 220px !important;
-              width: 220px !important;
-              min-width: 220px !important;
-              min-height: 220px;
-            }
+            box-shadow:
+              0 7px 20px rgba(7, 26, 54, .08),
+              0 1px 3px rgba(7, 26, 54, .05);
 
-            .main-categories-slider .store-choice-image {
-              width: 122px !important;
-              height: 122px !important;
-              min-width: 122px;
-              min-height: 122px;
-            }
+            isolation: isolate;
           }
 
-          @media (max-width: 900px) {
-            .main-categories-slider-wrap {
-              gap: 6px;
+          .category-image-card-media::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            border-radius: inherit;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, .45),
+              inset 0 -22px 38px rgba(7, 26, 54, .035);
+          }
+
+          .category-image-card-media img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-width: 100%;
+            min-height: 100%;
+            object-fit: cover;
+            object-position: center;
+            border: 0;
+            user-select: none;
+            -webkit-user-drag: none;
+            transform: scale(1.001);
+            transition:
+              transform .35s cubic-bezier(.2,.8,.2,1),
+              filter .35s ease;
+          }
+
+          .category-image-card-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            font-size: 42px;
+            background:
+              linear-gradient(
+                145deg,
+                var(--store-card-background, #FFFFFF),
+                rgba(212, 175, 55, .10)
+              );
+          }
+
+          .main-categories-slider .category-image-card:hover {
+            transform: translateY(-4px);
+          }
+
+          .main-categories-slider .category-image-card:hover
+          .category-image-card-media {
+            border-color: rgba(212, 175, 55, .48);
+            box-shadow:
+              0 12px 26px rgba(7, 26, 54, .12),
+              0 2px 7px rgba(212, 175, 55, .10);
+          }
+
+          .main-categories-slider .category-image-card:hover
+          .category-image-card-media img {
+            transform: scale(1.045);
+          }
+
+          .main-categories-slider .category-image-card:active {
+            transform: scale(.96);
+          }
+
+          .main-categories-slider .category-image-card:focus-visible
+          .category-image-card-media {
+            border-color: var(--store-accent, #D4AF37);
+            box-shadow:
+              0 0 0 3px rgba(212, 175, 55, .22),
+              0 10px 24px rgba(7, 26, 54, .10);
+          }
+
+          @media (min-width: 768px) {
+            .main-categories-slider {
+              gap: 14px !important;
+              padding-inline: 3px !important;
             }
 
-            .main-categories-slider .store-choice-card {
-              flex-basis: 170px !important;
-              width: 170px !important;
-              min-width: 170px !important;
-              min-height: 190px;
-              border-radius: 18px !important;
+            .main-categories-slider .store-choice-card.category-image-card {
+              flex-basis: 136px !important;
+              width: 136px !important;
+              min-width: 136px !important;
+              height: 136px !important;
+              min-height: 136px !important;
             }
 
-            .main-categories-slider .store-choice-image {
-              width: 96px !important;
-              height: 96px !important;
-              min-width: 96px;
-              min-height: 96px;
+            .category-image-card-media {
+              border-radius: 24px;
+            }
+          }
+
+          @media (min-width: 1200px) {
+            .main-categories-slider {
+              gap: 16px !important;
             }
 
-            .main-categories-slider .store-choice-image span {
-              font-size: 38px;
+            .main-categories-slider .store-choice-card.category-image-card {
+              flex-basis: 150px !important;
+              width: 150px !important;
+              min-width: 150px !important;
+              height: 150px !important;
+              min-height: 150px !important;
             }
           }
 
           @media (max-width: 600px) {
             .main-categories-slider-section {
-              padding: 18px 8px 22px !important;
+              padding: 13px 8px 18px !important;
             }
 
             .main-categories-slider-section .jumia-section-title {
-              margin-bottom: 13px;
+              margin-bottom: 11px;
+              padding-inline: 2px;
             }
 
             .main-categories-slider-section .jumia-section-title h2 {
-              font-size: 21px;
-            }
-
-            .main-categories-slider-wrap {
-              gap: 4px;
+              font-size: 20px;
             }
 
             .main-categories-slider {
               gap: 9px !important;
-              padding: 6px 2px 12px !important;
+              padding: 4px 2px 9px !important;
             }
 
-            .main-categories-slider .store-choice-card {
-              flex-basis: 145px !important;
-              width: 145px !important;
-              min-width: 145px !important;
-              min-height: 174px;
-              padding: 12px 9px 13px !important;
-              border-radius: 16px !important;
+            .main-categories-slider .store-choice-card.category-image-card {
+              flex-basis: 112px !important;
+              width: 112px !important;
+              min-width: 112px !important;
+              height: 112px !important;
+              min-height: 112px !important;
+              border-radius: 20px !important;
             }
 
-            .main-categories-slider .store-choice-image {
-              width: 82px !important;
-              height: 82px !important;
-              min-width: 82px;
-              min-height: 82px;
-              padding: 5px;
-              margin-top: 5px !important;
+            .category-image-card-media {
+              border-radius: 20px;
+              box-shadow:
+                0 5px 15px rgba(7, 26, 54, .075),
+                0 1px 3px rgba(7, 26, 54, .045);
             }
 
-            .main-categories-slider .store-choice-image span {
-              font-size: 28px;
+            .category-image-card-placeholder {
+              font-size: 34px;
+            }
+          }
+
+          @media (max-width: 390px) {
+            .main-categories-slider {
+              gap: 8px !important;
             }
 
-            .main-categories-slider .store-choice-card strong {
-              font-size: 14px;
+            .main-categories-slider .store-choice-card.category-image-card {
+              flex-basis: 104px !important;
+              width: 104px !important;
+              min-width: 104px !important;
+              height: 104px !important;
+              min-height: 104px !important;
             }
 
-            .main-categories-slider .store-choice-card small {
-              font-size: 10px;
-              padding-inline: 8px;
+            .category-image-card-media {
+              border-radius: 18px;
             }
           }
 
           @media (prefers-reduced-motion: reduce) {
-            .quick-shop-section .store-choice-card,
-            .quick-shop-section .store-choice-image {
+            .main-categories-slider .category-image-card,
+            .category-image-card-media img {
               transition: none !important;
             }
 
-            .quick-shop-section .store-choice-card:hover {
-              transform: none;
+            .main-categories-slider {
+              scroll-behavior: auto !important;
             }
           }
         `}
