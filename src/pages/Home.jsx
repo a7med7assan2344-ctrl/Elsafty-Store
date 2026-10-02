@@ -7700,6 +7700,115 @@ function Home({
             }
           }
 
+          /* =========================================================
+             SAWA — MOBILE CATEGORY CARD FIX
+             - يمنع ضغط الكروت أو قصّها على الموبايل
+             - يحافظ على صف أفقي واحد والسحب باللمس
+             - يعرض صورة الأدمن كاملة داخل الكارت بدون قص
+             - لا يغيّر منطق الـ ID أو فتح القسم
+          ========================================================= */
+          @media (max-width: 600px) {
+            .main-categories-slider-wrap {
+              width: 100% !important;
+              min-width: 0 !important;
+              overflow: hidden !important;
+            }
+
+            .main-categories-slider {
+              display: flex !important;
+              flex-direction: row !important;
+              flex-wrap: nowrap !important;
+              align-items: stretch !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 0 !important;
+              gap: 12px !important;
+              padding: 5px 4px 12px !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              box-sizing: border-box !important;
+              touch-action: pan-x pan-y !important;
+              scroll-snap-type: x proximity !important;
+            }
+
+            .main-categories-slider .store-choice-card.category-image-card {
+              flex: 0 0 132px !important;
+              width: 132px !important;
+              min-width: 132px !important;
+              max-width: 132px !important;
+              height: 132px !important;
+              min-height: 132px !important;
+              max-height: 132px !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              box-sizing: border-box !important;
+              overflow: hidden !important;
+              border-radius: 22px !important;
+            }
+
+            .main-categories-slider .category-image-card-media {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              width: 100% !important;
+              height: 100% !important;
+              min-width: 0 !important;
+              min-height: 0 !important;
+              max-width: 100% !important;
+              max-height: 100% !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+              border-radius: 22px !important;
+            }
+
+            .main-categories-slider .category-image-card-media img {
+              display: block !important;
+              width: 100% !important;
+              height: 100% !important;
+              min-width: 0 !important;
+              min-height: 0 !important;
+              max-width: 100% !important;
+              max-height: 100% !important;
+              object-fit: contain !important;
+              object-position: center !important;
+              transform: none !important;
+              background: var(--store-card-background, #FFFFFF);
+            }
+          }
+
+          @media (max-width: 390px) {
+            .main-categories-slider {
+              gap: 10px !important;
+              padding-inline: 4px !important;
+            }
+
+            .main-categories-slider .store-choice-card.category-image-card {
+              flex-basis: 124px !important;
+              width: 124px !important;
+              min-width: 124px !important;
+              max-width: 124px !important;
+              height: 124px !important;
+              min-height: 124px !important;
+              max-height: 124px !important;
+            }
+
+            .main-categories-slider .category-image-card-media {
+              border-radius: 20px !important;
+            }
+          }
+
+          @media (max-width: 340px) {
+            .main-categories-slider .store-choice-card.category-image-card {
+              flex-basis: 116px !important;
+              width: 116px !important;
+              min-width: 116px !important;
+              max-width: 116px !important;
+              height: 116px !important;
+              min-height: 116px !important;
+              max-height: 116px !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .main-categories-slider .category-image-card,
             .category-image-card-media img {
