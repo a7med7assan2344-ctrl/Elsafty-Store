@@ -2255,3 +2255,268 @@
     gap: 5px !important;
   }
 }
+
+
+/* =========================================================
+   SAWA — FINAL SUBCATEGORY CARD FIX
+   Clean responsive layout for desktop / tablet / mobile.
+   This block intentionally comes LAST so older duplicated
+   sizing rules cannot break the cards.
+   ========================================================= */
+
+.category-page .category-subcategories-section {
+  width: min(1320px, calc(100% - 30px)) !important;
+  max-width: 1320px !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.category-page .category-subcategories-section .store-choices-grid,
+.category-page .category-subcategories-section .category-cards-grid {
+  display: grid !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
+  grid-auto-columns: auto !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-items: stretch !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.category-page .category-subcategories-section .category-subcategory-card,
+.category-page .category-subcategories-section .category-subcategory-card.small,
+.category-page .category-subcategories-section .category-subcategory-card.medium,
+.category-page .category-subcategories-section .category-subcategory-card.large,
+.category-page .category-subcategories-section .store-choice-card,
+.category-page .category-subcategories-section .category-modern-card {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: none !important;
+  flex-basis: auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+
+.category-page .category-subcategories-section .category-modern-image,
+.category-page .category-subcategories-section .store-choice-image {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 4 / 3 !important;
+  flex: 0 0 auto !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+}
+
+.category-page .category-subcategories-section .category-modern-image img,
+.category-page .category-subcategories-section .store-choice-image img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  box-sizing: border-box !important;
+}
+
+.category-page .category-subcategories-section .category-modern-info,
+.category-page .category-subcategories-section .store-choice-info {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: 10px 11px 12px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.category-page .category-subcategories-section .category-modern-title-row,
+.category-page .category-subcategories-section .store-choice-title-row {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  gap: 6px !important;
+  box-sizing: border-box !important;
+}
+
+.category-page .category-subcategories-section .category-modern-title-row strong,
+.category-page .category-subcategories-section .store-choice-title-row strong {
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+.category-page .category-subcategories-section .category-modern-meta,
+.category-page .category-subcategories-section .store-choice-meta {
+  width: 100% !important;
+  min-width: 0 !important;
+  margin-top: 4px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 1000px) {
+  .category-page .category-subcategories-section .store-choices-grid,
+  .category-page .category-subcategories-section .category-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .category-page .category-subcategories-section {
+    width: calc(100% - 20px) !important;
+    max-width: none !important;
+    padding: 20px 0 !important;
+  }
+
+  .category-page .category-subcategories-section .store-choices-grid,
+  .category-page .category-subcategories-section .category-cards-grid {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: auto !important;
+    gap: 10px !important;
+    overflow: visible !important;
+  }
+
+  .category-page .category-subcategories-section .category-subcategory-card,
+  .category-page .category-subcategories-section .category-subcategory-card.small,
+  .category-page .category-subcategories-section .category-subcategory-card.medium,
+  .category-page .category-subcategories-section .category-subcategory-card.large,
+  .category-page .category-subcategories-section .store-choice-card,
+  .category-page .category-subcategories-section .category-modern-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex: none !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    justify-self: stretch !important;
+    align-self: stretch !important;
+    border-radius: 10px !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-image,
+  .category-page .category-subcategories-section .store-choice-image {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 0 auto !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-image img,
+  .category-page .category-subcategories-section .store-choice-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-info,
+  .category-page .category-subcategories-section .store-choice-info {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 7px 7px 8px !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-title-row,
+  .category-page .category-subcategories-section .store-choice-title-row {
+    gap: 4px !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-title-row strong,
+  .category-page .category-subcategories-section .store-choice-title-row strong {
+    min-width: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-meta,
+  .category-page .category-subcategories-section .store-choice-meta {
+    margin-top: 2px !important;
+    font-size: 8px !important;
+    line-height: 1.35 !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-arrow {
+    width: 20px !important;
+    height: 20px !important;
+    flex: 0 0 20px !important;
+    font-size: 9px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .category-page .category-subcategories-section {
+    width: calc(100% - 14px) !important;
+  }
+
+  .category-page .category-subcategories-section .store-choices-grid,
+  .category-page .category-subcategories-section .category-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-info,
+  .category-page .category-subcategories-section .store-choice-info {
+    padding: 6px 5px 7px !important;
+  }
+
+  .category-page .category-subcategories-section .category-modern-title-row strong,
+  .category-page .category-subcategories-section .store-choice-title-row strong {
+    font-size: 10px !important;
+  }
+}

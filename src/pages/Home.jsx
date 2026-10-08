@@ -7384,6 +7384,11 @@ function Home({
              - Mobile first
           ========================================================= */
 
+          /* =========================================================
+             SAWA — MAIN CATEGORY SLIDER
+             FINAL MOBILE FIX — NO OVERLAP / NO SQUEEZE
+          ========================================================= */
+
           .main-categories-slider-section {
             position: relative;
             width: 100%;
@@ -7392,6 +7397,7 @@ function Home({
             padding: 14px clamp(10px, 2vw, 24px) 22px !important;
             box-sizing: border-box;
             background: var(--store-page-background, #F0F4F8) !important;
+            overflow: hidden;
           }
 
           .main-categories-slider-section .jumia-section-title {
@@ -7432,40 +7438,43 @@ function Home({
             position: relative;
             width: 100%;
             min-width: 0;
+            max-width: 100%;
             overflow: hidden;
+            box-sizing: border-box;
           }
 
           .main-categories-slider {
             display: flex !important;
             flex-direction: row !important;
             flex-wrap: nowrap !important;
-            align-items: center;
+            align-items: center !important;
             width: 100% !important;
-            min-width: 0;
+            max-width: 100% !important;
+            min-width: 0 !important;
             gap: 12px !important;
             padding: 5px 2px 10px !important;
-            margin: 0;
-            box-sizing: border-box;
+            margin: 0 !important;
+            box-sizing: border-box !important;
 
             overflow-x: auto !important;
             overflow-y: hidden !important;
             -webkit-overflow-scrolling: touch;
-            scroll-snap-type: x mandatory;
+            scroll-snap-type: x proximity;
             scroll-padding-inline: 2px;
             overscroll-behavior-x: contain;
             scrollbar-width: none;
             -ms-overflow-style: none;
 
             cursor: grab;
-            touch-action: pan-y;
+            touch-action: pan-x !important;
             user-select: none;
             -webkit-user-select: none;
           }
 
           .main-categories-slider::-webkit-scrollbar {
-            display: none;
-            width: 0;
-            height: 0;
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
           }
 
           .main-categories-slider:active {
@@ -7473,23 +7482,27 @@ function Home({
           }
 
           .main-categories-slider .store-choice-card.category-image-card {
-            position: relative;
+            position: relative !important;
             flex: 0 0 124px !important;
             width: 124px !important;
             min-width: 124px !important;
+            max-width: 124px !important;
             height: 124px !important;
             min-height: 124px !important;
+            max-height: 124px !important;
 
             display: block !important;
             padding: 0 !important;
-            margin: 0;
-            box-sizing: border-box;
+            margin: 0 !important;
+            box-sizing: border-box !important;
 
             border: 0 !important;
             border-radius: 22px !important;
             background: transparent !important;
             box-shadow: none !important;
-            overflow: visible !important;
+            overflow: hidden !important;
+            isolation: isolate !important;
+            contain: layout paint;
 
             color: inherit;
             text-align: center;
@@ -7515,15 +7528,17 @@ function Home({
 
           .category-image-card-media {
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            min-width: 100%;
-            min-height: 100%;
-            box-sizing: border-box;
-            overflow: hidden;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
 
             border: 1px solid rgba(7, 26, 54, .08);
             border-radius: 22px;
@@ -7549,20 +7564,20 @@ function Home({
           }
 
           .category-image-card-media img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            min-width: 100%;
-            min-height: 100%;
-            object-fit: cover;
-            object-position: center;
-            border: 0;
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: contain !important;
+            object-position: center !important;
+            border: 0 !important;
             user-select: none;
             -webkit-user-drag: none;
-            transform: scale(1.001);
-            transition:
-              transform .35s cubic-bezier(.2,.8,.2,1),
-              filter .35s ease;
+            transform: none !important;
+            background: var(--store-card-background, #FFFFFF);
           }
 
           .category-image-card-placeholder {
@@ -7594,11 +7609,11 @@ function Home({
 
           .main-categories-slider .category-image-card:hover
           .category-image-card-media img {
-            transform: scale(1.045);
+            transform: none !important;
           }
 
           .main-categories-slider .category-image-card:active {
-            transform: scale(.96);
+            transform: scale(.98);
           }
 
           .main-categories-slider .category-image-card:focus-visible
@@ -7619,8 +7634,10 @@ function Home({
               flex-basis: 136px !important;
               width: 136px !important;
               min-width: 136px !important;
+              max-width: 136px !important;
               height: 136px !important;
               min-height: 136px !important;
+              max-height: 136px !important;
             }
 
             .category-image-card-media {
@@ -7637,79 +7654,34 @@ function Home({
               flex-basis: 150px !important;
               width: 150px !important;
               min-width: 150px !important;
+              max-width: 150px !important;
               height: 150px !important;
               min-height: 150px !important;
-            }
-          }
-
-          @media (max-width: 600px) {
-            .main-categories-slider-section {
-              padding: 13px 8px 18px !important;
-            }
-
-            .main-categories-slider-section .jumia-section-title {
-              margin-bottom: 11px;
-              padding-inline: 2px;
-            }
-
-            .main-categories-slider-section .jumia-section-title h2 {
-              font-size: 20px;
-            }
-
-            .main-categories-slider {
-              gap: 9px !important;
-              padding: 4px 2px 9px !important;
-            }
-
-            .main-categories-slider .store-choice-card.category-image-card {
-              flex-basis: 112px !important;
-              width: 112px !important;
-              min-width: 112px !important;
-              height: 112px !important;
-              min-height: 112px !important;
-              border-radius: 20px !important;
-            }
-
-            .category-image-card-media {
-              border-radius: 20px;
-              box-shadow:
-                0 5px 15px rgba(7, 26, 54, .075),
-                0 1px 3px rgba(7, 26, 54, .045);
-            }
-
-            .category-image-card-placeholder {
-              font-size: 34px;
-            }
-          }
-
-          @media (max-width: 390px) {
-            .main-categories-slider {
-              gap: 8px !important;
-            }
-
-            .main-categories-slider .store-choice-card.category-image-card {
-              flex-basis: 104px !important;
-              width: 104px !important;
-              min-width: 104px !important;
-              height: 104px !important;
-              min-height: 104px !important;
-            }
-
-            .category-image-card-media {
-              border-radius: 18px;
+              max-height: 150px !important;
             }
           }
 
           /* =========================================================
-             SAWA — MOBILE CATEGORY CARD FIX
-             - يمنع ضغط الكروت أو قصّها على الموبايل
-             - يحافظ على صف أفقي واحد والسحب باللمس
-             - يعرض صورة الأدمن كاملة داخل الكارت بدون قص
-             - لا يغيّر منطق الـ ID أو فتح القسم
+             MOBILE — 3 EQUAL CARDS / NO OVERLAP
           ========================================================= */
           @media (max-width: 600px) {
+            .main-categories-slider-section {
+              padding: 13px 8px 18px !important;
+              overflow: hidden !important;
+            }
+
+            .main-categories-slider-section .jumia-section-title {
+              margin-bottom: 11px !important;
+              padding-inline: 2px !important;
+            }
+
+            .main-categories-slider-section .jumia-section-title h2 {
+              font-size: 20px !important;
+            }
+
             .main-categories-slider-wrap {
               width: 100% !important;
+              max-width: 100% !important;
               min-width: 0 !important;
               overflow: hidden !important;
             }
@@ -7722,34 +7694,32 @@ function Home({
               width: 100% !important;
               max-width: 100% !important;
               min-width: 0 !important;
-              gap: 12px !important;
-              padding: 5px 4px 12px !important;
+              gap: 9px !important;
+              padding: 4px 2px 9px !important;
+              box-sizing: border-box !important;
               overflow-x: auto !important;
               overflow-y: hidden !important;
-              box-sizing: border-box !important;
-              touch-action: pan-x pan-y !important;
+              touch-action: pan-x !important;
               scroll-snap-type: x proximity !important;
             }
 
             .main-categories-slider .store-choice-card.category-image-card {
-              flex: 0 0 132px !important;
-              width: 132px !important;
-              min-width: 132px !important;
-              max-width: 132px !important;
-              height: 132px !important;
-              min-height: 132px !important;
-              max-height: 132px !important;
+              flex: 0 0 calc((100% - 18px) / 3) !important;
+              width: calc((100% - 18px) / 3) !important;
+              min-width: calc((100% - 18px) / 3) !important;
+              max-width: calc((100% - 18px) / 3) !important;
+              height: auto !important;
+              aspect-ratio: 1 / 1 !important;
+              min-height: 0 !important;
+              max-height: none !important;
               padding: 0 !important;
               margin: 0 !important;
               box-sizing: border-box !important;
               overflow: hidden !important;
-              border-radius: 22px !important;
+              border-radius: 20px !important;
             }
 
             .main-categories-slider .category-image-card-media {
-              display: flex !important;
-              align-items: center !important;
-              justify-content: center !important;
               width: 100% !important;
               height: 100% !important;
               min-width: 0 !important;
@@ -7758,7 +7728,10 @@ function Home({
               max-height: 100% !important;
               overflow: hidden !important;
               box-sizing: border-box !important;
-              border-radius: 22px !important;
+              border-radius: 20px !important;
+              box-shadow:
+                0 5px 15px rgba(7, 26, 54, .075),
+                0 1px 3px rgba(7, 26, 54, .045);
             }
 
             .main-categories-slider .category-image-card-media img {
@@ -7774,38 +7747,14 @@ function Home({
               transform: none !important;
               background: var(--store-card-background, #FFFFFF);
             }
-          }
 
-          @media (max-width: 390px) {
-            .main-categories-slider {
-              gap: 10px !important;
-              padding-inline: 4px !important;
+            .main-categories-slider .category-image-card:hover,
+            .main-categories-slider .category-image-card:active {
+              transform: none !important;
             }
 
-            .main-categories-slider .store-choice-card.category-image-card {
-              flex-basis: 124px !important;
-              width: 124px !important;
-              min-width: 124px !important;
-              max-width: 124px !important;
-              height: 124px !important;
-              min-height: 124px !important;
-              max-height: 124px !important;
-            }
-
-            .main-categories-slider .category-image-card-media {
-              border-radius: 20px !important;
-            }
-          }
-
-          @media (max-width: 340px) {
-            .main-categories-slider .store-choice-card.category-image-card {
-              flex-basis: 116px !important;
-              width: 116px !important;
-              min-width: 116px !important;
-              max-width: 116px !important;
-              height: 116px !important;
-              min-height: 116px !important;
-              max-height: 116px !important;
+            .category-image-card-placeholder {
+              font-size: 34px;
             }
           }
 
@@ -7819,6 +7768,7 @@ function Home({
               scroll-behavior: auto !important;
             }
           }
+
         `}
 
       </style>
